@@ -3,6 +3,8 @@ project(PatternLanguage)
 
 set(CMAKE_CXX_STANDARD 20)
 
+option(LIBPL_SHARED_LIBRARY "Compile the library as a shared library" OFF)
+
 add_subdirectory(external/fmt)
 set_property(TARGET fmt PROPERTY POSITION_INDEPENDENT_CODE ON)
 

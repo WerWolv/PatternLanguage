@@ -3,7 +3,15 @@ project(libpl)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_library(libpl STATIC
+if (LIBPL_SHARED_LIBRARY)
+    set(LIBRARY_TYPE SHARED)
+    message(STATUS "libpl dynamic library is being created")
+else ()
+    set(LIBRARY_TYPE STATIC)
+    message(STATUS "libpl static library is being created")
+endif ()
+
+add_library(libpl ${LIBRARY_TYPE}
         source/helpers/utils.cpp
         source/helpers/file.cpp
 
