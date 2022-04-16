@@ -4,6 +4,7 @@ project(PatternLanguage)
 set(CMAKE_CXX_STANDARD 20)
 
 add_subdirectory(external/fmt)
+set_property(TARGET fmt PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(lib)
 add_subdirectory(example)

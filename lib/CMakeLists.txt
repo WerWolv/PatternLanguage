@@ -18,5 +18,6 @@ add_library(libpl STATIC
 
 target_include_directories(libpl PUBLIC include)
 target_link_libraries(libpl PUBLIC fmt::fmt)
+set_property(TARGET libpl PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 set_target_properties(libpl PROPERTIES PREFIX "")
