@@ -56,8 +56,10 @@ namespace pl {
             if (color != 0)
                 return;
 
-            this->m_color       = evaluator->getNextPatternColor();
-            this->m_manualColor = false;
+            if (evaluator != nullptr) {
+                this->m_color       = evaluator->getNextPatternColor();
+                this->m_manualColor = false;
+            }
         }
 
         Pattern(const Pattern &other) = default;

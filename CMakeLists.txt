@@ -11,6 +11,9 @@ if (NOT TARGET fmt::fmt)
 endif ()
 
 add_subdirectory(lib)
-add_subdirectory(example)
+add_subdirectory(example EXCLUDE_FROM_ALL)
+
+enable_testing()
+add_subdirectory(tests EXCLUDE_FROM_ALL)
 
 add_library(pl::libpl ALIAS libpl)
