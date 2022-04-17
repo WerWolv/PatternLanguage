@@ -141,6 +141,10 @@ namespace pl {
         this->m_preprocessor->setIncludePaths(std::move(paths));
     }
 
+    void PatternLanguage::addPragma(const std::string &name, const api::PragmaHandler &callback) {
+        this->m_preprocessor->addPragmaHandler(name, callback);
+    }
+
     void PatternLanguage::setDataSource(std::function<void(u64, u8*, size_t)> readFunction, u64 baseAddress, u64 size) {
         this->m_evaluator->setDataSource(std::move(readFunction), baseAddress, size);
     }

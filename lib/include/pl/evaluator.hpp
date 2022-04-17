@@ -285,6 +285,8 @@ namespace pl {
         u64 m_currOffset = 0x00;
         LogConsole m_console;
 
+        u32 m_colorIndex = 0;
+
         std::endian m_defaultEndian = std::endian::native;
         u64 m_evalDepth = 0;
         u64 m_arrayLimit = 0;
@@ -318,7 +320,17 @@ namespace pl {
             LogConsole::abortEvaluation("reading data has been disabled");
         };
 
+        u32 getNextPatternColor() {
+            constexpr static std::array Palette = { 0x70B4771F, 0x700E7FFF, 0x702CA02C, 0x702827D6, 0x70BD6794, 0x704B568C, 0x70C277E3, 0x707F7F7F, 0x7022BDBC, 0x70CFBE17 };
+
+            auto index = this->m_colorIndex;
+            this->m_colorIndex = (this->m_colorIndex + 1) % Palette.size();
+
+            return Palette[index];
+        }
+
         friend class PatternCreationLimiter;
+        friend class Pattern;
     };
 
 }

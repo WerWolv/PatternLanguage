@@ -56,7 +56,7 @@ namespace pl {
             if (color != 0)
                 return;
 
-            this->m_color       = getNextColor();
+            this->m_color       = evaluator->getNextPatternColor();
             this->m_manualColor = false;
         }
 
@@ -205,6 +205,8 @@ namespace pl {
         bool m_hidden = false;
 
     private:
+        friend Evaluator;
+
         u64 m_offset  = 0x00;
         size_t m_size = 0x00;
 
@@ -220,24 +222,6 @@ namespace pl {
 
         bool m_local       = false;
         bool m_manualColor = false;
-
-
-        static inline u32 s_colorIndex = 0;
-        static u32 getNextColor() {
-            constexpr static std::array Palette = { 0x70B4771F, 0x700E7FFF, 0x702CA02C, 0x702827D6, 0x70BD6794, 0x704B568C, 0x70C277E3, 0x707F7F7F, 0x7022BDBC, 0x70CFBE17 };
-
-            const auto &color = Palette[s_colorIndex];
-
-            s_colorIndex++;
-            if (s_colorIndex >= Palette.size())
-                s_colorIndex = 0;
-
-            return color;
-        }
-
-        static void resetColors() {
-            s_colorIndex = 0;
-        }
     };
 
 }

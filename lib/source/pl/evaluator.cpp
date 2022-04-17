@@ -161,6 +161,7 @@ namespace pl {
         this->m_scopes.clear();
         this->m_mainResult.reset();
         this->m_aborted = false;
+        this->m_colorIndex = 0;
 
         if (this->m_allowDangerousFunctions == DangerousFunctionPermission::Deny)
             this->m_allowDangerousFunctions = DangerousFunctionPermission::Ask;

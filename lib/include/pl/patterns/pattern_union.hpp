@@ -106,7 +106,6 @@ namespace pl {
                 return nullptr;
             else
                 return (*largestMember)->getPattern(offset);
-            ;
         }
 
         void setEndian(std::endian endian) override {

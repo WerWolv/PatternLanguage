@@ -48,6 +48,7 @@ namespace pl {
         void setDataBaseAddress(u64 baseAddress);
         void setDataSize(u64 size);
 
+        void addPragma(const std::string &name, const api::PragmaHandler &callback);
         void setIncludePaths(std::vector<std::fs::path> paths);
         void setDangerousFunctionCallHandler(std::function<bool()> callback);
 
