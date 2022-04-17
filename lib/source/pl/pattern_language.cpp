@@ -29,6 +29,16 @@ namespace pl {
         delete this->m_internals.evaluator;
     }
 
+    PatternLanguage::PatternLanguage(PatternLanguage &&other) noexcept {
+        this->m_internals = other.m_internals;
+        this->m_currError = std::move(other.m_currError);
+        this->m_currAST = std::move(other.m_currAST);
+        this->m_patterns = std::move(other.m_patterns);
+        this->m_running = other.m_running;
+
+        other.m_internals = { nullptr };
+    }
+
     std::optional<std::vector<std::shared_ptr<ASTNode>>> PatternLanguage::parseString(const std::string &code) {
         auto preprocessedCode = this->m_internals.preprocessor->preprocess(*this, code);
         if (!preprocessedCode.has_value()) {

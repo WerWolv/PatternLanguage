@@ -36,6 +36,9 @@ namespace pl {
         PatternLanguage();
         ~PatternLanguage();
 
+        PatternLanguage(const PatternLanguage&) = delete;
+        PatternLanguage(PatternLanguage &&other) noexcept;
+
         struct Internals {
             Preprocessor    *preprocessor;
             Lexer           *lexer;
