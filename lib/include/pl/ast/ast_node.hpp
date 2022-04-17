@@ -5,6 +5,7 @@
 #include <pl/patterns/pattern.hpp>
 
 #include "helpers/utils.hpp"
+#include "helpers/guards.hpp"
 #include "helpers/concepts.hpp"
 
 namespace pl {

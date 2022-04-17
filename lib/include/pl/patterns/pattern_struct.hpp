@@ -69,6 +69,17 @@ namespace pl {
             }
         }
 
+        void sort(const std::function<bool (const Pattern *, const Pattern *)> &comparator) override {
+            this->m_sortedMembers.clear();
+            for (auto &member : this->m_members)
+                this->m_sortedMembers.push_back(member.get());
+
+            std::sort(this->m_sortedMembers.begin(), this->m_sortedMembers.end(), comparator);
+
+            for (auto &member : this->m_members)
+                member->sort(comparator);
+        }
+
         [[nodiscard]] bool operator==(const Pattern &other) const override {
             if (!areCommonPropertiesEqual<decltype(*this)>(other))
                 return false;

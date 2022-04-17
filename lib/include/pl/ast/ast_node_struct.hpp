@@ -30,7 +30,7 @@ namespace pl {
             std::vector<std::shared_ptr<Pattern>> memberPatterns;
 
             evaluator->pushScope(pattern.get(), memberPatterns);
-            ON_SCOPE_EXIT {
+            PL_ON_SCOPE_EXIT {
                 evaluator->popScope();
             };
 

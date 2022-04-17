@@ -247,8 +247,8 @@ namespace pl {
         return output;
     }
 
-    void Preprocessor::addPragmaHandler(const std::string &pragmaType, const std::function<bool(const std::string &)> &function) {
-        this->m_pragmaHandlers[pragmaType] = function;
+    void Preprocessor::addPragmaHandler(const std::string &pragmaType, const api::PragmaHandler &handler) {
+        this->m_pragmaHandlers[pragmaType] = handler;
     }
 
     void Preprocessor::removePragmaHandler(const std::string &pragmaType) {

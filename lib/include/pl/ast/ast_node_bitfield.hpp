@@ -44,7 +44,7 @@ namespace pl {
                 std::reverse(entries.begin(), entries.end());
 
             evaluator->pushScope(pattern.get(), fields);
-            ON_SCOPE_EXIT {
+            PL_ON_SCOPE_EXIT {
                 evaluator->popScope();
             };
 

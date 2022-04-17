@@ -12,6 +12,7 @@
 #include <helpers/fs.hpp>
 
 #include <pl/error.hpp>
+#include <pl/api.hpp>
 
 namespace pl {
 
@@ -21,7 +22,7 @@ namespace pl {
 
         std::optional<std::string> preprocess(std::string code, bool initialRun = true);
 
-        void addPragmaHandler(const std::string &pragmaType, const std::function<bool(const std::string &)> &function);
+        void addPragmaHandler(const std::string &pragmaType, const api::PragmaHandler &handler);
         void removePragmaHandler(const std::string &pragmaType);
         void addDefaultPragmaHandlers();
 
@@ -40,7 +41,7 @@ namespace pl {
             throw PatternLanguageError(lineNumber, "Preprocessor: " + error);
         }
 
-        std::unordered_map<std::string, std::function<bool(std::string)>> m_pragmaHandlers;
+        std::unordered_map<std::string, api::PragmaHandler> m_pragmaHandlers;
 
         std::set<std::tuple<std::string, std::string, u32>> m_defines;
         std::set<std::tuple<std::string, std::string, u32>> m_pragmas;

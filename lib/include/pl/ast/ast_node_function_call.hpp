@@ -42,7 +42,7 @@ namespace pl {
 
         [[nodiscard]] std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override {
             auto startOffset = evaluator->dataOffset();
-            ON_SCOPE_EXIT { evaluator->dataOffset() = startOffset; };
+            PL_ON_SCOPE_EXIT { evaluator->dataOffset() = startOffset; };
 
             std::vector<Token::Literal> evaluatedParams;
             for (auto &param : this->m_params) {

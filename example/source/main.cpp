@@ -35,13 +35,13 @@ int main() {
     });
 
     // Create a normal builtin function called `test::normal_function` that takes a single parameter
-    patternLanguage.addFunction({ "test" }, "normal_function", pl::BuiltinFunctionParameterCount::exactly(1), [](pl::Evaluator *ctx, const std::vector<pl::Token::Literal> &params) -> std::optional<pl::Token::Literal>{
+    patternLanguage.addFunction({ "test" }, "normal_function", pl::FunctionParameterCount::exactly(1), [](pl::Evaluator *ctx, const std::vector<pl::Token::Literal> &params) -> std::optional<pl::Token::Literal>{
         fmt::print("normal_function {}\n", std::get<pl::i128>(params[0]));
         return std::nullopt;
     });
 
     // Create a dangerous function called `test::dangerous_function` that takes no parameters
-    patternLanguage.addDangerousFunction({ "test" }, "dangerous_function", pl::BuiltinFunctionParameterCount::none(), [](pl::Evaluator *, const std::vector<pl::Token::Literal> &) -> std::optional<pl::Token::Literal>{
+    patternLanguage.addDangerousFunction({ "test" }, "dangerous_function", pl::FunctionParameterCount::none(), [](pl::Evaluator *, const std::vector<pl::Token::Literal> &) -> std::optional<pl::Token::Literal>{
         printf("dangerous_function\n");
         return 1337;
     });

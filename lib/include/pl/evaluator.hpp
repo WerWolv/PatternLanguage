@@ -9,7 +9,7 @@
 
 #include <pl/log_console.hpp>
 #include <pl/token.hpp>
-#include <pl/builtin_function.hpp>
+#include <pl/api.hpp>
 
 #include <fmt/format.h>
 
@@ -45,11 +45,6 @@ namespace pl {
         Evaluator() = default;
 
         std::optional<std::vector<std::shared_ptr<Pattern>>> evaluate(const std::vector<std::shared_ptr<ASTNode>> &ast);
-
-        void setDataSource(std::function<void(u64, u8*, size_t)> readerFunction, size_t dataSize) {
-            this->m_readerFunction = std::move(readerFunction);
-            this->m_dataSize = dataSize;
-        }
 
         [[nodiscard]] LogConsole &getConsole() {
             return this->m_console;
@@ -117,7 +112,25 @@ namespace pl {
             return result;
         }
 
-        [[nodiscard]] size_t getDataSize() const {
+        void setDataSource(std::function<void(u64, u8*, size_t)> readerFunction, u64 baseAddress, size_t dataSize) {
+            this->m_readerFunction = std::move(readerFunction);
+            this->m_dataBaseAddress = baseAddress;
+            this->m_dataSize = dataSize;
+        }
+
+        void setDataBaseAddress(u64 baseAddress) {
+            this->m_dataBaseAddress = baseAddress;
+        }
+
+        void setDataSize(u64 dataSize) {
+            this->m_dataSize = dataSize;
+        }
+
+        [[nodiscard]] u64 getDataBaseAddress() const {
+            return this->m_dataBaseAddress;
+        }
+
+        [[nodiscard]] u64 getDataSize() const {
             return this->m_dataSize;
         }
 
@@ -179,7 +192,7 @@ namespace pl {
 
         u64 &dataOffset() { return this->m_currOffset; }
 
-        bool addBuiltinFunction(const std::string &name, BuiltinFunctionParameterCount numParams, std::vector<Token::Literal> defaultParameters, const BuiltinFunctionCallback &function, bool dangerous) {
+        bool addBuiltinFunction(const std::string &name, api::FunctionParameterCount numParams, std::vector<Token::Literal> defaultParameters, const api::FunctionCallback &function, bool dangerous) {
             const auto [iter, inserted] = this->m_builtinFunctions.insert({
                 name, {numParams, std::move(defaultParameters), function, dangerous}
             });
@@ -187,7 +200,7 @@ namespace pl {
             return inserted;
         }
 
-        bool addCustomFunction(const std::string &name, BuiltinFunctionParameterCount numParams, std::vector<Token::Literal> defaultParameters, const BuiltinFunctionCallback &function) {
+        bool addCustomFunction(const std::string &name, api::FunctionParameterCount numParams, std::vector<Token::Literal> defaultParameters, const api::FunctionCallback &function) {
             const auto [iter, inserted] = this->m_customFunctions.insert({
                 name, {numParams, std::move(defaultParameters), function, false}
             });
@@ -195,11 +208,11 @@ namespace pl {
             return inserted;
         }
 
-        [[nodiscard]] const std::map<std::string, BuiltinFunction> &getBuiltinFunctions() const {
+        [[nodiscard]] const std::map<std::string, api::Function> &getBuiltinFunctions() const {
             return this->m_builtinFunctions;
         }
 
-        [[nodiscard]] const std::map<std::string, BuiltinFunction> &getCustomFunctions() const {
+        [[nodiscard]] const std::map<std::string, api::Function> &getCustomFunctions() const {
             return this->m_customFunctions;
         }
 
@@ -283,8 +296,8 @@ namespace pl {
         std::atomic<bool> m_aborted;
 
         std::vector<Scope> m_scopes;
-        std::map<std::string, BuiltinFunction> m_customFunctions;
-        std::map<std::string, BuiltinFunction> m_builtinFunctions;
+        std::map<std::string, api::Function> m_customFunctions;
+        std::map<std::string, api::Function> m_builtinFunctions;
         std::vector<std::unique_ptr<ASTNode>> m_customFunctionDefinitions;
         std::vector<Token::Literal> m_stack;
 
@@ -299,7 +312,8 @@ namespace pl {
         ControlFlowStatement m_currControlFlowStatement = ControlFlowStatement::None;
         BitfieldOrder m_bitfieldOrder = BitfieldOrder::RightToLeft;
 
-        u64 m_dataSize;
+        u64 m_dataBaseAddress = 0x00;
+        u64 m_dataSize = 0x00;
         std::function<void(u64, u8*, size_t)> m_readerFunction = [](u64, u8*, size_t){
             LogConsole::abortEvaluation("reading data has been disabled");
         };

@@ -111,7 +111,7 @@ namespace pl {
                 LogConsole::abortEvaluation(fmt::format("cannot find formatter function '{}'", *value), node);
 
             const auto &function = functions[*value];
-            if (function.parameterCount != BuiltinFunctionParameterCount::exactly(1))
+            if (function.parameterCount != api::FunctionParameterCount::exactly(1))
                 LogConsole::abortEvaluation("formatter function needs exactly one parameter", node);
 
             pattern->setFormatterFunction(function);
@@ -123,7 +123,7 @@ namespace pl {
                 LogConsole::abortEvaluation(fmt::format("cannot find formatter function '{}'", *value), node);
 
             const auto &function = functions[*value];
-            if (function.parameterCount != BuiltinFunctionParameterCount::exactly(1))
+            if (function.parameterCount != api::FunctionParameterCount::exactly(1))
                 LogConsole::abortEvaluation("formatter function needs exactly one parameter", node);
 
             auto array = dynamic_cast<PatternArrayDynamic *>(pattern);
@@ -141,7 +141,7 @@ namespace pl {
                 LogConsole::abortEvaluation(fmt::format("cannot find transform function '{}'", *value), node);
 
             const auto &function = functions[*value];
-            if (function.parameterCount != BuiltinFunctionParameterCount::exactly(1))
+            if (function.parameterCount != api::FunctionParameterCount::exactly(1))
                 LogConsole::abortEvaluation("transform function needs exactly one parameter", node);
 
             pattern->setTransformFunction(function);
@@ -153,7 +153,7 @@ namespace pl {
                 LogConsole::abortEvaluation(fmt::format("cannot find pointer base function '{}'", *value), node);
 
             const auto &function = functions[*value];
-            if (function.parameterCount != BuiltinFunctionParameterCount::exactly(1))
+            if (function.parameterCount != api::FunctionParameterCount::exactly(1))
                 LogConsole::abortEvaluation("pointer base function needs exactly one parameter", node);
 
             if (auto pointerPattern = dynamic_cast<PatternPointer *>(pattern)) {
@@ -191,7 +191,7 @@ namespace pl {
 
         auto endOffset          = evaluator->dataOffset();
         evaluator->dataOffset() = pattern->getOffset();
-        ON_SCOPE_EXIT { evaluator->dataOffset() = endOffset; };
+        PL_ON_SCOPE_EXIT { evaluator->dataOffset() = endOffset; };
 
         applyTypeAttributes(evaluator, node, pattern);
 

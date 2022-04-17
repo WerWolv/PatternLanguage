@@ -44,16 +44,16 @@ namespace pl {
         }
 
         [[nodiscard]] std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override {
-            BuiltinFunctionParameterCount paramCount;
+            api::FunctionParameterCount paramCount;
 
             if (this->m_parameterPack.has_value() && !this->m_defaultParameters.empty())
-                paramCount = BuiltinFunctionParameterCount::atLeast(this->m_params.size() - this->m_defaultParameters.size());
+                paramCount = api::FunctionParameterCount::atLeast(this->m_params.size() - this->m_defaultParameters.size());
             else if (this->m_parameterPack.has_value())
-                paramCount = BuiltinFunctionParameterCount::atLeast(this->m_params.size());
+                paramCount = api::FunctionParameterCount::atLeast(this->m_params.size());
             else if (!this->m_defaultParameters.empty())
-                paramCount = BuiltinFunctionParameterCount::between(this->m_params.size() - this->m_defaultParameters.size(), this->m_params.size());
+                paramCount = api::FunctionParameterCount::between(this->m_params.size() - this->m_defaultParameters.size(), this->m_params.size());
             else
-                paramCount = BuiltinFunctionParameterCount::exactly(this->m_params.size());
+                paramCount = api::FunctionParameterCount::exactly(this->m_params.size());
 
             std::vector<Token::Literal> evaluatedDefaultParams;
             for (const auto &param : this->m_defaultParameters) {
@@ -71,7 +71,7 @@ namespace pl {
 
                 auto startOffset = ctx->dataOffset();
                 ctx->pushScope(nullptr, variables);
-                ON_SCOPE_EXIT {
+                PL_ON_SCOPE_EXIT {
                     ctx->popScope();
                     ctx->dataOffset() = startOffset;
                 };

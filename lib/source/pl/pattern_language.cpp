@@ -60,9 +60,9 @@ namespace pl {
 
     bool PatternLanguage::executeString(const std::string &code, const std::map<std::string, Token::Literal> &envVars, const std::map<std::string, Token::Literal> &inVariables, bool checkResult) {
         this->m_running = true;
-        ON_SCOPE_EXIT { this->m_running = false; };
+        PL_ON_SCOPE_EXIT { this->m_running = false; };
 
-        ON_SCOPE_EXIT {
+        PL_ON_SCOPE_EXIT {
             if (this->m_currError.has_value()) {
                 const auto &error = this->m_currError.value();
 
@@ -141,8 +141,16 @@ namespace pl {
         this->m_preprocessor->setIncludePaths(std::move(paths));
     }
 
-    void PatternLanguage::setDataSource(std::function<void(u64, u8*, size_t)> readFunction, size_t size) {
-        this->m_evaluator->setDataSource(std::move(readFunction), size);
+    void PatternLanguage::setDataSource(std::function<void(u64, u8*, size_t)> readFunction, u64 baseAddress, u64 size) {
+        this->m_evaluator->setDataSource(std::move(readFunction), baseAddress, size);
+    }
+
+    void PatternLanguage::setDataBaseAddress(u64 baseAddress) {
+        this->m_evaluator->setDataBaseAddress(baseAddress);
+    }
+
+    void PatternLanguage::setDataSize(u64 size) {
+        this->m_evaluator->setDataSize(size);
     }
 
     void PatternLanguage::setDangerousFunctionCallHandler(std::function<bool()> callback) {
@@ -182,7 +190,7 @@ namespace pl {
     }
 
 
-    static std::string getFunctionName(const Namespace &ns, const std::string &name) {
+    static std::string getFunctionName(const api::Namespace &ns, const std::string &name) {
         std::string functionName;
         for (auto &scope : ns)
             functionName += scope + "::";
@@ -192,11 +200,11 @@ namespace pl {
         return functionName;
     }
 
-    void PatternLanguage::addFunction(const Namespace &ns, const std::string &name, BuiltinFunctionParameterCount parameterCount, const BuiltinFunctionCallback &func) {
+    void PatternLanguage::addFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) {
         this->m_evaluator->addBuiltinFunction(getFunctionName(ns, name), parameterCount, { }, func, false);
     }
 
-    void PatternLanguage::addDangerousFunction(const Namespace &ns, const std::string &name, BuiltinFunctionParameterCount parameterCount, const BuiltinFunctionCallback &func) {
+    void PatternLanguage::addDangerousFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) {
         this->m_evaluator->addBuiltinFunction(getFunctionName(ns, name), parameterCount, { }, func, true);
     }
 

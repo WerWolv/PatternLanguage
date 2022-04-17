@@ -29,7 +29,7 @@ namespace pl {
             u64 startOffset = evaluator->dataOffset();
 
             evaluator->pushScope(pattern.get(), memberPatterns);
-            ON_SCOPE_EXIT {
+            PL_ON_SCOPE_EXIT {
                 evaluator->popScope();
             };
 

@@ -103,9 +103,9 @@ namespace pl {
         void setDisplayName(const std::string &name) { this->m_displayName = name; }
 
         [[nodiscard]] const auto &getTransformFunction() const { return this->m_transformFunction; }
-        void setTransformFunction(const BuiltinFunction &function) { this->m_transformFunction = function; }
+        void setTransformFunction(const api::Function &function) { this->m_transformFunction = function; }
         [[nodiscard]] const auto &getFormatterFunction() const { return this->m_formatterFunction; }
-        void setFormatterFunction(const BuiltinFunction &function) { this->m_formatterFunction = function; }
+        void setFormatterFunction(const api::Function &function) { this->m_formatterFunction = function; }
 
         [[nodiscard]] virtual std::string getFormattedName() const = 0;
 
@@ -143,6 +143,10 @@ namespace pl {
 
         [[nodiscard]] bool isLocal() const {
             return this->m_local;
+        }
+
+        virtual void sort(const std::function<bool(const Pattern *left, const Pattern *right)> &comparator) {
+            pl::unused(comparator);
         }
 
         [[nodiscard]] virtual bool operator!=(const Pattern &other) const final { return !operator==(other); }
@@ -211,8 +215,8 @@ namespace pl {
         std::optional<std::string> m_comment;
         std::string m_typeName;
 
-        std::optional<BuiltinFunction> m_formatterFunction;
-        std::optional<BuiltinFunction> m_transformFunction;
+        std::optional<api::Function> m_formatterFunction;
+        std::optional<api::Function> m_transformFunction;
 
         bool m_local       = false;
         bool m_manualColor = false;
@@ -220,7 +224,7 @@ namespace pl {
 
         static inline u32 s_colorIndex = 0;
         static u32 getNextColor() {
-            constexpr static std::array Palette = { 0x00 };
+            constexpr static std::array Palette = { 0x70B4771F, 0x700E7FFF, 0x702CA02C, 0x702827D6, 0x70BD6794, 0x704B568C, 0x70C277E3, 0x707F7F7F, 0x7022BDBC, 0x70CFBE17 };
 
             const auto &color = Palette[s_colorIndex];
 

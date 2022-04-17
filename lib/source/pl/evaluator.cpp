@@ -165,7 +165,7 @@ namespace pl {
         if (this->m_allowDangerousFunctions == DangerousFunctionPermission::Deny)
             this->m_allowDangerousFunctions = DangerousFunctionPermission::Ask;
 
-        ON_SCOPE_EXIT {
+        PL_ON_SCOPE_EXIT {
             this->m_envVariables.clear();
         };
 
@@ -179,7 +179,7 @@ namespace pl {
         try {
             this->setCurrentControlFlowStatement(ControlFlowStatement::None);
             pushScope(nullptr, patterns);
-            ON_SCOPE_EXIT {
+            PL_ON_SCOPE_EXIT {
                 popScope();
             };
 

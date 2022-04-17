@@ -12,8 +12,7 @@
 
 #include <pl/log_console.hpp>
 #include <pl/token.hpp>
-#include <pl/patterns/pattern.hpp>
-#include <pl/builtin_function.hpp>
+#include <pl/api.hpp>
 
 #include "helpers/fs.hpp"
 
@@ -45,8 +44,11 @@ namespace pl {
 
         void abort();
 
+        void setDataSource(std::function<void(u64, u8*, size_t)> readFunction, u64 baseAddress, u64 size);
+        void setDataBaseAddress(u64 baseAddress);
+        void setDataSize(u64 size);
+
         void setIncludePaths(std::vector<std::fs::path> paths);
-        void setDataSource(std::function<void(u64, u8*, size_t)> readFunction, size_t size);
         void setDangerousFunctionCallHandler(std::function<bool()> callback);
 
         [[nodiscard]] const std::vector<std::pair<LogConsole::Level, std::string>> &getConsoleLog();
@@ -67,8 +69,8 @@ namespace pl {
         [[nodiscard]] bool isRunning() const { return this->m_running; }
 
 
-        void addFunction(const Namespace &ns, const std::string &name, BuiltinFunctionParameterCount parameterCount, const BuiltinFunctionCallback &func);
-        void addDangerousFunction(const Namespace &ns, const std::string &name, BuiltinFunctionParameterCount parameterCount, const BuiltinFunctionCallback &func);
+        void addFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func);
+        void addDangerousFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func);
 
     private:
         Preprocessor *m_preprocessor;

@@ -48,7 +48,7 @@ namespace pl {
             auto parameterPack = evaluator->getScope(0).parameterPack;
 
             u32 startVariableCount = variables.size();
-            ON_SCOPE_EXIT {
+            PL_ON_SCOPE_EXIT {
                 i64 stackSize = evaluator->getStack().size();
                 for (u32 i = startVariableCount; i < variables.size(); i++) {
                     stackSize--;
@@ -59,7 +59,7 @@ namespace pl {
 
             evaluator->pushScope(nullptr, variables);
             evaluator->getScope(0).parameterPack = parameterPack;
-            ON_SCOPE_EXIT {
+            PL_ON_SCOPE_EXIT {
                 evaluator->popScope();
             };
 
