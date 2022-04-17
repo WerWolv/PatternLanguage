@@ -36,6 +36,14 @@ namespace pl {
         PatternLanguage();
         ~PatternLanguage();
 
+        struct Internals {
+            Preprocessor    *preprocessor;
+            Lexer           *lexer;
+            Parser          *parser;
+            Validator       *validator;
+            Evaluator       *evaluator;
+        };
+
         [[nodiscard]] std::optional<std::vector<std::shared_ptr<ASTNode>>> parseString(const std::string &code);
         [[nodiscard]] bool executeString(const std::string &string, const std::map<std::string, Token::Literal> &envVars = {}, const std::map<std::string, Token::Literal> &inVariables = {}, bool checkResult = true);
         [[nodiscard]] bool executeFile(const std::filesystem::path &path, const std::map<std::string, Token::Literal> &envVars = {}, const std::map<std::string, Token::Literal> &inVariables = {});
@@ -49,6 +57,7 @@ namespace pl {
         void setDataSize(u64 size);
 
         void addPragma(const std::string &name, const api::PragmaHandler &callback);
+        void removePragma(const std::string &name);
         void setIncludePaths(std::vector<std::fs::path> paths);
         void setDangerousFunctionCallHandler(std::function<bool()> callback);
 
@@ -73,12 +82,12 @@ namespace pl {
         void addFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func);
         void addDangerousFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func);
 
+        const Internals& getInternals() {
+            return this->m_internals;
+        }
+
     private:
-        Preprocessor *m_preprocessor;
-        Lexer *m_lexer;
-        Parser *m_parser;
-        Validator *m_validator;
-        Evaluator *m_evaluator;
+        Internals m_internals;
 
         std::vector<std::shared_ptr<ASTNode>> m_currAST;
 

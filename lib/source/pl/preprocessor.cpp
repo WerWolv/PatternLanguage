@@ -5,7 +5,15 @@
 
 namespace pl {
 
-    std::optional<std::string> Preprocessor::preprocess(std::string code, bool initialRun) {
+    Preprocessor::Preprocessor() {
+        this->addPragmaHandler("once", [this](PatternLanguage&, const std::string &value) {
+            this->m_onlyIncludeOnce = true;
+
+            return value.empty();
+        });
+    }
+
+    std::optional<std::string> Preprocessor::preprocess(PatternLanguage &runtime, std::string code, bool initialRun) {
         u32 offset      = 0;
         u32 lineNumber  = 1;
         bool isInString = false;
@@ -109,11 +117,10 @@ namespace pl {
                         }
 
                         Preprocessor preprocessor;
-                        preprocessor.addDefaultPragmaHandlers();
                         preprocessor.m_defines           = this->m_defines;
                         preprocessor.m_onceIncludedFiles = this->m_onceIncludedFiles;
 
-                        auto preprocessedInclude = preprocessor.preprocess(file.readString(), /*initialRun =*/false);
+                        auto preprocessedInclude = preprocessor.preprocess(runtime, file.readString(), /*initialRun =*/false);
 
                         if (!preprocessedInclude.has_value()) {
                             throw PatternLanguageError(*preprocessor.m_error);
@@ -233,7 +240,7 @@ namespace pl {
             // Handle pragmas
             for (const auto &[type, value, pragmaLine] : this->m_pragmas) {
                 if (this->m_pragmaHandlers.contains(type)) {
-                    if (!this->m_pragmaHandlers[type](value))
+                    if (!this->m_pragmaHandlers[type](runtime, value))
                         throwPreprocessorError(fmt::format("invalid value provided to '{0}' #pragma directive", type.c_str()), pragmaLine);
                 } else
                     throwPreprocessorError(fmt::format("no #pragma handler registered for type {0}", type.c_str()), pragmaLine);
@@ -253,20 +260,6 @@ namespace pl {
 
     void Preprocessor::removePragmaHandler(const std::string &pragmaType) {
         this->m_pragmaHandlers.erase(pragmaType);
-    }
-
-    void Preprocessor::addDefaultPragmaHandlers() {
-        this->addPragmaHandler("MIME", [](const std::string &value) {
-            return !std::all_of(value.begin(), value.end(), isspace) && !value.ends_with('\n') && !value.ends_with('\r');
-        });
-        this->addPragmaHandler("endian", [](const std::string &value) {
-            return value == "big" || value == "little" || value == "native";
-        });
-        this->addPragmaHandler("once", [this](const std::string &value) {
-            this->m_onlyIncludeOnce = true;
-
-            return value.empty();
-        });
     }
 
 }

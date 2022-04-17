@@ -12,11 +12,12 @@
 
 namespace pl {
     class Evaluator;
+    class PatternLanguage;
 }
 
 namespace pl::api {
 
-    using PragmaHandler = std::function<bool(const std::string &)>;
+    using PragmaHandler = std::function<bool(PatternLanguage&, const std::string &)>;
 
 
     struct FunctionParameterCount {

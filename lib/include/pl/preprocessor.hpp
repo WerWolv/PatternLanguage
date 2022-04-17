@@ -18,13 +18,12 @@ namespace pl {
 
     class Preprocessor {
     public:
-        Preprocessor() = default;
+        Preprocessor();
 
-        std::optional<std::string> preprocess(std::string code, bool initialRun = true);
+        std::optional<std::string> preprocess(PatternLanguage &runtime, std::string code, bool initialRun = true);
 
         void addPragmaHandler(const std::string &pragmaType, const api::PragmaHandler &handler);
         void removePragmaHandler(const std::string &pragmaType);
-        void addDefaultPragmaHandlers();
 
         void setIncludePaths(std::vector<std::fs::path> paths) {
             this->m_includePaths = std::move(paths);

@@ -14,43 +14,42 @@ namespace pl {
     class Pattern;
 
     PatternLanguage::PatternLanguage() {
-        this->m_preprocessor = new Preprocessor();
-        this->m_lexer        = new Lexer();
-        this->m_parser       = new Parser();
-        this->m_validator    = new Validator();
-        this->m_evaluator    = new Evaluator();
-
-        this->m_preprocessor->addDefaultPragmaHandlers();
+        this->m_internals.preprocessor  = new Preprocessor();
+        this->m_internals.lexer         = new Lexer();
+        this->m_internals.parser        = new Parser();
+        this->m_internals.validator     = new Validator();
+        this->m_internals.evaluator     = new Evaluator();
     }
 
     PatternLanguage::~PatternLanguage() {
-        delete this->m_preprocessor;
-        delete this->m_lexer;
-        delete this->m_parser;
-        delete this->m_validator;
+        delete this->m_internals.preprocessor;
+        delete this->m_internals.lexer;
+        delete this->m_internals.parser;
+        delete this->m_internals.validator;
+        delete this->m_internals.evaluator;
     }
 
     std::optional<std::vector<std::shared_ptr<ASTNode>>> PatternLanguage::parseString(const std::string &code) {
-        auto preprocessedCode = this->m_preprocessor->preprocess(code);
+        auto preprocessedCode = this->m_internals.preprocessor->preprocess(*this, code);
         if (!preprocessedCode.has_value()) {
-            this->m_currError = this->m_preprocessor->getError();
+            this->m_currError = this->m_internals.preprocessor->getError();
             return std::nullopt;
         }
 
-        auto tokens = this->m_lexer->lex(preprocessedCode.value());
+        auto tokens = this->m_internals.lexer->lex(preprocessedCode.value());
         if (!tokens.has_value()) {
-            this->m_currError = this->m_lexer->getError();
+            this->m_currError = this->m_internals.lexer->getError();
             return std::nullopt;
         }
 
-        auto ast = this->m_parser->parse(tokens.value());
+        auto ast = this->m_internals.parser->parse(tokens.value());
         if (!ast.has_value()) {
-            this->m_currError = this->m_parser->getError();
+            this->m_currError = this->m_internals.parser->getError();
             return std::nullopt;
         }
 
-        if (!this->m_validator->validate(*ast)) {
-            this->m_currError = this->m_validator->getError();
+        if (!this->m_internals.validator->validate(*ast)) {
+            this->m_currError = this->m_internals.validator->getError();
 
             return std::nullopt;
         }
@@ -67,23 +66,23 @@ namespace pl {
                 const auto &error = this->m_currError.value();
 
                 if (error.getLineNumber() > 0)
-                    this->m_evaluator->getConsole().log(LogConsole::Level::Error, fmt::format("{}: {}", error.getLineNumber(), error.what()));
+                    this->m_internals.evaluator->getConsole().log(LogConsole::Level::Error, fmt::format("{}: {}", error.getLineNumber(), error.what()));
                 else
-                    this->m_evaluator->getConsole().log(LogConsole::Level::Error, error.what());
+                    this->m_internals.evaluator->getConsole().log(LogConsole::Level::Error, error.what());
             }
         };
 
         this->m_currError.reset();
-        this->m_evaluator->getConsole().clear();
-        this->m_evaluator->setDefaultEndian(std::endian::native);
-        this->m_evaluator->setEvaluationDepth(32);
-        this->m_evaluator->setArrayLimit(0x1000);
-        this->m_evaluator->setPatternLimit(0x2000);
-        this->m_evaluator->setLoopLimit(0x1000);
-        this->m_evaluator->setInVariables(inVariables);
+        this->m_internals.evaluator->getConsole().clear();
+        this->m_internals.evaluator->setDefaultEndian(std::endian::native);
+        this->m_internals.evaluator->setEvaluationDepth(32);
+        this->m_internals.evaluator->setArrayLimit(0x1000);
+        this->m_internals.evaluator->setPatternLimit(0x2000);
+        this->m_internals.evaluator->setLoopLimit(0x1000);
+        this->m_internals.evaluator->setInVariables(inVariables);
 
         for (const auto &[name, value] : envVars)
-            this->m_evaluator->setEnvVariable(name, value);
+            this->m_internals.evaluator->setEnvVariable(name, value);
 
         this->m_currAST.clear();
 
@@ -96,13 +95,13 @@ namespace pl {
         }
 
 
-        auto patterns = this->m_evaluator->evaluate(this->m_currAST);
+        auto patterns = this->m_internals.evaluator->evaluate(this->m_currAST);
         if (!patterns.has_value()) {
-            this->m_currError = this->m_evaluator->getConsole().getLastHardError();
+            this->m_currError = this->m_internals.evaluator->getConsole().getLastHardError();
             return false;
         }
 
-        if (auto mainResult = this->m_evaluator->getMainResult(); checkResult && mainResult.has_value()) {
+        if (auto mainResult = this->m_internals.evaluator->getMainResult(); checkResult && mainResult.has_value()) {
             auto returnCode = Token::literalToSigned(*mainResult);
 
             if (returnCode != 0) {
@@ -128,37 +127,41 @@ namespace pl {
         auto functionContent = fmt::format("fn main() {{ {0} }};", code);
 
         auto success = this->executeString(functionContent, {}, {}, false);
-        auto result  = this->m_evaluator->getMainResult();
+        auto result  = this->m_internals.evaluator->getMainResult();
 
         return { success, std::move(result) };
     }
 
     void PatternLanguage::abort() {
-        this->m_evaluator->abort();
+        this->m_internals.evaluator->abort();
     }
 
     void PatternLanguage::setIncludePaths(std::vector<std::fs::path> paths) {
-        this->m_preprocessor->setIncludePaths(std::move(paths));
+        this->m_internals.preprocessor->setIncludePaths(std::move(paths));
     }
 
     void PatternLanguage::addPragma(const std::string &name, const api::PragmaHandler &callback) {
-        this->m_preprocessor->addPragmaHandler(name, callback);
+        this->m_internals.preprocessor->addPragmaHandler(name, callback);
+    }
+
+    void PatternLanguage::removePragma(const std::string &name) {
+        this->m_internals.preprocessor->removePragmaHandler(name);
     }
 
     void PatternLanguage::setDataSource(std::function<void(u64, u8*, size_t)> readFunction, u64 baseAddress, u64 size) {
-        this->m_evaluator->setDataSource(std::move(readFunction), baseAddress, size);
+        this->m_internals.evaluator->setDataSource(std::move(readFunction), baseAddress, size);
     }
 
     void PatternLanguage::setDataBaseAddress(u64 baseAddress) {
-        this->m_evaluator->setDataBaseAddress(baseAddress);
+        this->m_internals.evaluator->setDataBaseAddress(baseAddress);
     }
 
     void PatternLanguage::setDataSize(u64 size) {
-        this->m_evaluator->setDataSize(size);
+        this->m_internals.evaluator->setDataSize(size);
     }
 
     void PatternLanguage::setDangerousFunctionCallHandler(std::function<bool()> callback) {
-        this->m_evaluator->setDangerousFunctionCallHandler(std::move(callback));
+        this->m_internals.evaluator->setDangerousFunctionCallHandler(std::move(callback));
     }
 
     const std::vector<std::shared_ptr<ASTNode>> &PatternLanguage::getCurrentAST() const {
@@ -166,12 +169,12 @@ namespace pl {
     }
 
     [[nodiscard]] std::map<std::string, Token::Literal> PatternLanguage::getOutVariables() const {
-        return this->m_evaluator->getOutVariables();
+        return this->m_internals.evaluator->getOutVariables();
     }
 
 
     const std::vector<std::pair<LogConsole::Level, std::string>> &PatternLanguage::getConsoleLog() {
-        return this->m_evaluator->getConsole().getLog();
+        return this->m_internals.evaluator->getConsole().getLog();
     }
 
     const std::optional<PatternLanguageError> &PatternLanguage::getError() {
@@ -179,11 +182,11 @@ namespace pl {
     }
 
     u32 PatternLanguage::getCreatedPatternCount() {
-        return this->m_evaluator->getPatternCount();
+        return this->m_internals.evaluator->getPatternCount();
     }
 
     u32 PatternLanguage::getMaximumPatternCount() {
-        return this->m_evaluator->getPatternLimit();
+        return this->m_internals.evaluator->getPatternLimit();
     }
 
 
@@ -205,11 +208,11 @@ namespace pl {
     }
 
     void PatternLanguage::addFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) {
-        this->m_evaluator->addBuiltinFunction(getFunctionName(ns, name), parameterCount, { }, func, false);
+        this->m_internals.evaluator->addBuiltinFunction(getFunctionName(ns, name), parameterCount, { }, func, false);
     }
 
     void PatternLanguage::addDangerousFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) {
-        this->m_evaluator->addBuiltinFunction(getFunctionName(ns, name), parameterCount, { }, func, true);
+        this->m_internals.evaluator->addBuiltinFunction(getFunctionName(ns, name), parameterCount, { }, func, true);
     }
 
 }
