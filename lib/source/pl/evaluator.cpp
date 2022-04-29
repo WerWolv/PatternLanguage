@@ -220,6 +220,8 @@ namespace pl {
                 this->m_mainResult = mainFunction.func(this, {});
             }
         } catch (PatternLanguageError &error) {
+            this->getConsole().log(LogConsole::Level::Error, error.what());
+
             if (error.getLineNumber() != 0)
                 this->m_console.setHardError(error);
 
