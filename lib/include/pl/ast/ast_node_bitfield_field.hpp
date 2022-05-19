@@ -36,7 +36,7 @@ namespace pl {
                                         [](auto &&offset) -> u8 { return static_cast<u8>(offset); } },
                 dynamic_cast<ASTNodeLiteral *>(literal.get())->getValue());
 
-            auto pattern = std::make_unique<PatternBitfieldField>(evaluator, evaluator->dataOffset(), bitSize);
+            auto pattern = std::make_unique<PatternBitfieldField>(evaluator, evaluator->dataOffset(), 0, bitSize);
             pattern->setPadding(this->isPadding());
             pattern->setVariableName(this->getName());
 

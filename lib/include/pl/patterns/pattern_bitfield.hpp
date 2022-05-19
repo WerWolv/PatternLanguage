@@ -6,8 +6,8 @@ namespace pl {
 
     class PatternBitfieldField : public Pattern {
     public:
-        PatternBitfieldField(Evaluator *evaluator, u64 offset, u8 bitSize, u32 color = 0)
-            : Pattern(evaluator, offset, 0, color), m_bitSize(bitSize) {
+        PatternBitfieldField(Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, Pattern *bitfieldPattern = nullptr, u32 color = 0)
+            : Pattern(evaluator, offset, 0, color), m_bitOffset(bitOffset), m_bitSize(bitSize), m_bitField(bitfieldPattern) {
         }
 
         PatternBitfieldField(const PatternBitfieldField &other) : Pattern(other) {
