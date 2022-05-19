@@ -727,7 +727,11 @@ namespace pl {
 
     // padding[(parseMathematicalExpression)]
     std::unique_ptr<ASTNode> Parser::parsePadding() {
-        auto size = parseMathematicalExpression();
+        std::unique_ptr<ASTNode> size;
+        if (MATCHES(sequence(KEYWORD_WHILE, SEPARATOR_ROUNDBRACKETOPEN)))
+            size = parseWhileStatement();
+        else
+            size = parseMathematicalExpression();
 
         if (!MATCHES(sequence(SEPARATOR_SQUAREBRACKETCLOSE)))
             throwParserError("expected closing ']' at end of array declaration", -1);
