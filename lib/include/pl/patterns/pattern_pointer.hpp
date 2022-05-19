@@ -107,6 +107,11 @@ namespace pl {
             v.visit(*this);
         }
 
+        std::string getFormattedValue() override {
+            auto data = this->getValue();
+            return this->formatDisplayValue(fmt::format("*(0x{0:X})", data), u128(data));
+        }
+
     private:
         std::unique_ptr<Pattern> m_pointedAt;
         u64 m_pointedAtAddress = 0;

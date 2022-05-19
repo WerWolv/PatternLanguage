@@ -23,6 +23,14 @@ namespace pl {
             return "bool";
         }
 
+        std::string getFormattedValue() override {
+            switch (this->getValue()) {
+                case 0: return "false";
+                case 1: return "true";
+                default: return "true*";
+            }
+        }
+
         [[nodiscard]] bool operator==(const Pattern &other) const override { return areCommonPropertiesEqual<decltype(*this)>(other); }
 
         void accept(PatternVisitor &v) override {

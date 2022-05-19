@@ -23,6 +23,11 @@ namespace pl {
             return "char";
         }
 
+        std::string getFormattedValue() override {
+            const char character = this->getValue();
+            return this->formatDisplayValue(fmt::format("'{0}'", character), character);
+        }
+
         [[nodiscard]] bool operator==(const Pattern &other) const override { return areCommonPropertiesEqual<decltype(*this)>(other); }
 
         void accept(PatternVisitor &v) override {

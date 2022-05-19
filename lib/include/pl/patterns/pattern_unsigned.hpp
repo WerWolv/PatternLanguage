@@ -41,6 +41,11 @@ namespace pl {
         void accept(PatternVisitor &v) override {
             v.visit(*this);
         }
+
+        std::string getFormattedValue() override {
+            auto data = this->getValue();
+            return this->formatDisplayValue(fmt::format("{:d} (0x{:0{}X})", data, data, 1 * 2), data);
+        }
     };
 
 }

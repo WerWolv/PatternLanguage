@@ -39,6 +39,14 @@ namespace pl {
         void accept(PatternVisitor &v) override {
             v.visit(*this);
         }
+
+        std::string getFormattedValue() override {
+            char16_t character = this->getValue();
+            u128 literal = character;
+            auto str = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(character);
+
+            return this->formatDisplayValue(fmt::format("'{0}'", str), literal);
+        }
     };
 
 }

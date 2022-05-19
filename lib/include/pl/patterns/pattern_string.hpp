@@ -36,6 +36,16 @@ namespace pl {
         void accept(PatternVisitor &v) override {
             v.visit(*this);
         }
+
+        std::string getFormattedValue() override {
+            auto size = std::min<size_t>(this->getSize(), 0x7F);
+
+            if (size == 0)
+                return "\"\"";
+
+            std::string displayString = this->getValue(size);
+            return this->formatDisplayValue(fmt::format("\"{0}\" {1}", displayString, size > this->getSize() ? "(truncated)" : ""), displayString);
+        }
     };
 
 }

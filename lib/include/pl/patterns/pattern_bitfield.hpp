@@ -48,6 +48,10 @@ namespace pl {
             v.visit(*this);
         }
 
+        std::string getFormattedValue() override {
+            return this->formatDisplayValue(fmt::format("{0} (0x{1:X})", this->getValue(), this->getValue()), this);
+        }
+
     private:
         u8 m_bitOffset, m_bitSize;
         Pattern *m_bitField;
@@ -132,6 +136,15 @@ namespace pl {
 
         void accept(PatternVisitor &v) override {
             v.visit(*this);
+        }
+
+        std::string getFormattedValue() override {
+            std::string valueString = "{ ";
+            for (auto i : this->getValue())
+                valueString += fmt::format("{0:02X} ", i);
+            valueString += "}";
+
+            return this->formatDisplayValue(valueString, this);
         }
 
     private:

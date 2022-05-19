@@ -56,6 +56,38 @@ namespace pl {
             v.visit(*this);
         }
 
+        std::string getFormattedValue() override {
+            u64 value = this->getValue();
+
+            std::string valueString = this->getTypeName() + "::";
+
+            bool foundValue = false;
+            for (auto &[entryValueLiteral, entryName] : this->getEnumValues()) {
+                auto visitor = overloaded {
+                    [&, name = entryName](auto &entryValue) {
+                        if (static_cast<decltype(entryValue)>(value) == entryValue) {
+                            valueString += name;
+                            foundValue = true;
+                            return true;
+                        }
+
+                        return false;
+                    },
+                    [](const std::string &) { return false; },
+                    [](pl::Pattern *) { return false; },
+                };
+
+                bool matches = std::visit(visitor, entryValueLiteral);
+                if (matches)
+                    break;
+            }
+
+            if (!foundValue)
+                valueString += "???";
+
+            return this->formatDisplayValue(fmt::format("{} (0x{:0{}X})", valueString.c_str(), value, this->getSize() * 2), this);
+        }
+
     private:
         std::vector<std::pair<Token::Literal, std::string>> m_enumValues;
     };

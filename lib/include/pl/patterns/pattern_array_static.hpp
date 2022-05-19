@@ -111,6 +111,10 @@ namespace pl {
             v.visit(*this);
         }
 
+        std::string getFormattedValue() override {
+            return this->formatDisplayValue("{ ... }", this);
+        }
+
     private:
         std::shared_ptr<Pattern> m_template                  = nullptr;
         mutable std::unique_ptr<Pattern> m_highlightTemplate = nullptr;

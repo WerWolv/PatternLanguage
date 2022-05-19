@@ -21,6 +21,10 @@ namespace pl {
         void accept(PatternVisitor &v) override {
             v.visit(*this);
         }
+
+        std::string getFormattedValue() override {
+            return "";
+        }
     };
 
 }

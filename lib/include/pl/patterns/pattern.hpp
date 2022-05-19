@@ -4,8 +4,7 @@
 
 #include <pl/evaluator.hpp>
 #include <pl/pattern_visitor.hpp>
-#include "helpers/utils.hpp"
-
+#include <helpers/utils.hpp>
 #include <fmt/format.h>
 
 #include <string>
@@ -110,6 +109,7 @@ namespace pl {
         void setFormatterFunction(const api::Function &function) { this->m_formatterFunction = function; }
 
         [[nodiscard]] virtual std::string getFormattedName() const = 0;
+        [[nodiscard]] virtual std::string getFormattedValue() = 0;
 
         [[nodiscard]] virtual const Pattern *getPattern(u64 offset) const {
             if (offset >= this->getOffset() && offset < (this->getOffset() + this->getSize()) && !this->isHidden())

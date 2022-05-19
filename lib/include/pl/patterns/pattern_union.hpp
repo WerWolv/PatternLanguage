@@ -121,6 +121,10 @@ namespace pl {
             v.visit(*this);
         }
 
+        std::string getFormattedValue() override {
+            return this->formatDisplayValue("{ ... }", this);
+        }
+
     private:
         std::vector<std::shared_ptr<Pattern>> m_members;
         std::vector<Pattern *> m_sortedMembers;
