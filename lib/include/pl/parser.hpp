@@ -119,6 +119,7 @@ namespace pl {
         std::shared_ptr<ASTNodeTypeDecl> parseUnion();
         std::shared_ptr<ASTNodeTypeDecl> parseEnum();
         std::shared_ptr<ASTNodeTypeDecl> parseBitfield();
+        std::unique_ptr<ASTNode> parseBitfieldEntry();
         void parseForwardDeclaration();
         std::unique_ptr<ASTNode> parseVariablePlacement(const std::shared_ptr<ASTNodeTypeDecl> &type);
         std::unique_ptr<ASTNode> parseArrayVariablePlacement(const std::shared_ptr<ASTNodeTypeDecl> &type);

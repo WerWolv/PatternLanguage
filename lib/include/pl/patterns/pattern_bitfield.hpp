@@ -6,8 +6,15 @@ namespace pl {
 
     class PatternBitfieldField : public Pattern {
     public:
-        PatternBitfieldField(Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, Pattern *bitField, u32 color = 0)
-            : Pattern(evaluator, offset, 0, color), m_bitOffset(bitOffset), m_bitSize(bitSize), m_bitField(bitField) {
+        PatternBitfieldField(Evaluator *evaluator, u64 offset, u8 bitSize, u32 color = 0)
+            : Pattern(evaluator, offset, 0, color), m_bitSize(bitSize) {
+        }
+
+        PatternBitfieldField(const PatternBitfieldField &other) : Pattern(other) {
+            this->m_padding = other.m_padding;
+            this->m_bitOffset = other.m_bitOffset;
+            this->m_bitSize = other.m_bitSize;
+            this->m_bitField = other.m_bitField;
         }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
@@ -24,12 +31,20 @@ namespace pl {
             return pl::extract(this->m_bitOffset + (this->m_bitSize - 1), this->m_bitOffset, value);
         }
 
+        void setBitfield(Pattern *bitField) {
+            this->m_bitField = bitField;
+        }
+
         [[nodiscard]] std::string getFormattedName() const override {
             return "bits";
         }
 
         [[nodiscard]] u8 getBitOffset() const {
             return this->m_bitOffset;
+        }
+
+        void setBitOffset(u8 bitOffset) {
+            this->m_bitOffset = bitOffset;
         }
 
         [[nodiscard]] u8 getBitSize() const {
@@ -52,9 +67,13 @@ namespace pl {
             return this->formatDisplayValue(fmt::format("{0} (0x{1:X})", this->getValue(), this->getValue()), this);
         }
 
+        [[nodiscard]] bool isPadding() const { return this->m_padding; }
+        void setPadding(bool padding) { this->m_padding = padding; }
+
     private:
+        bool m_padding = false;
         u8 m_bitOffset, m_bitSize;
-        Pattern *m_bitField;
+        Pattern *m_bitField = nullptr;
     };
 
     class PatternBitfield : public Pattern,

@@ -4,6 +4,7 @@
 #include "pl/ast/ast_node_assignment.hpp"
 #include "pl/ast/ast_node_attribute.hpp"
 #include "pl/ast/ast_node_bitfield.hpp"
+#include "pl/ast/ast_node_bitfield_field.hpp"
 #include "pl/ast/ast_node_builtin_type.hpp"
 #include "pl/ast/ast_node_cast.hpp"
 #include "pl/ast/ast_node_compound_statement.hpp"
@@ -954,6 +955,48 @@ namespace pl {
         return typeDecl;
     }
 
+
+    std::unique_ptr<ASTNode> Parser::parseBitfieldEntry() {
+        std::unique_ptr<ASTNode> result;
+
+        if (MATCHES(sequence(IDENTIFIER, OPERATOR_INHERIT))) {
+            auto name = getValue<Token::Identifier>(-2).get();
+            result = create(new ASTNodeBitfieldField(name, parseMathematicalExpression()));
+        } else if (MATCHES(sequence(VALUETYPE_PADDING, OPERATOR_INHERIT))) {
+            result = create(new ASTNodeBitfieldField("padding", parseMathematicalExpression()));
+        } else if (MATCHES(sequence(KEYWORD_IF, SEPARATOR_ROUNDBRACKETOPEN))) {
+            auto condition = parseMathematicalExpression();
+            std::vector<std::unique_ptr<ASTNode>> trueBody, falseBody;
+
+            if (MATCHES(sequence(SEPARATOR_ROUNDBRACKETCLOSE, SEPARATOR_CURLYBRACKETOPEN))) {
+                while (!MATCHES(sequence(SEPARATOR_CURLYBRACKETCLOSE))) {
+                    trueBody.push_back(parseBitfieldEntry());
+                }
+            } else if (MATCHES(sequence(SEPARATOR_ROUNDBRACKETCLOSE))) {
+                trueBody.push_back(parseBitfieldEntry());
+            } else
+                throwParserError("expected body of conditional statement");
+
+            if (MATCHES(sequence(KEYWORD_ELSE, SEPARATOR_CURLYBRACKETOPEN))) {
+                while (!MATCHES(sequence(SEPARATOR_CURLYBRACKETCLOSE))) {
+                    falseBody.push_back(parseBitfieldEntry());
+                }
+            } else if (MATCHES(sequence(KEYWORD_ELSE))) {
+                falseBody.push_back(parseBitfieldEntry());
+            }
+
+            return create(new ASTNodeConditionalStatement(std::move(condition), std::move(trueBody), std::move(falseBody)));
+        } else if (MATCHES(sequence(SEPARATOR_ENDOFPROGRAM)))
+            throwParserError("unexpected end of program", -2);
+        else
+            throwParserError("invalid bitfield member", 0);
+
+        if (!MATCHES(sequence(SEPARATOR_ENDOFEXPRESSION)))
+            throwParserError("missing ';' at end of expression", -1);
+
+        return result;
+    }
+
     // bitfield Identifier { <Identifier : (parseMathematicalExpression)[;]...> }
     std::shared_ptr<ASTNodeTypeDecl> Parser::parseBitfield() {
         std::string typeName = getValue<Token::Identifier>(-2).get();
@@ -962,18 +1005,7 @@ namespace pl {
         auto bitfieldNode = static_cast<ASTNodeBitfield *>(typeDecl->getType().get());
 
         while (!MATCHES(sequence(SEPARATOR_CURLYBRACKETCLOSE))) {
-            if (MATCHES(sequence(IDENTIFIER, OPERATOR_INHERIT))) {
-                auto name = getValue<Token::Identifier>(-2).get();
-                bitfieldNode->addEntry(name, parseMathematicalExpression());
-            } else if (MATCHES(sequence(VALUETYPE_PADDING, OPERATOR_INHERIT))) {
-                bitfieldNode->addEntry("padding", parseMathematicalExpression());
-            } else if (MATCHES(sequence(SEPARATOR_ENDOFPROGRAM)))
-                throwParserError("unexpected end of program", -2);
-            else
-                throwParserError("invalid bitfield member", 0);
-
-            if (!MATCHES(sequence(SEPARATOR_ENDOFEXPRESSION)))
-                throwParserError("missing ';' at end of expression", -1);
+            bitfieldNode->addEntry(this->parseBitfieldEntry());
 
             // Consume superfluous semicolons
             while (MATCHES(sequence(SEPARATOR_ENDOFEXPRESSION)))
