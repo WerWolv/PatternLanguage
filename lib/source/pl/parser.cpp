@@ -179,6 +179,8 @@ namespace pl {
                 auto type = getValue<Token::ValueType>(-1);
 
                 result = create(new ASTNodeLiteral(u128(Token::getTypeSize(type))));
+            } else if (MATCHES(sequence(OPERATOR_DOLLAR))) {
+                result = create(new ASTNodeTypeOperator(op));
             } else {
                 throwParserError("expected rvalue identifier or built-in type");
             }
