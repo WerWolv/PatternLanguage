@@ -117,6 +117,8 @@ namespace pl {
                         }
 
                         Preprocessor preprocessor(*this);
+                        preprocessor.m_onlyIncludeOnce = false;
+                        preprocessor.m_error = std::nullopt;
 
                         auto preprocessedInclude = preprocessor.preprocess(runtime, file.readString(), /*initialRun =*/false);
 
