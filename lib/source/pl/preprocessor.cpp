@@ -116,9 +116,7 @@ namespace pl {
                             throwPreprocessorError(fmt::format("{0}: Failed to open file", includeFile.c_str()), lineNumber);
                         }
 
-                        Preprocessor preprocessor;
-                        preprocessor.m_defines           = this->m_defines;
-                        preprocessor.m_onceIncludedFiles = this->m_onceIncludedFiles;
+                        Preprocessor preprocessor(*this);
 
                         auto preprocessedInclude = preprocessor.preprocess(runtime, file.readString(), /*initialRun =*/false);
 
