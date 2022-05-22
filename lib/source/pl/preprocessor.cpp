@@ -126,19 +126,25 @@ namespace pl {
                             throw PatternLanguageError(*preprocessor.m_error);
                         }
 
+                        bool shouldInclude = true;
                         if (preprocessor.shouldOnlyIncludeOnce()) {
                             auto [iter, added] = this->m_onceIncludedFiles.insert(includePath);
-                            if (added) {
-                                auto content = preprocessedInclude.value();
-
-                                std::replace(content.begin(), content.end(), '\n', ' ');
-                                std::replace(content.begin(), content.end(), '\r', ' ');
-
-                                output += content;
+                            if (!added) {
+                                shouldInclude = false;
                             }
                         }
 
+                        if (shouldInclude) {
+                            auto content = preprocessedInclude.value();
+
+                            std::replace(content.begin(), content.end(), '\n', ' ');
+                            std::replace(content.begin(), content.end(), '\r', ' ');
+
+                            output += content;
+                        }
+
                         this->m_defines           = preprocessor.m_defines;
+                        this->m_pragmas           = preprocessor.m_pragmas;
                         this->m_onceIncludedFiles = preprocessor.m_onceIncludedFiles;
                     } else if (code.substr(offset, 6) == "define") {
                         offset += 6;
