@@ -90,7 +90,7 @@ namespace pl {
             this->m_pointerBase = base;
         }
 
-        [[nodiscard]] const Pattern *getPattern(u64 offset) const override {
+        [[nodiscard]] Pattern *getPattern(u64 offset) override {
             if (offset >= this->getOffset() && offset < (this->getOffset() + this->getSize()) && !this->isHidden())
                 return this;
             else

@@ -95,7 +95,7 @@ namespace pl {
             return true;
         }
 
-        [[nodiscard]] const Pattern *getPattern(u64 offset) const override {
+        [[nodiscard]] Pattern *getPattern(u64 offset) override {
             if (this->isHidden()) return nullptr;
 
             auto largestMember = std::find_if(this->m_members.begin(), this->m_members.end(), [this](const std::shared_ptr<Pattern> &pattern) {

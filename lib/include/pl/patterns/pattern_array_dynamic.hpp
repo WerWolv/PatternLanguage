@@ -87,7 +87,7 @@ namespace pl {
             return true;
         }
 
-        [[nodiscard]] const Pattern *getPattern(u64 offset) const override {
+        [[nodiscard]] Pattern *getPattern(u64 offset) override {
             if (this->isHidden()) return nullptr;
 
             for (auto &pattern : this->m_entries) {

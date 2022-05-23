@@ -86,7 +86,7 @@ namespace pl {
             return *this->m_template == *otherArray.m_template && this->m_entryCount == otherArray.m_entryCount;
         }
 
-        [[nodiscard]] const Pattern *getPattern(u64 offset) const override {
+        [[nodiscard]] Pattern *getPattern(u64 offset) override {
             if (this->isHidden()) return nullptr;
 
             this->m_highlightTemplate->setBaseColor(this->getColor());

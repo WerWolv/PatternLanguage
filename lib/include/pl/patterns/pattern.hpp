@@ -111,7 +111,7 @@ namespace pl {
         [[nodiscard]] virtual std::string getFormattedName() const = 0;
         [[nodiscard]] virtual std::string getFormattedValue() = 0;
 
-        [[nodiscard]] virtual const Pattern *getPattern(u64 offset) const {
+        [[nodiscard]] virtual Pattern *getPattern(u64 offset) {
             if (offset >= this->getOffset() && offset < (this->getOffset() + this->getSize()) && !this->isHidden())
                 return this;
             else
