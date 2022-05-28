@@ -182,14 +182,14 @@ namespace pl {
 
             // Hexadecimal number
             if (string[1] == 'x') {
-                if (string.length() != 4)
+                if (string.length() < 4)
                     return std::nullopt;
 
                 if (!isxdigit(string[2]) || !isxdigit(string[3]))
                     return std::nullopt;
 
                 return {
-                    {std::strtoul(&string[2], nullptr, 16), 4}
+                    { std::strtoul(&string[2], nullptr, 16), 4 }
                 };
             }
 
