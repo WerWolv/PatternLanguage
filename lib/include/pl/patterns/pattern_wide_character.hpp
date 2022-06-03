@@ -31,7 +31,7 @@ namespace pl {
             this->getEvaluator()->readData(this->getOffset(), &character, 2);
             character = pl::changeEndianess(character, this->getEndian());
 
-            return std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(character);
+            return std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>("???").to_bytes(character);
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override { return areCommonPropertiesEqual<decltype(*this)>(other); }
@@ -43,7 +43,7 @@ namespace pl {
         std::string getFormattedValue() override {
             char16_t character = this->getValue();
             u128 literal = character;
-            auto str = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(character);
+            auto str = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>("???").to_bytes(character);
 
             return this->formatDisplayValue(fmt::format("'{0}'", str), literal);
         }

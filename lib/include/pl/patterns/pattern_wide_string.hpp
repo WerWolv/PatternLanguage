@@ -30,7 +30,7 @@ namespace pl {
                                      [](auto c) { return c == 0x00; });
             buffer.erase(it, buffer.end());
 
-            return std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(buffer);
+            return std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>("???").to_bytes(buffer);
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
@@ -48,7 +48,7 @@ namespace pl {
                 return c == 0x00;
             });
 
-            return std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(buffer);
+            return std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>("???").to_bytes(buffer);
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override { return areCommonPropertiesEqual<decltype(*this)>(other); }
