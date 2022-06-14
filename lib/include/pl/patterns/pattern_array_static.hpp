@@ -93,8 +93,10 @@ namespace pl {
             this->m_highlightTemplate->setVariableName(this->getVariableName());
             this->m_highlightTemplate->setDisplayName(this->getDisplayName());
 
-            if (offset >= this->getOffset() && offset < (this->getOffset() + this->getSize())) {
-                this->m_highlightTemplate->setOffset((offset / this->m_highlightTemplate->getSize()) * this->m_highlightTemplate->getSize());
+            const auto arrayStart = this->getOffset();
+
+            if (offset >= arrayStart && offset < (arrayStart + this->getSize())) {
+                this->m_highlightTemplate->setOffset(arrayStart + ((offset - arrayStart) / this->m_highlightTemplate->getSize()) * this->m_highlightTemplate->getSize());
                 return this->m_highlightTemplate->getPattern(offset);
             } else {
                 return nullptr;
