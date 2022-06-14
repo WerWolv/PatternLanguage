@@ -58,8 +58,8 @@ namespace pl {
             return this->m_entries;
         }
 
-        void forEachArrayEntry(const std::function<void(u64, Pattern&)>& fn) {
-            for (u64 i = 0; i < this->m_entries.size(); i++)
+        void forEachArrayEntry(u64 end, const std::function<void(u64, Pattern&)>& fn) {
+            for (u64 i = 0; i < std::min<u64>(end, this->m_entries.size()); i++)
                 fn(i, *this->m_entries[i]);
         }
 

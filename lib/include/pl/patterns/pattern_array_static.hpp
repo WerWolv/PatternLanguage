@@ -19,9 +19,9 @@ namespace pl {
             return std::unique_ptr<Pattern>(new PatternArrayStatic(*this));
         }
 
-        void forEachArrayEntry(const std::function<void(u64, Pattern&)>& fn) {
+        void forEachArrayEntry(u64 end, const std::function<void(u64, Pattern&)>& fn) {
             auto entry = std::shared_ptr(this->m_template->clone());
-            for (u64 index = 0; index < this->m_entryCount; index++) {
+            for (u64 index = 0; index < std::min<u64>(end, this->m_entryCount); index++) {
                 entry->clearFormatCache();
                 entry->setVariableName(fmt::format("[{0}]", index));
                 entry->setOffset(this->getOffset() + index * this->m_template->getSize());
