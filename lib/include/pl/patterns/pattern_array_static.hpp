@@ -114,6 +114,9 @@ namespace pl {
         }
 
         std::string getFormattedValue() override {
+            this->m_template->clearFormatCache();
+            this->m_highlightTemplate->clearFormatCache();
+
             return this->formatDisplayValue("{ ... }", this);
         }
 
