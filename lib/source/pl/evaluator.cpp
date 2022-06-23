@@ -25,6 +25,10 @@ namespace pl {
     }
 
     void Evaluator::createVariable(const std::string &name, ASTNode *type, const std::optional<Token::Literal> &value, bool outVariable) {
+        // A variable named _ gets treated as "don't care"
+        if (name == "_")
+            return;
+
         auto &variables = *this->getScope(0).scope;
         for (auto &variable : variables) {
             if (variable->getVariableName() == name) {
@@ -83,6 +87,10 @@ namespace pl {
     }
 
     void Evaluator::setVariable(const std::string &name, const Token::Literal &value) {
+        // A variable named _ gets treated as "don't care"
+        if (name == "_")
+            return;
+
         std::unique_ptr<Pattern> pattern = nullptr;
 
         {
@@ -114,43 +122,43 @@ namespace pl {
         if (!pattern->isLocal()) return;
 
         Token::Literal castedLiteral = std::visit(overloaded {
-                                                      [&](double &value) -> Token::Literal {
-                                                          if (dynamic_cast<PatternUnsigned *>(pattern.get()))
-                                                              return u128(value) & bitmask(pattern->getSize() * 8);
-                                                          else if (dynamic_cast<PatternSigned *>(pattern.get()))
-                                                              return i128(value) & bitmask(pattern->getSize() * 8);
-                                                          else if (dynamic_cast<PatternFloat *>(pattern.get()))
-                                                              return pattern->getSize() == sizeof(float) ? double(float(value)) : value;
-                                                          else
-                                                              LogConsole::abortEvaluation(fmt::format("cannot cast type 'double' to type '{}'", pattern->getTypeName()));
-                                                      },
-                                                      [&](const std::string &value) -> Token::Literal {
-                                                          if (dynamic_cast<PatternString *>(pattern.get()))
-                                                              return value;
-                                                          else
-                                                              LogConsole::abortEvaluation(fmt::format("cannot cast type 'string' to type '{}'", pattern->getTypeName()));
-                                                      },
-                                                      [&](Pattern *value) -> Token::Literal {
-                                                          if (value->getTypeName() == pattern->getTypeName())
-                                                              return value;
-                                                          else
-                                                              LogConsole::abortEvaluation(fmt::format("cannot cast type '{}' to type '{}'", value->getTypeName(), pattern->getTypeName()));
-                                                      },
-                                                      [&](auto &&value) -> Token::Literal {
-                                                          if (dynamic_cast<PatternUnsigned *>(pattern.get()) || dynamic_cast<PatternEnum *>(pattern.get()))
-                                                              return u128(value) & bitmask(pattern->getSize() * 8);
-                                                          else if (dynamic_cast<PatternSigned *>(pattern.get()))
-                                                              return i128(value) & bitmask(pattern->getSize() * 8);
-                                                          else if (dynamic_cast<PatternCharacter *>(pattern.get()))
-                                                              return char(value);
-                                                          else if (dynamic_cast<PatternBoolean *>(pattern.get()))
-                                                              return bool(value);
-                                                          else if (dynamic_cast<PatternFloat *>(pattern.get()))
-                                                              return pattern->getSize() == sizeof(float) ? double(float(value)) : value;
-                                                          else
-                                                              LogConsole::abortEvaluation(fmt::format("cannot cast integer literal to type '{}'", pattern->getTypeName()));
-                                                      } },
-            value);
+            [&](double &value) -> Token::Literal {
+              if (dynamic_cast<PatternUnsigned *>(pattern.get()))
+                  return u128(value) & bitmask(pattern->getSize() * 8);
+              else if (dynamic_cast<PatternSigned *>(pattern.get()))
+                  return i128(value) & bitmask(pattern->getSize() * 8);
+              else if (dynamic_cast<PatternFloat *>(pattern.get()))
+                  return pattern->getSize() == sizeof(float) ? double(float(value)) : value;
+              else
+                  LogConsole::abortEvaluation(fmt::format("cannot cast type 'double' to type '{}'", pattern->getTypeName()));
+            },
+            [&](const std::string &value) -> Token::Literal {
+              if (dynamic_cast<PatternString *>(pattern.get()))
+                  return value;
+              else
+                  LogConsole::abortEvaluation(fmt::format("cannot cast type 'string' to type '{}'", pattern->getTypeName()));
+            },
+            [&](Pattern *value) -> Token::Literal {
+              if (value->getTypeName() == pattern->getTypeName())
+                  return value;
+              else
+                  LogConsole::abortEvaluation(fmt::format("cannot cast type '{}' to type '{}'", value->getTypeName(), pattern->getTypeName()));
+            },
+            [&](auto &&value) -> Token::Literal {
+              if (dynamic_cast<PatternUnsigned *>(pattern.get()) || dynamic_cast<PatternEnum *>(pattern.get()))
+                  return u128(value) & bitmask(pattern->getSize() * 8);
+              else if (dynamic_cast<PatternSigned *>(pattern.get()))
+                  return i128(value) & bitmask(pattern->getSize() * 8);
+              else if (dynamic_cast<PatternCharacter *>(pattern.get()))
+                  return char(value);
+              else if (dynamic_cast<PatternBoolean *>(pattern.get()))
+                  return bool(value);
+              else if (dynamic_cast<PatternFloat *>(pattern.get()))
+                  return pattern->getSize() == sizeof(float) ? double(float(value)) : value;
+              else
+                  LogConsole::abortEvaluation(fmt::format("cannot cast integer literal to type '{}'", pattern->getTypeName()));
+            }
+        }, value);
 
         this->getStack()[pattern->getOffset()] = castedLiteral;
     }
