@@ -41,6 +41,7 @@ jobs:
         CC=gcc-11 CXX=g++-11 cmake              \
           -DCMAKE_C_FLAGS="-fuse-ld=lld"        \
           -DCMAKE_CXX_FLAGS="-fuse-ld=lld"      \
+          -DLIBPL_ENABLE_TESTS=ON               \
           ..
         make -j4 pattern_language_tests
 
