@@ -15,7 +15,6 @@ namespace pl::test {
                 #define MSG "Error"
 
                 std::assert(false, MSG);
-
             )";
         }
     };

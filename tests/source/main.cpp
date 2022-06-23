@@ -43,6 +43,17 @@ int runTests(int argc, char **argv) {
         testData.readBuffer(buffer, size);
     }, 0x00, testData.getSize());
 
+
+    runtime.addFunction({ "std" }, "assert", api::FunctionParameterCount::exactly(2), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
+        auto condition = Token::literalToBoolean(params[0]);
+        auto message   = Token::literalToString(params[1], false);
+
+        if (!condition)
+            LogConsole::abortEvaluation(fmt::format("assertion failed \"{0}\"", message));
+
+        return std::nullopt;
+    });
+
     // Check if compilation succeeded
     auto result = runtime.executeString(testPatterns[testName]->getSourceCode());
     if (!result) {
