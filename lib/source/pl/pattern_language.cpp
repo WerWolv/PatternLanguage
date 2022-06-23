@@ -5,6 +5,7 @@
 #include "pl/parser.hpp"
 #include "pl/validator.hpp"
 #include "pl/evaluator.hpp"
+#include "pl/libstd.hpp"
 
 #include "helpers/fs.hpp"
 #include "helpers/file.hpp"
@@ -13,12 +14,15 @@ namespace pl {
 
     class Pattern;
 
-    PatternLanguage::PatternLanguage() {
+    PatternLanguage::PatternLanguage(bool addLibStd) {
         this->m_internals.preprocessor  = new Preprocessor();
         this->m_internals.lexer         = new Lexer();
         this->m_internals.parser        = new Parser();
         this->m_internals.validator     = new Validator();
         this->m_internals.evaluator     = new Evaluator();
+
+        if (addLibStd)
+            libstd::registerFunctions(*this);
     }
 
     PatternLanguage::~PatternLanguage() {

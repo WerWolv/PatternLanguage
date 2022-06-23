@@ -17,52 +17,6 @@
 using namespace pl;
 using namespace pl::test;
 
-static std::string format(pl::Evaluator *ctx, const auto &params) {
-    auto formatString = pl::Token::literalToString(params[0], true);
-    std::string message;
-
-    fmt::dynamic_format_arg_store<fmt::format_context> formatArgs;
-
-    for (u32 i = 1; i < params.size(); i++) {
-        auto &param = params[i];
-
-        std::visit(pl::overloaded {
-                       [&](pl::Pattern *value) {
-                           formatArgs.push_back(value->toString());
-                       },
-                       [&](auto &&value) {
-                           formatArgs.push_back(value);
-                       } },
-            param);
-    }
-
-    try {
-        return fmt::vformat(formatString, formatArgs);
-    } catch (fmt::format_error &error) {
-        pl::LogConsole::abortEvaluation(fmt::format("format error: {}", error.what()));
-    }
-}
-
-void addFunctions(pl::PatternLanguage &runtime) {
-
-    pl::api::Namespace nsStd = { "std" };
-    runtime.addFunction(nsStd, "assert", api::FunctionParameterCount::exactly(2), [](Evaluator *ctx, auto params) -> Token::Literal {
-        auto condition = Token::literalToBoolean(params[0]);
-        auto message   = Token::literalToString(params[1], false);
-
-        if (!condition)
-            LogConsole::abortEvaluation(fmt::format("assertion failed \"{0}\"", message));
-
-        return {};
-    });
-
-    runtime.addFunction(nsStd, "print", api::FunctionParameterCount::atLeast(1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-        ctx->getConsole().log(LogConsole::Level::Info, format(ctx, params));
-
-        return std::nullopt;
-    });
-}
-
 int runTests(int argc, char **argv) {
     auto &testPatterns = TestPattern::getTests();
 
@@ -88,8 +42,6 @@ int runTests(int argc, char **argv) {
         testData.seek(offset);
         testData.readBuffer(buffer, size);
     }, 0x00, testData.getSize());
-
-    addFunctions(runtime);
 
     // Check if compilation succeeded
     auto result = runtime.executeString(testPatterns[testName]->getSourceCode());

@@ -22,6 +22,12 @@ add_library(libpl ${LIBRARY_TYPE}
         source/pl/pattern_language.cpp
         source/pl/preprocessor.cpp
         source/pl/validator.cpp
+
+        source/pl/libstd/std.cpp
+        source/pl/libstd/mem.cpp
+        source/pl/libstd/math.cpp
+        source/pl/libstd/string.cpp
+        source/pl/libstd/file.cpp
 )
 
 target_include_directories(libpl PUBLIC include)
