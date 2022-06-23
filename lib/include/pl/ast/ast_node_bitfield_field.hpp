@@ -40,6 +40,8 @@ namespace pl {
             pattern->setPadding(this->isPadding());
             pattern->setVariableName(this->getName());
 
+            applyVariableAttributes(evaluator, this, pattern.get());
+
             return moveToVector<std::unique_ptr<Pattern>>({ std::move(pattern) });
         }
 

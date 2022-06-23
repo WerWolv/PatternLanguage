@@ -64,7 +64,7 @@ namespace pl {
         }
 
         std::string getFormattedValue() override {
-            return this->formatDisplayValue(fmt::format("{0} (0x{1:X})", this->getValue(), this->getValue()), this);
+            return this->formatDisplayValue(fmt::format("{0} (0x{1:X})", this->getValue(), this->getValue()), u128(this->getValue()));
         }
 
         [[nodiscard]] bool isPadding() const { return this->m_padding; }

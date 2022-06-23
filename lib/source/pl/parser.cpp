@@ -968,6 +968,9 @@ namespace pl {
         if (MATCHES(sequence(IDENTIFIER, OPERATOR_INHERIT))) {
             auto name = getValue<Token::Identifier>(-2).get();
             result = create(new ASTNodeBitfieldField(name, parseMathematicalExpression()));
+
+            if (MATCHES(sequence(SEPARATOR_SQUAREBRACKETOPEN, SEPARATOR_SQUAREBRACKETOPEN)))
+                parseAttribute(dynamic_cast<Attributable *>(result.get()));
         } else if (MATCHES(sequence(VALUETYPE_PADDING, OPERATOR_INHERIT))) {
             result = create(new ASTNodeBitfieldField("padding", parseMathematicalExpression()));
         } else if (MATCHES(sequence(KEYWORD_IF, SEPARATOR_ROUNDBRACKETOPEN))) {
