@@ -284,9 +284,6 @@ namespace pl {
                     evaluator->readData(variablePattern->getOffset(), &value, variablePattern->getSize());
                 }
             }
-
-            if constexpr (!isString)
-                value = pl::changeEndianess(value, variablePattern->getSize(), variablePattern->getEndian());
         }
     };
 
