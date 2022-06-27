@@ -1,5 +1,7 @@
 #include <helpers/file.hpp>
+
 #include <unistd.h>
+#include <cstring>
 
 #include <helpers/utils.hpp>
 
@@ -79,7 +81,8 @@ namespace pl::fs {
         if (bytes.empty())
             return "";
 
-        return { reinterpret_cast<char *>(bytes.data()), bytes.size() };
+        const char *cString = reinterpret_cast<const char *>(bytes.data());
+        return { cString, std::strlen(cString) };
     }
 
     void File::write(const u8 *buffer, size_t size) {
