@@ -160,6 +160,14 @@ namespace pl {
             }
         }, value);
 
+        castedLiteral = std::visit(overloaded {
+            [](Pattern *value) -> Token::Literal { return value; },
+            [](std::string &value) -> Token::Literal { return value; },
+            [&pattern](auto &&value) -> Token::Literal {
+                 return pl::changeEndianess(value, pattern->getSize(), pattern->getEndian());
+            }
+        }, castedLiteral);
+
         this->getStack()[pattern->getOffset()] = castedLiteral;
     }
 
