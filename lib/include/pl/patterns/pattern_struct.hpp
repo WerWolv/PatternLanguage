@@ -42,6 +42,19 @@ namespace pl {
             Pattern::setOffset(offset);
         }
 
+        void resetOffset() override {
+            for (auto &pattern : this->m_members)
+                pattern->resetOffset();
+            Pattern::resetOffset();
+        }
+
+        void setMemoryLocationType(PatternMemoryType type) override {
+            for (auto &pattern : this->m_members)
+                pattern->setMemoryLocationType(type);
+
+            Pattern::setMemoryLocationType(type);
+        }
+
         void setColor(u32 color) override {
             Pattern::setColor(color);
             for (auto &member : this->m_members) {

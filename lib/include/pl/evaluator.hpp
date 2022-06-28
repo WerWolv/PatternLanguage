@@ -61,6 +61,8 @@ namespace pl {
             std::optional<ParameterPack> parameterPack;
         };
 
+        constexpr static u64 HeapStartAddress = 0x1000'0000;
+
         void pushScope(Pattern *parent, std::vector<std::shared_ptr<Pattern>> &scope) {
             if (this->m_scopes.size() > this->getEvaluationDepth())
                 LogConsole::abortEvaluation(fmt::format("evaluation depth exceeded set limit of {}", this->getEvaluationDepth()));
@@ -224,9 +226,18 @@ namespace pl {
             return this->m_stack;
         }
 
+        [[nodiscard]] std::vector<u8> &getHeap() {
+            return this->m_heap;
+        }
+
+        [[nodiscard]] const std::vector<u8> &getHeap() const {
+            return this->m_heap;
+        }
+
         void createParameterPack(const std::string &name, const std::vector<Token::Literal> &values);
         void createVariable(const std::string &name, ASTNode *type, const std::optional<Token::Literal> &value = std::nullopt, bool outVariable = false);
         void setVariable(const std::string &name, const Token::Literal &value);
+        void setVariable(Pattern *pattern, const Token::Literal &value);
 
         void abort() {
             this->m_aborted = true;
@@ -319,6 +330,8 @@ namespace pl {
         std::function<void(u64, u8*, size_t)> m_readerFunction = [](u64, u8*, size_t){
             LogConsole::abortEvaluation("reading data has been disabled");
         };
+
+        std::vector<u8> m_heap;
 
         u32 getNextPatternColor() {
             constexpr static std::array Palette = { 0x70B4771F, 0x700E7FFF, 0x702CA02C, 0x702827D6, 0x70BD6794, 0x704B568C, 0x70C277E3, 0x707F7F7F, 0x7022BDBC, 0x70CFBE17 };

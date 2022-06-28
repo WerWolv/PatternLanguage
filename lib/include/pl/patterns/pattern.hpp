@@ -22,6 +22,12 @@ namespace pl {
         bool m_inlined = false;
     };
 
+    enum class PatternMemoryType : u8 {
+        Provider,
+        Stack,
+        Heap
+    };
+
     class PatternCreationLimiter {
     public:
         explicit PatternCreationLimiter(Evaluator *evaluator) : m_evaluator(evaluator) {
@@ -67,6 +73,7 @@ namespace pl {
 
         [[nodiscard]] u64 getOffset() const { return this->m_offset; }
         virtual void setOffset(u64 offset) { this->m_offset = offset; }
+        virtual void resetOffset() { this->m_offset = 0x00; }
 
         [[nodiscard]] size_t getSize() const { return this->m_size; }
         void setSize(size_t size) { this->m_size = size; }
@@ -139,12 +146,16 @@ namespace pl {
             return this->m_hidden;
         }
 
-        void setLocal(bool local) {
-            this->m_local = local;
+        virtual void setMemoryLocationType(PatternMemoryType type) {
+            this->m_memoryType = type;
         }
 
         [[nodiscard]] bool isLocal() const {
-            return this->m_local;
+            return this->m_memoryType != PatternMemoryType::Provider;
+        }
+
+        [[nodiscard]] PatternMemoryType getMemoryLocationType() const {
+            return this->m_memoryType;
         }
 
         virtual void sort(const std::function<bool(const Pattern *left, const Pattern *right)> &comparator) {
@@ -164,7 +175,7 @@ namespace pl {
                    this->m_variableName == other.m_variableName &&
                    this->m_typeName == other.m_typeName &&
                    this->m_comment == other.m_comment &&
-                   this->m_local == other.m_local;
+                   this->m_memoryType == other.m_memoryType;
         }
 
         [[nodiscard]] std::string calcDisplayValue(const std::string &value, const Token::Literal &literal) const {
@@ -222,7 +233,7 @@ namespace pl {
         std::optional<api::Function> m_formatterFunction;
         std::optional<api::Function> m_transformFunction;
 
-        bool m_local       = false;
+        PatternMemoryType m_memoryType = PatternMemoryType::Provider;
         bool m_manualColor = false;
     };
 

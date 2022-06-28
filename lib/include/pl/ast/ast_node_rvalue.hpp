@@ -93,7 +93,7 @@ namespace pl {
             } else if (dynamic_cast<PatternString *>(pattern.get())) {
                 std::string value;
 
-                if (pattern->isLocal()) {
+                if (pattern->getMemoryLocationType() == PatternMemoryType::Stack) {
                     auto &variableValue = evaluator->getStack()[pattern->getOffset()];
 
                     std::visit(overloaded {
@@ -232,14 +232,15 @@ namespace pl {
                 }
 
                 Pattern *indexPattern;
-                if (currPattern->isLocal()) {
+                if (currPattern->getMemoryLocationType() == PatternMemoryType::Stack) {
                     auto stackLiteral = evaluator->getStack()[currPattern->getOffset()];
                     if (auto stackPattern = std::get_if<Pattern *>(&stackLiteral); stackPattern != nullptr)
                         indexPattern = *stackPattern;
                     else
                         return pl::moveToVector<std::unique_ptr<Pattern>>(std::move(currPattern));
-                } else
+                } else {
                     indexPattern = currPattern.get();
+                }
 
                 if (auto structPattern = dynamic_cast<PatternStruct *>(indexPattern))
                     searchScope = structPattern->getMembers();
@@ -265,7 +266,7 @@ namespace pl {
         void readVariable(Evaluator *evaluator, auto &value, Pattern *variablePattern) const {
             constexpr bool isString = std::same_as<std::remove_cvref_t<decltype(value)>, std::string>;
 
-            if (variablePattern->isLocal()) {
+            if (variablePattern->getMemoryLocationType() == PatternMemoryType::Stack) {
                 auto &literal = evaluator->getStack()[variablePattern->getOffset()];
 
                 std::visit(overloaded {
@@ -275,6 +276,21 @@ namespace pl {
                                [&](Pattern *assignmentValue) { readVariable(evaluator, value, assignmentValue); },
                                [&](auto &&assignmentValue) { value = assignmentValue; } },
                     literal);
+            } else if (variablePattern->getMemoryLocationType() == PatternMemoryType::Heap) {
+                if constexpr (!isString) {
+                    if (variablePattern->getOffset() >= Evaluator::HeapStartAddress)
+                        std::memcpy(&value, &evaluator->getHeap()[variablePattern->getOffset() - Evaluator::HeapStartAddress], variablePattern->getSize());
+                    else
+                        value = 0;
+                } else {
+                    if (variablePattern->getOffset() >= Evaluator::HeapStartAddress) {
+                        value.resize(variablePattern->getSize());
+                        std::memcpy(value.data(), &evaluator->getHeap()[variablePattern->getOffset() - Evaluator::HeapStartAddress], variablePattern->getSize());
+                    }
+                    else
+                        value = "";
+                }
+
             } else {
                 if constexpr (isString) {
                     value.resize(variablePattern->getSize());

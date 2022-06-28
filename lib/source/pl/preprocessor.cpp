@@ -106,7 +106,7 @@ namespace pl {
 
                         if (!fs::isRegularFile(includePath)) {
                             if (includePath.parent_path().filename().string() == "std")
-                                throwPreprocessorError(fmt::format("{0}: No such file.\n\nThis file might be part of the standard library.\nYou can install the standard library though\nthe Content Store found under Help -> Content Store.", includeFile.c_str()), lineNumber);
+                                throwPreprocessorError(fmt::format("{0}: No such file.\n\nThis file might be part of the standard library.\nMake sure it's installed!", includeFile.c_str()), lineNumber);
                             else
                                 throwPreprocessorError(fmt::format("{0}: No such file", includeFile.c_str()), lineNumber);
                         }

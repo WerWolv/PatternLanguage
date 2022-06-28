@@ -50,6 +50,19 @@ namespace pl {
             Pattern::setOffset(offset);
         }
 
+        void resetOffset() override {
+            for (auto &pattern : this->m_entries)
+                pattern->resetOffset();
+            Pattern::resetOffset();
+        }
+
+        void setMemoryLocationType(PatternMemoryType type) override {
+            for (auto &pattern : this->m_entries)
+                pattern->setMemoryLocationType(type);
+
+            Pattern::setMemoryLocationType(type);
+        }
+
         [[nodiscard]] size_t getEntryCount() const {
             return this->m_entries.size();
         }

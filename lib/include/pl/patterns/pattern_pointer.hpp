@@ -53,6 +53,19 @@ namespace pl {
             return result;
         }
 
+        void resetOffset() override {
+            this->m_pointedAt->resetOffset();
+            this->m_pointedAtAddress = 0x00;
+            this->m_pointerBase = 0x00;
+            Pattern::resetOffset();
+        }
+
+        void setMemoryLocationType(PatternMemoryType type) override {
+            this->m_pointedAt->setMemoryLocationType(type);
+
+            Pattern::setMemoryLocationType(type);
+        }
+
         void setPointedAtPattern(std::unique_ptr<Pattern> &&pattern) {
             this->m_pointedAt = std::move(pattern);
             this->m_pointedAt->setVariableName(fmt::format("*({})", this->getVariableName()));

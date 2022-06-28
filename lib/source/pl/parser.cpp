@@ -1,7 +1,6 @@
 #include "pl/parser.hpp"
 
 #include "pl/ast/ast_node_array_variable_decl.hpp"
-#include "pl/ast/ast_node_assignment.hpp"
 #include "pl/ast/ast_node_attribute.hpp"
 #include "pl/ast/ast_node_bitfield.hpp"
 #include "pl/ast/ast_node_bitfield_field.hpp"
@@ -14,11 +13,13 @@
 #include "pl/ast/ast_node_function_call.hpp"
 #include "pl/ast/ast_node_function_definition.hpp"
 #include "pl/ast/ast_node_literal.hpp"
+#include "pl/ast/ast_node_lvalue_assignment.hpp"
 #include "pl/ast/ast_node_mathematical_expression.hpp"
 #include "pl/ast/ast_node_multi_variable_decl.hpp"
 #include "pl/ast/ast_node_parameter_pack.hpp"
 #include "pl/ast/ast_node_pointer_variable_decl.hpp"
 #include "pl/ast/ast_node_rvalue.hpp"
+#include "pl/ast/ast_node_rvalue_assignment.hpp"
 #include "pl/ast/ast_node_scope_resolution.hpp"
 #include "pl/ast/ast_node_struct.hpp"
 #include "pl/ast/ast_node_ternary_expression.hpp"
@@ -474,7 +475,7 @@ namespace pl {
                 std::vector<std::unique_ptr<ASTNode>> compoundStatement;
                 {
                     compoundStatement.push_back(std::move(statement));
-                    compoundStatement.push_back(create(new ASTNodeAssignment(identifier, std::move(expression))));
+                    compoundStatement.push_back(create(new ASTNodeLValueAssignment(identifier, std::move(expression))));
                 }
 
                 statement = create(new ASTNodeCompoundStatement(std::move(compoundStatement)));
@@ -508,6 +509,15 @@ namespace pl {
         } else if (MATCHES(sequence(KEYWORD_FOR, SEPARATOR_ROUNDBRACKETOPEN))) {
             statement      = parseFunctionForLoop();
             needsSemicolon = false;
+        } else if (MATCHES(sequence(IDENTIFIER) && peek(SEPARATOR_DOT))) {
+            auto lhs = parseRValue();
+
+            if (!MATCHES(sequence(OPERATOR_ASSIGNMENT)))
+                throwParserError("failed to parse rvalue assignment. Expected '='", 0);
+
+            auto rhs = parseMathematicalExpression();
+
+            statement = create(new ASTNodeRValueAssignment(std::move(lhs), std::move(rhs)));
         } else if (MATCHES(sequence(IDENTIFIER))) {
             auto originalPos = this->m_curr;
             parseNamespaceResolution();
@@ -538,7 +548,7 @@ namespace pl {
     std::unique_ptr<ASTNode> Parser::parseFunctionVariableAssignment(const std::string &lvalue) {
         auto rvalue = this->parseMathematicalExpression();
 
-        return create(new ASTNodeAssignment(lvalue, std::move(rvalue)));
+        return create(new ASTNodeLValueAssignment(lvalue, std::move(rvalue)));
     }
 
     std::unique_ptr<ASTNode> Parser::parseFunctionVariableCompoundAssignment(const std::string &lvalue) {
@@ -546,7 +556,7 @@ namespace pl {
 
         auto rvalue = this->parseMathematicalExpression();
 
-        return create(new ASTNodeAssignment(lvalue, create(new ASTNodeMathematicalExpression(create(new ASTNodeRValue(pl::moveToVector<ASTNodeRValue::PathSegment>(lvalue))), std::move(rvalue), op))));
+        return create(new ASTNodeLValueAssignment(lvalue, create(new ASTNodeMathematicalExpression(create(new ASTNodeRValue(pl::moveToVector<ASTNodeRValue::PathSegment>(lvalue))), std::move(rvalue), op))));
     }
 
     std::unique_ptr<ASTNode> Parser::parseFunctionControlFlowStatement() {

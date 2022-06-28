@@ -5,18 +5,18 @@
 
 namespace pl {
 
-    class ASTNodeAssignment : public ASTNode {
+    class ASTNodeLValueAssignment : public ASTNode {
     public:
-        ASTNodeAssignment(std::string lvalueName, std::unique_ptr<ASTNode> &&rvalue) : m_lvalueName(std::move(lvalueName)), m_rvalue(std::move(rvalue)) {
+        ASTNodeLValueAssignment(std::string lvalueName, std::unique_ptr<ASTNode> &&rvalue) : m_lvalueName(std::move(lvalueName)), m_rvalue(std::move(rvalue)) {
         }
 
-        ASTNodeAssignment(const ASTNodeAssignment &other) : ASTNode(other) {
+        ASTNodeLValueAssignment(const ASTNodeLValueAssignment &other) : ASTNode(other) {
             this->m_lvalueName = other.m_lvalueName;
             this->m_rvalue     = other.m_rvalue->clone();
         }
 
         [[nodiscard]] std::unique_ptr<ASTNode> clone() const override {
-            return std::unique_ptr<ASTNode>(new ASTNodeAssignment(*this));
+            return std::unique_ptr<ASTNode>(new ASTNodeLValueAssignment(*this));
         }
 
         [[nodiscard]] const std::string &getLValueName() const {
