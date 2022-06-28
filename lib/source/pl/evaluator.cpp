@@ -31,7 +31,7 @@ namespace pl {
         };
     }
 
-    void Evaluator::createVariable(const std::string &name, ASTNode *type, const std::optional<Token::Literal> &value, bool outVariable) {
+    void Evaluator::createArrayVariable(const std::string &name, pl::ASTNode *type, size_t entryCount) {
         // A variable named _ gets treated as "don't care"
         if (name == "_")
             return;
@@ -44,11 +44,40 @@ namespace pl {
         }
 
         auto startOffset = this->dataOffset();
+        auto typePatterns = type->createPatterns(this);
+        auto typePattern = std::move(typePatterns.front());
 
-        std::unique_ptr<Pattern> pattern;
+        this->dataOffset() = startOffset;
+
+        auto pattern = new PatternArrayStatic(this, 0, typePattern->getSize() * entryCount);
+        pattern->setEntries(std::move(typePattern), entryCount);
+        pattern->setMemoryLocationType(PatternMemoryType::Heap);
+
+        auto &heap = this->getHeap();
+        pattern->setOffset(heap.size());
+        heap.resize(heap.size() + pattern->getSize());
+
+        pattern->setVariableName(name);
+
+        variables.push_back(std::move(std::unique_ptr<Pattern>(pattern)));
+    }
+
+    void Evaluator::createVariable(const std::string &name, ASTNode *type, const std::optional<Token::Literal> &value, bool outVariable) {
+        // A variable named _ gets treated as "don't care"
+        if (name == "_")
+            return;
+
+        auto &variables = *this->getScope(0).scope;
+        for (auto &variable : variables) {
+            if (variable->getVariableName() == name) {
+                LogConsole::abortEvaluation(fmt::format("variable with name '{}' already exists", name));
+            }
+        }
 
         bool heapType = false;
+        auto startOffset = this->dataOffset();
 
+        std::unique_ptr<Pattern> pattern;
         auto typePattern = type->createPatterns(this);
 
         this->dataOffset() = startOffset;
@@ -97,8 +126,8 @@ namespace pl {
             pattern->setMemoryLocationType(PatternMemoryType::Heap);
 
             auto &heap = this->getHeap();
-            if (pattern->getOffset() < Evaluator::HeapStartAddress) {
-                pattern->setOffset(Evaluator::HeapStartAddress + heap.size());
+            if (!pattern->isHeapAddressValid()) {
+                pattern->setOffset(heap.size());
                 heap.resize(heap.size() + pattern->getSize());
             }
         }
@@ -161,16 +190,20 @@ namespace pl {
             this->getStack()[pattern->getOffset()] = castedLiteral;
         else if (pattern->getMemoryLocationType() == PatternMemoryType::Heap) {
             auto &heap = this->getHeap();
-            if (pattern->getOffset() < Evaluator::HeapStartAddress) {
-                pattern->setOffset(Evaluator::HeapStartAddress + heap.size());
+            auto offset = pattern->getOffset();
+            if (!pattern->isHeapAddressValid()) {
+                pattern->setOffset(heap.size());
                 heap.resize(heap.size() + pattern->getSize());
             }
+
+            if (offset > heap.size())
+                LogConsole::abortEvaluation(fmt::format("attempted to access invalid heap address 0x{:X}", offset));
 
             std::visit(overloaded {
                 [](Pattern *value) { LogConsole::abortEvaluation("cannot assign custom type to heap variable"); },
                 [](std::string &value) { LogConsole::abortEvaluation("cannot assign string type to heap variable"); },
                 [&pattern, &heap](auto &&value) {
-                    std::memcpy(&heap[pattern->getOffset() - Evaluator::HeapStartAddress], &value, pattern->getSize());
+                    std::memcpy(&heap[pattern->getOffset()], &value, pattern->getSize());
                 }
             }, castedLiteral);
         }

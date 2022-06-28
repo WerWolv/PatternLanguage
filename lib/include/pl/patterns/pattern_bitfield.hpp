@@ -114,12 +114,6 @@ namespace pl {
             Pattern::setOffset(offset);
         }
 
-        void resetOffset() override {
-            for (auto &pattern : this->m_fields)
-                pattern->resetOffset();
-            Pattern::resetOffset();
-        }
-
         void setMemoryLocationType(PatternMemoryType type) override {
             for (auto &pattern : this->m_fields)
                 pattern->setMemoryLocationType(type);

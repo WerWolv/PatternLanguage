@@ -44,6 +44,16 @@ namespace pl {
             Pattern::setOffset(offset);
         }
 
+        virtual void setMemoryLocationType(PatternMemoryType type) {
+            if (this->m_template != nullptr)
+                this->m_template->setMemoryLocationType(type);
+
+            if (this->m_highlightTemplate != nullptr)
+                this->m_highlightTemplate->setMemoryLocationType(type);
+
+            Pattern::setMemoryLocationType(type);
+        }
+
         void setColor(u32 color) override {
             Pattern::setColor(color);
             this->m_template->setColor(color);
@@ -73,6 +83,8 @@ namespace pl {
             this->m_template          = std::move(templatePattern);
             this->m_highlightTemplate = this->m_template->clone();
             this->m_entryCount        = count;
+
+            this->m_template->setMemoryLocationType(this->getMemoryLocationType());
 
             this->m_template->setBaseColor(this->getColor());
             this->m_highlightTemplate->setBaseColor(this->getColor());

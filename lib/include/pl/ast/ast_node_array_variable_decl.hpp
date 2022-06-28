@@ -79,6 +79,23 @@ namespace pl {
             return pl::moveToVector(std::move(pattern));
         }
 
+        FunctionResult execute(Evaluator *evaluator) const override {
+            auto sizeNode = this->m_size->evaluate(evaluator);
+            auto sizeLiteral = dynamic_cast<ASTNodeLiteral*>(sizeNode.get());
+
+            if (sizeLiteral != nullptr) {
+                auto entryCount = std::visit(overloaded {
+                        [this](const std::string &) -> i128 { LogConsole::abortEvaluation("cannot use string to index array", this); },
+                        [this](Pattern *) -> i128 { LogConsole::abortEvaluation("cannot use custom type to index array", this); },
+                        [](auto &&size) -> i128 { return size; }
+                }, sizeLiteral->getValue());
+
+                evaluator->createArrayVariable(this->m_name, this->m_type.get(), entryCount);
+            }
+
+            return std::nullopt;
+        }
+
     private:
         std::string m_name;
         std::shared_ptr<ASTNodeTypeDecl> m_type;
@@ -100,10 +117,10 @@ namespace pl {
 
                 if (auto literal = dynamic_cast<ASTNodeLiteral *>(sizeNode.get())) {
                     entryCount = std::visit(overloaded {
-                                                [this](const std::string &) -> i128 { LogConsole::abortEvaluation("cannot use string to index array", this); },
-                                                [this](Pattern *) -> i128 { LogConsole::abortEvaluation("cannot use custom type to index array", this); },
-                                                [](auto &&size) -> i128 { return size; } },
-                        literal->getValue());
+                        [this](const std::string &) -> i128 { LogConsole::abortEvaluation("cannot use string to index array", this); },
+                        [this](Pattern *) -> i128 { LogConsole::abortEvaluation("cannot use custom type to index array", this); },
+                        [](auto &&size) -> i128 { return size; }
+                    }, literal->getValue());
                 } else if (auto whileStatement = dynamic_cast<ASTNodeWhileStatement *>(sizeNode.get())) {
                     while (whileStatement->evaluateCondition(evaluator)) {
                         entryCount++;

@@ -467,18 +467,23 @@ namespace pl {
 
         if (MATCHES(sequence(IDENTIFIER))) {
             auto identifier = getValue<Token::Identifier>(-1).get();
-            statement       = parseMemberVariable(std::move(type));
 
-            if (MATCHES(sequence(OPERATOR_ASSIGNMENT))) {
-                auto expression = parseMathematicalExpression();
+            if (MATCHES(sequence(SEPARATOR_SQUAREBRACKETOPEN) && !peek(SEPARATOR_SQUAREBRACKETOPEN))) {
+                statement = parseMemberArrayVariable(std::move(type));
+            } else {
+                statement = parseMemberVariable(std::move(type));
 
-                std::vector<std::unique_ptr<ASTNode>> compoundStatement;
-                {
-                    compoundStatement.push_back(std::move(statement));
-                    compoundStatement.push_back(create(new ASTNodeLValueAssignment(identifier, std::move(expression))));
+                if (MATCHES(sequence(OPERATOR_ASSIGNMENT))) {
+                    auto expression = parseMathematicalExpression();
+
+                    std::vector<std::unique_ptr<ASTNode>> compoundStatement;
+                    {
+                        compoundStatement.push_back(std::move(statement));
+                        compoundStatement.push_back(create(new ASTNodeLValueAssignment(identifier, std::move(expression))));
+                    }
+
+                    statement = create(new ASTNodeCompoundStatement(std::move(compoundStatement)));
                 }
-
-                statement = create(new ASTNodeCompoundStatement(std::move(compoundStatement)));
             }
         } else
             throwParserError("invalid variable declaration");
@@ -509,7 +514,7 @@ namespace pl {
         } else if (MATCHES(sequence(KEYWORD_FOR, SEPARATOR_ROUNDBRACKETOPEN))) {
             statement      = parseFunctionForLoop();
             needsSemicolon = false;
-        } else if (MATCHES(sequence(IDENTIFIER) && peek(SEPARATOR_DOT))) {
+        } else if (MATCHES(sequence(IDENTIFIER) && (peek(SEPARATOR_DOT) || peek(SEPARATOR_SQUAREBRACKETOPEN)))) {
             auto lhs = parseRValue();
 
             if (!MATCHES(sequence(OPERATOR_ASSIGNMENT)))

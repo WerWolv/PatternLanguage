@@ -72,8 +72,12 @@ namespace pl {
         ~Pattern() override = default;
 
         [[nodiscard]] u64 getOffset() const { return this->m_offset; }
-        virtual void setOffset(u64 offset) { this->m_offset = offset; }
-        virtual void resetOffset() { this->m_offset = 0x00; }
+        virtual void setOffset(u64 offset) {
+            this->m_offset = offset;
+
+            if (this->m_memoryType == PatternMemoryType::Heap)
+                this->m_heapAddressValid = true;
+        }
 
         [[nodiscard]] size_t getSize() const { return this->m_size; }
         void setSize(size_t size) { this->m_size = size; }
@@ -148,6 +152,11 @@ namespace pl {
 
         virtual void setMemoryLocationType(PatternMemoryType type) {
             this->m_memoryType = type;
+            this->m_heapAddressValid = false;
+        }
+
+        [[nodiscard]] bool isHeapAddressValid() const {
+            return this->m_heapAddressValid;
         }
 
         [[nodiscard]] bool isLocal() const {
@@ -234,6 +243,8 @@ namespace pl {
         std::optional<api::Function> m_transformFunction;
 
         PatternMemoryType m_memoryType = PatternMemoryType::Provider;
+        bool m_heapAddressValid = false;
+
         bool m_manualColor = false;
     };
 

@@ -61,8 +61,6 @@ namespace pl {
             std::optional<ParameterPack> parameterPack;
         };
 
-        constexpr static u64 HeapStartAddress = 0x1000'0000;
-
         void pushScope(Pattern *parent, std::vector<std::shared_ptr<Pattern>> &scope) {
             if (this->m_scopes.size() > this->getEvaluationDepth())
                 LogConsole::abortEvaluation(fmt::format("evaluation depth exceeded set limit of {}", this->getEvaluationDepth()));
@@ -235,6 +233,8 @@ namespace pl {
         }
 
         void createParameterPack(const std::string &name, const std::vector<Token::Literal> &values);
+
+        void createArrayVariable(const std::string &name, ASTNode *type, size_t entryCount);
         void createVariable(const std::string &name, ASTNode *type, const std::optional<Token::Literal> &value = std::nullopt, bool outVariable = false);
         void setVariable(const std::string &name, const Token::Literal &value);
         void setVariable(Pattern *pattern, const Token::Literal &value);

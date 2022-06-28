@@ -204,24 +204,24 @@ namespace pl {
                     auto index = dynamic_cast<ASTNodeLiteral *>(node.get());
 
                     std::visit(overloaded {
-                                   [this](const std::string &) { LogConsole::abortEvaluation("cannot use string to index array", this); },
-                                   [this](Pattern *) { LogConsole::abortEvaluation("cannot use custom type to index array", this); },
-                                   [&, this](auto &&index) {
-                                       if (auto dynamicArrayPattern = dynamic_cast<PatternArrayDynamic *>(currPattern.get())) {
-                                           if (static_cast<u128>(index) >= searchScope.size() || static_cast<i128>(index) < 0)
-                                               LogConsole::abortEvaluation("array index out of bounds", this);
+                        [this](const std::string &) { LogConsole::abortEvaluation("cannot use string to index array", this); },
+                        [this](Pattern *) { LogConsole::abortEvaluation("cannot use custom type to index array", this); },
+                        [&, this](auto &&index) {
+                           if (auto dynamicArrayPattern = dynamic_cast<PatternArrayDynamic *>(currPattern.get())) {
+                               if (static_cast<u128>(index) >= searchScope.size() || static_cast<i128>(index) < 0)
+                                   LogConsole::abortEvaluation("array index out of bounds", this);
 
-                                           currPattern = searchScope[index]->clone();
-                                       } else if (auto staticArrayPattern = dynamic_cast<PatternArrayStatic *>(currPattern.get())) {
-                                           if (static_cast<u128>(index) >= staticArrayPattern->getEntryCount() || static_cast<i128>(index) < 0)
-                                               LogConsole::abortEvaluation("array index out of bounds", this);
+                               currPattern = searchScope[index]->clone();
+                           } else if (auto staticArrayPattern = dynamic_cast<PatternArrayStatic *>(currPattern.get())) {
+                               if (static_cast<u128>(index) >= staticArrayPattern->getEntryCount() || static_cast<i128>(index) < 0)
+                                   LogConsole::abortEvaluation("array index out of bounds", this);
 
-                                           auto newPattern = searchScope.front()->clone();
-                                           newPattern->setOffset(staticArrayPattern->getOffset() + index * staticArrayPattern->getTemplate()->getSize());
-                                           currPattern = std::move(newPattern);
-                                       }
-                                   } },
-                        index->getValue());
+                               auto newPattern = searchScope.front()->clone();
+                               newPattern->setOffset(staticArrayPattern->getOffset() + index * staticArrayPattern->getTemplate()->getSize());
+                               currPattern = std::move(newPattern);
+                           }
+                        }
+                    }, index->getValue());
                 }
 
                 if (currPattern == nullptr)
@@ -270,25 +270,28 @@ namespace pl {
                 auto &literal = evaluator->getStack()[variablePattern->getOffset()];
 
                 std::visit(overloaded {
-                               [&](std::string &assignmentValue) {
-                                   if constexpr (isString) value = assignmentValue;
-                               },
-                               [&](Pattern *assignmentValue) { readVariable(evaluator, value, assignmentValue); },
-                               [&](auto &&assignmentValue) { value = assignmentValue; } },
-                    literal);
+                    [&](std::string &assignmentValue) {
+                       if constexpr (isString) value = assignmentValue;
+                    },
+                    [&](Pattern *assignmentValue) { readVariable(evaluator, value, assignmentValue); },
+                    [&](auto &&assignmentValue) { value = assignmentValue; }
+                }, literal);
             } else if (variablePattern->getMemoryLocationType() == PatternMemoryType::Heap) {
+                auto &heap = evaluator->getHeap();
+                auto offset = variablePattern->getOffset();
                 if constexpr (!isString) {
-                    if (variablePattern->getOffset() >= Evaluator::HeapStartAddress)
-                        std::memcpy(&value, &evaluator->getHeap()[variablePattern->getOffset() - Evaluator::HeapStartAddress], variablePattern->getSize());
+                    if (offset < heap.size())
+                        std::memcpy(&value, &heap[offset], variablePattern->getSize());
                     else
                         value = 0;
                 } else {
-                    if (variablePattern->getOffset() >= Evaluator::HeapStartAddress) {
+                    if (offset < heap.size()) {
                         value.resize(variablePattern->getSize());
-                        std::memcpy(value.data(), &evaluator->getHeap()[variablePattern->getOffset() - Evaluator::HeapStartAddress], variablePattern->getSize());
+                        std::memcpy(value.data(), &heap[offset], variablePattern->getSize());
                     }
-                    else
+                    else {
                         value = "";
+                    }
                 }
 
             } else {
