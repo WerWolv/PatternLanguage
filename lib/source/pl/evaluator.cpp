@@ -254,6 +254,22 @@ namespace pl {
         this->setVariable(pattern.get(), value);
     }
 
+    void Evaluator::pushScope(Pattern *parent, std::vector<std::shared_ptr<Pattern>> &scope) {
+        if (this->m_scopes.size() > this->getEvaluationDepth())
+            LogConsole::abortEvaluation(fmt::format("evaluation depth exceeded set limit of {}", this->getEvaluationDepth()));
+
+        this->handleAbort();
+
+        if (this->m_scopes.empty())
+            this->m_scopes.push_back({ parent, &scope, { }, { }, { } });
+        else
+            this->m_scopes.push_back({ parent, &scope, { }, this->getScope(0).heap, { } });
+    }
+
+    void Evaluator::popScope() {
+        this->m_scopes.pop_back();
+    }
+
     std::optional<std::vector<std::shared_ptr<Pattern>>> Evaluator::evaluate(const std::vector<std::shared_ptr<ASTNode>> &ast) {
         this->m_stack.clear();
         this->m_customFunctions.clear();

@@ -55,42 +55,47 @@ namespace pl {
                 }
             }
 
-            auto patterns = this->createPatterns(evaluator);
-            auto &pattern = patterns.front();
+            Pattern *pattern = nullptr;
+            {
+                auto referencedPattern = std::move(this->createPatterns(evaluator).front());
+
+                pattern = referencedPattern.get();
+                evaluator->getScope(0).savedPatterns.push_back(std::move(referencedPattern));
+            }
 
             Token::Literal literal;
-            if (dynamic_cast<PatternUnsigned *>(pattern.get()) || dynamic_cast<PatternEnum *>(pattern.get())) {
+            if (dynamic_cast<PatternUnsigned *>(pattern) || dynamic_cast<PatternEnum *>(pattern)) {
                 u128 value = 0;
-                readVariable(evaluator, value, pattern.get());
+                readVariable(evaluator, value, pattern);
                 literal = value;
-            } else if (dynamic_cast<PatternSigned *>(pattern.get())) {
+            } else if (dynamic_cast<PatternSigned *>(pattern)) {
                 i128 value = 0;
-                readVariable(evaluator, value, pattern.get());
+                readVariable(evaluator, value, pattern);
                 value   = pl::signExtend(pattern->getSize() * 8, value);
                 literal = value;
-            } else if (dynamic_cast<PatternFloat *>(pattern.get())) {
+            } else if (dynamic_cast<PatternFloat *>(pattern)) {
                 if (pattern->getSize() == sizeof(u16)) {
                     u16 value = 0;
-                    readVariable(evaluator, value, pattern.get());
+                    readVariable(evaluator, value, pattern);
                     literal = double(pl::float16ToFloat32(value));
                 } else if (pattern->getSize() == sizeof(float)) {
                     float value = 0;
-                    readVariable(evaluator, value, pattern.get());
+                    readVariable(evaluator, value, pattern);
                     literal = double(value);
                 } else if (pattern->getSize() == sizeof(double)) {
                     double value = 0;
-                    readVariable(evaluator, value, pattern.get());
+                    readVariable(evaluator, value, pattern);
                     literal = value;
                 } else LogConsole::abortEvaluation("invalid floating point type access", this);
-            } else if (dynamic_cast<PatternCharacter *>(pattern.get())) {
+            } else if (dynamic_cast<PatternCharacter *>(pattern)) {
                 char value = 0;
-                readVariable(evaluator, value, pattern.get());
+                readVariable(evaluator, value, pattern);
                 literal = value;
-            } else if (dynamic_cast<PatternBoolean *>(pattern.get())) {
+            } else if (dynamic_cast<PatternBoolean *>(pattern)) {
                 bool value = false;
-                readVariable(evaluator, value, pattern.get());
+                readVariable(evaluator, value, pattern);
                 literal = value;
-            } else if (dynamic_cast<PatternString *>(pattern.get())) {
+            } else if (dynamic_cast<PatternString *>(pattern)) {
                 std::string value;
 
                 if (pattern->getMemoryLocationType() == PatternMemoryType::Stack) {
@@ -114,12 +119,12 @@ namespace pl {
                 }
 
                 literal = value;
-            } else if (auto bitfieldFieldPattern = dynamic_cast<PatternBitfieldField *>(pattern.get())) {
+            } else if (auto bitfieldFieldPattern = dynamic_cast<PatternBitfieldField *>(pattern)) {
                 u64 value = 0;
-                readVariable(evaluator, value, pattern.get());
+                readVariable(evaluator, value, pattern);
                 literal = u128(pl::extract(bitfieldFieldPattern->getBitOffset() + (bitfieldFieldPattern->getBitSize() - 1), bitfieldFieldPattern->getBitOffset(), value));
             } else {
-                literal = pattern.get();
+                literal = pattern;
             }
 
             if (auto transformFunc = pattern->getTransformFunction(); transformFunc.has_value()) {

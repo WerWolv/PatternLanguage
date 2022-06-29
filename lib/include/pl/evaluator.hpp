@@ -59,20 +59,12 @@ namespace pl {
             Pattern *parent;
             std::vector<std::shared_ptr<Pattern>> *scope;
             std::optional<ParameterPack> parameterPack;
+            std::vector<u8> heap;
+            std::vector<std::unique_ptr<Pattern>> savedPatterns;
         };
 
-        void pushScope(Pattern *parent, std::vector<std::shared_ptr<Pattern>> &scope) {
-            if (this->m_scopes.size() > this->getEvaluationDepth())
-                LogConsole::abortEvaluation(fmt::format("evaluation depth exceeded set limit of {}", this->getEvaluationDepth()));
-
-            this->handleAbort();
-
-            this->m_scopes.push_back({ parent, &scope, { } });
-        }
-
-        void popScope() {
-            this->m_scopes.pop_back();
-        }
+        void pushScope(Pattern *parent, std::vector<std::shared_ptr<Pattern>> &scope);
+        void popScope();
 
         [[nodiscard]] Scope &getScope(i32 index) {
             return this->m_scopes[this->m_scopes.size() - 1 + index];
@@ -225,11 +217,11 @@ namespace pl {
         }
 
         [[nodiscard]] std::vector<u8> &getHeap() {
-            return this->m_heap;
+            return this->getScope(0).heap;
         }
 
         [[nodiscard]] const std::vector<u8> &getHeap() const {
-            return this->m_heap;
+            return this->getScope(0).heap;
         }
 
         void createParameterPack(const std::string &name, const std::vector<Token::Literal> &values);
@@ -330,8 +322,6 @@ namespace pl {
         std::function<void(u64, u8*, size_t)> m_readerFunction = [](u64, u8*, size_t){
             LogConsole::abortEvaluation("reading data has been disabled");
         };
-
-        std::vector<u8> m_heap;
 
         u32 getNextPatternColor() {
             constexpr static std::array Palette = { 0x70B4771F, 0x700E7FFF, 0x702CA02C, 0x702827D6, 0x70BD6794, 0x704B568C, 0x70C277E3, 0x707F7F7F, 0x7022BDBC, 0x70CFBE17 };
