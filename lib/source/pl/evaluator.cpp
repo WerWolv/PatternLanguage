@@ -200,7 +200,14 @@ namespace pl {
                 LogConsole::abortEvaluation(fmt::format("attempted to access invalid heap address 0x{:X}", offset));
 
             std::visit(overloaded {
-                [](Pattern *value) { LogConsole::abortEvaluation("cannot assign custom type to heap variable"); },
+                [&pattern, &heap](Pattern *value) {
+                    if (pattern->getTypeName() != value->getTypeName())
+                        LogConsole::abortEvaluation(fmt::format("cannot assign value of type {} to variable {} of type {}", value->getTypeName(), value->getVariableName(), pattern->getTypeName()));
+                    else if (pattern->getSize() != value->getSize())
+                        LogConsole::abortEvaluation("cannot assign value to variable of different size");
+
+                    std::memcpy(&heap[pattern->getOffset()], &heap[value->getOffset()], pattern->getSize());
+                },
                 [](std::string &value) { LogConsole::abortEvaluation("cannot assign string type to heap variable"); },
                 [&pattern, &heap](auto &&value) {
                     std::memcpy(&heap[pattern->getOffset()], &value, pattern->getSize());
@@ -249,7 +256,6 @@ namespace pl {
 
     std::optional<std::vector<std::shared_ptr<Pattern>>> Evaluator::evaluate(const std::vector<std::shared_ptr<ASTNode>> &ast) {
         this->m_stack.clear();
-        this->m_heap.clear();
         this->m_customFunctions.clear();
         this->m_scopes.clear();
         this->m_mainResult.reset();
