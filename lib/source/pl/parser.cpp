@@ -1168,6 +1168,19 @@ namespace pl {
             parseForwardDeclaration();
         else if (peek(KEYWORD_BE) || peek(KEYWORD_LE) || peek(VALUETYPE_ANY))
             statement = parsePlacement();
+        else if (peek(IDENTIFIER)) {
+            auto originalPos = this->m_curr;
+            this->m_curr++;
+            parseNamespaceResolution();
+            bool isFunction = peek(SEPARATOR_ROUNDBRACKETOPEN);
+            this->m_curr    = originalPos;
+
+            if (isFunction) {
+                this->m_curr++;
+                statement = parseFunctionCall();
+            } else
+                statement = parsePlacement();
+        }
         else if (MATCHES(sequence(KEYWORD_STRUCT, IDENTIFIER)))
             statement = parseStruct();
         else if (MATCHES(sequence(KEYWORD_UNION, IDENTIFIER, SEPARATOR_CURLYBRACKETOPEN)))
