@@ -145,19 +145,23 @@ namespace pl {
         Token(Type type, auto value, u32 lineNumber) : type(type), value(value), lineNumber(lineNumber) {
         }
 
-        [[nodiscard]] constexpr static inline bool isUnsigned(const ValueType type) {
+        [[nodiscard]] constexpr static inline bool isInteger(const ValueType &type) {
+            return isUnsigned(type) || isSigned(type);
+        }
+
+        [[nodiscard]] constexpr static inline bool isUnsigned(const ValueType &type) {
             return (static_cast<u32>(type) & 0x0F) == 0x00;
         }
 
-        [[nodiscard]] constexpr static inline bool isSigned(const ValueType type) {
+        [[nodiscard]] constexpr static inline bool isSigned(const ValueType &type) {
             return (static_cast<u32>(type) & 0x0F) == 0x01;
         }
 
-        [[nodiscard]] constexpr static inline bool isFloatingPoint(const ValueType type) {
+        [[nodiscard]] constexpr static inline bool isFloatingPoint(const ValueType &type) {
             return (static_cast<u32>(type) & 0x0F) == 0x02;
         }
 
-        [[nodiscard]] constexpr static inline u32 getTypeSize(const ValueType type) {
+        [[nodiscard]] constexpr static inline u32 getTypeSize(const ValueType &type) {
             return static_cast<u32>(type) >> 4;
         }
 

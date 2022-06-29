@@ -1065,6 +1065,20 @@ namespace pl {
             outVariable = true;
         }
 
+        if (inVariable || outVariable) {
+            bool invalidType = false;
+            if (auto builtinType = dynamic_cast<ASTNodeBuiltinType*>(type->getType().get()); builtinType != nullptr) {
+                auto valueType = builtinType->getType();
+                if (!Token::isInteger(valueType) && !Token::isFloatingPoint(valueType) && valueType != Token::ValueType::Boolean && valueType != Token::ValueType::Character)
+                    invalidType = true;
+            } else {
+                invalidType = true;
+            }
+
+            if (invalidType)
+                throwParserError("invalid type for In/Out variable. Allowed types are: 'char', 'bool', floating point types or integral types");
+        }
+
         return create(new ASTNodeVariableDecl(name, type, std::move(placementOffset), inVariable, outVariable));
     }
 
