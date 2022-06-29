@@ -1182,7 +1182,7 @@ namespace pl {
             parseForwardDeclaration();
         else if (peek(KEYWORD_BE) || peek(KEYWORD_LE) || peek(VALUETYPE_ANY))
             statement = parsePlacement();
-        else if (peek(IDENTIFIER)) {
+        else if (peek(IDENTIFIER) && !peek(OPERATOR_ASSIGNMENT, 1) && !peek(SEPARATOR_DOT, 1)  && !peek(SEPARATOR_SQUAREBRACKETOPEN, 1)) {
             auto originalPos = this->m_curr;
             this->m_curr++;
             parseNamespaceResolution();
