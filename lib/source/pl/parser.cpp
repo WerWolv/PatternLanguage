@@ -1160,24 +1160,13 @@ namespace pl {
     // <(parseUsingDeclaration)|(parseVariablePlacement)|(parseStruct)>
     std::vector<std::shared_ptr<ASTNode>> Parser::parseStatements() {
         std::shared_ptr<ASTNode> statement;
+        bool requiresSemicolon = true;
 
         if (MATCHES(sequence(KEYWORD_USING, IDENTIFIER, OPERATOR_ASSIGNMENT)))
             statement = parseUsingDeclaration();
         else if (MATCHES(sequence(KEYWORD_USING, IDENTIFIER)))
             parseForwardDeclaration();
-        else if (peek(IDENTIFIER)) {
-            auto originalPos = this->m_curr;
-            this->m_curr++;
-            parseNamespaceResolution();
-            bool isFunction = peek(SEPARATOR_ROUNDBRACKETOPEN);
-            this->m_curr    = originalPos;
-
-            if (isFunction) {
-                this->m_curr++;
-                statement = parseFunctionCall();
-            } else
-                statement = parsePlacement();
-        } else if (peek(KEYWORD_BE) || peek(KEYWORD_LE) || peek(VALUETYPE_ANY))
+        else if (peek(KEYWORD_BE) || peek(KEYWORD_LE) || peek(VALUETYPE_ANY))
             statement = parsePlacement();
         else if (MATCHES(sequence(KEYWORD_STRUCT, IDENTIFIER)))
             statement = parseStruct();
@@ -1191,12 +1180,15 @@ namespace pl {
             statement = parseFunctionDefinition();
         else if (MATCHES(sequence(KEYWORD_NAMESPACE)))
             return parseNamespace();
-        else throwParserError("invalid sequence", 0);
+        else {
+            statement = parseFunctionStatement();
+            requiresSemicolon = false;
+        }
 
         if (statement && MATCHES(sequence(SEPARATOR_SQUAREBRACKETOPEN, SEPARATOR_SQUAREBRACKETOPEN)))
             parseAttribute(dynamic_cast<Attributable *>(statement.get()));
 
-        if (!MATCHES(sequence(SEPARATOR_ENDOFEXPRESSION)))
+        if (requiresSemicolon && !MATCHES(sequence(SEPARATOR_ENDOFEXPRESSION)))
             throwParserError("missing ';' at end of expression", -1);
 
         // Consume superfluous semicolons
