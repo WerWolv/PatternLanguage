@@ -59,8 +59,8 @@ namespace pl {
             Pattern *parent;
             std::vector<std::shared_ptr<Pattern>> *scope;
             std::optional<ParameterPack> parameterPack;
-            std::vector<u8> heap;
             std::vector<std::unique_ptr<Pattern>> savedPatterns;
+            size_t heapStartSize;
         };
 
         void pushScope(Pattern *parent, std::vector<std::shared_ptr<Pattern>> &scope);
@@ -217,11 +217,11 @@ namespace pl {
         }
 
         [[nodiscard]] std::vector<u8> &getHeap() {
-            return this->getScope(0).heap;
+            return this->m_heap;
         }
 
         [[nodiscard]] const std::vector<u8> &getHeap() const {
-            return this->getScope(0).heap;
+            return this->m_heap;
         }
 
         void createParameterPack(const std::string &name, const std::vector<Token::Literal> &values);
@@ -304,7 +304,9 @@ namespace pl {
         std::map<std::string, api::Function> m_customFunctions;
         std::map<std::string, api::Function> m_builtinFunctions;
         std::vector<std::unique_ptr<ASTNode>> m_customFunctionDefinitions;
+
         std::vector<Token::Literal> m_stack;
+        std::vector<u8> m_heap;
 
         std::optional<Token::Literal> m_mainResult;
 

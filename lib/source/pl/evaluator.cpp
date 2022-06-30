@@ -260,13 +260,15 @@ namespace pl {
 
         this->handleAbort();
 
-        if (this->m_scopes.empty())
-            this->m_scopes.push_back({ parent, &scope, { }, { }, { } });
-        else
-            this->m_scopes.push_back({ parent, &scope, { }, this->getScope(0).heap, { } });
+        this->m_scopes.push_back({ parent, &scope, { }, { }, this->m_heap.size() });
     }
 
     void Evaluator::popScope() {
+        if (this->m_scopes.empty())
+            return;
+
+        this->m_heap.resize(this->m_scopes.back().heapStartSize);
+
         this->m_scopes.pop_back();
     }
 
