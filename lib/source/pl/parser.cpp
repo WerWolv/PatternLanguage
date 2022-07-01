@@ -1258,8 +1258,8 @@ namespace pl {
         try {
             auto program = parseTillToken(SEPARATOR_ENDOFPROGRAM);
 
-            if (program.empty() || this->m_curr != tokens.end())
-                throwParserError("program is empty!", -1);
+            if (this->m_curr != tokens.end())
+                throwParserError("program failed to parse completely", -1);
 
             return program;
         } catch (PatternLanguageError &e) {
