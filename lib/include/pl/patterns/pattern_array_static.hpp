@@ -29,19 +29,23 @@ namespace pl {
             }
         }
 
-        void getHighlightedAddresses(std::map<u64, u32> &highlight) const override {
-            auto entry = this->m_template->clone();
-
-            for (u64 address = this->getOffset(); address < this->getOffset() + this->getSize(); address += entry->getSize()) {
-                entry->setOffset(address);
-                entry->getHighlightedAddresses(highlight);
-            }
-        }
-
         void setOffset(u64 offset) override {
             this->m_template->setOffset(this->m_template->getOffset() - this->getOffset() + offset);
 
             Pattern::setOffset(offset);
+        }
+
+        [[nodiscard]] std::vector<std::pair<u64, Pattern*>> getChildren() override {
+            std::vector<std::pair<u64, Pattern*>> result;
+
+            for (size_t index = 0; index < this->m_entryCount; index++) {
+                this->m_highlightTemplate->setOffset(this->getOffset() + index * this->m_highlightTemplate->getSize());
+
+                auto children = this->m_highlightTemplate->getChildren();
+                std::copy(children.begin(), children.end(), std::back_inserter(result));
+            }
+
+            return result;
         }
 
         virtual void setMemoryLocationType(PatternMemoryType type) {
@@ -98,23 +102,6 @@ namespace pl {
             return *this->m_template == *otherArray.m_template && this->m_entryCount == otherArray.m_entryCount;
         }
 
-        [[nodiscard]] Pattern *getPattern(u64 offset) override {
-            if (this->isHidden()) return nullptr;
-
-            this->m_highlightTemplate->setBaseColor(this->getColor());
-            this->m_highlightTemplate->setVariableName(this->getVariableName());
-            this->m_highlightTemplate->setDisplayName(this->getDisplayName());
-
-            const auto arrayStart = this->getOffset();
-
-            if (offset >= arrayStart && offset < (arrayStart + this->getSize())) {
-                this->m_highlightTemplate->setOffset(arrayStart + ((offset - arrayStart) / this->m_highlightTemplate->getSize()) * this->m_highlightTemplate->getSize());
-                return this->m_highlightTemplate->getPattern(offset);
-            } else {
-                return nullptr;
-            }
-        }
-
         void setEndian(std::endian endian) override {
             this->m_template->setEndian(endian);
 
@@ -133,9 +120,9 @@ namespace pl {
         }
 
     private:
-        std::shared_ptr<Pattern> m_template                  = nullptr;
-        mutable std::unique_ptr<Pattern> m_highlightTemplate = nullptr;
-        size_t m_entryCount                                  = 0;
+        std::shared_ptr<Pattern> m_template = nullptr;
+        std::unique_ptr<Pattern> m_highlightTemplate = nullptr;
+        size_t m_entryCount = 0;
     };
 
 }

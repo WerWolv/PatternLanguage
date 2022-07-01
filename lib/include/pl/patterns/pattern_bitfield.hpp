@@ -114,6 +114,16 @@ namespace pl {
             Pattern::setOffset(offset);
         }
 
+        [[nodiscard]] std::vector<std::pair<u64, Pattern*>> getChildren() override {
+            std::vector<std::pair<u64, Pattern*>> result;
+
+            for (const auto &field : this->m_fields) {
+                result.emplace_back(field->getOffset(), field.get());
+            }
+
+            return result;
+        }
+
         void setMemoryLocationType(PatternMemoryType type) override {
             for (auto &pattern : this->m_fields)
                 pattern->setMemoryLocationType(type);

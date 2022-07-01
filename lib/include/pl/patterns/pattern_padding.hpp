@@ -16,6 +16,10 @@ namespace pl {
             return "";
         }
 
+        [[nodiscard]] virtual std::vector<std::pair<u64, Pattern*>> getChildren() {
+            return { };
+        }
+
         [[nodiscard]] bool operator==(const Pattern &other) const override { return areCommonPropertiesEqual<decltype(*this)>(other); }
 
         void accept(PatternVisitor &v) override {

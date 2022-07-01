@@ -122,24 +122,12 @@ namespace pl {
         [[nodiscard]] virtual std::string getFormattedName() const = 0;
         [[nodiscard]] virtual std::string getFormattedValue() = 0;
 
-        [[nodiscard]] virtual Pattern *getPattern(u64 offset) {
-            if (offset >= this->getOffset() && offset < (this->getOffset() + this->getSize()) && !this->isHidden())
-                return this;
-            else
-                return nullptr;
-        }
-
-        virtual void getHighlightedAddresses(std::map<u64, u32> &highlight) const {
-            if (this->isHidden()) return;
-
-            for (u64 i = 0; i < this->getSize(); i++)
-                highlight.insert({ this->getOffset() + i, this->getColor() });
-
-            this->getEvaluator()->handleAbort();
-        }
-
         [[nodiscard]] virtual std::string toString() const {
             return fmt::format("{} {} @ 0x{:X}", this->getTypeName(), this->getVariableName(), this->getOffset());
+        }
+
+        [[nodiscard]] virtual std::vector<std::pair<u64, Pattern*>> getChildren() {
+            return { { this->getOffset(), this } };
         }
 
         void setHidden(bool hidden) {

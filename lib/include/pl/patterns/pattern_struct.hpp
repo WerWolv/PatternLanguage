@@ -24,12 +24,6 @@ namespace pl {
             return std::unique_ptr<Pattern>(new PatternStruct(*this));
         }
 
-        void getHighlightedAddresses(std::map<u64, u32> &highlight) const override {
-            for (auto &member : this->m_members) {
-                member->getHighlightedAddresses(highlight);
-            }
-        }
-
         void forEachMember(const std::function<void(Pattern&)>& fn) {
             for (auto &member : this->m_sortedMembers)
                 fn(*member);
@@ -40,6 +34,17 @@ namespace pl {
                 member->setOffset(member->getOffset() - this->getOffset() + offset);
 
             Pattern::setOffset(offset);
+        }
+
+        [[nodiscard]] std::vector<std::pair<u64, Pattern*>> getChildren() override {
+            std::vector<std::pair<u64, Pattern*>> result;
+
+            for (const auto &member : this->m_members) {
+                auto children = member->getChildren();
+                std::copy(children.begin(), children.end(), std::back_inserter(result));
+            }
+
+            return result;
         }
 
         void setMemoryLocationType(PatternMemoryType type) override {
@@ -101,20 +106,6 @@ namespace pl {
             }
 
             return true;
-        }
-
-        [[nodiscard]] Pattern *getPattern(u64 offset) override {
-            if (this->isHidden()) return nullptr;
-
-            for (auto member : this->m_members) {
-                if (offset >= member->getOffset() && offset < (member->getOffset() + member->getSize())) {
-                    auto candidate = member->getPattern(offset);
-                    if (candidate != nullptr)
-                        return candidate;
-                }
-            }
-
-            return nullptr;
         }
 
         void setEndian(std::endian endian) override {

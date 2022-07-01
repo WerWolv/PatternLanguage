@@ -38,6 +38,7 @@ namespace pl {
         this->m_currError = std::move(other.m_currError);
         this->m_currAST = std::move(other.m_currAST);
         this->m_patterns = std::move(other.m_patterns);
+        this->m_flattenedPatterns = other.m_flattenedPatterns;
         this->m_running = other.m_running;
 
         other.m_internals = { nullptr };
@@ -126,6 +127,7 @@ namespace pl {
         }
 
         this->m_patterns = std::move(patterns.value());
+        this->m_flattenedPatterns.clear();
 
         return true;
     }
@@ -146,35 +148,35 @@ namespace pl {
         return { success, std::move(result) };
     }
 
-    void PatternLanguage::abort() {
+    void PatternLanguage::abort() const {
         this->m_internals.evaluator->abort();
     }
 
-    void PatternLanguage::setIncludePaths(std::vector<std::fs::path> paths) {
+    void PatternLanguage::setIncludePaths(std::vector<std::fs::path> paths) const {
         this->m_internals.preprocessor->setIncludePaths(std::move(paths));
     }
 
-    void PatternLanguage::addPragma(const std::string &name, const api::PragmaHandler &callback) {
+    void PatternLanguage::addPragma(const std::string &name, const api::PragmaHandler &callback) const {
         this->m_internals.preprocessor->addPragmaHandler(name, callback);
     }
 
-    void PatternLanguage::removePragma(const std::string &name) {
+    void PatternLanguage::removePragma(const std::string &name) const {
         this->m_internals.preprocessor->removePragmaHandler(name);
     }
 
-    void PatternLanguage::setDataSource(std::function<void(u64, u8*, size_t)> readFunction, u64 baseAddress, u64 size) {
+    void PatternLanguage::setDataSource(std::function<void(u64, u8*, size_t)> readFunction, u64 baseAddress, u64 size) const {
         this->m_internals.evaluator->setDataSource(std::move(readFunction), baseAddress, size);
     }
 
-    void PatternLanguage::setDataBaseAddress(u64 baseAddress) {
+    void PatternLanguage::setDataBaseAddress(u64 baseAddress) const {
         this->m_internals.evaluator->setDataBaseAddress(baseAddress);
     }
 
-    void PatternLanguage::setDataSize(u64 size) {
+    void PatternLanguage::setDataSize(u64 size) const {
         this->m_internals.evaluator->setDataSize(size);
     }
 
-    void PatternLanguage::setDangerousFunctionCallHandler(std::function<bool()> callback) {
+    void PatternLanguage::setDangerousFunctionCallHandler(std::function<bool()> callback) const {
         this->m_internals.evaluator->setDangerousFunctionCallHandler(std::move(callback));
     }
 
@@ -187,25 +189,26 @@ namespace pl {
     }
 
 
-    const std::vector<std::pair<LogConsole::Level, std::string>> &PatternLanguage::getConsoleLog() {
+    const std::vector<std::pair<LogConsole::Level, std::string>> &PatternLanguage::getConsoleLog() const {
         return this->m_internals.evaluator->getConsole().getLog();
     }
 
-    const std::optional<PatternLanguageError> &PatternLanguage::getError() {
+    const std::optional<PatternLanguageError> &PatternLanguage::getError() const {
         return this->m_currError;
     }
 
-    u32 PatternLanguage::getCreatedPatternCount() {
+    u32 PatternLanguage::getCreatedPatternCount() const {
         return this->m_internals.evaluator->getPatternCount();
     }
 
-    u32 PatternLanguage::getMaximumPatternCount() {
+    u32 PatternLanguage::getMaximumPatternCount() const {
         return this->m_internals.evaluator->getPatternLimit();
     }
 
 
     void PatternLanguage::reset() {
         this->m_patterns.clear();
+        this->m_flattenedPatterns.clear();
 
         this->m_currAST.clear();
     }
@@ -221,12 +224,47 @@ namespace pl {
         return functionName;
     }
 
-    void PatternLanguage::addFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) {
+    void PatternLanguage::addFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) const {
         this->m_internals.evaluator->addBuiltinFunction(getFunctionName(ns, name), parameterCount, { }, func, false);
     }
 
-    void PatternLanguage::addDangerousFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) {
+    void PatternLanguage::addDangerousFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) const {
         this->m_internals.evaluator->addBuiltinFunction(getFunctionName(ns, name), parameterCount, { }, func, true);
+    }
+
+    void PatternLanguage::flattenPatterns() {
+        for (const auto &pattern : this->m_patterns) {
+            auto children = pattern->getChildren();
+
+            for (const auto &[address, child]: children) {
+                this->m_flattenedPatterns[address].patterns.push_back(child);
+            }
+        }
+
+        u64 prevAddress = 0x00;
+        for (auto &[address, entry] : this->m_flattenedPatterns) {
+            entry.prevPatternAddress = prevAddress;
+            prevAddress = address;
+        }
+    }
+
+    Pattern *PatternLanguage::getPattern(u64 address, size_t size) const {
+        if (this->m_flattenedPatterns.empty())
+            return nullptr;
+
+        auto it = this->m_flattenedPatterns.upper_bound(address);
+
+        if (it != this->m_flattenedPatterns.begin())
+            it--;
+
+        auto &[patternAddress, entry] = *it;
+
+        for (auto &pattern : entry.patterns) {
+            if (address >= patternAddress && address < (patternAddress + pattern->getSize()))
+                return pattern;
+        }
+
+        return nullptr;
     }
 
 }

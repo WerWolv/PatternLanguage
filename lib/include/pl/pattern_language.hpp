@@ -53,39 +53,51 @@ namespace pl {
         [[nodiscard]] std::pair<bool, std::optional<Token::Literal>> executeFunction(const std::string &code);
         [[nodiscard]] const std::vector<std::shared_ptr<ASTNode>> &getCurrentAST() const;
 
-        void abort();
+        void abort() const;
 
-        void setDataSource(std::function<void(u64, u8*, size_t)> readFunction, u64 baseAddress, u64 size);
-        void setDataBaseAddress(u64 baseAddress);
-        void setDataSize(u64 size);
+        void setDataSource(std::function<void(u64, u8*, size_t)> readFunction, u64 baseAddress, u64 size) const;
+        void setDataBaseAddress(u64 baseAddress) const;
+        void setDataSize(u64 size) const;
 
-        void addPragma(const std::string &name, const api::PragmaHandler &callback);
-        void removePragma(const std::string &name);
-        void setIncludePaths(std::vector<std::fs::path> paths);
-        void setDangerousFunctionCallHandler(std::function<bool()> callback);
+        void addPragma(const std::string &name, const api::PragmaHandler &callback) const;
+        void removePragma(const std::string &name) const;
+        void setIncludePaths(std::vector<std::fs::path> paths) const;
+        void setDangerousFunctionCallHandler(std::function<bool()> callback) const;
 
-        [[nodiscard]] const std::vector<std::pair<LogConsole::Level, std::string>> &getConsoleLog();
-        [[nodiscard]] const std::optional<PatternLanguageError> &getError();
+        [[nodiscard]] const std::vector<std::pair<LogConsole::Level, std::string>> &getConsoleLog() const;
+        [[nodiscard]] const std::optional<PatternLanguageError> &getError() const;
         [[nodiscard]] std::map<std::string, Token::Literal> getOutVariables() const;
 
-        [[nodiscard]] u32 getCreatedPatternCount();
-        [[nodiscard]] u32 getMaximumPatternCount();
+        [[nodiscard]] u32 getCreatedPatternCount() const;
+        [[nodiscard]] u32 getMaximumPatternCount() const;
 
-        [[nodiscard]] const std::vector<std::shared_ptr<Pattern>> &getPatterns() {
+        [[nodiscard]] const std::vector<std::shared_ptr<Pattern>> &getPatterns() const {
             const static std::vector<std::shared_ptr<Pattern>> empty;
 
             if (isRunning()) return empty;
             else return this->m_patterns;
         }
 
+        struct FlattenedPatternEntry {
+            std::vector<Pattern*> patterns;
+            u64 prevPatternAddress;
+        };
+
+        void flattenPatterns();
+        [[nodiscard]] const std::map<u64, FlattenedPatternEntry>& getFlattenedPatterns() const {
+            return this->m_flattenedPatterns;
+        }
+
+        Pattern* getPattern(u64 address, size_t size = 1) const;
+
         void reset();
         [[nodiscard]] bool isRunning() const { return this->m_running; }
 
 
-        void addFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func);
-        void addDangerousFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func);
+        void addFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) const;
+        void addDangerousFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) const;
 
-        const Internals& getInternals() {
+        const Internals& getInternals() const {
             return this->m_internals;
         }
 
@@ -97,6 +109,7 @@ namespace pl {
         std::optional<PatternLanguageError> m_currError;
 
         std::vector<std::shared_ptr<Pattern>> m_patterns;
+        std::map<u64, FlattenedPatternEntry> m_flattenedPatterns;
 
         bool m_running = false;
     };

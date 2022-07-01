@@ -29,17 +29,22 @@ namespace pl {
                 fn(*member);
         }
 
-        void getHighlightedAddresses(std::map<u64, u32> &highlight) const override {
-            for (auto &member : this->m_members) {
-                member->getHighlightedAddresses(highlight);
-            }
-        }
-
         void setOffset(u64 offset) override {
             for (auto &member : this->m_members)
                 member->setOffset(member->getOffset() - this->getOffset() + offset);
 
             Pattern::setOffset(offset);
+        }
+
+        [[nodiscard]] std::vector<std::pair<u64, Pattern*>> getChildren() override {
+            std::vector<std::pair<u64, Pattern*>> result;
+
+            for (const auto &member : this->m_members) {
+                auto children = member->getChildren();
+                std::copy(children.begin(), children.end(), std::back_inserter(result));
+            }
+
+            return result;
         }
 
         void setMemoryLocationType(PatternMemoryType type) override {
@@ -100,19 +105,6 @@ namespace pl {
             }
 
             return true;
-        }
-
-        [[nodiscard]] Pattern *getPattern(u64 offset) override {
-            if (this->isHidden()) return nullptr;
-
-            auto largestMember = std::find_if(this->m_members.begin(), this->m_members.end(), [this](const std::shared_ptr<Pattern> &pattern) {
-                return pattern->getSize() == this->getSize();
-            });
-
-            if (largestMember == this->m_members.end())
-                return nullptr;
-            else
-                return (*largestMember)->getPattern(offset);
         }
 
         void setEndian(std::endian endian) override {

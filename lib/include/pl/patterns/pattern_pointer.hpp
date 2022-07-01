@@ -12,7 +12,7 @@ namespace pl {
         }
 
         PatternPointer(const PatternPointer &other) : Pattern(other) {
-            this->m_pointedAt = other.m_pointedAt->clone();
+            this->m_pointedAt = std::shared_ptr(other.m_pointedAt->clone());
         }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
@@ -23,11 +23,6 @@ namespace pl {
             u64 data = 0;
             this->getEvaluator()->readData(this->getOffset(), &data, this->getSize());
             return pl::changeEndianess(data, this->getSize(), this->getEndian());
-        }
-
-        void getHighlightedAddresses(std::map<u64, u32> &highlight) const override {
-            Pattern::getHighlightedAddresses(highlight);
-            this->m_pointedAt->getHighlightedAddresses(highlight);
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
@@ -53,6 +48,10 @@ namespace pl {
             return result;
         }
 
+        [[nodiscard]] std::vector<std::pair<u64, Pattern*>> getChildren() override {
+            return this->m_pointedAt->getChildren();
+        }
+
         void setMemoryLocationType(PatternMemoryType type) override {
             this->m_pointedAt->setMemoryLocationType(type);
 
@@ -73,7 +72,7 @@ namespace pl {
             return this->m_pointedAtAddress;
         }
 
-        [[nodiscard]] const std::unique_ptr<Pattern> &getPointedAtPattern() {
+        [[nodiscard]] const std::shared_ptr<Pattern> &getPointedAtPattern() {
             return this->m_pointedAt;
         }
 
@@ -96,13 +95,6 @@ namespace pl {
             this->m_pointerBase = base;
         }
 
-        [[nodiscard]] Pattern *getPattern(u64 offset) override {
-            if (offset >= this->getOffset() && offset < (this->getOffset() + this->getSize()) && !this->isHidden())
-                return this;
-            else
-                return this->m_pointedAt->getPattern(offset);
-        }
-
         void setEndian(std::endian endian) override {
             this->m_pointedAt->setEndian(endian);
 
@@ -119,7 +111,7 @@ namespace pl {
         }
 
     private:
-        std::unique_ptr<Pattern> m_pointedAt;
+        std::shared_ptr<Pattern> m_pointedAt;
         u64 m_pointedAtAddress = 0;
 
         u64 m_pointerBase = 0;

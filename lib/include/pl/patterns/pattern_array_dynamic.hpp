@@ -29,12 +29,6 @@ namespace pl {
                 entry->setColor(color);
         }
 
-        void getHighlightedAddresses(std::map<u64, u32> &highlight) const override {
-            for (auto &entry : this->m_entries) {
-                entry->getHighlightedAddresses(highlight);
-            }
-        }
-
         [[nodiscard]] std::string getFormattedName() const override {
             return this->m_entries[0]->getTypeName() + "[" + std::to_string(this->m_entries.size()) + "]";
         }
@@ -48,6 +42,17 @@ namespace pl {
                 entry->setOffset(entry->getOffset() - this->getOffset() + offset);
 
             Pattern::setOffset(offset);
+        }
+
+        [[nodiscard]] std::vector<std::pair<u64, Pattern*>> getChildren() override {
+            std::vector<std::pair<u64, Pattern*>> result;
+
+            for (const auto &entry : this->m_entries) {
+                auto children = entry->getChildren();
+                std::copy(children.begin(), children.end(), std::back_inserter(result));
+            }
+
+            return result;
         }
 
         void setMemoryLocationType(PatternMemoryType type) override {
@@ -92,18 +97,6 @@ namespace pl {
             }
 
             return true;
-        }
-
-        [[nodiscard]] Pattern *getPattern(u64 offset) override {
-            if (this->isHidden()) return nullptr;
-
-            for (auto &pattern : this->m_entries) {
-                auto result = pattern->getPattern(offset);
-                if (result != nullptr)
-                    return result;
-            }
-
-            return nullptr;
         }
 
         void setEndian(std::endian endian) override {
