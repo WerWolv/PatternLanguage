@@ -237,18 +237,12 @@ namespace pl {
             auto children = pattern->getChildren();
 
             for (const auto &[address, child]: children) {
-                this->m_flattenedPatterns[address].patterns.push_back(child);
+                this->m_flattenedPatterns[address].push_back(child);
             }
-        }
-
-        u64 prevAddress = 0x00;
-        for (auto &[address, entry] : this->m_flattenedPatterns) {
-            entry.prevPatternAddress = prevAddress;
-            prevAddress = address;
         }
     }
 
-    Pattern *PatternLanguage::getPattern(u64 address, size_t size) const {
+    Pattern *PatternLanguage::getPattern(u64 address) const {
         if (this->m_flattenedPatterns.empty())
             return nullptr;
 
@@ -257,9 +251,9 @@ namespace pl {
         if (it != this->m_flattenedPatterns.begin())
             it--;
 
-        auto &[patternAddress, entry] = *it;
+        auto &[patternAddress, patterns] = *it;
 
-        for (auto &pattern : entry.patterns) {
+        for (auto &pattern : patterns) {
             if (address >= patternAddress && address < (patternAddress + pattern->getSize()))
                 return pattern;
         }

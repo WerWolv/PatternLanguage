@@ -78,17 +78,12 @@ namespace pl {
             else return this->m_patterns;
         }
 
-        struct FlattenedPatternEntry {
-            std::vector<Pattern*> patterns;
-            u64 prevPatternAddress;
-        };
-
         void flattenPatterns();
-        [[nodiscard]] const std::map<u64, FlattenedPatternEntry>& getFlattenedPatterns() const {
+        [[nodiscard]] const std::map<u64, std::vector<Pattern*>>& getFlattenedPatterns() const {
             return this->m_flattenedPatterns;
         }
 
-        Pattern* getPattern(u64 address, size_t size = 1) const;
+        Pattern* getPattern(u64 address) const;
 
         void reset();
         [[nodiscard]] bool isRunning() const { return this->m_running; }
@@ -109,7 +104,7 @@ namespace pl {
         std::optional<PatternLanguageError> m_currError;
 
         std::vector<std::shared_ptr<Pattern>> m_patterns;
-        std::map<u64, FlattenedPatternEntry> m_flattenedPatterns;
+        std::map<u64, std::vector<Pattern*>> m_flattenedPatterns;
 
         bool m_running = false;
     };
