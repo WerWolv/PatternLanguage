@@ -48,10 +48,12 @@ namespace pl::fs {
         size_t readBuffer(u8 *buffer, size_t size);
         std::vector<u8> readBytes(size_t numBytes = 0);
         std::string readString(size_t numBytes = 0);
+        std::u8string readU8String(size_t numBytes = 0);
 
         void write(const u8 *buffer, size_t size);
         void write(const std::vector<u8> &bytes);
         void write(const std::string &string);
+        void write(const std::u8string &string);
 
         [[nodiscard]] size_t getSize() const;
         void setSize(u64 size);

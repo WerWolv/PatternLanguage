@@ -93,8 +93,22 @@ namespace pl::fs {
         if (bytes.empty())
             return "";
 
-        const char *cString = reinterpret_cast<const char *>(bytes.data());
+        auto cString = reinterpret_cast<const char *>(bytes.data());
         return { cString, std::min(bytes.size(), std::strlen(cString)) };
+    }
+
+    std::u8string File::readU8String(size_t numBytes) {
+        if (!isValid()) return {};
+
+        if (getSize() == 0) return {};
+
+        auto bytes = readBytes(numBytes);
+
+        if (bytes.empty())
+            return u8"";
+
+        auto cString = reinterpret_cast<const char8_t *>(bytes.data());
+        return { cString, std::min(bytes.size(), std::strlen(reinterpret_cast<const char*>(bytes.data()))) };
     }
 
     void File::write(const u8 *buffer, size_t size) {
@@ -110,6 +124,12 @@ namespace pl::fs {
     }
 
     void File::write(const std::string &string) {
+        if (!isValid()) return;
+
+        std::fwrite(string.data(), string.size(), 1, this->m_file);
+    }
+
+    void File::write(const std::u8string &string) {
         if (!isValid()) return;
 
         std::fwrite(string.data(), string.size(), 1, this->m_file);
