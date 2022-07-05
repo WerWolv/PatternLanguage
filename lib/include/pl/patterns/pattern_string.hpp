@@ -20,7 +20,9 @@ namespace pl {
         std::string getValue(size_t size) const {
             std::vector<u8> buffer(size, 0x00);
             this->getEvaluator()->readData(this->getOffset(), buffer.data(), size);
-            return pl::encodeByteString(buffer);
+
+            auto string = reinterpret_cast<const char *>(buffer.data());
+            return { string, std::min(size, std::strlen(string)) };
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
@@ -43,9 +45,13 @@ namespace pl {
             if (size == 0)
                 return "\"\"";
 
-            std::string displayString = this->getValue(size);
+            std::vector<u8> buffer(size, 0x00);
+            this->getEvaluator()->readData(this->getOffset(), buffer.data(), size);
+            auto displayString = pl::encodeByteString(buffer);
+
             return this->formatDisplayValue(fmt::format("\"{0}\" {1}", displayString, size > this->getSize() ? "(truncated)" : ""), displayString);
         }
+
     };
 
 }

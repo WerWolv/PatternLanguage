@@ -14,7 +14,7 @@ namespace pl {
             return std::unique_ptr<Pattern>(new PatternEnum(*this));
         }
 
-        u64 getValue() {
+        u64 getValue() const {
             u64 value = 0;
             this->getEvaluator()->readData(this->getOffset(), &value, this->getSize());
             return pl::changeEndianess(value, this->getSize(), this->getEndian());
@@ -57,6 +57,10 @@ namespace pl {
         }
 
         std::string getFormattedValue() override {
+            return this->formatDisplayValue(fmt::format("{} (0x{:0{}X})", this->toString().c_str(), this->getValue(), this->getSize() * 2), this);
+        }
+
+        [[nodiscard]] virtual std::string toString() const {
             u64 value = this->getValue();
 
             std::string valueString = this->getTypeName() + "::";
@@ -64,17 +68,17 @@ namespace pl {
             bool foundValue = false;
             for (auto &[entryValueLiteral, entryName] : this->getEnumValues()) {
                 auto visitor = overloaded {
-                    [&, name = entryName](auto &entryValue) {
-                        if (static_cast<decltype(entryValue)>(value) == entryValue) {
-                            valueString += name;
-                            foundValue = true;
-                            return true;
-                        }
+                        [&, name = entryName](auto &entryValue) {
+                            if (static_cast<decltype(entryValue)>(value) == entryValue) {
+                                valueString += name;
+                                foundValue = true;
+                                return true;
+                            }
 
-                        return false;
-                    },
-                    [](const std::string &) { return false; },
-                    [](pl::Pattern *) { return false; },
+                            return false;
+                        },
+                        [](const std::string &) { return false; },
+                        [](pl::Pattern *) { return false; },
                 };
 
                 bool matches = std::visit(visitor, entryValueLiteral);
@@ -85,7 +89,7 @@ namespace pl {
             if (!foundValue)
                 valueString += "???";
 
-            return this->formatDisplayValue(fmt::format("{} (0x{:0{}X})", valueString.c_str(), value, this->getSize() * 2), this);
+            return valueString;
         }
 
     private:

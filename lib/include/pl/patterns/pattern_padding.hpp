@@ -29,6 +29,10 @@ namespace pl {
         std::string getFormattedValue() override {
             return "";
         }
+
+        [[nodiscard]] virtual std::string toString() const {
+            return fmt::format("padding[{}]", this->getSize());
+        }
     };
 
 }

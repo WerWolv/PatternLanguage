@@ -110,6 +110,10 @@ namespace pl {
             return this->formatDisplayValue(fmt::format("*(0x{0:X})", data), u128(data));
         }
 
+        [[nodiscard]] virtual std::string toString() const {
+            return this->m_pointedAt->toString();
+        }
+
     private:
         std::shared_ptr<Pattern> m_pointedAt;
         u64 m_pointedAtAddress = 0;

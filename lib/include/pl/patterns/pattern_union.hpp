@@ -80,6 +80,22 @@ namespace pl {
             }
         }
 
+        [[nodiscard]] virtual std::string toString() const {
+            std::string result = this->getFormattedName();
+            result += " { ";
+
+            for (const auto &member : this->m_members)
+                result += fmt::format("{}, ", member->toString());
+
+            // Remove trailing ", "
+            result.pop_back();
+            result.pop_back();
+
+            result += " }";
+
+            return result;
+        }
+
         void sort(const std::function<bool (const Pattern *, const Pattern *)> &comparator) override {
             this->m_sortedMembers.clear();
             for (auto &member : this->m_members)

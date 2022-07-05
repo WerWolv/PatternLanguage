@@ -64,7 +64,7 @@ namespace pl {
             }
 
             Token::Literal literal;
-            if (dynamic_cast<PatternUnsigned *>(pattern) || dynamic_cast<PatternEnum *>(pattern)) {
+            if (dynamic_cast<PatternUnsigned *>(pattern)) {
                 u128 value = 0;
                 readVariable(evaluator, value, pattern);
                 literal = value;
@@ -102,16 +102,16 @@ namespace pl {
                     auto &variableValue = evaluator->getStack()[pattern->getOffset()];
 
                     std::visit(overloaded {
-                                   [&](char assignmentValue) { if (assignmentValue != 0x00) value = std::string({ assignmentValue }); },
-                                   [&](std::string &assignmentValue) { value = assignmentValue; },
-                                   [&, this](Pattern *const &assignmentValue) {
-                                       if (!dynamic_cast<PatternString *>(assignmentValue) && !dynamic_cast<PatternCharacter *>(assignmentValue))
-                                           LogConsole::abortEvaluation(fmt::format("cannot assign '{}' to string", pattern->getTypeName()), this);
+                           [&](char assignmentValue) { if (assignmentValue != 0x00) value = std::string({ assignmentValue }); },
+                           [&](std::string &assignmentValue) { value = assignmentValue; },
+                           [&, this](Pattern *const &assignmentValue) {
+                               if (!dynamic_cast<PatternString *>(assignmentValue) && !dynamic_cast<PatternCharacter *>(assignmentValue))
+                                   LogConsole::abortEvaluation(fmt::format("cannot assign '{}' to string", pattern->getTypeName()), this);
 
-                                       readVariable(evaluator, value, assignmentValue);
-                                   },
-                                   [&, this](auto &&) { LogConsole::abortEvaluation(fmt::format("cannot assign '{}' to string", pattern->getTypeName()), this); } },
-                        variableValue);
+                               readVariable(evaluator, value, assignmentValue);
+                           },
+                           [&, this](auto &&) { LogConsole::abortEvaluation(fmt::format("cannot assign '{}' to string", pattern->getTypeName()), this); }
+                       }, variableValue);
                 } else {
                     value.resize(pattern->getSize());
                     evaluator->readData(pattern->getOffset(), value.data(), value.size());

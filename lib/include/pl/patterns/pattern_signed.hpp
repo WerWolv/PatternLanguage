@@ -13,7 +13,7 @@ namespace pl {
             return std::unique_ptr<Pattern>(new PatternSigned(*this));
         }
 
-        i128 getValue() {
+        i128 getValue() const {
             i128 data = 0;
             this->getEvaluator()->readData(this->getOffset(), &data, this->getSize());
             data = pl::changeEndianess(data, this->getSize(), this->getEndian());
@@ -47,6 +47,10 @@ namespace pl {
         std::string getFormattedValue() override {
             auto data = this->getValue();
             return this->formatDisplayValue(fmt::format("{:d} (0x{:0{}X})", data, data, 1 * 2), data);
+        }
+
+        [[nodiscard]] virtual std::string toString() const {
+            return fmt::format("{}", this->getValue());
         }
     };
 

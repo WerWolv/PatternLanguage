@@ -13,7 +13,7 @@ namespace pl {
             return std::unique_ptr<Pattern>(new PatternCharacter(*this));
         }
 
-        char getValue() {
+        char getValue() const {
             char character = '\x00';
             this->getEvaluator()->readData(this->getOffset(), &character, 1);
             return character;
@@ -32,6 +32,10 @@ namespace pl {
 
         void accept(PatternVisitor &v) override {
             v.visit(*this);
+        }
+
+        [[nodiscard]] virtual std::string toString() const {
+            return fmt::format("{}", this->getValue());
         }
     };
 

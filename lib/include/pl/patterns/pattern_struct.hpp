@@ -70,6 +70,22 @@ namespace pl {
             return this->m_members;
         }
 
+        [[nodiscard]] virtual std::string toString() const {
+            std::string result = this->getFormattedName();
+            result += " { ";
+
+            for (const auto &member : this->m_members)
+                result += fmt::format("{}, ", member->toString());
+
+            // Remove trailing ", "
+            result.pop_back();
+            result.pop_back();
+
+            result += " }";
+
+            return result;
+        }
+
         void setMembers(std::vector<std::shared_ptr<Pattern>> &&members) {
             this->m_members.clear();
 

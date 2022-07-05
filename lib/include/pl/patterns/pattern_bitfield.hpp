@@ -21,7 +21,7 @@ namespace pl {
             return std::unique_ptr<Pattern>(new PatternBitfieldField(*this));
         }
 
-        u64 getValue() {
+        u64 getValue() const {
             std::vector<u8> value(this->m_bitField->getSize(), 0);
             this->getEvaluator()->readData(this->m_bitField->getOffset(), &value[0], value.size());
 
@@ -65,6 +65,10 @@ namespace pl {
 
         std::string getFormattedValue() override {
             return this->formatDisplayValue(fmt::format("{0} (0x{1:X})", this->getValue(), this->getValue()), u128(this->getValue()));
+        }
+
+        [[nodiscard]] virtual std::string toString() const {
+            return fmt::format("{}", this->getValue());
         }
 
         [[nodiscard]] bool isPadding() const { return this->m_padding; }
@@ -172,6 +176,23 @@ namespace pl {
 
         void accept(PatternVisitor &v) override {
             v.visit(*this);
+        }
+
+        [[nodiscard]] virtual std::string toString() const {
+            std::string result = this->getFormattedName();
+
+            result += " { ";
+
+            for (const auto &field : this->m_fields)
+                result += fmt::format("{}, ", field->toString());
+
+            // Remove trailing ", "
+            result.pop_back();
+            result.pop_back();
+
+            result += " }";
+
+            return result;
         }
 
         std::string getFormattedValue() override {

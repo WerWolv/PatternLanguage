@@ -13,7 +13,7 @@ namespace pl {
             return std::unique_ptr<Pattern>(new PatternBoolean(*this));
         }
 
-        u8 getValue() {
+        u8 getValue() const {
             u8 boolean = false;
             this->getEvaluator()->readData(this->getOffset(), &boolean, 1);
             return boolean;
@@ -35,6 +35,10 @@ namespace pl {
 
         void accept(PatternVisitor &v) override {
             v.visit(*this);
+        }
+
+        [[nodiscard]] virtual std::string toString() const {
+            return fmt::format("{}", this->getValue() ? "true" : "false");
         }
     };
 

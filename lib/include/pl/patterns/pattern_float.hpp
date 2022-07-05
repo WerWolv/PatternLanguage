@@ -13,7 +13,7 @@ namespace pl {
             return std::unique_ptr<Pattern>(new PatternFloat(*this));
         }
 
-        double getValue() {
+        double getValue() const {
             if (this->getSize() == 4) {
                 u32 data = 0;
                 this->getEvaluator()->readData(this->getOffset(), &data, 4);
@@ -66,6 +66,10 @@ namespace pl {
             } else {
                 return "Floating Point Data";
             }
+        }
+
+        [[nodiscard]] virtual std::string toString() const {
+            return fmt::format("{}", this->getValue());
         }
     };
 

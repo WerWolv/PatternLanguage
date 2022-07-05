@@ -83,6 +83,31 @@ namespace pl {
             }
         }
 
+        [[nodiscard]] virtual std::string toString() const {
+            std::string result;
+
+            result += "[ ";
+
+            size_t entryCount = 0;
+            for (const auto &entry : this->m_entries) {
+                if (entryCount > 50) {
+                    result += fmt::format("..., ");
+                    break;
+                }
+
+                result += fmt::format("{}, ", entry->toString());
+                entryCount++;
+            }
+
+            // Remove trailing ", "
+            result.pop_back();
+            result.pop_back();
+
+            result += " ]";
+
+            return result;
+        }
+
         [[nodiscard]] bool operator==(const Pattern &other) const override {
             if (!areCommonPropertiesEqual<decltype(*this)>(other))
                 return false;

@@ -119,6 +119,32 @@ namespace pl {
             return this->formatDisplayValue("{ ... }", this);
         }
 
+        [[nodiscard]] virtual std::string toString() const {
+            std::string result;
+
+            result += "[ ";
+
+            auto entry = this->m_template->clone();
+            for (size_t index = 0; index < this->m_entryCount; index++) {
+                if (index > 50) {
+                    result += fmt::format("..., ");
+                    break;
+                }
+
+                this->m_highlightTemplate->setOffset(this->getOffset() + index * this->m_highlightTemplate->getSize());
+
+                result += fmt::format("{}, ", entry->toString());
+            }
+
+            // Remove trailing ", "
+            result.pop_back();
+            result.pop_back();
+
+            result += " ]";
+
+            return result;
+        }
+
     private:
         std::shared_ptr<Pattern> m_template = nullptr;
         std::unique_ptr<Pattern> m_highlightTemplate = nullptr;

@@ -15,11 +15,11 @@ namespace pl {
             return std::unique_ptr<Pattern>(new PatternWideString(*this));
         }
 
-        std::string getValue() {
+        std::string getValue() const {
             return this->getValue(this->getSize());
         }
 
-        std::string getValue(size_t size) {
+        std::string getValue(size_t size) const {
             std::u16string buffer(this->getSize() / sizeof(char16_t), 0x00);
             this->getEvaluator()->readData(this->getOffset(), buffer.data(), size);
 
@@ -67,6 +67,8 @@ namespace pl {
 
             return this->formatDisplayValue(fmt::format("\"{0}\" {1}", utf8String, size > this->getSize() ? "(truncated)" : ""), utf8String);
         }
+
+
     };
 
 }
