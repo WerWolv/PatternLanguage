@@ -13,8 +13,11 @@ namespace pl {
         }
 
         ASTNodeTypeOperator(const ASTNodeTypeOperator &other) : ASTNode(other) {
-            this->m_op         = other.m_op;
-            this->m_expression = other.m_expression->clone();
+            this->m_op = other.m_op;
+            this->m_providerOperation = other.m_providerOperation;
+
+            if (other.m_expression != nullptr)
+                this->m_expression = other.m_expression->clone();
         }
 
         [[nodiscard]] std::unique_ptr<ASTNode> clone() const override {
