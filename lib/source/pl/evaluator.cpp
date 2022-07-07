@@ -200,13 +200,16 @@ namespace pl {
                 LogConsole::abortEvaluation(fmt::format("attempted to access invalid heap address 0x{:X}", offset));
 
             std::visit(overloaded {
-                [&pattern, &heap](Pattern *value) {
+                [this, &pattern, &heap](Pattern *value) {
                     if (pattern->getTypeName() != value->getTypeName())
                         LogConsole::abortEvaluation(fmt::format("cannot assign value of type {} to variable {} of type {}", value->getTypeName(), value->getVariableName(), pattern->getTypeName()));
                     else if (pattern->getSize() != value->getSize())
                         LogConsole::abortEvaluation("cannot assign value to variable of different size");
 
-                    std::memcpy(&heap[pattern->getOffset()], &heap[value->getOffset()], pattern->getSize());
+                    if (value->getMemoryLocationType() == PatternMemoryType::Provider)
+                        this->readData(value->getOffset(), &heap[pattern->getOffset()], pattern->getSize());
+                    else if (value->getMemoryLocationType() == PatternMemoryType::Heap)
+                        std::memcpy(&heap[pattern->getOffset()], &heap[value->getOffset()], pattern->getSize());
                 },
                 [](std::string &value) { LogConsole::abortEvaluation("cannot assign string type to heap variable"); },
                 [&pattern, &heap](auto &&value) {
