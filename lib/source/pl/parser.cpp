@@ -458,7 +458,7 @@ namespace pl {
             body.push_back(this->parseFunctionStatement());
         }
 
-        return create(new ASTNodeFunctionDefinition(getNamespacePrefixedName(functionName), std::move(params), std::move(body), parameterPack, std::move(defaultParameters)));
+        return create(new ASTNodeFunctionDefinition(getNamespacePrefixedNames(functionName).back(), std::move(params), std::move(body), parameterPack, std::move(defaultParameters)));
     }
 
     std::unique_ptr<ASTNode> Parser::parseFunctionVariableDecl() {
@@ -711,14 +711,14 @@ namespace pl {
             endian = std::endian::big;
 
         if (MATCHES(sequence(IDENTIFIER))) {    // Custom type
-            std::string typeName = parseNamespaceResolution();
+            auto baseTypeName = parseNamespaceResolution();
 
-            if (this->m_types.contains(typeName))
-                return create(new ASTNodeTypeDecl({}, this->m_types[typeName], endian));
-            else if (this->m_types.contains(getNamespacePrefixedName(typeName)))
-                return create(new ASTNodeTypeDecl({}, this->m_types[getNamespacePrefixedName(typeName)], endian));
-            else
-                throwParserError(fmt::format("unknown type '{}'", typeName));
+            for (const auto &typeName : getNamespacePrefixedNames(baseTypeName)) {
+                if (this->m_types.contains(typeName))
+                    return create(new ASTNodeTypeDecl({}, this->m_types[typeName], endian));
+            }
+
+            throwParserError(fmt::format("unknown type '{}'", baseTypeName));
         } else if (MATCHES(sequence(VALUETYPE_ANY))) {    // Builtin type
             auto type = getValue<Token::ValueType>(-1);
             if (!allowFunctionTypes) {
@@ -734,7 +734,7 @@ namespace pl {
 
     // using Identifier = (parseType)
     std::shared_ptr<ASTNodeTypeDecl> Parser::parseUsingDeclaration() {
-        auto name = getNamespacePrefixedName(getValue<Token::Identifier>(-2).get());
+        auto name = getValue<Token::Identifier>(-2).get();
 
         auto type = parseType();
 
@@ -1041,7 +1041,7 @@ namespace pl {
 
     // using Identifier;
     void Parser::parseForwardDeclaration() {
-        std::string typeName = getNamespacePrefixedName(getValue<Token::Identifier>(-1).get());
+        std::string typeName = getNamespacePrefixedNames(getValue<Token::Identifier>(-1).get()).back();
 
         if (this->m_types.contains(typeName))
             return;
@@ -1229,7 +1229,7 @@ namespace pl {
     }
 
     std::shared_ptr<ASTNodeTypeDecl> Parser::addType(const std::string &name, std::unique_ptr<ASTNode> &&node, std::optional<std::endian> endian) {
-        auto typeName = getNamespacePrefixedName(name);
+        auto typeName = getNamespacePrefixedNames(name).back();
 
         if (this->m_types.contains(typeName) && this->m_types.at(typeName)->isForwardDeclared()) {
             this->m_types.at(typeName)->setType(std::move(node));

@@ -60,13 +60,16 @@ namespace pl {
             return this->m_curr[index].type;
         }
 
-        std::string getNamespacePrefixedName(const std::string &name) {
-            std::string result;
-            for (const auto &part : this->m_currNamespace.back()) {
-                result += part + "::";
-            }
+        std::vector<std::string> getNamespacePrefixedNames(const std::string &name) {
+            std::vector<std::string> result;
 
-            result += name;
+            result.push_back(name);
+
+            std::string namespacePrefix;
+            for (const auto &part : this->m_currNamespace.back()) {
+                namespacePrefix += fmt::format("{}::", part);
+                result.push_back(fmt::format("{}{}", namespacePrefix, name));
+            }
 
             return result;
         }
