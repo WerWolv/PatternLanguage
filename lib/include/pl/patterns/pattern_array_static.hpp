@@ -61,6 +61,7 @@ namespace pl {
         void setColor(u32 color) override {
             Pattern::setColor(color);
             this->m_template->setColor(color);
+            this->m_highlightTemplate->setColor(color);
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
