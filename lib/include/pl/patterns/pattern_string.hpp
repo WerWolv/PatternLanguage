@@ -18,6 +18,9 @@ namespace pl {
         }
 
         std::string getValue(size_t size) const {
+            if (size == 0)
+                return "";
+
             std::vector<u8> buffer(size, 0x00);
             this->getEvaluator()->readData(this->getOffset(), buffer.data(), size);
 
