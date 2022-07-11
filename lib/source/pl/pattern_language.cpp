@@ -254,8 +254,10 @@ namespace pl {
         auto &[patternAddress, patterns] = *it;
 
         for (auto &pattern : patterns) {
-            if (address >= patternAddress && address < (patternAddress + pattern->getSize()))
+            if (address >= patternAddress && address < (patternAddress + pattern->getSize())) {
+                pattern->setOffset(patternAddress);
                 return pattern;
+            }
         }
 
         return nullptr;

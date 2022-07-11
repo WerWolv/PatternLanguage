@@ -38,8 +38,11 @@ namespace pl {
         [[nodiscard]] std::vector<std::pair<u64, Pattern*>> getChildren() override {
             std::vector<std::pair<u64, Pattern*>> result;
 
+            this->m_highlightTemplate->setVariableName(this->getVariableName());
+
             for (size_t index = 0; index < this->m_entryCount; index++) {
                 this->m_highlightTemplate->setOffset(this->getOffset() + index * this->m_highlightTemplate->getSize());
+                this->m_highlightTemplate->clearFormatCache();
 
                 auto children = this->m_highlightTemplate->getChildren();
                 std::copy(children.begin(), children.end(), std::back_inserter(result));
