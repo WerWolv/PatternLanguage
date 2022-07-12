@@ -10,7 +10,7 @@ namespace pl {
     class ASTNodePointerVariableDecl : public ASTNode,
                                        public Attributable {
     public:
-        ASTNodePointerVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeDecl> type, std::shared_ptr<ASTNodeTypeDecl> sizeType, std::unique_ptr<ASTNode> &&placementOffset = nullptr)
+        ASTNodePointerVariableDecl(std::string name, std::shared_ptr<ASTNode> type, std::shared_ptr<ASTNodeTypeDecl> sizeType, std::unique_ptr<ASTNode> &&placementOffset = nullptr)
             : ASTNode(), m_name(std::move(name)), m_type(std::move(type)), m_sizeType(std::move(sizeType)), m_placementOffset(std::move(placementOffset)) { }
 
         ASTNodePointerVariableDecl(const ASTNodePointerVariableDecl &other) : ASTNode(other), Attributable(other) {
@@ -29,7 +29,7 @@ namespace pl {
         }
 
         [[nodiscard]] const std::string &getName() const { return this->m_name; }
-        [[nodiscard]] constexpr const std::shared_ptr<ASTNodeTypeDecl> &getType() const { return this->m_type; }
+        [[nodiscard]] constexpr const std::shared_ptr<ASTNode> &getType() const { return this->m_type; }
         [[nodiscard]] constexpr const std::shared_ptr<ASTNodeTypeDecl> &getSizeType() const { return this->m_sizeType; }
         [[nodiscard]] constexpr const std::unique_ptr<ASTNode> &getPlacementOffset() const { return this->m_placementOffset; }
 
@@ -87,7 +87,7 @@ namespace pl {
 
     private:
         std::string m_name;
-        std::shared_ptr<ASTNodeTypeDecl> m_type;
+        std::shared_ptr<ASTNode> m_type;
         std::shared_ptr<ASTNodeTypeDecl> m_sizeType;
         std::unique_ptr<ASTNode> m_placementOffset;
     };

@@ -117,6 +117,7 @@ namespace pl {
         std::unique_ptr<ASTNode> parseMemberVariable(const std::shared_ptr<ASTNodeTypeDecl> &type);
         std::unique_ptr<ASTNode> parseMemberArrayVariable(const std::shared_ptr<ASTNodeTypeDecl> &type);
         std::unique_ptr<ASTNode> parseMemberPointerVariable(const std::shared_ptr<ASTNodeTypeDecl> &type);
+        std::unique_ptr<ASTNode> parseMemberPointerArrayVariable(const std::shared_ptr<ASTNodeTypeDecl> &type);
         std::unique_ptr<ASTNode> parseMember();
         std::shared_ptr<ASTNodeTypeDecl> parseStruct();
         std::shared_ptr<ASTNodeTypeDecl> parseUnion();
@@ -127,6 +128,7 @@ namespace pl {
         std::unique_ptr<ASTNode> parseVariablePlacement(const std::shared_ptr<ASTNodeTypeDecl> &type);
         std::unique_ptr<ASTNode> parseArrayVariablePlacement(const std::shared_ptr<ASTNodeTypeDecl> &type);
         std::unique_ptr<ASTNode> parsePointerVariablePlacement(const std::shared_ptr<ASTNodeTypeDecl> &type);
+        std::unique_ptr<ASTNode> parsePointerArrayVariablePlacement(const std::shared_ptr<ASTNodeTypeDecl> &type);
         std::unique_ptr<ASTNode> parsePlacement();
         std::vector<std::shared_ptr<ASTNode>> parseNamespace();
         std::vector<std::shared_ptr<ASTNode>> parseStatements();

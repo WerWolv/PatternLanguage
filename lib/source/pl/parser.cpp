@@ -814,7 +814,44 @@ namespace pl {
             return create(new ASTNodePointerVariableDecl(name, type, std::move(sizeType)));
     }
 
-    // [(parsePadding)|(parseMemberVariable)|(parseMemberArrayVariable)|(parseMemberPointerVariable)]
+    // (parseType) *Identifier[[(parseMathematicalExpression)]]  : (parseType)
+    std::unique_ptr<ASTNode> Parser::parseMemberPointerArrayVariable(const std::shared_ptr<ASTNodeTypeDecl> &type) {
+        auto name = getValue<Token::Identifier>(-2).get();
+
+        std::unique_ptr<ASTNode> size;
+
+        if (!MATCHES(sequence(SEPARATOR_SQUAREBRACKETCLOSE))) {
+            if (MATCHES(sequence(KEYWORD_WHILE, SEPARATOR_ROUNDBRACKETOPEN)))
+                size = parseWhileStatement();
+            else
+                size = parseMathematicalExpression();
+
+            if (!MATCHES(sequence(SEPARATOR_SQUAREBRACKETCLOSE)))
+                throwParserError("expected closing ']' at end of array declaration", -1);
+        }
+
+        if (!MATCHES(sequence(OPERATOR_INHERIT))) {
+            throwParserError("expected type used for pointer size", -1);
+        }
+
+        auto sizeType = parseType();
+
+        {
+            auto builtinType = dynamic_cast<ASTNodeBuiltinType *>(sizeType->getType().get());
+
+            if (builtinType == nullptr || !Token::isUnsigned(builtinType->getType()))
+                throwParserError("invalid type used for pointer size", -1);
+        }
+
+        auto arrayType = create(new ASTNodeArrayVariableDecl("", std::move(type), std::move(size)));
+
+        if (MATCHES(sequence(OPERATOR_AT)))
+            return create(new ASTNodePointerVariableDecl(name, std::move(arrayType), std::move(sizeType), parseMathematicalExpression()));
+        else
+            return create(new ASTNodePointerVariableDecl(name, std::move(arrayType), std::move(sizeType)));
+    }
+
+    // [(parsePadding)|(parseMemberVariable)|(parseMemberArrayVariable)|(parseMemberPointerVariable)|(parseMemberArrayPointerVariable)]
     std::unique_ptr<ASTNode> Parser::parseMember() {
         std::unique_ptr<ASTNode> member;
 
@@ -854,6 +891,8 @@ namespace pl {
                     member = parseMemberVariable(std::move(type));
                 else if (MATCHES(sequence(OPERATOR_STAR, IDENTIFIER, OPERATOR_INHERIT)))
                     member = parseMemberPointerVariable(std::move(type));
+                else if (MATCHES(sequence(OPERATOR_STAR, IDENTIFIER, SEPARATOR_SQUAREBRACKETOPEN)))
+                    member = parseMemberPointerArrayVariable(std::move(type));
                 else
                     throwParserError("invalid variable declaration");
             }
@@ -1127,6 +1166,43 @@ namespace pl {
         return create(new ASTNodePointerVariableDecl(name, type, std::move(sizeType), std::move(placementOffset)));
     }
 
+    // (parseType) *Identifier[[(parseMathematicalExpression)]] : (parseType) @ Integer
+    std::unique_ptr<ASTNode> Parser::parsePointerArrayVariablePlacement(const std::shared_ptr<ASTNodeTypeDecl> &type) {
+        auto name = getValue<Token::Identifier>(-2).get();
+
+        std::unique_ptr<ASTNode> size;
+
+        if (!MATCHES(sequence(SEPARATOR_SQUAREBRACKETCLOSE))) {
+            if (MATCHES(sequence(KEYWORD_WHILE, SEPARATOR_ROUNDBRACKETOPEN)))
+                size = parseWhileStatement();
+            else
+                size = parseMathematicalExpression();
+
+            if (!MATCHES(sequence(SEPARATOR_SQUAREBRACKETCLOSE)))
+                throwParserError("expected closing ']' at end of array declaration", -1);
+        }
+
+        if (!MATCHES(sequence(OPERATOR_INHERIT))) {
+            throwParserError("expected type used for pointer size", -1);
+        }
+
+        auto sizeType = parseType();
+
+        {
+            auto builtinType = dynamic_cast<ASTNodeBuiltinType *>(sizeType->getType().get());
+
+            if (builtinType == nullptr || !Token::isUnsigned(builtinType->getType()))
+                throwParserError("invalid type used for pointer size", -1);
+        }
+
+        if (!MATCHES(sequence(OPERATOR_AT)))
+            throwParserError("expected placement instruction", -1);
+
+        auto placementOffset = parseMathematicalExpression();
+
+        return create(new ASTNodePointerVariableDecl(name, create(new ASTNodeArrayVariableDecl("", std::move(type), std::move(size))), std::move(sizeType), std::move(placementOffset)));
+    }
+
     std::vector<std::shared_ptr<ASTNode>> Parser::parseNamespace() {
         std::vector<std::shared_ptr<ASTNode>> statements;
 
@@ -1166,6 +1242,8 @@ namespace pl {
             return parseVariablePlacement(std::move(type));
         else if (MATCHES(sequence(OPERATOR_STAR, IDENTIFIER, OPERATOR_INHERIT)))
             return parsePointerVariablePlacement(std::move(type));
+        else if (MATCHES(sequence(OPERATOR_STAR, IDENTIFIER, SEPARATOR_SQUAREBRACKETOPEN)))
+            return parsePointerArrayVariablePlacement(std::move(type));
         else throwParserError("invalid sequence", 0);
     }
 
