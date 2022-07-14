@@ -91,10 +91,16 @@ namespace pl {
             Signed8Bit     = 0x11,
             Unsigned16Bit  = 0x20,
             Signed16Bit    = 0x21,
+            Unsigned24Bit  = 0x30,
+            Signed24Bit    = 0x31,
             Unsigned32Bit  = 0x40,
             Signed32Bit    = 0x41,
+            Unsigned48Bit  = 0x60,
+            Signed48Bit    = 0x61,
             Unsigned64Bit  = 0x80,
             Signed64Bit    = 0x81,
+            Unsigned96Bit  = 0xC0,
+            Signed96Bit    = 0xC1,
             Unsigned128Bit = 0x100,
             Signed128Bit   = 0x101,
             Character      = 0x13,
@@ -218,20 +224,28 @@ namespace pl {
                     return "s8";
                 case ValueType::Signed16Bit:
                     return "s16";
+                case ValueType::Signed24Bit:
+                    return "s24";
                 case ValueType::Signed32Bit:
                     return "s32";
                 case ValueType::Signed64Bit:
                     return "s64";
+                case ValueType::Signed96Bit:
+                    return "s96";
                 case ValueType::Signed128Bit:
                     return "s128";
                 case ValueType::Unsigned8Bit:
                     return "u8";
                 case ValueType::Unsigned16Bit:
                     return "u16";
+                case ValueType::Unsigned24Bit:
+                    return "u24";
                 case ValueType::Unsigned32Bit:
                     return "u32";
                 case ValueType::Unsigned64Bit:
                     return "u64";
+                case ValueType::Unsigned96Bit:
+                    return "u96";
                 case ValueType::Unsigned128Bit:
                     return "u128";
                 case ValueType::Float:

@@ -22,20 +22,7 @@ namespace pl {
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
-            switch (this->getSize()) {
-                case 1:
-                    return "s8";
-                case 2:
-                    return "s16";
-                case 4:
-                    return "s32";
-                case 8:
-                    return "s64";
-                case 16:
-                    return "s128";
-                default:
-                    return "Signed data";
-            }
+            return fmt::format("s{}", this->getSize() * 8);
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override { return areCommonPropertiesEqual<decltype(*this)>(other); }
@@ -49,7 +36,7 @@ namespace pl {
             return this->formatDisplayValue(fmt::format("{:d} (0x{:0{}X})", data, data, 1 * 2), data);
         }
 
-        [[nodiscard]] virtual std::string toString() const {
+        [[nodiscard]] std::string toString() const override {
             return fmt::format("{}", this->getValue());
         }
     };

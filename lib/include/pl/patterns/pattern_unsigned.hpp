@@ -20,20 +20,7 @@ namespace pl {
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
-            switch (this->getSize()) {
-                case 1:
-                    return "u8";
-                case 2:
-                    return "u16";
-                case 4:
-                    return "u32";
-                case 8:
-                    return "u64";
-                case 16:
-                    return "u128";
-                default:
-                    return "Unsigned data";
-            }
+            return fmt::format("u{}", this->getSize() * 8);
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override { return areCommonPropertiesEqual<decltype(*this)>(other); }

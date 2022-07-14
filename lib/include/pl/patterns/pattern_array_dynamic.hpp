@@ -83,7 +83,7 @@ namespace pl {
             }
         }
 
-        [[nodiscard]] virtual std::string toString() const {
+        [[nodiscard]] std::string toString() const override {
             std::string result;
 
             result += "[ ";

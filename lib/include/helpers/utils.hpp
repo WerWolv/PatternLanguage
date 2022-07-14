@@ -84,85 +84,33 @@ namespace pl {
     template<size_t Size>
     using SizeType = typename SizeTypeImpl<Size>::Type;
 
-    template<typename T>
-    constexpr T changeEndianess(const T &value, std::endian endian) {
-        if (endian == std::endian::native)
-            return value;
-
-        constexpr auto Size = sizeof(T);
-
-        SizeType<Size> unswapped;
-        std::memcpy(&unswapped, &value, Size);
-
-        SizeType<Size> swapped;
-
-        if constexpr (!std::has_single_bit(Size) || Size > 16)
-            static_assert(always_false<T>::value, "Invalid type provided!");
-
-        switch (Size) {
-            case 1:
-                swapped = unswapped;
-                break;
-            case 2:
-                swapped = __builtin_bswap16(unswapped);
-                break;
-            case 4:
-                swapped = __builtin_bswap32(unswapped);
-                break;
-            case 8:
-                swapped = __builtin_bswap64(unswapped);
-                break;
-            case 16:
-                swapped = (u128(__builtin_bswap64(unswapped & 0xFFFF'FFFF'FFFF'FFFF)) << 64) | __builtin_bswap64(u128(unswapped) >> 64);
-                break;
-            default:
-                pl::unreachable();
-        }
-
-        T result;
-        std::memcpy(&result, &swapped, Size);
-
-        return result;
-    }
-
     [[nodiscard]] constexpr u128 bitmask(u8 bits) {
         return u128(-1) >> (128 - bits);
     }
 
     template<typename T>
-    constexpr T changeEndianess(T value, size_t size, std::endian endian) {
+    constexpr T changeEndianess(const T &value, size_t size, std::endian endian) {
         if (endian == std::endian::native)
             return value;
 
-        u128 unswapped = 0;
-        std::memcpy(&unswapped, &value, size);
+        size = std::min(size, sizeof(T));
 
-        u128 swapped;
+        std::array<uint8_t, 16> data = { 0 };
+        std::memcpy(&data[0], &value, size);
 
-        switch (size) {
-            case 1:
-                swapped = unswapped;
-                break;
-            case 2:
-                swapped = __builtin_bswap16(unswapped);
-                break;
-            case 4:
-                swapped = __builtin_bswap32(unswapped);
-                break;
-            case 8:
-                swapped = __builtin_bswap64(unswapped);
-                break;
-            case 16:
-                swapped = (u128(__builtin_bswap64(unswapped & 0xFFFF'FFFF'FFFF'FFFF)) << 64) | __builtin_bswap64(u128(unswapped) >> 64);
-                break;
-            default:
-                pl::unreachable();
+        for (uint32_t i = 0; i < size / 2; i++) {
+            std::swap(data[i], data[size - 1 - i]);
         }
 
-        T result = 0;
-        std::memcpy(&result, &swapped, size);
+        T result = 0x00;
+        std::memcpy(&result, &data[0], size);
 
         return result;
+    }
+
+    template<pl::integral T>
+    constexpr T changeEndianess(const T &value, std::endian endian) {
+        return changeEndianess(value, sizeof(value), endian);
     }
 
     template<typename T, typename... Args>

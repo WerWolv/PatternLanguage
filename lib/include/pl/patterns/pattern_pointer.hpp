@@ -115,7 +115,7 @@ namespace pl {
             return this->formatDisplayValue(fmt::format("*(0x{0:X})", data), u128(data));
         }
 
-        [[nodiscard]] virtual std::string toString() const {
+        [[nodiscard]] std::string toString() const override {
             return this->m_pointedAt->toString();
         }
 

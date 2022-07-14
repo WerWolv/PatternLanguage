@@ -472,14 +472,26 @@ namespace pl {
                         tokens.emplace_back(TOKEN(ValueType, Unsigned16Bit));
                     else if (identifier == "s16")
                         tokens.emplace_back(TOKEN(ValueType, Signed16Bit));
+                    else if (identifier == "u24")
+                        tokens.emplace_back(TOKEN(ValueType, Unsigned24Bit));
+                    else if (identifier == "s24")
+                        tokens.emplace_back(TOKEN(ValueType, Signed24Bit));
                     else if (identifier == "u32")
                         tokens.emplace_back(TOKEN(ValueType, Unsigned32Bit));
                     else if (identifier == "s32")
                         tokens.emplace_back(TOKEN(ValueType, Signed32Bit));
+                    else if (identifier == "u48")
+                        tokens.emplace_back(TOKEN(ValueType, Unsigned48Bit));
+                    else if (identifier == "s48")
+                        tokens.emplace_back(TOKEN(ValueType, Signed48Bit));
                     else if (identifier == "u64")
                         tokens.emplace_back(TOKEN(ValueType, Unsigned64Bit));
                     else if (identifier == "s64")
                         tokens.emplace_back(TOKEN(ValueType, Signed64Bit));
+                    else if (identifier == "u96")
+                        tokens.emplace_back(TOKEN(ValueType, Unsigned96Bit));
+                    else if (identifier == "s96")
+                        tokens.emplace_back(TOKEN(ValueType, Signed96Bit));
                     else if (identifier == "u128")
                         tokens.emplace_back(TOKEN(ValueType, Unsigned128Bit));
                     else if (identifier == "s128")

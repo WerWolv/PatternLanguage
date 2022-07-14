@@ -701,7 +701,7 @@ namespace pl {
 
     /* Type declarations */
 
-    // [be|le] <Identifier|u8|u16|u32|u64|u128|s8|s16|s32|s64|s128|float|double|str>
+    // [be|le] <Identifier|u8|u16|u24|u32|u48|u64|u96|u128|s8|s16|s24|s32|s48|s64|s96|s128|float|double|str>
     std::unique_ptr<ASTNodeTypeDecl> Parser::parseType(bool allowFunctionTypes) {
         std::optional<std::endian> endian;
 
