@@ -157,14 +157,14 @@ namespace pl {
                 LogConsole::abortEvaluation("pointer base function needs exactly one parameter", node);
 
             if (auto pointerPattern = dynamic_cast<PatternPointer *>(pattern)) {
-                u128 pointerValue = pointerPattern->getPointedAtAddress();
+                i128 pointerValue = pointerPattern->getPointedAtAddress();
 
                 auto result = function.func(evaluator, { pointerValue });
 
                 if (!result.has_value())
                     LogConsole::abortEvaluation("pointer base function did not return a value", node);
 
-                pointerPattern->setPointedAtAddress(Token::literalToUnsigned(result.value()) + pointerValue);
+                pointerPattern->rebase(Token::literalToSigned(result.value()));
             } else {
                 LogConsole::abortEvaluation("pointer_base attribute may only be applied to a pointer");
             }

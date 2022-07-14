@@ -114,6 +114,7 @@ namespace pl {
         std::unique_ptr<ASTNodeTypeDecl> parseType(bool allowFunctionTypes = false);
         std::shared_ptr<ASTNodeTypeDecl> parseUsingDeclaration();
         std::unique_ptr<ASTNode> parsePadding();
+        std::unique_ptr<ASTNodeTypeDecl> parsePointerSizeType();
         std::unique_ptr<ASTNode> parseMemberVariable(const std::shared_ptr<ASTNodeTypeDecl> &type);
         std::unique_ptr<ASTNode> parseMemberArrayVariable(const std::shared_ptr<ASTNodeTypeDecl> &type);
         std::unique_ptr<ASTNode> parseMemberPointerVariable(const std::shared_ptr<ASTNodeTypeDecl> &type);

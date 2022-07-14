@@ -795,18 +795,25 @@ namespace pl {
             return create(new ASTNodeArrayVariableDecl(name, type, std::move(size)));
     }
 
+    std::unique_ptr<ASTNodeTypeDecl> Parser::parsePointerSizeType() {
+        auto sizeType = parseType();
+
+        auto builtinType = dynamic_cast<ASTNodeBuiltinType *>(sizeType->getType().get());
+
+        if (builtinType == nullptr || !Token::isInteger(builtinType->getType()))
+            throwParserError("invalid type used for pointer size", -1);
+
+        if (Token::getTypeSize(builtinType->getType()) > 8) {
+            throwParserError("pointer size cannot be larger than 64 bits", -1);
+        }
+
+        return sizeType;
+    }
+
     // (parseType) *Identifier : (parseType)
     std::unique_ptr<ASTNode> Parser::parseMemberPointerVariable(const std::shared_ptr<ASTNodeTypeDecl> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
-
-        auto sizeType = parseType();
-
-        {
-            auto builtinType = dynamic_cast<ASTNodeBuiltinType *>(sizeType->getType().get());
-
-            if (builtinType == nullptr || !Token::isUnsigned(builtinType->getType()))
-                throwParserError("invalid type used for pointer size", -1);
-        }
+        auto sizeType = parsePointerSizeType();
 
         if (MATCHES(sequence(OPERATOR_AT)))
             return create(new ASTNodePointerVariableDecl(name, type, std::move(sizeType), parseMathematicalExpression()));
@@ -834,15 +841,7 @@ namespace pl {
             throwParserError("expected type used for pointer size", -1);
         }
 
-        auto sizeType = parseType();
-
-        {
-            auto builtinType = dynamic_cast<ASTNodeBuiltinType *>(sizeType->getType().get());
-
-            if (builtinType == nullptr || !Token::isUnsigned(builtinType->getType()))
-                throwParserError("invalid type used for pointer size", -1);
-        }
-
+        auto sizeType = parsePointerSizeType();
         auto arrayType = create(new ASTNodeArrayVariableDecl("", std::move(type), std::move(size)));
 
         if (MATCHES(sequence(OPERATOR_AT)))
@@ -1149,14 +1148,7 @@ namespace pl {
     std::unique_ptr<ASTNode> Parser::parsePointerVariablePlacement(const std::shared_ptr<ASTNodeTypeDecl> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
 
-        auto sizeType = parseType();
-
-        {
-            auto builtinType = dynamic_cast<ASTNodeBuiltinType *>(sizeType->getType().get());
-
-            if (builtinType == nullptr || !Token::isUnsigned(builtinType->getType()))
-                throwParserError("invalid type used for pointer size", -1);
-        }
+        auto sizeType = parsePointerSizeType();
 
         if (!MATCHES(sequence(OPERATOR_AT)))
             throwParserError("expected placement instruction", -1);
@@ -1186,14 +1178,7 @@ namespace pl {
             throwParserError("expected type used for pointer size", -1);
         }
 
-        auto sizeType = parseType();
-
-        {
-            auto builtinType = dynamic_cast<ASTNodeBuiltinType *>(sizeType->getType().get());
-
-            if (builtinType == nullptr || !Token::isUnsigned(builtinType->getType()))
-                throwParserError("invalid type used for pointer size", -1);
-        }
+        auto sizeType = parsePointerSizeType();
 
         if (!MATCHES(sequence(OPERATOR_AT)))
             throwParserError("expected placement instruction", -1);
