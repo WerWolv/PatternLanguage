@@ -64,7 +64,9 @@ namespace pl {
             this->m_pointedAt = std::move(pattern);
             this->m_pointedAt->setVariableName(fmt::format("*({})", this->getVariableName()));
             this->m_pointedAt->setOffset(this->m_pointedAtAddress);
-            this->m_pointedAt->setColor(Pattern::getColor());
+
+            if (this->hasOverriddenColor())
+                this->m_pointedAt->setColor(this->getColor());
         }
 
         void setPointedAtAddress(u64 address) {
