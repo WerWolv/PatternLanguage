@@ -49,7 +49,9 @@ namespace pl {
         }
 
         [[nodiscard]] std::vector<std::pair<u64, Pattern*>> getChildren() override {
-            return this->m_pointedAt->getChildren();
+            auto children = this->m_pointedAt->getChildren();
+            children.emplace_back(this->getOffset(), this);
+            return children;
         }
 
         void setMemoryLocationType(PatternMemoryType type) override {
@@ -62,6 +64,7 @@ namespace pl {
             this->m_pointedAt = std::move(pattern);
             this->m_pointedAt->setVariableName(fmt::format("*({})", this->getVariableName()));
             this->m_pointedAt->setOffset(this->m_pointedAtAddress);
+            this->m_pointedAt->setColor(Pattern::getColor());
         }
 
         void setPointedAtAddress(u64 address) {
@@ -78,7 +81,9 @@ namespace pl {
 
         void setColor(u32 color) override {
             Pattern::setColor(color);
-            this->m_pointedAt->setColor(color);
+            if (this->m_pointedAt != nullptr) {
+                this->m_pointedAt->setColor(color);
+            }
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override {
