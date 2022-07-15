@@ -9,6 +9,7 @@
 #include <pl/log_console.hpp>
 
 #include "helpers/utils.hpp"
+#include "helpers/concepts.hpp"
 
 namespace pl {
 
@@ -54,26 +55,26 @@ namespace pl {
 
         enum class Operator
         {
-            AtDeclaration,
-            Assignment,
-            Inherit,
+            At,
+            Assign,
+            Colon,
             Plus,
             Minus,
             Star,
             Slash,
             Percent,
-            ShiftLeft,
-            ShiftRight,
+            LeftShift,
+            RightShift,
             BitOr,
             BitAnd,
             BitXor,
             BitNot,
-            BoolEquals,
-            BoolNotEquals,
+            BoolEqual,
+            BoolNotEqual,
             BoolGreaterThan,
             BoolLessThan,
-            BoolGreaterThanOrEquals,
-            BoolLessThanOrEquals,
+            BoolGreaterThanOrEqual,
+            BoolLessThanOrEqual,
             BoolAnd,
             BoolOr,
             BoolXor,
@@ -122,15 +123,15 @@ namespace pl {
 
         enum class Separator
         {
-            RoundBracketOpen,
-            RoundBracketClose,
-            CurlyBracketOpen,
-            CurlyBracketClose,
-            SquareBracketOpen,
-            SquareBracketClose,
+            LeftParenthesis,
+            RightParenthesis,
+            LeftBrace,
+            RightBrace,
+            LeftBracket,
+            RightBracket,
             Comma,
             Dot,
-            EndOfExpression,
+            Semicolon,
             EndOfProgram
         };
 
@@ -148,8 +149,7 @@ namespace pl {
         using Literal    = std::variant<char, bool, u128, i128, double, std::string, Pattern *>;
         using ValueTypes = std::variant<Keyword, Identifier, Operator, Literal, ValueType, Separator>;
 
-        Token(Type type, auto value, u32 lineNumber) : type(type), value(value), lineNumber(lineNumber) {
-        }
+        constexpr Token(Type type, auto value, u32 line, u32 column) : type(type), value(std::move(value)), line(line), column(column) {}
 
         [[nodiscard]] constexpr static inline bool isInteger(const ValueType &type) {
             return isUnsigned(type) || isSigned(type);
@@ -301,84 +301,136 @@ namespace pl {
 
         Type type;
         ValueTypes value;
-        u32 lineNumber;
+        u32 line, column;
     };
 
+    namespace tkn {
+
+        constexpr inline Token createToken(const pl::Token::Type type, const pl::Token::ValueTypes &value) {
+            return { type, value, 0, 0 };
+        }
+
+        namespace Keyword {
+
+            constexpr auto If           = createToken(pl::Token::Type::Keyword, Token::Keyword::If);
+            constexpr auto Else         = createToken(pl::Token::Type::Keyword, Token::Keyword::Else);
+            constexpr auto While        = createToken(pl::Token::Type::Keyword, Token::Keyword::While);
+            constexpr auto For          = createToken(pl::Token::Type::Keyword, Token::Keyword::For);
+            constexpr auto Return       = createToken(pl::Token::Type::Keyword, Token::Keyword::Return);
+            constexpr auto Break        = createToken(pl::Token::Type::Keyword, Token::Keyword::Break);
+            constexpr auto Continue     = createToken(pl::Token::Type::Keyword, Token::Keyword::Continue);
+            constexpr auto Struct       = createToken(pl::Token::Type::Keyword, Token::Keyword::Struct);
+            constexpr auto Enum         = createToken(pl::Token::Type::Keyword, Token::Keyword::Enum);
+            constexpr auto Union        = createToken(pl::Token::Type::Keyword, Token::Keyword::Union);
+            constexpr auto Function     = createToken(pl::Token::Type::Keyword, Token::Keyword::Function);
+            constexpr auto Bitfield     = createToken(pl::Token::Type::Keyword, Token::Keyword::Bitfield);
+            constexpr auto LittleEndian = createToken(pl::Token::Type::Keyword, Token::Keyword::LittleEndian);
+            constexpr auto BigEndian    = createToken(pl::Token::Type::Keyword, Token::Keyword::BigEndian);
+            constexpr auto Parent       = createToken(pl::Token::Type::Keyword, Token::Keyword::Parent);
+            constexpr auto Namespace    = createToken(pl::Token::Type::Keyword, Token::Keyword::Namespace);
+            constexpr auto Using        = createToken(pl::Token::Type::Keyword, Token::Keyword::Using);
+            constexpr auto This         = createToken(pl::Token::Type::Keyword, Token::Keyword::This);
+            constexpr auto In           = createToken(pl::Token::Type::Keyword, Token::Keyword::In);
+            constexpr auto Out          = createToken(pl::Token::Type::Keyword, Token::Keyword::Out);
+
+        }
+
+        namespace Literal {
+
+            constexpr auto Identifier   = [](const std::string &name = { }) -> Token     { return createToken(pl::Token::Type::Identifier, Token::Identifier(name)); };
+            constexpr auto Numeric      = [](const Token::Literal &value = { }) -> Token { return createToken(pl::Token::Type::Integer, value); };
+            constexpr auto String       = [](const std::string &value = { }) -> Token    { return createToken(pl::Token::Type::String, Token::Literal(value)); };
+
+        }
+
+        namespace Operator {
+
+            constexpr auto Plus                     = createToken(pl::Token::Type::Operator, Token::Operator::Plus);
+            constexpr auto Minus                    = createToken(pl::Token::Type::Operator, Token::Operator::Minus);
+            constexpr auto Star                     = createToken(pl::Token::Type::Operator, Token::Operator::Star);
+            constexpr auto Slash                    = createToken(pl::Token::Type::Operator, Token::Operator::Slash);
+            constexpr auto Percent                  = createToken(pl::Token::Type::Operator, Token::Operator::Percent);
+            constexpr auto LeftShift                = createToken(pl::Token::Type::Operator, Token::Operator::LeftShift);
+            constexpr auto RightShift               = createToken(pl::Token::Type::Operator, Token::Operator::RightShift);
+            constexpr auto BitAnd                   = createToken(pl::Token::Type::Operator, Token::Operator::BitAnd);
+            constexpr auto BitOr                    = createToken(pl::Token::Type::Operator, Token::Operator::BitOr);
+            constexpr auto BitXor                   = createToken(pl::Token::Type::Operator, Token::Operator::BitXor);
+            constexpr auto BitNot                   = createToken(pl::Token::Type::Operator, Token::Operator::BitNot);
+            constexpr auto BoolEqual                = createToken(pl::Token::Type::Operator, Token::Operator::BoolEqual);
+            constexpr auto BoolNotEqual             = createToken(pl::Token::Type::Operator, Token::Operator::BoolNotEqual);
+            constexpr auto BoolLessThan             = createToken(pl::Token::Type::Operator, Token::Operator::BoolLessThan);
+            constexpr auto BoolGreaterThan          = createToken(pl::Token::Type::Operator, Token::Operator::BoolGreaterThan);
+            constexpr auto BoolLessThanOrEqual      = createToken(pl::Token::Type::Operator, Token::Operator::BoolLessThanOrEqual);
+            constexpr auto BoolGreaterThanOrEqual   = createToken(pl::Token::Type::Operator, Token::Operator::BoolGreaterThanOrEqual);
+            constexpr auto BoolAnd                  = createToken(pl::Token::Type::Operator, Token::Operator::BoolAnd);
+            constexpr auto BoolOr                   = createToken(pl::Token::Type::Operator, Token::Operator::BoolOr);
+            constexpr auto BoolNot                  = createToken(pl::Token::Type::Operator, Token::Operator::BoolNot);
+            constexpr auto BoolXor                  = createToken(pl::Token::Type::Operator, Token::Operator::BoolXor);
+            constexpr auto Dollar                   = createToken(pl::Token::Type::Operator, Token::Operator::Dollar);
+            constexpr auto Colon                    = createToken(pl::Token::Type::Operator, Token::Operator::Colon);
+            constexpr auto ScopeResolution          = createToken(pl::Token::Type::Operator, Token::Operator::ScopeResolution);
+            constexpr auto TernaryConditional       = createToken(pl::Token::Type::Operator, Token::Operator::TernaryConditional);
+            constexpr auto AddressOf                = createToken(pl::Token::Type::Operator, Token::Operator::AddressOf);
+            constexpr auto SizeOf                   = createToken(pl::Token::Type::Operator, Token::Operator::SizeOf);
+            constexpr auto At                       = createToken(pl::Token::Type::Operator, Token::Operator::At);
+            constexpr auto Assign                   = createToken(pl::Token::Type::Operator, Token::Operator::Assign);
+
+        }
+
+        namespace ValueType {
+
+            constexpr auto CustomType       = createToken(pl::Token::Type::ValueType, Token::ValueType::CustomType);
+            constexpr auto Padding          = createToken(pl::Token::Type::ValueType, Token::ValueType::Padding);
+            constexpr auto Unsigned         = createToken(pl::Token::Type::ValueType, Token::ValueType::Unsigned);
+            constexpr auto Signed           = createToken(pl::Token::Type::ValueType, Token::ValueType::Signed);
+            constexpr auto FloatingPoint    = createToken(pl::Token::Type::ValueType, Token::ValueType::FloatingPoint);
+            constexpr auto Auto             = createToken(pl::Token::Type::ValueType, Token::ValueType::Auto);
+            constexpr auto Any              = createToken(pl::Token::Type::ValueType, Token::ValueType::Any);
+
+            constexpr auto Unsigned8Bit     = createToken(pl::Token::Type::ValueType, Token::ValueType::Unsigned8Bit);
+            constexpr auto Unsigned16Bit    = createToken(pl::Token::Type::ValueType, Token::ValueType::Unsigned16Bit);
+            constexpr auto Unsigned24Bit    = createToken(pl::Token::Type::ValueType, Token::ValueType::Unsigned24Bit);
+            constexpr auto Unsigned32Bit    = createToken(pl::Token::Type::ValueType, Token::ValueType::Unsigned32Bit);
+            constexpr auto Unsigned48Bit    = createToken(pl::Token::Type::ValueType, Token::ValueType::Unsigned48Bit);
+            constexpr auto Unsigned64Bit    = createToken(pl::Token::Type::ValueType, Token::ValueType::Unsigned64Bit);
+            constexpr auto Unsigned96Bit    = createToken(pl::Token::Type::ValueType, Token::ValueType::Unsigned96Bit);
+            constexpr auto Unsigned128Bit   = createToken(pl::Token::Type::ValueType, Token::ValueType::Unsigned128Bit);
+
+            constexpr auto Signed8Bit       = createToken(pl::Token::Type::ValueType, Token::ValueType::Signed8Bit);
+            constexpr auto Signed16Bit      = createToken(pl::Token::Type::ValueType, Token::ValueType::Signed16Bit);
+            constexpr auto Signed24Bit      = createToken(pl::Token::Type::ValueType, Token::ValueType::Signed24Bit);
+            constexpr auto Signed32Bit      = createToken(pl::Token::Type::ValueType, Token::ValueType::Signed32Bit);
+            constexpr auto Signed48Bit      = createToken(pl::Token::Type::ValueType, Token::ValueType::Signed48Bit);
+            constexpr auto Signed64Bit      = createToken(pl::Token::Type::ValueType, Token::ValueType::Signed64Bit);
+            constexpr auto Signed96Bit      = createToken(pl::Token::Type::ValueType, Token::ValueType::Signed96Bit);
+            constexpr auto Signed128Bit     = createToken(pl::Token::Type::ValueType, Token::ValueType::Signed128Bit);
+
+            constexpr auto Float            = createToken(pl::Token::Type::ValueType, Token::ValueType::Float);
+            constexpr auto Double           = createToken(pl::Token::Type::ValueType, Token::ValueType::Double);
+
+            constexpr auto Boolean          = createToken(pl::Token::Type::ValueType, Token::ValueType::Boolean);
+
+            constexpr auto Character        = createToken(pl::Token::Type::ValueType, Token::ValueType::Character);
+            constexpr auto Character16      = createToken(pl::Token::Type::ValueType, Token::ValueType::Character16);
+            constexpr auto String           = createToken(pl::Token::Type::ValueType, Token::ValueType::String);
+
+        }
+
+        namespace Separator {
+
+            constexpr auto Comma            = createToken(pl::Token::Type::Separator, Token::Separator::Comma);
+            constexpr auto LeftParenthesis  = createToken(pl::Token::Type::Separator, Token::Separator::LeftParenthesis);
+            constexpr auto RightParenthesis = createToken(pl::Token::Type::Separator, Token::Separator::RightParenthesis);
+            constexpr auto LeftBracket      = createToken(pl::Token::Type::Separator, Token::Separator::LeftBracket);
+            constexpr auto RightBracket     = createToken(pl::Token::Type::Separator, Token::Separator::RightBracket);
+            constexpr auto LeftBrace        = createToken(pl::Token::Type::Separator, Token::Separator::LeftBrace);
+            constexpr auto RightBrace       = createToken(pl::Token::Type::Separator, Token::Separator::RightBrace);
+            constexpr auto Dot              = createToken(pl::Token::Type::Separator, Token::Separator::Dot);
+            constexpr auto Semicolon        = createToken(pl::Token::Type::Separator, Token::Separator::Semicolon);
+            constexpr auto EndOfProgram     = createToken(pl::Token::Type::Separator, Token::Separator::EndOfProgram);
+
+        }
+
+    }
+
 }
-
-#define COMPONENT(type, value) pl::Token::Type::type, pl::Token::type::value
-
-#define KEYWORD_STRUCT    COMPONENT(Keyword, Struct)
-#define KEYWORD_UNION     COMPONENT(Keyword, Union)
-#define KEYWORD_USING     COMPONENT(Keyword, Using)
-#define KEYWORD_ENUM      COMPONENT(Keyword, Enum)
-#define KEYWORD_BITFIELD  COMPONENT(Keyword, Bitfield)
-#define KEYWORD_LE        COMPONENT(Keyword, LittleEndian)
-#define KEYWORD_BE        COMPONENT(Keyword, BigEndian)
-#define KEYWORD_IF        COMPONENT(Keyword, If)
-#define KEYWORD_ELSE      COMPONENT(Keyword, Else)
-#define KEYWORD_PARENT    COMPONENT(Keyword, Parent)
-#define KEYWORD_THIS      COMPONENT(Keyword, This)
-#define KEYWORD_WHILE     COMPONENT(Keyword, While)
-#define KEYWORD_FOR       COMPONENT(Keyword, For)
-#define KEYWORD_FUNCTION  COMPONENT(Keyword, Function)
-#define KEYWORD_RETURN    COMPONENT(Keyword, Return)
-#define KEYWORD_NAMESPACE COMPONENT(Keyword, Namespace)
-#define KEYWORD_IN        COMPONENT(Keyword, In)
-#define KEYWORD_OUT       COMPONENT(Keyword, Out)
-#define KEYWORD_BREAK     COMPONENT(Keyword, Break)
-#define KEYWORD_CONTINUE  COMPONENT(Keyword, Continue)
-
-#define INTEGER    pl::Token::Type::Integer, pl::Token::Literal(u128(0))
-#define IDENTIFIER pl::Token::Type::Identifier, ""
-#define STRING     pl::Token::Type::String, pl::Token::Literal("")
-
-#define OPERATOR_ANY                     COMPONENT(Operator, Any)
-#define OPERATOR_AT                      COMPONENT(Operator, AtDeclaration)
-#define OPERATOR_ASSIGNMENT              COMPONENT(Operator, Assignment)
-#define OPERATOR_INHERIT                 COMPONENT(Operator, Inherit)
-#define OPERATOR_PLUS                    COMPONENT(Operator, Plus)
-#define OPERATOR_MINUS                   COMPONENT(Operator, Minus)
-#define OPERATOR_STAR                    COMPONENT(Operator, Star)
-#define OPERATOR_SLASH                   COMPONENT(Operator, Slash)
-#define OPERATOR_PERCENT                 COMPONENT(Operator, Percent)
-#define OPERATOR_SHIFTLEFT               COMPONENT(Operator, ShiftLeft)
-#define OPERATOR_SHIFTRIGHT              COMPONENT(Operator, ShiftRight)
-#define OPERATOR_BITOR                   COMPONENT(Operator, BitOr)
-#define OPERATOR_BITAND                  COMPONENT(Operator, BitAnd)
-#define OPERATOR_BITXOR                  COMPONENT(Operator, BitXor)
-#define OPERATOR_BITNOT                  COMPONENT(Operator, BitNot)
-#define OPERATOR_BOOLEQUALS              COMPONENT(Operator, BoolEquals)
-#define OPERATOR_BOOLNOTEQUALS           COMPONENT(Operator, BoolNotEquals)
-#define OPERATOR_BOOLGREATERTHAN         COMPONENT(Operator, BoolGreaterThan)
-#define OPERATOR_BOOLLESSTHAN            COMPONENT(Operator, BoolLessThan)
-#define OPERATOR_BOOLGREATERTHANOREQUALS COMPONENT(Operator, BoolGreaterThanOrEquals)
-#define OPERATOR_BOOLLESSTHANOREQUALS    COMPONENT(Operator, BoolLessThanOrEquals)
-#define OPERATOR_BOOLAND                 COMPONENT(Operator, BoolAnd)
-#define OPERATOR_BOOLOR                  COMPONENT(Operator, BoolOr)
-#define OPERATOR_BOOLXOR                 COMPONENT(Operator, BoolXor)
-#define OPERATOR_BOOLNOT                 COMPONENT(Operator, BoolNot)
-#define OPERATOR_TERNARYCONDITIONAL      COMPONENT(Operator, TernaryConditional)
-#define OPERATOR_DOLLAR                  COMPONENT(Operator, Dollar)
-#define OPERATOR_ADDRESSOF               COMPONENT(Operator, AddressOf)
-#define OPERATOR_SIZEOF                  COMPONENT(Operator, SizeOf)
-#define OPERATOR_SCOPERESOLUTION         COMPONENT(Operator, ScopeResolution)
-
-#define VALUETYPE_CUSTOMTYPE    COMPONENT(ValueType, CustomType)
-#define VALUETYPE_PADDING       COMPONENT(ValueType, Padding)
-#define VALUETYPE_UNSIGNED      COMPONENT(ValueType, Unsigned)
-#define VALUETYPE_SIGNED        COMPONENT(ValueType, Signed)
-#define VALUETYPE_FLOATINGPOINT COMPONENT(ValueType, FloatingPoint)
-#define VALUETYPE_AUTO          COMPONENT(ValueType, Auto)
-#define VALUETYPE_ANY           COMPONENT(ValueType, Any)
-
-#define SEPARATOR_ROUNDBRACKETOPEN   COMPONENT(Separator, RoundBracketOpen)
-#define SEPARATOR_ROUNDBRACKETCLOSE  COMPONENT(Separator, RoundBracketClose)
-#define SEPARATOR_CURLYBRACKETOPEN   COMPONENT(Separator, CurlyBracketOpen)
-#define SEPARATOR_CURLYBRACKETCLOSE  COMPONENT(Separator, CurlyBracketClose)
-#define SEPARATOR_SQUAREBRACKETOPEN  COMPONENT(Separator, SquareBracketOpen)
-#define SEPARATOR_SQUAREBRACKETCLOSE COMPONENT(Separator, SquareBracketClose)
-#define SEPARATOR_COMMA              COMPONENT(Separator, Comma)
-#define SEPARATOR_DOT                COMPONENT(Separator, Dot)
-#define SEPARATOR_ENDOFEXPRESSION    COMPONENT(Separator, EndOfExpression)
-#define SEPARATOR_ENDOFPROGRAM       COMPONENT(Separator, EndOfProgram)

@@ -134,17 +134,17 @@ namespace pl {
                    switch (this->getOperator()) {
                        case Token::Operator::Plus:
                            return new ASTNodeLiteral(left + right);
-                       case Token::Operator::BoolEquals:
+                       case Token::Operator::BoolEqual:
                            return new ASTNodeLiteral(left == right);
-                       case Token::Operator::BoolNotEquals:
+                       case Token::Operator::BoolNotEqual:
                            return new ASTNodeLiteral(left != right);
                        case Token::Operator::BoolGreaterThan:
                            return new ASTNodeLiteral(left > right);
                        case Token::Operator::BoolLessThan:
                            return new ASTNodeLiteral(left < right);
-                       case Token::Operator::BoolGreaterThanOrEquals:
+                       case Token::Operator::BoolGreaterThanOrEqual:
                            return new ASTNodeLiteral(left >= right);
-                       case Token::Operator::BoolLessThanOrEquals:
+                       case Token::Operator::BoolLessThanOrEqual:
                            return new ASTNodeLiteral(left <= right);
                        default:
                            LogConsole::abortEvaluation("invalid operand used in mathematical expression", this);
@@ -180,9 +180,9 @@ namespace pl {
                        case Token::Operator::Percent:
                            if (right == 0) LogConsole::abortEvaluation("division by zero!", this);
                            return new ASTNodeLiteral(modulus(left, right));
-                       case Token::Operator::ShiftLeft:
+                       case Token::Operator::LeftShift:
                            return new ASTNodeLiteral(shiftLeft(left, right));
-                       case Token::Operator::ShiftRight:
+                       case Token::Operator::RightShift:
                            return new ASTNodeLiteral(shiftRight(left, right));
                        case Token::Operator::BitAnd:
                            return new ASTNodeLiteral(bitAnd(left, right));
@@ -192,17 +192,17 @@ namespace pl {
                            return new ASTNodeLiteral(bitOr(left, right));
                        case Token::Operator::BitNot:
                            return new ASTNodeLiteral(bitNot(left, right));
-                       case Token::Operator::BoolEquals:
+                       case Token::Operator::BoolEqual:
                            return new ASTNodeLiteral(bool(left == static_cast<decltype(left)>(right)));
-                       case Token::Operator::BoolNotEquals:
+                       case Token::Operator::BoolNotEqual:
                            return new ASTNodeLiteral(bool(left != static_cast<decltype(left)>(right)));
                        case Token::Operator::BoolGreaterThan:
                            return new ASTNodeLiteral(bool(left > static_cast<decltype(left)>(right)));
                        case Token::Operator::BoolLessThan:
                            return new ASTNodeLiteral(bool(left < static_cast<decltype(left)>(right)));
-                       case Token::Operator::BoolGreaterThanOrEquals:
+                       case Token::Operator::BoolGreaterThanOrEqual:
                            return new ASTNodeLiteral(bool(left >= static_cast<decltype(left)>(right)));
-                       case Token::Operator::BoolLessThanOrEquals:
+                       case Token::Operator::BoolLessThanOrEqual:
                            return new ASTNodeLiteral(bool(left <= static_cast<decltype(left)>(right)));
                        case Token::Operator::BoolAnd:
                            return new ASTNodeLiteral(bool(left && right));
