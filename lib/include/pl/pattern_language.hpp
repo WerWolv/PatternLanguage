@@ -83,7 +83,7 @@ namespace pl {
             return this->m_flattenedPatterns;
         }
 
-        Pattern* getPattern(u64 address) const;
+        [[nodiscard]] std::vector<Pattern *> getPatterns(u64 address) const;
 
         void reset();
         [[nodiscard]] bool isRunning() const { return this->m_running; }

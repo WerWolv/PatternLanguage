@@ -242,25 +242,34 @@ namespace pl {
         }
     }
 
-    Pattern *PatternLanguage::getPattern(u64 address) const {
+    std::vector<Pattern *> PatternLanguage::getPatterns(u64 address) const {
         if (this->m_flattenedPatterns.empty())
-            return nullptr;
+            return { };
 
         auto it = this->m_flattenedPatterns.upper_bound(address);
 
         if (it != this->m_flattenedPatterns.begin())
             it--;
 
-        auto &[patternAddress, patterns] = *it;
 
-        for (auto &pattern : patterns) {
-            if (address >= patternAddress && address < (patternAddress + pattern->getSize())) {
-                pattern->setOffset(patternAddress);
-                return pattern;
+        std::vector<Pattern *> result;
+        for (u8 retries = 0; retries < 16; retries ++) {
+            auto &[patternAddress, patterns] = *it;
+
+            for (auto &pattern : patterns) {
+                if (address >= patternAddress && address < (patternAddress + pattern->getSize())) {
+                    pattern->setOffset(patternAddress);
+                    result.push_back(pattern);
+                }
             }
+
+            if (it != this->m_flattenedPatterns.begin())
+                it--;
+            else
+                break;
         }
 
-        return nullptr;
+        return result;
     }
 
 }
