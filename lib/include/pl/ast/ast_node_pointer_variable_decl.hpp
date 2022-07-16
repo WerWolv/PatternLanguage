@@ -49,18 +49,17 @@ namespace pl {
 
             auto pointerStartOffset = evaluator->dataOffset();
 
-            const auto sizePatterns = this->m_sizeType->createPatterns(evaluator);
-            const auto &sizePattern = sizePatterns.front();
+            auto sizePatterns = this->m_sizeType->createPatterns(evaluator);
+            auto &sizePattern = sizePatterns.front();
 
             auto pattern = std::make_unique<PatternPointer>(evaluator, pointerStartOffset, sizePattern->getSize());
             pattern->setVariableName(this->m_name);
+            pattern->setPointerTypePattern(std::move(sizePattern));
 
             auto pointerEndOffset = evaluator->dataOffset();
 
             {
-                u128 pointerAddress = 0;
-                evaluator->readData(pattern->getOffset(), &pointerAddress, pattern->getSize());
-                pointerAddress = pl::changeEndianess(pointerAddress, sizePattern->getSize(), sizePattern->getEndian());
+                i128 pointerAddress = pattern->getValue();
 
                 evaluator->dataOffset() = pointerStartOffset;
 
@@ -73,7 +72,6 @@ namespace pl {
                 auto &pointedAtPattern = pointedAtPatterns.front();
 
                 pattern->setPointedAtPattern(std::move(pointedAtPattern));
-                pattern->setEndian(sizePattern->getEndian());
             }
 
             if (this->m_placementOffset != nullptr && !evaluator->isGlobalScope()) {
