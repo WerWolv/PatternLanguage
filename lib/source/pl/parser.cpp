@@ -767,8 +767,10 @@ namespace pl {
             } while (MATCHES(sequence(tkn::Separator::Comma, tkn::Literal::Identifier())));
 
             return create(new ASTNodeMultiVariableDecl(std::move(variables)));
-        } else if (MATCHES(sequence(tkn::Operator::At)))
-            return create(new ASTNodeVariableDecl(getValue<Token::Identifier>(-2).get(), type, parseMathematicalExpression()));
+        } else if (MATCHES(sequence(tkn::Operator::At))) {
+            auto variableName = getValue<Token::Identifier>(-2).get();
+            return create(new ASTNodeVariableDecl(variableName, type, parseMathematicalExpression()));
+        }
         else
             return create(new ASTNodeVariableDecl(getValue<Token::Identifier>(-1).get(), type));
     }

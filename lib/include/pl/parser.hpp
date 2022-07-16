@@ -55,8 +55,12 @@ namespace pl {
             auto &token = this->m_curr[index];
             auto value = std::get_if<T>(&token.value);
 
-            if (value == nullptr)
-                throwParserError("failed to decode token. Invalid type.", getLineNumber(index));
+            if (value == nullptr) {
+                std::visit([&](auto &&value) {
+                    throwParserError(fmt::format("failed to decode token. Expected {}, got {}. This is a bug!", typeid(T).name(), typeid(value).name()), index);
+                }, token.value);
+            }
+
 
             return *value;
         }
