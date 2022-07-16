@@ -75,6 +75,25 @@ namespace pl {
                 fn(i, *this->m_entries[i]);
         }
 
+        void setInlined(bool isInlined) override {
+            Inlinable::setInlined(isInlined);
+            if (isInlined) {
+                for (auto &e : this->m_entries) {
+                    if (auto &varName = e->getVariableName(); !varName.empty() && varName.front() == '[') {
+                        e->setVariableName(this->getVariableName() + varName);
+                    }
+                }
+            } else {
+                for (auto &e : this->m_entries) {
+                    if (auto &varName = e->getVariableName(); !varName.empty()) {
+                        if (auto foundBracket = varName.find_last_of('['); foundBracket != varName.npos) {
+                            e->setVariableName(varName.substr(foundBracket));
+                        }
+                    }
+                }
+            }
+        }
+
         void setEntries(std::vector<std::shared_ptr<Pattern>> &&entries) {
             this->m_entries = std::move(entries);
 
