@@ -37,7 +37,11 @@ namespace pl {
         std::vector<std::vector<std::string>> m_currNamespace;
 
         u32 getLineNumber(i32 index) const {
-            return this->m_curr[index].lineNumber;
+            return this->m_curr[index].line;
+        }
+
+        u32 getColumnNumber(i32 index) const {
+            return this->m_curr[index].column;
         }
 
         template<typename T>
@@ -48,7 +52,8 @@ namespace pl {
 
         template<typename T>
         const T &getValue(i32 index) const {
-            auto value = std::get_if<T>(&this->m_curr[index].value);
+            auto &token = this->m_curr[index];
+            auto value = std::get_if<T>(&token.value);
 
             if (value == nullptr)
                 throwParserError("failed to decode token. Invalid type.", getLineNumber(index));
@@ -136,10 +141,10 @@ namespace pl {
 
         std::shared_ptr<ASTNodeTypeDecl> addType(const std::string &name, std::unique_ptr<ASTNode> &&node, std::optional<std::endian> endian = std::nullopt);
 
-        std::vector<std::shared_ptr<ASTNode>> parseTillToken(Token::Type endTokenType, const auto value) {
+        std::vector<std::shared_ptr<ASTNode>> parseTillToken(const Token &endToken) {
             std::vector<std::shared_ptr<ASTNode>> program;
 
-            while (this->m_curr->type != endTokenType || (*this->m_curr) != value) {
+            while (this->m_curr->type != endToken.type || (*this->m_curr) != endToken.value) {
                 for (auto &statement : parseStatements())
                     program.push_back(std::move(statement));
             }
@@ -150,7 +155,7 @@ namespace pl {
         }
 
         [[noreturn]] void throwParserError(const std::string &error, i32 token = -1) const {
-            throw PatternLanguageError(this->m_curr[token].lineNumber, "Parser: " + error);
+            throw PatternLanguageError(this->m_curr[token].line, "Parser: " + error);
         }
 
         /* Token consuming */
@@ -200,9 +205,9 @@ namespace pl {
         }
 
         template<Setting S = Normal>
-        bool sequenceImpl(Token::Type type, auto value, auto... args) {
+        bool sequenceImpl(const Token &token, const auto &... args) {
             if constexpr (S == Normal) {
-                if (!peek(type, value)) {
+                if (!peek(token)) {
                     partReset();
                     return false;
                 }
@@ -216,7 +221,7 @@ namespace pl {
 
                 return true;
             } else if constexpr (S == Not) {
-                if (!peek(type, value))
+                if (!peek(token))
                     return true;
 
                 this->m_curr++;
@@ -231,8 +236,8 @@ namespace pl {
         }
 
         template<Setting S = Normal>
-        bool sequence(Token::Type type, auto value, auto... args) {
-            return partBegin() && sequenceImpl<S>(type, value, args...);
+        bool sequence(const Token &token, const auto &... args) {
+            return partBegin() && sequenceImpl<S>(token, args...);
         }
 
         template<Setting S = Normal>
@@ -246,23 +251,23 @@ namespace pl {
         }
 
         template<Setting S = Normal>
-        bool oneOfImpl(Token::Type type, auto value, auto... args) {
+        bool oneOfImpl(const Token &token, const auto &... args) {
             if constexpr (S == Normal)
-                return sequenceImpl<Normal>(type, value) || oneOfImpl(args...);
+                return sequenceImpl<Normal>(token) || oneOfImpl(args...);
             else if constexpr (S == Not)
-                return sequenceImpl<Not>(type, value) && oneOfImpl(args...);
+                return sequenceImpl<Not>(token) && oneOfImpl(args...);
             else
                 pl::unreachable();
         }
 
         template<Setting S = Normal>
-        bool oneOf(Token::Type type, auto value, auto... args) {
-            return partBegin() && oneOfImpl<S>(type, value, args...);
+        bool oneOf(const Token &token, const auto &... args) {
+            return partBegin() && oneOfImpl<S>(token, args...);
         }
 
-        bool variantImpl(Token::Type type1, auto value1, Token::Type type2, auto value2) {
-            if (!peek(type1, value1)) {
-                if (!peek(type2, value2)) {
+        bool variantImpl(const Token &token1, const Token &token2) {
+            if (!peek(token1)) {
+                if (!peek(token2)) {
                     partReset();
                     return false;
                 }
@@ -273,12 +278,12 @@ namespace pl {
             return true;
         }
 
-        bool variant(Token::Type type1, auto value1, Token::Type type2, auto value2) {
-            return partBegin() && variantImpl(type1, value1, type2, value2);
+        bool variant(const Token &token1, const Token &token2) {
+            return partBegin() && variantImpl(token1, token2);
         }
 
-        bool optionalImpl(Token::Type type, auto value) {
-            if (peek(type, value)) {
+        bool optionalImpl(const Token &token) {
+            if (peek(token)) {
                 this->m_matchedOptionals.push_back(this->m_curr);
                 this->m_curr++;
             }
@@ -286,12 +291,12 @@ namespace pl {
             return true;
         }
 
-        bool optional(Token::Type type, auto value) {
-            return partBegin() && optionalImpl(type, value);
+        bool optional(const Token &token) {
+            return partBegin() && optionalImpl(token);
         }
 
-        bool peek(Token::Type type, auto value, i32 index = 0) {
-            return this->m_curr[index].type == type && this->m_curr[index] == value;
+        bool peek(const Token &token, i32 index = 0) {
+            return this->m_curr[index].type == token.type && this->m_curr[index] == token.value;
         }
     };
 
