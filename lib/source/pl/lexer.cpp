@@ -371,16 +371,16 @@ namespace pl {
                     tokens.push_back(tkn::Operator::BoolNot);
                     offset += 1;
                 } else if (c == '|') {
-                    tokens.push_back(tkn::Operator::BoolOr);
+                    tokens.push_back(tkn::Operator::BitOr);
                     offset += 1;
                 } else if (c == '&') {
-                    tokens.push_back(tkn::Operator::BoolAnd);
+                    tokens.push_back(tkn::Operator::BitAnd);
                     offset += 1;
                 } else if (c == '^') {
-                    tokens.push_back(tkn::Operator::BoolXor);
+                    tokens.push_back(tkn::Operator::BitXor);
                     offset += 1;
                 } else if (c == '~') {
-                    tokens.push_back(tkn::Operator::BoolNot);
+                    tokens.push_back(tkn::Operator::BitNot);
                     offset += 1;
                 } else if (c == '?') {
                     tokens.push_back(tkn::Operator::TernaryConditional);
