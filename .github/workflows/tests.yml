@@ -55,7 +55,7 @@ jobs:
     - name: ⚗️ Generate Coverage Report
       run: |
         cd build
-        lcov -d . -c -o coverage.info
+        lcov -d ./lib -c -o coverage.info
 
     - name: ⬆️ Upload Coverage Report
       uses: coverallsapp/github-action@master
