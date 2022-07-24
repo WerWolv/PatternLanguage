@@ -32,15 +32,17 @@ jobs:
             ${PKGCONF:-}          \
             cmake                 \
             make                  \
+            lcov
 
     - name: 🛠️ Build
       run: |
         mkdir -p build
         cd build
-        CC=gcc-12 CXX=g++-12 cmake              \
-          -DCMAKE_C_FLAGS="-fuse-ld=lld"        \
-          -DCMAKE_CXX_FLAGS="-fuse-ld=lld"      \
-          -DLIBPL_ENABLE_TESTS=ON               \
+        CC=gcc-12 CXX=g++-12 cmake                        \
+          -DCMAKE_BUILD_TYPE=Debug                        \
+          -DCMAKE_C_FLAGS="-O0 -fuse-ld=lld --coverage"   \
+          -DCMAKE_CXX_FLAGS="-O0 -fuse-ld=lld --coverage" \
+          -DLIBPL_ENABLE_TESTS=ON                         \
           ..
         make -j4 pattern_language_tests
 
@@ -48,3 +50,14 @@ jobs:
       run: |
         cd build
         ctest
+
+    - name: ⚗️ Generate Coverage Report
+      run: |
+        cd build
+        lcov -d ./lib --gcov-tool /usr/bin/gcov-12 -c -o coverage.info
+
+    - name: ⬆️ Upload Coverage Report
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: build/coverage.info
