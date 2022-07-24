@@ -1,4 +1,7 @@
-# Pattern Language
+# Pattern Language 
+
+![Unit Tests](https://img.shields.io/github/workflow/status/WerWolv/PatternLanguage/Unit%20Tests?label=Unit%20Tests&style=flat-square)
+![Coverage Status](https://img.shields.io/coveralls/github/WerWolv/PatternLanguage?style=flat-square&label=Coverage)
 
 This repository contains the source code for the Pattern Language used by the [ImHex](https://github.com/WerWolv/ImHex) Hex Editor.
 
