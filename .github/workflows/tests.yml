@@ -32,7 +32,6 @@ jobs:
             ${PKGCONF:-}          \
             cmake                 \
             make                  \
-            gcovr                 \
             lcov
 
     - name: 🛠️ Build
@@ -55,7 +54,7 @@ jobs:
     - name: ⚗️ Generate Coverage Report
       run: |
         cd build
-        lcov -d ./lib -c -o coverage.info
+        lcov -d ./lib --gcov-tool /usr/bin/gcov-12 -c -o coverage.info
 
     - name: ⬆️ Upload Coverage Report
       uses: coverallsapp/github-action@master
