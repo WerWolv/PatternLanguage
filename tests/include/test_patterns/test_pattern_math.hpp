@@ -28,19 +28,19 @@ namespace pl::test {
                 std::assert(!false, "! operator error");
 
                 // Bitwise operations
-                std::assert(0xFF00FF | 0x00AA00 == 0xFFAAFF, "| operator error");
-                std::assert(0xFFFFFF & 0x00FF00 == 0x00FF00, "& operator error");
-                std::assert(0xFFFFFF ^ 0x00AA00 == 0xFF55FF, "^ operator error");
+                std::assert((0xFFFFFF & 0x00FF00) == 0x00FF00, "& operator error");
+                std::assert((0xFFFFFF ^ 0x00AA00) == 0xFF55FF, "^ operator error");
                 std::assert(~0x00U == 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF, "~ operator error");
-                std::assert(0xAA >> 4 == 0x0A, ">> operator error");
-                std::assert(0xAA << 4 == 0xAA0, "<< operator error");
+                std::assert((0xAA >> 4) == 0x0A, ">> operator error");
+                std::assert((0xAA << 4) == 0xAA0, "<< operator error");
+                std::assert((0xFF00FF | 0x00AA00) == 0xFFAAFF, "| operator error");
 
                 // Basic operations
-                std::assert(100 + 200 == 300, "+ operator error");
-                std::assert(400 - 200 == 200, "- operator error");
-                std::assert(10 * 20 == 200, "* operator error");
-                std::assert(200 / 100 == 2, "/ operator error");
-                std::assert(100 % 2 == 0, "% operator error");
+                std::assert((100 + 200) == 300, "+ operator error");
+                std::assert((400 - 200) == 200, "- operator error");
+                std::assert((10 * 20) == 200, "* operator error");
+                std::assert((200 / 100) == 2, "/ operator error");
+                std::assert((100 % 2) == 0, "% operator error");
 
                 // Special operators
                 std::assert($ == 0, "$ operator error");

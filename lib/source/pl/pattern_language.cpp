@@ -26,6 +26,10 @@ namespace pl {
     }
 
     PatternLanguage::~PatternLanguage() {
+        this->m_flattenedPatterns.clear();
+        this->m_patterns.clear();
+        this->m_currAST.clear();
+
         delete this->m_internals.preprocessor;
         delete this->m_internals.lexer;
         delete this->m_internals.parser;
