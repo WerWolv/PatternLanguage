@@ -112,9 +112,13 @@ namespace pl {
                            },
                            [&, this](auto &&) { LogConsole::abortEvaluation(fmt::format("cannot assign '{}' to string", pattern->getTypeName()), this); }
                        }, variableValue);
-                } else {
+                } else if (pattern->getMemoryLocationType() == PatternMemoryType::Provider) {
                     value.resize(pattern->getSize());
                     evaluator->readData(pattern->getOffset(), value.data(), value.size());
+                    value.erase(std::find(value.begin(), value.end(), '\0'), value.end());
+                } else if (pattern->getMemoryLocationType() == PatternMemoryType::Heap) {
+                    value.resize(pattern->getSize());
+                    std::memcpy(value.data(), evaluator->getHeap().data(), value.size());
                     value.erase(std::find(value.begin(), value.end(), '\0'), value.end());
                 }
 

@@ -198,7 +198,13 @@ namespace pl {
 
         [[nodiscard]] std::string formatDisplayValue(const std::string &value, const Token::Literal &literal) const {
             if (!this->m_cachedDisplayValue.has_value()) {
+                auto &currOffset = this->getEvaluator()->dataOffset();
+                auto startOffset = currOffset;
+                currOffset = this->getOffset();
+
                 this->m_cachedDisplayValue = calcDisplayValue(value, literal);
+
+                currOffset = startOffset;
             }
 
             return this->m_cachedDisplayValue.value();
