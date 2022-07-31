@@ -107,6 +107,9 @@ namespace pl {
         }
 
         void forEachMember(const std::function<void(Pattern&)>& fn) {
+            if (this->isSealed())
+                return;
+
             for (auto &field : this->m_fields)
                 fn(*field);
         }
@@ -119,13 +122,17 @@ namespace pl {
         }
 
         [[nodiscard]] std::vector<std::pair<u64, Pattern*>> getChildren() override {
-            std::vector<std::pair<u64, Pattern*>> result;
+            if (this->isSealed()) {
+                return { { this->getOffset(), this } };
+            } else {
+                std::vector<std::pair<u64, Pattern*>> result;
 
-            for (const auto &field : this->m_fields) {
-                result.emplace_back(field->getOffset(), field.get());
+                for (const auto &field : this->m_fields) {
+                    result.emplace_back(field->getOffset(), field.get());
+                }
+
+                return result;
             }
-
-            return result;
         }
 
         void setMemoryLocationType(PatternMemoryType type) override {

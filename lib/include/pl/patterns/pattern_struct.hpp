@@ -25,6 +25,9 @@ namespace pl {
         }
 
         void forEachMember(const std::function<void(Pattern&)>& fn) {
+            if (this->isSealed())
+                return;
+
             for (auto &member : this->m_sortedMembers)
                 fn(*member);
         }
@@ -37,14 +40,18 @@ namespace pl {
         }
 
         [[nodiscard]] std::vector<std::pair<u64, Pattern*>> getChildren() override {
-            std::vector<std::pair<u64, Pattern*>> result;
+            if (this->isSealed())
+                return { { this->getOffset(), this } };
+            else {
+                std::vector<std::pair<u64, Pattern*>> result;
 
-            for (const auto &member : this->m_members) {
-                auto children = member->getChildren();
-                std::copy(children.begin(), children.end(), std::back_inserter(result));
+                for (const auto &member : this->m_members) {
+                    auto children = member->getChildren();
+                    std::copy(children.begin(), children.end(), std::back_inserter(result));
+                }
+
+                return result;
             }
-
-            return result;
         }
 
         void setMemoryLocationType(PatternMemoryType type) override {

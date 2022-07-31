@@ -174,6 +174,10 @@ namespace pl {
             pattern->setHidden(true);
         }
 
+        if (attributable->hasAttribute("sealed", false)) {
+            pattern->setSealed(true);
+        }
+
         if (!pattern->hasOverriddenColor()) {
             if (auto colorValue = attributable->getAttributeValue("color"); colorValue) {
                 u32 color = strtoul(colorValue->c_str(), nullptr, 16);

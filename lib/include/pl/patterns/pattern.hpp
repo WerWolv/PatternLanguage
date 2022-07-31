@@ -138,6 +138,14 @@ namespace pl {
             return this->m_hidden;
         }
 
+        void setSealed(bool sealed) {
+            this->m_sealed = sealed;
+        }
+
+        [[nodiscard]] bool isSealed() const {
+            return this->m_sealed;
+        }
+
         virtual void setMemoryLocationType(PatternMemoryType type) {
             this->m_memoryType = type;
             this->m_heapAddressValid = false;
@@ -219,6 +227,7 @@ namespace pl {
     protected:
         std::optional<std::endian> m_endian;
         bool m_hidden = false;
+        bool m_sealed = false;
 
     private:
         friend Evaluator;
