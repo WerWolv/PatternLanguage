@@ -11,6 +11,8 @@ if (NOT TARGET fmt::fmt)
     set_property(TARGET fmt PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif ()
 
+add_subdirectory(external/intervaltree)
+
 add_subdirectory(lib)
 add_subdirectory(example EXCLUDE_FROM_ALL)
 

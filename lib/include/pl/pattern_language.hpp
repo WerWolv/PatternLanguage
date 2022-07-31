@@ -10,6 +10,8 @@
 #include <vector>
 #include <filesystem>
 
+#include <IntervalTree.h>
+
 #include <pl/log_console.hpp>
 #include <pl/token.hpp>
 #include <pl/api.hpp>
@@ -79,7 +81,7 @@ namespace pl {
         }
 
         void flattenPatterns();
-        [[nodiscard]] const std::map<u64, std::vector<Pattern*>>& getFlattenedPatterns() const {
+        [[nodiscard]] const interval_tree::IntervalTree<u64, Pattern*>& getFlattenedPatterns() const {
             return this->m_flattenedPatterns;
         }
 
@@ -104,7 +106,8 @@ namespace pl {
         std::optional<PatternLanguageError> m_currError;
 
         std::vector<std::shared_ptr<Pattern>> m_patterns;
-        std::map<u64, std::vector<Pattern*>> m_flattenedPatterns;
+
+        interval_tree::IntervalTree<u64, Pattern*> m_flattenedPatterns;
 
         bool m_running = false;
     };

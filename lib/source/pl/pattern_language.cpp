@@ -237,43 +237,32 @@ namespace pl {
     }
 
     void PatternLanguage::flattenPatterns() {
+        using Interval = decltype(this->m_flattenedPatterns)::interval;
+        std::vector<Interval> intervals;
+
         for (const auto &pattern : this->m_patterns) {
             auto children = pattern->getChildren();
 
             for (const auto &[address, child]: children) {
-                this->m_flattenedPatterns[address].push_back(child);
+                intervals.emplace_back(address, address + child->getSize() - 1, child);
             }
         }
+
+        this->m_flattenedPatterns = std::move(intervals);
     }
 
     std::vector<Pattern *> PatternLanguage::getPatterns(u64 address) const {
         if (this->m_flattenedPatterns.empty())
             return { };
 
-        auto it = this->m_flattenedPatterns.upper_bound(address);
+        auto intervals = this->m_flattenedPatterns.findOverlapping(address, address);
 
-        if (it != this->m_flattenedPatterns.begin())
-            it--;
+        std::vector<Pattern*> results;
+        std::transform(intervals.begin(), intervals.end(), std::back_inserter(results), [](const auto &interval) {
+            return interval.value;
+        });
 
-
-        std::vector<Pattern *> result;
-        for (u8 retries = 0; retries < 16; retries ++) {
-            auto &[patternAddress, patterns] = *it;
-
-            for (auto &pattern : patterns) {
-                if (address >= patternAddress && address < (patternAddress + pattern->getSize())) {
-                    pattern->setOffset(patternAddress);
-                    result.push_back(pattern);
-                }
-            }
-
-            if (it != this->m_flattenedPatterns.begin())
-                it--;
-            else
-                break;
-        }
-
-        return result;
+        return results;
     }
 
 }
