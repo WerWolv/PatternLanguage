@@ -16,7 +16,7 @@ namespace pl {
     class Inlinable {
     public:
         [[nodiscard]] bool isInlined() const { return this->m_inlined; }
-        void setInlined(bool inlined) { this->m_inlined = inlined; }
+        virtual void setInlined(bool inlined) { this->m_inlined = inlined; }
 
     private:
         bool m_inlined = false;
