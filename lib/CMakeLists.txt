@@ -28,6 +28,7 @@ add_library(libpl ${LIBRARY_TYPE}
         source/pl/libstd/math.cpp
         source/pl/libstd/string.cpp
         source/pl/libstd/file.cpp
+        source/pl/libstd/time.cpp
 )
 
 target_include_directories(libpl PUBLIC include)

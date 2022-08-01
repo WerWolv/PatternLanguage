@@ -3,6 +3,7 @@
 #include <pl/patterns/pattern.hpp>
 
 #include <codecvt>
+#include <locale>
 
 namespace pl {
 

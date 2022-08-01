@@ -11,6 +11,7 @@ namespace pl::libstd {
     namespace math      { void registerFunctions(pl::PatternLanguage &runtime); }
     namespace string    { void registerFunctions(pl::PatternLanguage &runtime); }
     namespace file      { void registerFunctions(pl::PatternLanguage &runtime); }
+    namespace time      { void registerFunctions(pl::PatternLanguage &runtime); }
 
     void registerFunctions(pl::PatternLanguage &runtime) {
         libstd::registerFunctions(runtime);
@@ -18,6 +19,7 @@ namespace pl::libstd {
         math::registerFunctions(runtime);
         string::registerFunctions(runtime);
         file::registerFunctions(runtime);
+        time::registerFunctions(runtime);
     }
 
 }
