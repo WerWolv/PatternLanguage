@@ -64,7 +64,7 @@ namespace pl {
             }
 
             Token::Literal literal;
-            if (dynamic_cast<PatternUnsigned *>(pattern)) {
+            if (dynamic_cast<PatternUnsigned *>(pattern) || dynamic_cast<PatternEnum *>(pattern)) {
                 u128 value = 0;
                 readVariable(evaluator, value, pattern);
                 literal = value;

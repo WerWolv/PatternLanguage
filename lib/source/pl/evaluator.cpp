@@ -13,8 +13,8 @@
 #include "pl/patterns/pattern_boolean.hpp"
 #include "pl/patterns/pattern_character.hpp"
 #include "pl/patterns/pattern_string.hpp"
+#include "pl/patterns/pattern_wide_string.hpp"
 #include "pl/patterns/pattern_enum.hpp"
-
 #include "pl/patterns/pattern_array_dynamic.hpp"
 #include "pl/patterns/pattern_array_static.hpp"
 #include "pl/patterns/pattern_struct.hpp"
@@ -112,6 +112,8 @@ namespace pl {
                 dynamic_cast<PatternArrayDynamic*>(pattern.get()) ||
                 dynamic_cast<PatternArrayStatic*>(pattern.get()) ||
                 dynamic_cast<PatternBitfield*>(pattern.get()) ||
+                dynamic_cast<PatternString*>(pattern.get()) ||
+                dynamic_cast<PatternWideString*>(pattern.get()) ||
                 dynamic_cast<PatternPointer*>(pattern.get()))
                 heapType = true;
         }
