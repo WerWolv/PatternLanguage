@@ -98,10 +98,17 @@ namespace pl {
                     typeName += "::";
                     continue;
                 } else {
-                    if (!this->m_types.contains(typeName))
-                        throwParserError(fmt::format("cannot access scope of invalid type '{}'", typeName), -1);
+                    if (this->m_types.contains(typeName))
+                        return create(new ASTNodeScopeResolution(this->m_types[typeName]->clone(), getValue<Token::Identifier>(-1).get()));
+                    else {
+                        for (auto &potentialName : getNamespacePrefixedNames(typeName)) {
+                            if (this->m_types.contains(potentialName)) {
+                                return create(new ASTNodeScopeResolution(this->m_types[potentialName]->clone(), getValue<Token::Identifier>(-1).get()));
+                            }
+                        }
 
-                    return create(new ASTNodeScopeResolution(this->m_types[typeName]->clone(), getValue<Token::Identifier>(-1).get()));
+                        throwParserError(fmt::format("cannot access scope of invalid type '{}'", typeName), -1);
+                    }
                 }
             } else
                 break;
