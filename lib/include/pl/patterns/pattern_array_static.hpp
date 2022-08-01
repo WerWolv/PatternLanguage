@@ -51,7 +51,7 @@ namespace pl {
             return result;
         }
 
-        virtual void setMemoryLocationType(PatternMemoryType type) {
+        void setMemoryLocationType(PatternMemoryType type) override {
             if (this->m_template != nullptr)
                 this->m_template->setMemoryLocationType(type);
 

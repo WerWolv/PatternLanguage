@@ -16,7 +16,7 @@ namespace pl {
             return "";
         }
 
-        [[nodiscard]] virtual std::vector<std::pair<u64, Pattern*>> getChildren() {
+        [[nodiscard]] std::vector<std::pair<u64, Pattern*>> getChildren() override {
             return { };
         }
 
