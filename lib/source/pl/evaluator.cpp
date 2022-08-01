@@ -112,8 +112,6 @@ namespace pl {
                 dynamic_cast<PatternArrayDynamic*>(pattern.get()) ||
                 dynamic_cast<PatternArrayStatic*>(pattern.get()) ||
                 dynamic_cast<PatternBitfield*>(pattern.get()) ||
-                dynamic_cast<PatternString*>(pattern.get()) ||
-                dynamic_cast<PatternWideString*>(pattern.get()) ||
                 dynamic_cast<PatternPointer*>(pattern.get()))
                 heapType = true;
         }
