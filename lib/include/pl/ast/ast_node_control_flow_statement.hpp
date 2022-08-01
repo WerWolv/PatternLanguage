@@ -41,8 +41,21 @@ namespace pl {
 
                 if (literal == nullptr)
                     return std::nullopt;
-                else
-                    return literal->getValue();
+                else {
+                    return std::visit(overloaded {
+                        [](const auto &value) -> FunctionResult {
+                            return value;
+                        },
+                        [evaluator](Pattern *pattern) -> FunctionResult {
+                            auto clonedPattern = pattern->clone();
+                            auto result = clonedPattern.get();
+
+                            evaluator->getScope(-1).savedPatterns.push_back(std::move(clonedPattern));
+
+                            return result;
+                        }
+                    }, literal->getValue());
+                }
             }
         }
 
