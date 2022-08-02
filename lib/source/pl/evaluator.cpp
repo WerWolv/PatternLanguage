@@ -163,10 +163,12 @@ namespace pl {
                    LogConsole::abortEvaluation(fmt::format("cannot cast type '{}' to type '{}'", value->getTypeName(), pattern->getTypeName()));
             },
             [&](auto &&value) -> Token::Literal {
+                auto numBits = pattern->getSize() * 8;
+
                if (dynamic_cast<PatternUnsigned *>(pattern) || dynamic_cast<PatternEnum *>(pattern))
-                   return u128(value) & bitmask(pattern->getSize() * 8);
+                   return u128(value) & bitmask(numBits);
                else if (dynamic_cast<PatternSigned *>(pattern))
-                   return i128(value) & bitmask(pattern->getSize() * 8);
+                   return pl::signExtend(numBits, u128(value) & bitmask(numBits));
                else if (dynamic_cast<PatternCharacter *>(pattern))
                    return char(value);
                else if (dynamic_cast<PatternBoolean *>(pattern))
