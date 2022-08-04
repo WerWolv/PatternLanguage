@@ -6,6 +6,8 @@
 #include <string>
 #include <variant>
 
+#include <fmt/format.h>
+
 #include <pl/log_console.hpp>
 
 #include "helpers/utils.hpp"
@@ -267,6 +269,118 @@ namespace pl {
             }
         }
 
+        [[nodiscard]] std::string getFormattedType() const {
+            switch (this->type) {
+                using enum Token::Type;
+
+                case Keyword: return "Keyword";
+                case ValueType: return "Value Type";
+                case Operator: return "Operator";
+                case Integer: return "Integer";
+                case String: return "String";
+                case Identifier: return "Identifier";
+                case Separator: return "Separator";
+            }
+
+            return "Unknown";
+        }
+
+        [[nodiscard]] std::string getFormattedValue() const {
+            return std::visit(overloaded {
+                    [](Token::Keyword keyword) -> std::string {
+                        switch (keyword) {
+                            using enum Token::Keyword;
+                            case Struct: return "struct";
+                            case Union: return "union";
+                            case Using: return "using";
+                            case Enum: return "enum";
+                            case Bitfield: return "bitfield";
+                            case LittleEndian: return "le";
+                            case BigEndian: return "be";
+                            case If: return "if";
+                            case Else: return "else";
+                            case Parent: return "parent";
+                            case This: return "this";
+                            case While: return "while";
+                            case For: return "for";
+                            case Function: return "fn";
+                            case Return: return "return";
+                            case Namespace: return "namespace";
+                            case In: return "in";
+                            case Out: return "out";
+                            case Break: return "break";
+                            case Continue: return "continue";
+                        }
+
+                        return "";
+                    },
+                    [](Token::Separator separator) -> std::string  {
+                        switch(separator) {
+                            using enum Token::Separator;
+
+                            case LeftParenthesis: return "(";
+                            case RightParenthesis: return ")";
+                            case LeftBrace: return "{";
+                            case RightBrace: return "}";
+                            case LeftBracket: return "[";
+                            case RightBracket: return "]";
+                            case Comma: return ",";
+                            case Dot: return ".";
+                            case Semicolon: return ";";
+                            case EndOfProgram: return "<EOF>";
+                        }
+
+                        return "";
+                    },
+                    [](Token::Operator op) -> std::string  {
+                        switch (op) {
+                            using enum Token::Operator;
+
+                            case At: return "@";
+                            case Assign: return "=";
+                            case Colon: return ":";
+                            case Plus: return "+";
+                            case Minus: return "-";
+                            case Star: return "*";
+                            case Slash: return "/";
+                            case Percent: return "%";
+                            case LeftShift: return "<<";
+                            case RightShift: return ">>";
+                            case BitOr: return "|";
+                            case BitAnd: return "&";
+                            case BitXor: return "^";
+                            case BitNot: return "~";
+                            case BoolEqual: return "==";
+                            case BoolNotEqual: return "!=";
+                            case BoolGreaterThan: return ">";
+                            case BoolLessThan: return "<";
+                            case BoolGreaterThanOrEqual: return ">=";
+                            case BoolLessThanOrEqual: return "<=";
+                            case BoolAnd: return "&&";
+                            case BoolOr: return "||";
+                            case BoolXor: return "^^";
+                            case BoolNot: return "!";
+                            case TernaryConditional: return "?";
+                            case Dollar: return "$";
+                            case AddressOf: return "addressof";
+                            case SizeOf: return "sizeof";
+                            case ScopeResolution: return "::";
+                        }
+
+                        return "";
+                    },
+                    [](const Token::Identifier &identifier) -> std::string  {
+                        return fmt::format("'{}'", identifier.get());
+                    },
+                    [](const Token::Literal &literal) -> std::string  {
+                        return fmt::format("'{}'", Token::literalToString(literal, true));
+                    },
+                    [](Token::ValueType valueType) -> std::string  {
+                        return getTypeName(valueType);
+                    }
+            }, this->value);
+        }
+
         bool operator==(const ValueTypes &other) const {
             if (this->type == Type::Integer || this->type == Type::Identifier || this->type == Type::String)
                 return true;
@@ -301,13 +415,13 @@ namespace pl {
 
         Type type;
         ValueTypes value;
-        u32 line, column;
+        u32 line = 1, column = 1;
     };
 
     namespace tkn {
 
         constexpr inline Token createToken(const pl::Token::Type type, const pl::Token::ValueTypes &value) {
-            return { type, value, 0, 0 };
+            return { type, value, 1, 1 };
         }
 
         namespace Keyword {

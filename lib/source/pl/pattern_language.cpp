@@ -55,19 +55,19 @@ namespace pl {
             return std::nullopt;
         }
 
-        auto tokens = this->m_internals.lexer->lex(preprocessedCode.value());
+        auto tokens = this->m_internals.lexer->lex(code, preprocessedCode.value());
         if (!tokens.has_value()) {
             this->m_currError = this->m_internals.lexer->getError();
             return std::nullopt;
         }
 
-        auto ast = this->m_internals.parser->parse(tokens.value());
+        auto ast = this->m_internals.parser->parse(code, tokens.value());
         if (!ast.has_value()) {
             this->m_currError = this->m_internals.parser->getError();
             return std::nullopt;
         }
 
-        if (!this->m_internals.validator->validate(*ast)) {
+        if (!this->m_internals.validator->validate(code, *ast)) {
             this->m_currError = this->m_internals.validator->getError();
 
             return std::nullopt;
@@ -84,10 +84,7 @@ namespace pl {
             if (this->m_currError.has_value()) {
                 const auto &error = this->m_currError.value();
 
-                if (error.getLineNumber() > 0)
-                    this->m_internals.evaluator->getConsole().log(LogConsole::Level::Error, fmt::format("{}: {}", error.getLineNumber(), error.what()));
-                else
-                    this->m_internals.evaluator->getConsole().log(LogConsole::Level::Error, error.what());
+                this->m_internals.evaluator->getConsole().log(LogConsole::Level::Error, error.what());
             }
         };
 
@@ -124,7 +121,7 @@ namespace pl {
             auto returnCode = Token::literalToSigned(*mainResult);
 
             if (returnCode != 0) {
-                this->m_currError = PatternLanguageError(0, fmt::format("non-success value returned from main: {}", returnCode));
+                this->m_currError = err::Error::Exception(fmt::format("non-success value returned from main: {}", returnCode), 0, 1);
 
                 return false;
             }
@@ -197,7 +194,7 @@ namespace pl {
         return this->m_internals.evaluator->getConsole().getLog();
     }
 
-    const std::optional<PatternLanguageError> &PatternLanguage::getError() const {
+    const std::optional<err::Error::Exception> &PatternLanguage::getError() const {
         return this->m_currError;
     }
 

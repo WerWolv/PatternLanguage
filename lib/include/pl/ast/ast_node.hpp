@@ -21,9 +21,13 @@ namespace pl {
 
         constexpr ASTNode(const ASTNode &) = default;
 
-        [[nodiscard]] constexpr u32 getLineNumber() const { return this->m_lineNumber; }
+        [[nodiscard]] constexpr u32 getLine() const { return this->m_line; }
+        [[nodiscard]] constexpr u32 getColumn() const { return this->m_column; }
 
-        [[maybe_unused]] constexpr void setLineNumber(u32 lineNumber) { this->m_lineNumber = lineNumber; }
+        [[maybe_unused]] constexpr void setSourceLocation(u32 line, u32 column) {
+            this->m_line = line;
+            this->m_column = column;
+        }
 
         [[nodiscard]] virtual std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const {
             pl::unused(evaluator);
@@ -45,7 +49,8 @@ namespace pl {
         }
 
     private:
-        u32 m_lineNumber = 1;
+        u32 m_line = 1;
+        u32 m_column = 1;
     };
 
 }

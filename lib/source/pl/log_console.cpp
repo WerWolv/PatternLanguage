@@ -8,7 +8,7 @@ namespace pl {
         if (node == nullptr)
             throw PatternLanguageError(0, "Evaluator: " + message);
         else
-            throw PatternLanguageError(node->getLineNumber(), "Evaluator: " + message);
+            throw PatternLanguageError(node->getLine(), "Evaluator: " + message);
     }
 
 }

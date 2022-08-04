@@ -4,6 +4,7 @@
 
 #include <pl/error.hpp>
 #include <pl/token.hpp>
+#include <pl/errors/parser_errors.hpp>
 
 #include <pl/ast/ast_node.hpp>
 #include <pl/ast/ast_node_rvalue.hpp>
@@ -24,11 +25,11 @@ namespace pl {
         Parser()  = default;
         ~Parser() = default;
 
-        std::optional<std::vector<std::shared_ptr<ASTNode>>> parse(const std::vector<Token> &tokens);
-        const std::optional<PatternLanguageError> &getError() { return this->m_error; }
+        std::optional<std::vector<std::shared_ptr<ASTNode>>> parse(const std::string &sourceCode, const std::vector<Token> &tokens);
+        const std::optional<err::Error::Exception> &getError() { return this->m_error; }
 
     private:
-        std::optional<PatternLanguageError> m_error;
+        std::optional<err::Error::Exception> m_error;
         TokenIter m_curr;
         TokenIter m_originalPosition, m_partOriginalPosition;
 
@@ -36,37 +37,37 @@ namespace pl {
         std::vector<TokenIter> m_matchedOptionals;
         std::vector<std::vector<std::string>> m_currNamespace;
 
-        u32 getLineNumber(i32 index) const {
+        u32 getLine(i32 index) const {
             return this->m_curr[index].line;
         }
 
-        u32 getColumnNumber(i32 index) const {
+        u32 getColumn(i32 index) const {
             return this->m_curr[index].column;
         }
 
         template<typename T>
         std::unique_ptr<T> create(T *node) {
-            node->setLineNumber(this->getLineNumber(-1));
+            node->setSourceLocation(this->getLine(-1), this->getColumn(-1));
             return std::unique_ptr<T>(node);
         }
 
         template<typename T>
-        const T &getValue(i32 index) const {
+        const T &getValue(i32 index) {
             auto &token = this->m_curr[index];
             auto value = std::get_if<T>(&token.value);
 
             if (value == nullptr) {
+                this->m_curr += index;
                 std::visit([&](auto &&value) {
-                    throwParserError(fmt::format("failed to decode token. Expected {}, got {}. This is a bug!", typeid(T).name(), typeid(value).name()), index);
+                    err::P0001.throwError(fmt::format("Expected {}, got {}.", typeid(T).name(), typeid(value).name()), "This is a serious parsing bug. Please open an issue on GitHub!");
                 }, token.value);
             }
-
 
             return *value;
         }
 
-        Token::Type getType(i32 index) const {
-            return this->m_curr[index].type;
+        [[nodiscard]] std::string getFormattedToken(i32 index) const {
+            return fmt::format("{} ({})", this->m_curr[index].getFormattedType(), this->m_curr[index].getFormattedValue());
         }
 
         std::vector<std::string> getNamespacePrefixedNames(const std::string &name) {
@@ -120,7 +121,7 @@ namespace pl {
         void parseAttribute(Attributable *currNode);
         std::unique_ptr<ASTNode> parseConditional();
         std::unique_ptr<ASTNode> parseWhileStatement();
-        std::unique_ptr<ASTNodeTypeDecl> parseType(bool allowFunctionTypes = false);
+        std::unique_ptr<ASTNodeTypeDecl> parseType(bool disallowSpecialTypes = false);
         std::shared_ptr<ASTNodeTypeDecl> parseUsingDeclaration();
         std::unique_ptr<ASTNode> parsePadding();
         std::unique_ptr<ASTNodeTypeDecl> parsePointerSizeType();
@@ -148,7 +149,7 @@ namespace pl {
         std::vector<std::shared_ptr<ASTNode>> parseTillToken(const Token &endToken) {
             std::vector<std::shared_ptr<ASTNode>> program;
 
-            while (this->m_curr->type != endToken.type || (*this->m_curr) != endToken.value) {
+            while (!peek(endToken)) {
                 for (auto &statement : parseStatements())
                     program.push_back(std::move(statement));
             }
@@ -156,10 +157,6 @@ namespace pl {
             this->m_curr++;
 
             return program;
-        }
-
-        [[noreturn]] void throwParserError(const std::string &error, i32 token = -1) const {
-            throw PatternLanguageError(this->m_curr[token].line, "Parser: " + error);
         }
 
         /* Token consuming */

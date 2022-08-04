@@ -43,7 +43,7 @@ namespace pl {
 
                     offset += 2;
                     if (offset >= code.length())
-                        throwPreprocessorError("unterminated comment", lineNumber - 1);
+                        err::M0001.throwError("Expected closing */ sequence.");
                 } else {
                     output += code[offset];
                     offset++;
@@ -75,7 +75,7 @@ namespace pl {
                             offset += 1;
 
                         if (code[offset] != '<' && code[offset] != '"')
-                            throwPreprocessorError("expected '<' or '\"' before file name", lineNumber);
+                            err::M0003.throwError("#include expects \"path/to/file\" or <path/to/file>.");
 
                         char endChar = code[offset];
                         if (endChar == '<') endChar = '>';
@@ -88,7 +88,7 @@ namespace pl {
                             offset += 1;
 
                             if (offset >= code.length())
-                                throwPreprocessorError(fmt::format("missing terminating '{0}' character", endChar), lineNumber);
+                                err::M0003.throwError(fmt::format("missing terminating '{0}' character.", endChar));
                         }
                         offset += 1;
 
@@ -106,14 +106,14 @@ namespace pl {
 
                         if (!fs::isRegularFile(includePath)) {
                             if (includePath.parent_path().filename().string() == "std")
-                                throwPreprocessorError(fmt::format("{0}: No such file.\n\nThis file might be part of the standard library.\nMake sure it's installed!", includeFile.c_str()), lineNumber);
+                                err::M0004.throwError("Path doesn't point to a valid file.", "This file might be part of the standard library. Make sure it's installed");
                             else
-                                throwPreprocessorError(fmt::format("{0}: No such file", includeFile.c_str()), lineNumber);
+                                err::M0004.throwError("Path doesn't point to a valid file.");
                         }
 
                         fs::File file(includePath, fs::File::Mode::Read);
                         if (!file.isValid()) {
-                            throwPreprocessorError(fmt::format("{0}: Failed to open file", includeFile.c_str()), lineNumber);
+                            err::M0005.throwError(fmt::format("Failed to open file.", includeFile.c_str()));
                         }
 
                         Preprocessor preprocessor(*this);
@@ -123,7 +123,7 @@ namespace pl {
                         auto preprocessedInclude = preprocessor.preprocess(runtime, file.readString(), /*initialRun =*/false);
 
                         if (!preprocessedInclude.has_value()) {
-                            throw PatternLanguageError(*preprocessor.m_error);
+                            throw *preprocessor.m_error;
                         }
 
                         bool shouldInclude = true;
@@ -158,27 +158,27 @@ namespace pl {
                             defineName += code[offset];
 
                             if (offset >= code.length() || code[offset] == '\n' || code[offset] == '\r')
-                                throwPreprocessorError("no value given in #define directive", lineNumber);
+                                err::M0003.throwError("No name given in #define directive.", "A #define directive expects a name and a value in the form of #define NAME VALUE");
                             offset += 1;
                         }
 
                         while (std::isblank(code[offset])) {
                             offset += 1;
                             if (offset >= code.length())
-                                throwPreprocessorError("no value given in #define directive", lineNumber);
+                                err::M0003.throwError("No value given in #define directive.", "A #define directive expects a name and a value in the form of #define NAME VALUE");
                         }
 
                         std::string replaceValue;
                         while (code[offset] != '\n' && code[offset] != '\r') {
                             if (offset >= code.length())
-                                throwPreprocessorError("missing new line after #define directive", lineNumber);
+                                err::M0003.throwError("Missing new line after preprocessor directive.");
 
                             replaceValue += code[offset];
                             offset += 1;
                         }
 
                         if (replaceValue.empty())
-                            throwPreprocessorError("no value given in #define directive", lineNumber);
+                            err::M0003.throwError("No value given in #define directive.", "A #define directive expects a name and a value in the form of #define NAME VALUE");
 
                         this->m_defines.emplace(defineName, replaceValue, lineNumber);
                     } else if (code.substr(offset, 6) == "pragma") {
@@ -188,7 +188,7 @@ namespace pl {
                             offset += 1;
 
                             if (code[offset] == '\n' || code[offset] == '\r')
-                                throwPreprocessorError("no instruction given in #pragma directive", lineNumber);
+                                err::M0003.throwError("No instruction given in #pragma directive.", "A #pragma directive expects a instruction followed by an optional value in the form of #pragma INSTRUCTION VALUE.");
                         }
 
                         std::string pragmaKey;
@@ -196,7 +196,7 @@ namespace pl {
                             pragmaKey += code[offset];
 
                             if (offset >= code.length())
-                                throwPreprocessorError("no instruction given in #pragma directive", lineNumber);
+                                err::M0003.throwError("No instruction given in #pragma directive.", "A #pragma directive expects a instruction followed by an optional value in the form of #pragma INSTRUCTION VALUE.");
 
                             offset += 1;
                         }
@@ -207,15 +207,16 @@ namespace pl {
                         std::string pragmaValue;
                         while (code[offset] != '\n' && code[offset] != '\r') {
                             if (offset >= code.length())
-                                throwPreprocessorError("missing new line after #pragma directive", lineNumber);
+                                err::M0003.throwError("Missing new line after preprocessor directive.");
 
                             pragmaValue += code[offset];
                             offset += 1;
                         }
 
                         this->m_pragmas.emplace(pragmaKey, pragmaValue, lineNumber);
-                    } else
-                        throwPreprocessorError("unknown preprocessor directive", lineNumber);
+                    } else {
+                        err::M0002.throwError("Expected 'include', 'define' or 'pragma'");
+                    }
                 }
 
                 if (code[offset] == '\n') {
@@ -247,12 +248,12 @@ namespace pl {
             for (const auto &[type, value, pragmaLine] : this->m_pragmas) {
                 if (this->m_pragmaHandlers.contains(type)) {
                     if (!this->m_pragmaHandlers[type](runtime, value))
-                        throwPreprocessorError(fmt::format("invalid value provided to '{0}' #pragma directive", type.c_str()), pragmaLine);
+                        err::M0006.throwError(fmt::format("Value '{}' cannot be used with the '{}' pragma directive.", value, type));
                 } else
-                    throwPreprocessorError(fmt::format("no #pragma handler registered for type {0}", type.c_str()), pragmaLine);
+                    err::M0006.throwError(fmt::format("Pragma instruction '{}' does not exist.", type));
             }
-        } catch (PatternLanguageError &e) {
-            this->m_error = e;
+        } catch (err::Error &e) {
+            this->m_error = err::Error::Exception(e.format(code, lineNumber, 1), lineNumber, 1);
 
             return std::nullopt;
         }

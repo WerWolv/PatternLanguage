@@ -14,6 +14,8 @@
 #include <pl/error.hpp>
 #include <pl/api.hpp>
 
+#include <pl/errors/preprocessor_errors.hpp>
+
 namespace pl {
 
     class Preprocessor {
@@ -29,17 +31,13 @@ namespace pl {
             this->m_includePaths = std::move(paths);
         }
 
-        const std::optional<PatternLanguageError> &getError() { return this->m_error; }
+        const std::optional<err::Error::Exception> &getError() { return this->m_error; }
 
         [[nodiscard]] bool shouldOnlyIncludeOnce() const {
             return this->m_onlyIncludeOnce;
         }
 
     private:
-        [[noreturn]] static void throwPreprocessorError(const std::string &error, u32 lineNumber) {
-            throw PatternLanguageError(lineNumber, "Preprocessor: " + error);
-        }
-
         std::unordered_map<std::string, api::PragmaHandler> m_pragmaHandlers;
 
         std::set<std::tuple<std::string, std::string, u32>> m_defines;
@@ -47,7 +45,7 @@ namespace pl {
 
         std::set<std::filesystem::path> m_onceIncludedFiles;
 
-        std::optional<PatternLanguageError> m_error;
+        std::optional<err::Error::Exception> m_error;
 
         bool m_onlyIncludeOnce = false;
 

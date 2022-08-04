@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <pl/error.hpp>
+#include <pl/errors/validator_errors.hpp>
 
 namespace pl {
 
@@ -17,16 +18,12 @@ namespace pl {
     public:
         Validator() = default;
 
-        bool validate(const std::vector<std::shared_ptr<ASTNode>> &ast);
+        bool validate(const std::string &sourceCode, const std::vector<std::shared_ptr<ASTNode>> &ast);
 
-        const std::optional<PatternLanguageError> &getError() { return this->m_error; }
+        const std::optional<err::Error::Exception> &getError() { return this->m_error; }
 
     private:
-        std::optional<PatternLanguageError> m_error;
-
-        [[noreturn]] static void throwValidatorError(const std::string &error, u32 lineNumber) {
-            throw PatternLanguageError(lineNumber, "Validator: " + error);
-        }
+        std::optional<err::Error::Exception> m_error;
     };
 
 }

@@ -91,12 +91,28 @@ namespace pl {
 
             u128 value = 0x00;
             for (char c : string.substr(prefixOffset)) {
+                bool validChar = [c, base]{
+                    if (base == 10)
+                        return c >= '0' && c <= '9';
+                    else if (base == 2)
+                        return c >= '0' && c <= '1';
+                    else if (base == 8)
+                        return c >= '0' && c <= '7';
+                    else if (base == 16)
+                        return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+
+                }();
+
+                if (!validChar)
+                    err::L0003.throwError(fmt::format("Invalid character '{}' found in base {} integer literal", c, base));
+
                 value *= base;
                 value += [&] {
                     if (c >= '0' && c <= '9') return c - '0';
                     else if (c >= 'A' && c <= 'F') return 0xA + (c - 'A');
                     else if (c >= 'a' && c <= 'f') return 0xA + (c - 'a');
-                    else return 0x00;
+                    else
+                        err::L0003.throwError("Invalid integer sequence.");
                 }();
             }
 
@@ -106,13 +122,13 @@ namespace pl {
                 return i128(value);
         }
 
-        return std::nullopt;
+        err::L0003.throwError("Invalid sequence");
     }
 
     std::optional<Token::Literal> lexIntegerLiteralWithSeparator(std::string_view string) {
 
         if (string.starts_with('\'') || string.ends_with('\''))
-            return std::nullopt;
+            err::L0003.throwError("Integer literal cannot start or end with separator character '");
         else if (string.find('\'') == std::string_view::npos)
             return lexIntegerLiteral(string);
         else {
@@ -125,13 +141,13 @@ namespace pl {
     std::optional<std::pair<char, size_t>> getCharacter(const std::string &string) {
 
         if (string.length() < 1)
-            return std::nullopt;
+            err::L0001.throwError("Expected character");
 
         // Escape sequences
         if (string[0] == '\\') {
 
             if (string.length() < 2)
-                return std::nullopt;
+                err::L0001.throwError("Invalid escape sequence");
 
             // Handle simple escape sequences
             switch (string[1]) {
@@ -203,7 +219,7 @@ namespace pl {
                 };
             }
 
-            return std::nullopt;
+            err::L0001.throwError(fmt::format("Unknown escape sequence '\\{}'", string[1]));
         } else return {
             {string[0], 1}
  };
@@ -211,7 +227,7 @@ namespace pl {
 
     std::optional<std::pair<std::string, size_t>> getStringLiteral(const std::string &string) {
         if (!string.starts_with('\"'))
-            return {};
+            err::L0002.throwError(fmt::format("Expected opening \" character, got {}", string[0]));
 
         size_t size = 1;
 
@@ -228,7 +244,7 @@ namespace pl {
             size += charSize;
 
             if (size >= string.length())
-                return {};
+                err::L0002.throwError("Expected closing \" before end of input");
         }
 
         return {
@@ -238,10 +254,10 @@ namespace pl {
 
     std::optional<std::pair<char, size_t>> getCharacterLiteral(const std::string &string) {
         if (string.empty())
-            return {};
+            err::L0001.throwError("Reached end of input");
 
         if (string[0] != '\'')
-            return {};
+            err::L0001.throwError(fmt::format("Expected opening ', got {}", string[0]));
 
 
         auto character = getCharacter(string.substr(1));
@@ -259,16 +275,25 @@ namespace pl {
         };
     }
 
-    std::optional<std::vector<Token>> Lexer::lex(const std::string &code) {
+    std::optional<std::vector<Token>> Lexer::lex(const std::string &sourceCode, const std::string &preprocessedSourceCode) {
         std::vector<Token> tokens;
         u32 offset = 0;
 
         u32 line = 1;
         u32 lineStartOffset = 0;
 
+        const auto addToken = [&](Token token) {
+            token.line = line;
+            token.column = offset - lineStartOffset;
+            
+            tokens.push_back(token);
+        };
+        
+        const std::string &code = preprocessedSourceCode;
+
         try {
 
-            while (offset < code.length()) {
+            while (offset < preprocessedSourceCode.length()) {
                 const char &c = code[offset];
 
                 if (c == 0x00)
@@ -281,138 +306,138 @@ namespace pl {
                     }
                     offset += 1;
                 } else if (c == ';') {
-                    tokens.push_back(tkn::Separator::Semicolon);
+                    addToken(tkn::Separator::Semicolon);
                     offset += 1;
                 } else if (c == '(') {
-                    tokens.push_back(tkn::Separator::LeftParenthesis);
+                    addToken(tkn::Separator::LeftParenthesis);
                     offset += 1;
                 } else if (c == ')') {
-                    tokens.push_back(tkn::Separator::RightParenthesis);
+                    addToken(tkn::Separator::RightParenthesis);
                     offset += 1;
                 } else if (c == '{') {
-                    tokens.push_back(tkn::Separator::LeftBrace);
+                    addToken(tkn::Separator::LeftBrace);
                     offset += 1;
                 } else if (c == '}') {
-                    tokens.push_back(tkn::Separator::RightBrace);
+                    addToken(tkn::Separator::RightBrace);
                     offset += 1;
                 } else if (c == '[') {
-                    tokens.push_back(tkn::Separator::LeftBracket);
+                    addToken(tkn::Separator::LeftBracket);
                     offset += 1;
                 } else if (c == ']') {
-                    tokens.push_back(tkn::Separator::RightBracket);
+                    addToken(tkn::Separator::RightBracket);
                     offset += 1;
                 } else if (c == ',') {
-                    tokens.push_back(tkn::Separator::Comma);
+                    addToken(tkn::Separator::Comma);
                     offset += 1;
                 } else if (c == '.') {
-                    tokens.push_back(tkn::Separator::Dot);
+                    addToken(tkn::Separator::Dot);
                     offset += 1;
                 } else if (code.substr(offset, 2) == "::") {
-                    tokens.push_back(tkn::Operator::ScopeResolution);
+                    addToken(tkn::Operator::ScopeResolution);
                     offset += 2;
                 } else if (c == '@') {
-                    tokens.push_back(tkn::Operator::At);
+                    addToken(tkn::Operator::At);
                     offset += 1;
                 } else if (code.substr(offset, 2) == "==") {
-                    tokens.push_back(tkn::Operator::BoolEqual);
+                    addToken(tkn::Operator::BoolEqual);
                     offset += 2;
                 } else if (code.substr(offset, 2) == "!=") {
-                    tokens.push_back(tkn::Operator::BoolNotEqual);
+                    addToken(tkn::Operator::BoolNotEqual);
                     offset += 2;
                 } else if (code.substr(offset, 2) == ">=") {
-                    tokens.push_back(tkn::Operator::BoolGreaterThanOrEqual);
+                    addToken(tkn::Operator::BoolGreaterThanOrEqual);
                     offset += 2;
                 } else if (code.substr(offset, 2) == "<=") {
-                    tokens.push_back(tkn::Operator::BoolLessThanOrEqual);
+                    addToken(tkn::Operator::BoolLessThanOrEqual);
                     offset += 2;
                 } else if (code.substr(offset, 2) == "&&") {
-                    tokens.push_back(tkn::Operator::BoolAnd);
+                    addToken(tkn::Operator::BoolAnd);
                     offset += 2;
                 } else if (code.substr(offset, 2) == "||") {
-                    tokens.push_back(tkn::Operator::BoolOr);
+                    addToken(tkn::Operator::BoolOr);
                     offset += 2;
                 } else if (code.substr(offset, 2) == "^^") {
-                    tokens.push_back(tkn::Operator::BoolXor);
+                    addToken(tkn::Operator::BoolXor);
                     offset += 2;
                 } else if (c == '=') {
-                    tokens.push_back(tkn::Operator::Assign);
+                    addToken(tkn::Operator::Assign);
                     offset += 1;
                 } else if (c == ':') {
-                    tokens.push_back(tkn::Operator::Colon);
+                    addToken(tkn::Operator::Colon);
                     offset += 1;
                 } else if (c == '+') {
-                    tokens.push_back(tkn::Operator::Plus);
+                    addToken(tkn::Operator::Plus);
                     offset += 1;
                 } else if (c == '-') {
-                    tokens.push_back(tkn::Operator::Minus);
+                    addToken(tkn::Operator::Minus);
                     offset += 1;
                 } else if (c == '*') {
-                    tokens.push_back(tkn::Operator::Star);
+                    addToken(tkn::Operator::Star);
                     offset += 1;
                 } else if (c == '/') {
-                    tokens.push_back(tkn::Operator::Slash);
+                    addToken(tkn::Operator::Slash);
                     offset += 1;
                 } else if (c == '%') {
-                    tokens.push_back(tkn::Operator::Percent);
+                    addToken(tkn::Operator::Percent);
                     offset += 1;
                 } else if (code.substr(offset, 2) == "<<") {
-                    tokens.push_back(tkn::Operator::LeftShift);
+                    addToken(tkn::Operator::LeftShift);
                     offset += 2;
                 } else if (code.substr(offset, 2) == ">>") {
-                    tokens.push_back(tkn::Operator::RightShift);
+                    addToken(tkn::Operator::RightShift);
                     offset += 2;
                 } else if (c == '>') {
-                    tokens.push_back(tkn::Operator::BoolGreaterThan);
+                    addToken(tkn::Operator::BoolGreaterThan);
                     offset += 1;
                 } else if (c == '<') {
-                    tokens.push_back(tkn::Operator::BoolLessThan);
+                    addToken(tkn::Operator::BoolLessThan);
                     offset += 1;
                 } else if (c == '!') {
-                    tokens.push_back(tkn::Operator::BoolNot);
+                    addToken(tkn::Operator::BoolNot);
                     offset += 1;
                 } else if (c == '|') {
-                    tokens.push_back(tkn::Operator::BitOr);
+                    addToken(tkn::Operator::BitOr);
                     offset += 1;
                 } else if (c == '&') {
-                    tokens.push_back(tkn::Operator::BitAnd);
+                    addToken(tkn::Operator::BitAnd);
                     offset += 1;
                 } else if (c == '^') {
-                    tokens.push_back(tkn::Operator::BitXor);
+                    addToken(tkn::Operator::BitXor);
                     offset += 1;
                 } else if (c == '~') {
-                    tokens.push_back(tkn::Operator::BitNot);
+                    addToken(tkn::Operator::BitNot);
                     offset += 1;
                 } else if (c == '?') {
-                    tokens.push_back(tkn::Operator::TernaryConditional);
+                    addToken(tkn::Operator::TernaryConditional);
                     offset += 1;
                 } else if (c == '$') {
-                    tokens.push_back(tkn::Operator::Dollar);
+                    addToken(tkn::Operator::Dollar);
                     offset += 1;
                 } else if (code.substr(offset, 9) == "addressof" && !isIdentifierCharacter(code[offset + 9])) {
-                    tokens.push_back(tkn::Operator::AddressOf);
+                    addToken(tkn::Operator::AddressOf);
                     offset += 9;
                 } else if (code.substr(offset, 6) == "sizeof" && !isIdentifierCharacter(code[offset + 6])) {
-                    tokens.push_back(tkn::Operator::SizeOf);
+                    addToken(tkn::Operator::SizeOf);
                     offset += 6;
                 } else if (c == '\'') {
                     auto lexedCharacter = getCharacterLiteral(code.substr(offset));
 
                     if (!lexedCharacter.has_value())
-                        throwLexerError("invalid character literal", line);
+                        err::L0001.throwError("Invalid character literal");
 
                     auto [character, charSize] = lexedCharacter.value();
 
-                    tokens.push_back(tkn::Literal::Numeric(character));
+                    addToken(tkn::Literal::Numeric(character));
                     offset += charSize;
                 } else if (c == '\"') {
                     auto string = getStringLiteral(code.substr(offset));
 
                     if (!string.has_value())
-                        throwLexerError("invalid string literal", line);
+                        err::L0002.throwError("Invalid string literal");
 
                     auto [s, stringSize] = string.value();
 
-                    tokens.push_back(tkn::Literal::String(s));
+                    addToken(tkn::Literal::String(s));
                     offset += stringSize;
                 } else if (isIdentifierCharacter(c) && !std::isdigit(c)) {
                     std::string identifier = matchTillInvalid(&code[offset], isIdentifierCharacter);
@@ -420,99 +445,99 @@ namespace pl {
                     // Check for reserved keywords
 
                     if (identifier == "struct")
-                        tokens.push_back(tkn::Keyword::Struct);
+                        addToken(tkn::Keyword::Struct);
                     else if (identifier == "union")
-                        tokens.push_back(tkn::Keyword::Union);
+                        addToken(tkn::Keyword::Union);
                     else if (identifier == "using")
-                        tokens.push_back(tkn::Keyword::Using);
+                        addToken(tkn::Keyword::Using);
                     else if (identifier == "enum")
-                        tokens.push_back(tkn::Keyword::Enum);
+                        addToken(tkn::Keyword::Enum);
                     else if (identifier == "bitfield")
-                        tokens.push_back(tkn::Keyword::Bitfield);
+                        addToken(tkn::Keyword::Bitfield);
                     else if (identifier == "be")
-                        tokens.push_back(tkn::Keyword::BigEndian);
+                        addToken(tkn::Keyword::BigEndian);
                     else if (identifier == "le")
-                        tokens.push_back(tkn::Keyword::LittleEndian);
+                        addToken(tkn::Keyword::LittleEndian);
                     else if (identifier == "if")
-                        tokens.push_back(tkn::Keyword::If);
+                        addToken(tkn::Keyword::If);
                     else if (identifier == "else")
-                        tokens.push_back(tkn::Keyword::Else);
+                        addToken(tkn::Keyword::Else);
                     else if (identifier == "false")
-                        tokens.push_back(tkn::Literal::Numeric(false));
+                        addToken(tkn::Literal::Numeric(false));
                     else if (identifier == "true")
-                        tokens.push_back(tkn::Literal::Numeric(true));
+                        addToken(tkn::Literal::Numeric(true));
                     else if (identifier == "parent")
-                        tokens.push_back(tkn::Keyword::Parent);
+                        addToken(tkn::Keyword::Parent);
                     else if (identifier == "this")
-                        tokens.push_back(tkn::Keyword::This);
+                        addToken(tkn::Keyword::This);
                     else if (identifier == "while")
-                        tokens.push_back(tkn::Keyword::While);
+                        addToken(tkn::Keyword::While);
                     else if (identifier == "for")
-                        tokens.push_back(tkn::Keyword::For);
+                        addToken(tkn::Keyword::For);
                     else if (identifier == "fn")
-                        tokens.push_back(tkn::Keyword::Function);
+                        addToken(tkn::Keyword::Function);
                     else if (identifier == "return")
-                        tokens.push_back(tkn::Keyword::Return);
+                        addToken(tkn::Keyword::Return);
                     else if (identifier == "namespace")
-                        tokens.push_back(tkn::Keyword::Namespace);
+                        addToken(tkn::Keyword::Namespace);
                     else if (identifier == "in")
-                        tokens.push_back(tkn::Keyword::In);
+                        addToken(tkn::Keyword::In);
                     else if (identifier == "out")
-                        tokens.push_back(tkn::Keyword::Out);
+                        addToken(tkn::Keyword::Out);
                     else if (identifier == "break")
-                        tokens.push_back(tkn::Keyword::Break);
+                        addToken(tkn::Keyword::Break);
                     else if (identifier == "continue")
-                        tokens.push_back(tkn::Keyword::Continue);
+                        addToken(tkn::Keyword::Continue);
 
                     // Check for built-in types
                     else if (identifier == "u8")
-                        tokens.push_back(tkn::ValueType::Unsigned8Bit);
+                        addToken(tkn::ValueType::Unsigned8Bit);
                     else if (identifier == "s8")
-                        tokens.push_back(tkn::ValueType::Signed8Bit);
+                        addToken(tkn::ValueType::Signed8Bit);
                     else if (identifier == "u16")
-                        tokens.push_back(tkn::ValueType::Unsigned16Bit);
+                        addToken(tkn::ValueType::Unsigned16Bit);
                     else if (identifier == "s16")
-                        tokens.push_back(tkn::ValueType::Signed16Bit);
+                        addToken(tkn::ValueType::Signed16Bit);
                     else if (identifier == "u24")
-                        tokens.push_back(tkn::ValueType::Unsigned24Bit);
+                        addToken(tkn::ValueType::Unsigned24Bit);
                     else if (identifier == "s24")
-                        tokens.push_back(tkn::ValueType::Signed24Bit);
+                        addToken(tkn::ValueType::Signed24Bit);
                     else if (identifier == "u32")
-                        tokens.push_back(tkn::ValueType::Unsigned32Bit);
+                        addToken(tkn::ValueType::Unsigned32Bit);
                     else if (identifier == "s32")
-                        tokens.push_back(tkn::ValueType::Signed32Bit);
+                        addToken(tkn::ValueType::Signed32Bit);
                     else if (identifier == "u48")
-                        tokens.push_back(tkn::ValueType::Unsigned48Bit);
+                        addToken(tkn::ValueType::Unsigned48Bit);
                     else if (identifier == "s48")
-                        tokens.push_back(tkn::ValueType::Signed48Bit);
+                        addToken(tkn::ValueType::Signed48Bit);
                     else if (identifier == "u64")
-                        tokens.push_back(tkn::ValueType::Unsigned64Bit);
+                        addToken(tkn::ValueType::Unsigned64Bit);
                     else if (identifier == "s64")
-                        tokens.push_back(tkn::ValueType::Signed64Bit);
+                        addToken(tkn::ValueType::Signed64Bit);
                     else if (identifier == "u96")
-                        tokens.push_back(tkn::ValueType::Unsigned96Bit);
+                        addToken(tkn::ValueType::Unsigned96Bit);
                     else if (identifier == "s96")
-                        tokens.push_back(tkn::ValueType::Signed96Bit);
+                        addToken(tkn::ValueType::Signed96Bit);
                     else if (identifier == "u128")
-                        tokens.push_back(tkn::ValueType::Unsigned128Bit);
+                        addToken(tkn::ValueType::Unsigned128Bit);
                     else if (identifier == "s128")
-                        tokens.push_back(tkn::ValueType::Signed128Bit);
+                        addToken(tkn::ValueType::Signed128Bit);
                     else if (identifier == "float")
-                        tokens.push_back(tkn::ValueType::Float);
+                        addToken(tkn::ValueType::Float);
                     else if (identifier == "double")
-                        tokens.push_back(tkn::ValueType::Double);
+                        addToken(tkn::ValueType::Double);
                     else if (identifier == "char")
-                        tokens.push_back(tkn::ValueType::Character);
+                        addToken(tkn::ValueType::Character);
                     else if (identifier == "char16")
-                        tokens.push_back(tkn::ValueType::Character16);
+                        addToken(tkn::ValueType::Character16);
                     else if (identifier == "bool")
-                        tokens.push_back(tkn::ValueType::Boolean);
+                        addToken(tkn::ValueType::Boolean);
                     else if (identifier == "str")
-                        tokens.push_back(tkn::ValueType::String);
+                        addToken(tkn::ValueType::String);
                     else if (identifier == "padding")
-                        tokens.push_back(tkn::ValueType::Padding);
+                        addToken(tkn::ValueType::Padding);
                     else if (identifier == "auto")
-                        tokens.push_back(tkn::ValueType::Auto);
+                        addToken(tkn::ValueType::Auto);
 
                     // If it's not a keyword and a builtin type, it has to be an identifier
 
@@ -525,13 +550,13 @@ namespace pl {
                     auto integer       = lexIntegerLiteralWithSeparator(std::string_view(&code[offset], integerLength));
 
                     if (!integer.has_value())
-                        throwLexerError("invalid integer literal", line);
+                        err::L0003.throwError("Invalid integer literal");
 
 
-                    tokens.push_back(tkn::Literal::Numeric(integer.value()));
+                    addToken(tkn::Literal::Numeric(integer.value()));
                     offset += integerLength;
                 } else
-                    throwLexerError("unknown token", line);
+                    err::L0004.throwError("Unknown sequence");
 
                 if (!tokens.empty()) {
                     auto &lastToken = tokens.back();
@@ -541,9 +566,10 @@ namespace pl {
                 }
             }
 
-            tokens.emplace_back(tkn::Separator::EndOfProgram);
-        } catch (PatternLanguageError &e) {
-            this->m_error = e;
+            addToken(tkn::Separator::EndOfProgram);
+        } catch (err::Error &e) {
+            auto column = (offset - lineStartOffset) + 1;
+            this->m_error = err::Error::Exception(e.format(sourceCode, line, column), line, column);
 
             return std::nullopt;
         }

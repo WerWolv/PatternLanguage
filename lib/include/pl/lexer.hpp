@@ -8,21 +8,19 @@
 #include <string>
 #include <vector>
 
+#include <pl/errors/lexer_errors.hpp>
+
 namespace pl {
 
     class Lexer {
     public:
         Lexer() = default;
 
-        std::optional<std::vector<Token>> lex(const std::string &code);
-        const std::optional<PatternLanguageError> &getError() { return this->m_error; }
+        std::optional<std::vector<Token>> lex(const std::string &sourceCode, const std::string &preprocessedSourceCode);
+        const std::optional<err::Error::Exception> &getError() { return this->m_error; }
 
     private:
-        std::optional<PatternLanguageError> m_error;
-
-        [[noreturn]] static void throwLexerError(const std::string &error, u32 lineNumber) {
-            throw PatternLanguageError(lineNumber, "Lexer: " + error);
-        }
+        std::optional<err::Error::Exception> m_error;
     };
 
 }

@@ -341,12 +341,9 @@ namespace pl {
 
                 this->m_mainResult = mainFunction.func(this, {});
             }
-        } catch (PatternLanguageError &error) {
+        } catch (err::Error &e) {
 
-            if (error.getLineNumber() != 0)
-                this->m_console.setHardError(error);
-            else
-                this->getConsole().log(LogConsole::Level::Error, error.what());
+            this->getConsole().log(LogConsole::Level::Error, e.what());
 
             patterns.clear();
 
