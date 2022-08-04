@@ -26,10 +26,10 @@ namespace pl {
         ~Parser() = default;
 
         std::optional<std::vector<std::shared_ptr<ASTNode>>> parse(const std::string &sourceCode, const std::vector<Token> &tokens);
-        const std::optional<err::Error::Exception> &getError() { return this->m_error; }
+        const std::optional<err::Exception> &getError() { return this->m_error; }
 
     private:
-        std::optional<err::Error::Exception> m_error;
+        std::optional<err::Exception> m_error;
         TokenIter m_curr;
         TokenIter m_originalPosition, m_partOriginalPosition;
 

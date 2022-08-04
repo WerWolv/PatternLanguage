@@ -28,8 +28,8 @@ namespace pl {
         [[nodiscard]] const std::string &getName() const { return this->m_name; }
         [[nodiscard]] const std::shared_ptr<ASTNode> &getType() const {
             if (this->isForwardDeclared())
-                LogConsole::abortEvaluation(fmt::format("cannot use incomplete type '{}'", this->m_name), this);
-            
+                err::E0004.throwError(fmt::format("Cannot use incomplete type '{}' before it has been defined.", this->m_name), "Try defining this type further up in your code before trying to instantiate it.", this);
+
             return this->m_type;
         }
         [[nodiscard]] std::optional<std::endian> getEndian() const { return this->m_endian; }

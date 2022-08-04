@@ -37,7 +37,7 @@ namespace pl::libstd::string {
 #endif
 
                 if (absIndex > string.length())
-                    LogConsole::abortEvaluation("character index out of range");
+                    err::E0012.throwError(fmt::format("Character index {} out of range of string '{}' with length {}.", absIndex, string, string.length()));
 
                 if (index >= 0)
                     return char(string[index]);
@@ -52,7 +52,7 @@ namespace pl::libstd::string {
                 auto size   = Token::literalToUnsigned(params[2]);
 
                 if (pos > string.length())
-                    LogConsole::abortEvaluation("character index out of range");
+                    err::E0012.throwError(fmt::format("Character index {} out of range of string '{}' with length {}.", pos, string, string.length()));
 
                 return string.substr(pos, size);
             });

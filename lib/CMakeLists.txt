@@ -17,7 +17,6 @@ add_library(libpl ${LIBRARY_TYPE}
 
         source/pl/evaluator.cpp
         source/pl/lexer.cpp
-        source/pl/log_console.cpp
         source/pl/parser.cpp
         source/pl/pattern_language.cpp
         source/pl/preprocessor.cpp

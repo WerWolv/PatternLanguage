@@ -100,7 +100,8 @@ namespace pl {
                         return c >= '0' && c <= '7';
                     else if (base == 16)
                         return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
-
+                    else
+                        return false;
                 }();
 
                 if (!validChar)
@@ -567,9 +568,9 @@ namespace pl {
             }
 
             addToken(tkn::Separator::EndOfProgram);
-        } catch (err::Error &e) {
+        } catch (err::Error<void> &e) {
             auto column = (offset - lineStartOffset) + 1;
-            this->m_error = err::Error::Exception(e.format(sourceCode, line, column), line, column);
+            this->m_error = err::Exception(e.format(sourceCode, line, column), line, column);
 
             return std::nullopt;
         }

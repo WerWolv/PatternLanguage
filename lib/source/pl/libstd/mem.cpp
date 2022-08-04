@@ -40,7 +40,7 @@ namespace pl::libstd::mem {
                     auto byte = Token::literalToUnsigned(params[i]);
 
                     if (byte > 0xFF)
-                        LogConsole::abortEvaluation(fmt::format("byte #{} value out of range: {} > 0xFF", i, u64(byte)));
+                        err::E0012.throwError(fmt::format("Invalid byte value {}.", byte), "Try a value between 0x00 and 0xFF.");
 
                     sequence.push_back(u8(byte & 0xFF));
                 }
@@ -68,10 +68,10 @@ namespace pl::libstd::mem {
             /* read_unsigned(address, size) */
             runtime.addFunction(nsStdMem, "read_unsigned", FunctionParameterCount::exactly(2), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 auto address = Token::literalToUnsigned(params[0]);
-                auto size    = Token::literalToUnsigned(params[1]);
+                auto size    = Token::literalToSigned(params[1]);
 
-                if (size > 16)
-                    LogConsole::abortEvaluation("read size out of range");
+                if (size < 1 || size > 16)
+                    err::E0012.throwError(fmt::format("Read size {} is out of range.", size), "Try a value between 1 and 16.");
 
                 u128 result = 0;
                 ctx->readData(address, &result, size);
@@ -82,10 +82,11 @@ namespace pl::libstd::mem {
             /* read_signed(address, size) */
             runtime.addFunction(nsStdMem, "read_signed", FunctionParameterCount::exactly(2), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 auto address = Token::literalToUnsigned(params[0]);
-                auto size    = Token::literalToUnsigned(params[1]);
+                auto size    = Token::literalToSigned(params[1]);
 
-                if (size > 16)
-                    LogConsole::abortEvaluation("read size out of range");
+                if (size < 1 || size > 16)
+                    err::E0012.throwError(fmt::format("Read size {} is out of range.", size), "Try a value between 1 and 16.");
+
 
                 i128 value;
                 ctx->readData(address, &value, size);

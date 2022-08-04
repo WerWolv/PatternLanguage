@@ -50,7 +50,7 @@ namespace pl {
             else if (this->m_type == Token::ValueType::Auto)
                 return {};
             else
-                LogConsole::abortEvaluation("invalid built-in type", this);
+                err::E0001.throwError("Invalid builtin type.", {}, this);
 
             pattern->setTypeName(Token::getTypeName(this->m_type));
 

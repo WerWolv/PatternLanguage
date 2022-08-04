@@ -36,7 +36,7 @@ namespace pl::libstd::libstd {
             try {
                 return fmt::vformat(format, formatArgs);
             } catch (fmt::format_error &error) {
-                pl::LogConsole::abortEvaluation(fmt::format("format error: {}", error.what()));
+                err::E0012.throwError(fmt::format("Error while formatting: {}", error.what()));
             }
         }
 
@@ -79,7 +79,7 @@ namespace pl::libstd::libstd {
 
             /* error(message) */
             runtime.addFunction(nsStd, "error", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
-                LogConsole::abortEvaluation(Token::literalToString(params[0], true));
+                err::E0012.throwError(Token::literalToString(params[0], true));
 
                 return std::nullopt;
             });

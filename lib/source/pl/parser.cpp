@@ -1325,10 +1325,10 @@ namespace pl {
                 err::P0002.throwError("Failed to parse entire input.", "Parsing stopped due to an invalid sequence before the entire input could be parsed. This is most likely a bug.");
 
             return program;
-        } catch (err::Error &e) {
+        } catch (err::Error<void> &e) {
             this->m_curr -= 2;
 
-            this->m_error = err::Error::Exception(e.format(sourceCode, this->m_curr->line, this->m_curr->column), this->m_curr->line, this->m_curr->column);
+            this->m_error = err::Exception(e.format(sourceCode, this->m_curr->line, this->m_curr->column), this->m_curr->line, this->m_curr->column);
 
             return std::nullopt;
         }

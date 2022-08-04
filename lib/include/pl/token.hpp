@@ -175,49 +175,49 @@ namespace pl {
 
         static u128 literalToUnsigned(const pl::Token::Literal &literal) {
             return std::visit(overloaded {
-                                  [](const std::string &) -> u128 { LogConsole::abortEvaluation("expected integral type, got string"); },
-                                  [](Pattern *) -> u128 { LogConsole::abortEvaluation("expected integral type, got custom type"); },
-                                  [](auto &&result) -> u128 { return result; } },
-                literal);
+                    [&](Pattern *) -> u128 { err::E0004.throwError("Cannot cast value to type 'integer'."); },
+                    [&](const std::string &) -> u128 { err::E0004.throwError("Cannot cast value to type 'integer'."); },
+                [](auto &&result) -> u128 { return result; }
+            }, literal);
         }
 
         static i128 literalToSigned(const pl::Token::Literal &literal) {
             return std::visit(overloaded {
-                                  [](const std::string &) -> i128 { LogConsole::abortEvaluation("expected integral type, got string"); },
-                                  [](Pattern *) -> i128 { LogConsole::abortEvaluation("expected integral type, got custom type"); },
-                                  [](auto &&result) -> i128 { return result; } },
-                literal);
+                [](const std::string &) -> i128 { err::E0004.throwError("Cannot cast value to type 'integer'."); },
+                [](Pattern *) -> i128 { err::E0004.throwError("Cannot cast value to type 'integer'."); },
+                [](auto &&result) -> i128 { return result; }
+            }, literal);
         }
 
         static double literalToFloatingPoint(const pl::Token::Literal &literal) {
             return std::visit(overloaded {
-                                  [](const std::string &) -> double { LogConsole::abortEvaluation("expected integral type, got string"); },
-                                  [](Pattern *) -> double { LogConsole::abortEvaluation("expected integral type, got custom type"); },
-                                  [](auto &&result) -> double { return result; } },
-                literal);
+                [](const std::string &) -> double { err::E0004.throwError("Cannot cast value to type 'floating point'."); },
+                [](Pattern *) -> double { err::E0004.throwError("Cannot cast value to type 'floating point'."); },
+                [](auto &&result) -> double { return result; }
+            }, literal);
         }
 
         static bool literalToBoolean(const pl::Token::Literal &literal) {
             return std::visit(overloaded {
-                                  [](const std::string &) -> bool { LogConsole::abortEvaluation("expected integral type, got string"); },
-                                  [](Pattern *) -> bool { LogConsole::abortEvaluation("expected integral type, got custom type"); },
-                                  [](auto &&result) -> bool { return result != 0; } },
-                literal);
+                [](const std::string &) -> bool { err::E0004.throwError("Cannot cast value to type 'bool'."); },
+                [](Pattern *) -> bool { err::E0004.throwError("Cannot cast value to type 'bool'."); },
+                [](auto &&result) -> bool { return result != 0; }
+            },  literal);
         }
 
         static std::string literalToString(const pl::Token::Literal &literal, bool cast) {
             if (!cast && std::get_if<std::string>(&literal) == nullptr)
-                LogConsole::abortEvaluation("expected string type, got integral");
+                err::E0004.throwError("Expected value of type 'string'.");
 
             return std::visit(overloaded {
-                                  [](std::string result) -> std::string { return result; },
-                                  [](u128 result) -> std::string { return pl::to_string(result); },
-                                  [](i128 result) -> std::string { return pl::to_string(result); },
-                                  [](bool result) -> std::string { return result ? "true" : "false"; },
-                                  [](char result) -> std::string { return { 1, result }; },
-                                  [](Pattern *) -> std::string { LogConsole::abortEvaluation("expected integral type, got custom type"); },
-                                  [](auto &&result) -> std::string { return std::to_string(result); } },
-                literal);
+                [](std::string result) -> std::string { return result; },
+                [](u128 result) -> std::string { return pl::to_string(result); },
+                [](i128 result) -> std::string { return pl::to_string(result); },
+                [](bool result) -> std::string { return result ? "true" : "false"; },
+                [](char result) -> std::string { return { 1, result }; },
+                [](Pattern *) -> std::string { err::E0004.throwError("Cannot cast value to type 'str'."); },
+                [](auto &&result) -> std::string { return std::to_string(result); }
+            }, literal);
         }
 
         [[nodiscard]] constexpr static auto getTypeName(const pl::Token::ValueType type) {

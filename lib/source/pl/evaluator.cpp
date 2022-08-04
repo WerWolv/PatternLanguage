@@ -39,7 +39,7 @@ namespace pl {
         auto &variables = *this->getScope(0).scope;
         for (auto &variable : variables) {
             if (variable->getVariableName() == name) {
-                LogConsole::abortEvaluation(fmt::format("variable with name '{}' already exists", name));
+                err::E0003.throwError(fmt::format("Variable with name '{}' already exists in this scope.", name), {}, type);
             }
         }
 
@@ -70,7 +70,7 @@ namespace pl {
         auto &variables = *this->getScope(0).scope;
         for (auto &variable : variables) {
             if (variable->getVariableName() == name) {
-                LogConsole::abortEvaluation(fmt::format("variable with name '{}' already exists", name));
+                err::E0003.throwError(fmt::format("Variable with name '{}' already exists in this scope.", name), {}, type);
             }
         }
 
@@ -85,7 +85,7 @@ namespace pl {
         if (typePattern.empty()) {
             // Handle auto variables
             if (!value.has_value())
-                LogConsole::abortEvaluation("cannot determine type of auto variable", type);
+                err::E0003.throwError("Cannot determine type of 'auto' variable.", "Try initializing it directly with a literal.", type);
 
             if (std::get_if<u128>(&value.value()) != nullptr)
                 pattern = std::unique_ptr<Pattern>(new PatternUnsigned(this, 0, sizeof(u128)));
@@ -103,7 +103,7 @@ namespace pl {
                 pattern       = (*patternValue)->clone();
                 heapType = true;
             } else
-                LogConsole::abortEvaluation("cannot determine type of auto variable", type);
+                err::E0003.throwError("Cannot determine type of 'auto' variable.", "Try initializing it directly with a literal.", type);
         } else {
             pattern = std::move(typePattern.front());
 
@@ -148,19 +148,19 @@ namespace pl {
                 else if (dynamic_cast<PatternFloat *>(pattern))
                     return pattern->getSize() == sizeof(float) ? double(float(value)) : value;
                 else
-                    LogConsole::abortEvaluation(fmt::format("cannot cast type 'double' to type '{}'", pattern->getTypeName()));
+                    err::E0004.throwError(fmt::format("Cannot cast value of type 'floating point' to type '{}'.", pattern->getTypeName()));
             },
             [&](const std::string &value) -> Token::Literal {
                if (dynamic_cast<PatternString *>(pattern))
                    return value;
                else
-                   LogConsole::abortEvaluation(fmt::format("cannot cast type 'string' to type '{}'", pattern->getTypeName()));
+                   err::E0004.throwError(fmt::format("Cannot cast value of type 'string' to type '{}'.", pattern->getTypeName()));
             },
             [&](Pattern *value) -> Token::Literal {
                if (value->getTypeName() == pattern->getTypeName())
                    return value;
                else
-                   LogConsole::abortEvaluation(fmt::format("cannot cast type '{}' to type '{}'", value->getTypeName(), pattern->getTypeName()));
+                   err::E0004.throwError(fmt::format("Cannot cast value of type '{}' to type '{}'.", value->getTypeName(), pattern->getTypeName()));
             },
             [&](auto &&value) -> Token::Literal {
                 auto numBits = pattern->getSize() * 8;
@@ -176,7 +176,7 @@ namespace pl {
                else if (dynamic_cast<PatternFloat *>(pattern))
                    return pattern->getSize() == sizeof(float) ? double(float(value)) : value;
                else
-                   LogConsole::abortEvaluation(fmt::format("cannot cast integer literal to type '{}'", pattern->getTypeName()));
+                   err::E0004.throwError(fmt::format("Cannot cast value of type 'integer' to type '{}'.", pattern->getTypeName()));
             }
         }, value);
 
@@ -199,21 +199,21 @@ namespace pl {
             }
 
             if (offset > heap.size())
-                LogConsole::abortEvaluation(fmt::format("attempted to access invalid heap address 0x{:X}", offset));
+                err::E0011.throwError(fmt::format("Cannot access out of bounds heap address 0x{:08X}.", offset));
 
             std::visit(overloaded {
                 [this, &pattern, &heap](Pattern *value) {
                     if (pattern->getTypeName() != value->getTypeName())
-                        LogConsole::abortEvaluation(fmt::format("cannot assign value of type {} to variable {} of type {}", value->getTypeName(), value->getVariableName(), pattern->getTypeName()));
+                        err::E0004.throwError(fmt::format("Cannot assign value of type {} to variable {} of type {}", value->getTypeName(), value->getVariableName(), pattern->getTypeName()));
                     else if (pattern->getSize() != value->getSize())
-                        LogConsole::abortEvaluation("cannot assign value to variable of different size");
+                        err::E0004.throwError(fmt::format("Cannot assign value of type {} to variable {} of type {} with a different size.", value->getTypeName(), value->getVariableName(), pattern->getTypeName()), "This can happen when using dynamically sized types as variable types.");
 
                     if (value->getMemoryLocationType() == PatternMemoryType::Provider)
                         this->readData(value->getOffset(), &heap[pattern->getOffset()], pattern->getSize());
                     else if (value->getMemoryLocationType() == PatternMemoryType::Heap)
                         std::memcpy(&heap[pattern->getOffset()], &heap[value->getOffset()], pattern->getSize());
                 },
-                [](std::string &value) { LogConsole::abortEvaluation("cannot assign string type to heap variable"); },
+                [](std::string &value) { err::E0001.throwError("Cannot place string variable on the heap."); },
                 [&pattern, &heap](auto &&value) {
                     std::memcpy(&heap[pattern->getOffset()], &value, pattern->getSize());
                 }
@@ -243,7 +243,7 @@ namespace pl {
             for (auto &variable : variables) {
                 if (variable->getVariableName() == name) {
                     if (!variable->isLocal())
-                        LogConsole::abortEvaluation(fmt::format("cannot modify global variable '{}' which has been placed in memory", name));
+                        err::E0011.throwError(fmt::format("Cannot modify global variable '{}' as it has been placed in memory.", name));
 
                     pattern = variable->clone();
                     break;
@@ -252,7 +252,7 @@ namespace pl {
         }
 
         if (pattern == nullptr)
-            LogConsole::abortEvaluation(fmt::format("no variable with name '{}' found", name));
+            err::E0003.throwError(fmt::format("Cannot find variable '{}' in this scope.", name));
 
         if (!pattern->isLocal()) return;
 
@@ -261,7 +261,7 @@ namespace pl {
 
     void Evaluator::pushScope(Pattern *parent, std::vector<std::shared_ptr<Pattern>> &scope) {
         if (this->m_scopes.size() > this->getEvaluationDepth())
-            LogConsole::abortEvaluation(fmt::format("evaluation depth exceeded set limit of {}", this->getEvaluationDepth()));
+            err::E0007.throwError(fmt::format("Evaluation depth exceeded set limit of '{}'.", this->getEvaluationDepth()), "If this is intended, try increasing the limit using '#pragma eval_depth <new_limit>'.");
 
         this->handleAbort();
 
@@ -277,7 +277,7 @@ namespace pl {
         this->m_scopes.pop_back();
     }
 
-    std::optional<std::vector<std::shared_ptr<Pattern>>> Evaluator::evaluate(const std::vector<std::shared_ptr<ASTNode>> &ast) {
+    std::optional<std::vector<std::shared_ptr<Pattern>>> Evaluator::evaluate(const std::string sourceCode, const std::vector<std::shared_ptr<ASTNode>> &ast) {
         this->m_stack.clear();
         this->m_customFunctions.clear();
         this->m_scopes.clear();
@@ -337,13 +337,17 @@ namespace pl {
                 auto mainFunction = this->m_customFunctions["main"];
 
                 if (mainFunction.parameterCount.max > 0)
-                    LogConsole::abortEvaluation("main function may not accept any arguments");
+                    err::E0009.throwError("Entry point function 'main' may not have any parameters.");
 
                 this->m_mainResult = mainFunction.func(this, {});
             }
-        } catch (err::Error &e) {
+        } catch (err::Error<const ASTNode*> &e) {
+
+            const auto line = e.getUserData()->getLine();
+            const auto column = e.getUserData()->getColumn();
 
             this->getConsole().log(LogConsole::Level::Error, e.what());
+            this->getConsole().setHardError(err::Exception(e.format(sourceCode, line, column), line, column));
 
             patterns.clear();
 
@@ -362,7 +366,7 @@ namespace pl {
 
     void Evaluator::patternCreated() {
         if (this->m_currPatternCount > this->m_patternLimit)
-            LogConsole::abortEvaluation(fmt::format("exceeded maximum number of patterns: {}", this->m_patternLimit));
+            err::E0007.throwError(fmt::format("Pattern count exceeded set limit of '{}'.", this->getPatternLimit()), "If this is intended, try increasing the limit using '#pragma pattern_limit <new_limit>'.");
         this->m_currPatternCount++;
     }
 

@@ -31,10 +31,10 @@ namespace pl {
             auto literal = this->m_size->evaluate(evaluator);
 
             u8 bitSize = std::visit(overloaded {
-                                        [this](const std::string &) -> u8 { LogConsole::abortEvaluation("bitfield field size cannot be a string", this); },
-                                        [this](Pattern *) -> u8 { LogConsole::abortEvaluation("bitfield field size cannot be a custom type", this); },
-                                        [](auto &&offset) -> u8 { return static_cast<u8>(offset); } },
-                dynamic_cast<ASTNodeLiteral *>(literal.get())->getValue());
+                    [this](const std::string &) -> u8 { err::E0005.throwError("Cannot use string as bitfield field size.", "Try using a integral value instead.", this); },
+                    [this](Pattern *) -> u8 { err::E0005.throwError("Cannot use string as bitfield field size.", "Try using a integral value instead.", this); },
+                    [](auto &&offset) -> u8 { return static_cast<u8>(offset); }
+            }, dynamic_cast<ASTNodeLiteral *>(literal.get())->getValue());
 
             auto pattern = std::make_unique<PatternBitfieldField>(evaluator, evaluator->dataOffset(), 0, bitSize);
             pattern->setPadding(this->isPadding());

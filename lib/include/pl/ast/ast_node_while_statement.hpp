@@ -47,7 +47,10 @@ namespace pl {
                     for (u32 i = startVariableCount; i < variables.size(); i++) {
                         stackSize--;
                     }
-                    if (stackSize < 0) LogConsole::abortEvaluation("stack pointer underflow!", this);
+
+                    if (stackSize < 0)
+                        err::E0001.throwError("Stack underflow.", {}, this);
+
                     evaluator->getStack().resize(stackSize);
                 };
 
@@ -74,7 +77,7 @@ namespace pl {
 
                 loopIterations++;
                 if (loopIterations >= evaluator->getLoopLimit())
-                    LogConsole::abortEvaluation(fmt::format("loop iterations exceeded limit of {}", evaluator->getLoopLimit()), this);
+                    err::E0007.throwError(fmt::format("Loop iterations exceeded set limit of {}", evaluator->getLoopLimit()), "If this is intended, try increasing the limit using '#pragma loop_limit <new_limit>'.");
 
                 evaluator->handleAbort();
 
@@ -92,10 +95,10 @@ namespace pl {
             const auto literal = dynamic_cast<ASTNodeLiteral *>(node.get());
 
             return std::visit(overloaded {
-                                  [](const std::string &value) -> bool { return !value.empty(); },
-                                  [this](Pattern *const &) -> bool { LogConsole::abortEvaluation("cannot cast custom type to bool", this); },
-                                  [](auto &&value) -> bool { return value != 0; } },
-                literal->getValue());
+                [](const std::string &value) -> bool { return !value.empty(); },
+                [this](Pattern *const &pattern) -> bool { err::E0002.throwError(fmt::format("Cannot cast {} to bool.", pattern->getTypeName()), {}, this); },
+                [](auto &&value) -> bool { return value != 0; }
+            }, literal->getValue());
         }
 
     private:

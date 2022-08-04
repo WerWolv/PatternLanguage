@@ -44,7 +44,7 @@ namespace pl {
     public:
         Evaluator() = default;
 
-        std::optional<std::vector<std::shared_ptr<Pattern>>> evaluate(const std::vector<std::shared_ptr<ASTNode>> &ast);
+        std::optional<std::vector<std::shared_ptr<Pattern>>> evaluate(const std::string sourceCode, const std::vector<std::shared_ptr<ASTNode>> &ast);
 
         [[nodiscard]] LogConsole &getConsole() {
             return this->m_console;
@@ -237,7 +237,7 @@ namespace pl {
 
         void handleAbort() {
             if (this->m_aborted)
-                LogConsole::abortEvaluation("evaluation aborted by user");
+                err::E0007.throwError("Evaluation aborted by user.");
         }
 
         [[nodiscard]] std::optional<Token::Literal> getEnvVariable(const std::string &name) const {
@@ -322,7 +322,7 @@ namespace pl {
         u64 m_dataBaseAddress = 0x00;
         u64 m_dataSize = 0x00;
         std::function<void(u64, u8*, size_t)> m_readerFunction = [](u64, u8*, size_t){
-            LogConsole::abortEvaluation("reading data has been disabled");
+            err::E0011.throwError("No memory has been attached. Reading is disabled.");
         };
 
         u32 getNextPatternColor() {

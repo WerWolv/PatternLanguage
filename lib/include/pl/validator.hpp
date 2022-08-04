@@ -20,10 +20,10 @@ namespace pl {
 
         bool validate(const std::string &sourceCode, const std::vector<std::shared_ptr<ASTNode>> &ast);
 
-        const std::optional<err::Error::Exception> &getError() { return this->m_error; }
+        const std::optional<err::Exception> &getError() { return this->m_error; }
 
     private:
-        std::optional<err::Error::Exception> m_error;
+        std::optional<err::Exception> m_error;
     };
 
 }

@@ -43,7 +43,7 @@ namespace pl {
                         result = evaluator->getDataSize();
                         break;
                     default:
-                        LogConsole::abortEvaluation("invalid type operator", this);
+                        err::E0001.throwError("Invalid type operation.", {}, this);
                 }
             } else {
                 auto patterns = this->m_expression->createPatterns(evaluator);
@@ -57,7 +57,7 @@ namespace pl {
                         result = pattern->getSize();
                         break;
                     default:
-                        LogConsole::abortEvaluation("invalid type operator", this);
+                        err::E0001.throwError("Invalid type operation.", {}, this);
                 }
             }
 

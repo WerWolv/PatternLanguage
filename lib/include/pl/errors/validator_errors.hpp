@@ -1,9 +1,11 @@
+#pragma once
+
 #include <pl/errors/error.hpp>
 
 namespace pl::err {
 
     namespace {
-        class ValidatorError : public Error {
+        class ValidatorError : public Error<> {
         public:
             ValidatorError(u32 errorCode, std::string title) noexcept :
                     Error('V', errorCode, std::move(title)) { }

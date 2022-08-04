@@ -26,10 +26,10 @@ namespace pl {
                         return value->evaluate(evaluator);
                 }
             } else {
-                LogConsole::abortEvaluation("invalid scope resolution. Cannot access this type");
+                err::E0004.throwError("Invalid scope resolution. This cannot be accessed using the scope resolution operator.", {}, this);
             }
 
-            LogConsole::abortEvaluation(fmt::format("could not find constant '{}'", this->m_name), this);
+            err::E0004.throwError(fmt::format("Cannot find constant '{}' in this type.", this->m_name), {}, this);
         }
 
     private:

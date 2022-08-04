@@ -28,8 +28,8 @@ namespace pl {
             auto &typePattern = typePatterns.front();
 
             return std::unique_ptr<ASTNode>(std::visit(overloaded {
-                [&, this](Pattern *value) -> ASTNode * { LogConsole::abortEvaluation(fmt::format("cannot cast custom type '{}' to '{}'", value->getTypeName(), Token::getTypeName(type)), this); },
-                [&, this](const std::string &) -> ASTNode * { LogConsole::abortEvaluation(fmt::format("cannot cast string to '{}'", Token::getTypeName(type)), this); },
+                [&, this](Pattern *value) -> ASTNode * { err::E0004.throwError(fmt::format("Cannot cast value of type '{}' to type '{}'.", value->getTypeName(), Token::getTypeName(type)), {}, this); },
+                [&, this](const std::string &) -> ASTNode * { err::E0004.throwError(fmt::format("Cannot cast value of type 'str' to type '{}'.", Token::getTypeName(type)), {}, this); },
                 [&, this](auto &&value) -> ASTNode * {
                    auto endianAdjustedValue = pl::changeEndianess(value, typePattern->getSize(), typePattern->getEndian());
                    switch (type) {
@@ -75,7 +75,7 @@ namespace pl {
                                return new ASTNodeLiteral(string);
                            }
                        default:
-                           LogConsole::abortEvaluation(fmt::format("cannot cast value to '{}'", Token::getTypeName(type)), this);
+                           err::E0004.throwError(fmt::format("Cannot cast value of type '{}' to type '{}'.", typePattern->getTypeName(), Token::getTypeName(type)), {}, this);
                    }
                 },
             },

@@ -39,9 +39,9 @@ namespace pl {
             const auto literal = dynamic_cast<ASTNodeLiteral *>(rhs.get());
 
             if (lhs.empty())
-                LogConsole::abortEvaluation("unknown variable", this);
+                err::E0003.throwError("Cannot find variable in this scope.", {}, this);
 
-            auto &pattern = lhs[0];
+            auto &pattern = lhs.front();
 
             evaluator->setVariable(pattern.get(), literal->getValue());
 

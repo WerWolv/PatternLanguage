@@ -86,7 +86,8 @@ namespace pl {
                     double value = 0;
                     readVariable(evaluator, value, pattern);
                     literal = value;
-                } else LogConsole::abortEvaluation("invalid floating point type access", this);
+                } else
+                    err::E0001.throwError("Invalid floating point type.");
             } else if (dynamic_cast<PatternCharacter *>(pattern)) {
                 char value = 0;
                 readVariable(evaluator, value, pattern);
@@ -106,11 +107,13 @@ namespace pl {
                            [&](std::string &assignmentValue) { value = assignmentValue; },
                            [&, this](Pattern *const &assignmentValue) {
                                if (!dynamic_cast<PatternString *>(assignmentValue) && !dynamic_cast<PatternCharacter *>(assignmentValue))
-                                   LogConsole::abortEvaluation(fmt::format("cannot assign '{}' to string", pattern->getTypeName()), this);
+                                   err::E0004.throwError(fmt::format("Cannot assign value of type '{}' to variable of type 'string'.", pattern->getTypeName()), {}, this);
 
                                readVariable(evaluator, value, assignmentValue);
                            },
-                           [&, this](auto &&) { LogConsole::abortEvaluation(fmt::format("cannot assign '{}' to string", pattern->getTypeName()), this); }
+                           [&, this](auto &&) {
+                               err::E0004.throwError(fmt::format("Cannot assign value of type '{}' to variable of type 'string'.", pattern->getTypeName()), {}, this);
+                           }
                        }, variableValue);
                 } else if (pattern->getMemoryLocationType() == PatternMemoryType::Provider) {
                     value.resize(pattern->getSize());
@@ -135,7 +138,7 @@ namespace pl {
                 auto result = transformFunc->func(evaluator, { std::move(literal) });
 
                 if (!result.has_value())
-                    LogConsole::abortEvaluation("transform function did not return a value", this);
+                    err::E0009.throwError("Transform function did not return a value.", "Try adding a 'return <value>;' statement in all code paths.", this);
                 literal = std::move(result.value());
             }
 
@@ -168,7 +171,7 @@ namespace pl {
                         scopeIndex--;
 
                         if (static_cast<size_t>(std::abs(scopeIndex)) >= evaluator->getScopeCount())
-                            LogConsole::abortEvaluation("cannot access parent of global scope", this);
+                            err::E0003.throwError("Cannot access parent of global scope.", {}, this);
 
                         searchScope     = *evaluator->getScope(scopeIndex).scope;
                         auto currParent = evaluator->getScope(scopeIndex).parent;
@@ -186,7 +189,7 @@ namespace pl {
                         auto currParent = evaluator->getScope(0).parent;
 
                         if (currParent == nullptr)
-                            LogConsole::abortEvaluation("invalid use of 'this' outside of struct-like type", this);
+                            err::E0003.throwError("Cannot use 'this' outside of nested type.", "Try using it inside of a struct, union or bitfield.", this);
 
                         currPattern = currParent->clone();
                         continue;
@@ -201,10 +204,10 @@ namespace pl {
                         }
 
                         if (name == "$")
-                            LogConsole::abortEvaluation("invalid use of placeholder operator in rvalue");
+                            err::E0003.throwError("Invalid use of '$' operator in rvalue.", {}, this);
 
                         if (!found) {
-                            LogConsole::abortEvaluation(fmt::format("no variable named '{}' found", name), this);
+                            err::E0003.throwError(fmt::format("No variable named '{}' in type '{}'.", name, currPattern->getTypeName()), {}, this);
                         }
                     }
                 } else {
@@ -213,21 +216,21 @@ namespace pl {
                     auto index = dynamic_cast<ASTNodeLiteral *>(node.get());
 
                     std::visit(overloaded {
-                        [this](const std::string &) { LogConsole::abortEvaluation("cannot use string to index array", this); },
-                        [this](Pattern *) { LogConsole::abortEvaluation("cannot use custom type to index array", this); },
+                        [this](const std::string &) { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
+                        [this](Pattern *pattern) {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
                         [&, this](auto &&index) {
-                           if (auto dynamicArrayPattern = dynamic_cast<PatternArrayDynamic *>(currPattern.get())) {
-                               if (static_cast<u128>(index) >= searchScope.size() || static_cast<i128>(index) < 0)
-                                   LogConsole::abortEvaluation("array index out of bounds", this);
+                            if (auto dynamicArrayPattern = dynamic_cast<PatternArrayDynamic *>(currPattern.get())) {
+                                if (static_cast<u128>(index) >= searchScope.size() || static_cast<i128>(index) < 0)
+                                    err::E0006.throwError(fmt::format("Cannot out of bounds index '{}'.", index), {}, this);
 
-                               currPattern = searchScope[index]->clone();
-                           } else if (auto staticArrayPattern = dynamic_cast<PatternArrayStatic *>(currPattern.get())) {
-                               if (static_cast<u128>(index) >= staticArrayPattern->getEntryCount() || static_cast<i128>(index) < 0)
-                                   LogConsole::abortEvaluation("array index out of bounds", this);
+                                currPattern = searchScope[index]->clone();
+                            } else if (auto staticArrayPattern = dynamic_cast<PatternArrayStatic *>(currPattern.get())) {
+                                if (static_cast<u128>(index) >= staticArrayPattern->getEntryCount() || static_cast<i128>(index) < 0)
+                                    err::E0006.throwError(fmt::format("Cannot out of bounds index '{}'.", index), {}, this);
 
-                               auto newPattern = searchScope.front()->clone();
-                               newPattern->setOffset(staticArrayPattern->getOffset() + index * staticArrayPattern->getTemplate()->getSize());
-                               currPattern = std::move(newPattern);
+                                auto newPattern = searchScope.front()->clone();
+                                newPattern->setOffset(staticArrayPattern->getOffset() + index * staticArrayPattern->getTemplate()->getSize());
+                                currPattern = std::move(newPattern);
                            }
                         }
                     }, index->getValue());
@@ -264,7 +267,7 @@ namespace pl {
             }
 
             if (currPattern == nullptr)
-                LogConsole::abortEvaluation("cannot reference global scope", this);
+                err::E0003.throwError("Cannot reference global scope.", {}, this);
 
             return pl::moveToVector<std::unique_ptr<Pattern>>(std::move(currPattern));
         }

@@ -62,7 +62,7 @@ namespace pl {
                 if (auto literal = dynamic_cast<ASTNodeLiteral *>(expression.get())) {
                     evaluatedDefaultParams.push_back(literal->getValue());
                 } else {
-                    LogConsole::abortEvaluation(fmt::format("invalid default parameter for function {}", this->m_name), expression);
+                    err::E0009.throwError("Default value must be a literal.", {}, this);
                 }
             }
 
@@ -97,9 +97,9 @@ namespace pl {
                     if (ctx->getCurrentControlFlowStatement() != ControlFlowStatement::None) {
                         switch (ctx->getCurrentControlFlowStatement()) {
                             case ControlFlowStatement::Break:
-                                LogConsole::abortEvaluation("break statement not within a loop", statement);
+                                err::E0010.throwError("Break statements can only be used within a loop.", {}, this);
                             case ControlFlowStatement::Continue:
-                                LogConsole::abortEvaluation("continue statement not within a loop", statement);
+                                err::E0010.throwError("Continue statements can only be used within a loop.", {}, this);
                             default:
                                 break;
                         }

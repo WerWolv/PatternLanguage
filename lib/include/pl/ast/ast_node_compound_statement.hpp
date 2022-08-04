@@ -63,7 +63,10 @@ namespace pl {
                 for (u32 i = startVariableCount; i < variables.size(); i++) {
                     stackSize--;
                 }
-                if (stackSize < 0) LogConsole::abortEvaluation("stack pointer underflow!", this);
+
+                if (stackSize < 0)
+                    err::E0001.throwError("Stack underflow.", {}, this);
+
                 evaluator->getStack().resize(stackSize);
 
                 evaluator->popScope();

@@ -48,10 +48,10 @@ namespace pl {
                 auto offset             = dynamic_cast<ASTNodeLiteral *>(evaluatedPlacement.get());
 
                 evaluator->dataOffset() = std::visit(overloaded {
-                                                         [this](const std::string &) -> u64 { LogConsole::abortEvaluation("placement offset cannot be a string", this); },
-                                                         [this](Pattern *) -> u64 { LogConsole::abortEvaluation("placement offset cannot be a custom type", this); },
-                                                         [](auto &&offset) -> u64 { return offset; } },
-                    offset->getValue());
+                    [this](const std::string &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
+                    [this](Pattern *) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
+                    [](auto &&offset) -> u64 { return offset; }
+                }, offset->getValue());
             }
 
             auto type = this->m_type->evaluate(evaluator);
@@ -67,7 +67,7 @@ namespace pl {
                 else
                     pattern = createDynamicArray(evaluator);
             } else {
-                LogConsole::abortEvaluation("invalid type used in array", this);
+                err::E0001.throwError("Invalid type used in array variable declaration.", { }, this);
             }
 
             applyVariableAttributes(evaluator, this, pattern.get());
@@ -85,9 +85,9 @@ namespace pl {
 
             if (sizeLiteral != nullptr) {
                 auto entryCount = std::visit(overloaded {
-                        [this](const std::string &) -> i128 { LogConsole::abortEvaluation("cannot use string to index array", this); },
-                        [this](Pattern *) -> i128 { LogConsole::abortEvaluation("cannot use custom type to index array", this); },
-                        [](auto &&size) -> i128 { return size; }
+                    [this](const std::string &) -> i128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
+                    [this](Pattern *pattern) -> i128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
+                    [](auto &&size) -> i128 { return size; }
                 }, sizeLiteral->getValue());
 
                 evaluator->createArrayVariable(this->m_name, this->m_type.get(), entryCount);
@@ -117,8 +117,8 @@ namespace pl {
 
                 if (auto literal = dynamic_cast<ASTNodeLiteral *>(sizeNode.get())) {
                     entryCount = std::visit(overloaded {
-                        [this](const std::string &) -> i128 { LogConsole::abortEvaluation("cannot use string to index array", this); },
-                        [this](Pattern *) -> i128 { LogConsole::abortEvaluation("cannot use custom type to index array", this); },
+                        [this](const std::string &) -> i128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
+                        [this](Pattern *pattern) -> i128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
                         [](auto &&size) -> i128 { return size; }
                     }, literal->getValue());
                 } else if (auto whileStatement = dynamic_cast<ASTNodeWhileStatement *>(sizeNode.get())) {
@@ -130,12 +130,12 @@ namespace pl {
                 }
 
                 if (entryCount < 0)
-                    LogConsole::abortEvaluation("array cannot have a negative size", this);
+                    err::E0004.throwError("Array size cannot be negative.", { }, this);
             } else {
                 std::vector<u8> buffer(templatePattern->getSize());
                 while (true) {
                     if (evaluator->dataOffset() > evaluator->getDataSize() - buffer.size())
-                        LogConsole::abortEvaluation("reached end of file before finding end of unsized array", this);
+                        err::E0004.throwError("Array expanded past end of the data before a null-entry was found.", "Try using a while-sized array instead to limit the size of the array.", this);
 
                     evaluator->readData(evaluator->dataOffset(), buffer.data(), buffer.size());
                     evaluator->dataOffset() += buffer.size();
@@ -195,6 +195,9 @@ namespace pl {
                     size += pattern->getSize();
                     entryIndex++;
 
+                    if (evaluator->dataOffset() > evaluator->getDataSize() - pattern->getSize())
+                        err::E0004.throwError("Array expanded past end of the data before termination condition was met.", { }, this);
+
                     entries.push_back(std::move(pattern));
 
                     evaluator->handleAbort();
@@ -213,14 +216,14 @@ namespace pl {
 
                 if (auto literal = dynamic_cast<ASTNodeLiteral *>(sizeNode.get())) {
                     auto entryCount = std::visit(overloaded {
-                                                     [this](const std::string &) -> u128 { LogConsole::abortEvaluation("cannot use string to index array", this); },
-                                                     [this](Pattern *) -> u128 { LogConsole::abortEvaluation("cannot use custom type to index array", this); },
-                                                     [](auto &&size) -> u128 { return size; } },
-                        literal->getValue());
+                        [this](const std::string &) -> u128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
+                        [this](Pattern *pattern) -> u128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
+                        [](auto &&size) -> u128 { return size; }
+                    }, literal->getValue());
 
                     auto limit = evaluator->getArrayLimit();
                     if (entryCount > limit)
-                        LogConsole::abortEvaluation(fmt::format("array grew past set limit of {}", limit), this);
+                        err::E0007.throwError(fmt::format("Array grew past set limit of {}", limit), "If this is intended, try increasing the limit using '#pragma array_limit <new_limit>'.", this);
 
                     for (u64 i = 0; i < entryCount; i++) {
                         evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
@@ -245,7 +248,7 @@ namespace pl {
                     while (whileStatement->evaluateCondition(evaluator)) {
                         auto limit = evaluator->getArrayLimit();
                         if (entryIndex > limit)
-                            LogConsole::abortEvaluation(fmt::format("array grew past set limit of {}", limit), this);
+                            err::E0007.throwError(fmt::format("Array grew past set limit of {}", limit), "If this is intended, try increasing the limit using '#pragma array_limit <new_limit>'.", this);
 
                         evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
 
@@ -270,7 +273,7 @@ namespace pl {
                     bool reachedEnd = true;
                     auto limit      = evaluator->getArrayLimit();
                     if (entryIndex > limit)
-                        LogConsole::abortEvaluation(fmt::format("array grew past set limit of {}", limit), this);
+                        err::E0007.throwError(fmt::format("Array grew past set limit of {}", limit), "If this is intended, try increasing the limit using '#pragma array_limit <new_limit>'.", this);
 
                     evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
 
@@ -280,7 +283,7 @@ namespace pl {
                         std::vector<u8> buffer(pattern->getSize());
 
                         if (evaluator->dataOffset() > evaluator->getDataSize() - buffer.size()) {
-                            LogConsole::abortEvaluation("reached end of file before finding end of unsized array", this);
+                            err::E0004.throwError("Array expanded past end of the data before a null-entry was found.", "Try using a while-sized array instead to limit the size of the array.", this);
                         }
 
                         const auto patternSize = pattern->getSize();

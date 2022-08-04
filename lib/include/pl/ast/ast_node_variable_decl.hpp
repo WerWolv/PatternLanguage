@@ -45,8 +45,8 @@ namespace pl {
                 const auto offset = dynamic_cast<ASTNodeLiteral *>(node.get());
 
                 evaluator->dataOffset() = std::visit(overloaded {
-                    [this](const std::string &) -> u64 { LogConsole::abortEvaluation("placement offset cannot be a string", this); },
-                    [this](Pattern *) -> u64 { LogConsole::abortEvaluation("placement offset cannot be a custom type", this); },
+                    [this](const std::string &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
+                    [this](Pattern *) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
                     [](auto &&offset) -> u64 { return offset; } },
                 offset->getValue());
             }

@@ -1,9 +1,11 @@
+#pragma once
+
 #include <pl/errors/error.hpp>
 
 namespace pl::err {
 
     namespace {
-        class PreprocessorError : public Error {
+        class PreprocessorError : public Error<> {
         public:
             PreprocessorError(u32 errorCode, std::string title) noexcept :
                     Error('M', errorCode, std::move(title)) { }

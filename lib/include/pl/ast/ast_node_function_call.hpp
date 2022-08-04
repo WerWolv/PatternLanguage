@@ -68,7 +68,7 @@ namespace pl {
                     evaluator->getConsole().log(LogConsole::Level::Warning, "This function might be part of the standard library.\nYou can install the standard library though\nthe Content Store found under Help -> Content Store and then\ninclude the correct file.");
                 }
 
-                LogConsole::abortEvaluation(fmt::format("call to unknown function '{}'", this->m_functionName), this);
+                err::E0003.throwError(fmt::format("Cannot call unknown function '{}'.", this->m_functionName), fmt::format("Try defining it first using 'fn {}() {{ }}'", this->m_functionName), this);
             }
 
             auto function = functions[this->m_functionName];
@@ -89,15 +89,15 @@ namespace pl {
             }
 
             if (evaluatedParams.size() < min)
-                LogConsole::abortEvaluation(fmt::format("too few parameters for function '{0}'. Expected {1} at least", this->m_functionName, min), this);
+                err::E0009.throwError(fmt::format("Too few parameters passed to function '{0}'. Expected at least {1} but got {2}.", this->m_functionName, min, evaluatedParams.size()), { }, this);
             else if (evaluatedParams.size() > max)
-                LogConsole::abortEvaluation(fmt::format("too many parameters for function '{0}'. Expected {1} at most", this->m_functionName, max), this);
+                err::E0009.throwError(fmt::format("Too many parameters passed to function '{0}'. Expected {1} but got {2}.", this->m_functionName, max, evaluatedParams.size()), { }, this);
 
             if (function.dangerous && evaluator->getDangerousFunctionPermission() != DangerousFunctionPermission::Allow) {
                 evaluator->dangerousFunctionCalled();
 
                 if (evaluator->getDangerousFunctionPermission() == DangerousFunctionPermission::Deny) {
-                    LogConsole::abortEvaluation(fmt::format("calling of dangerous function '{}' is not allowed", this->m_functionName), this);
+                    err::E0009.throwError(fmt::format("Call to dangerous function '{}' has been denied.", this->m_functionName), { }, this);
                 }
             }
 

@@ -78,6 +78,10 @@ namespace pl {
             this->m_signed = dynamic_cast<const PatternSigned *>(this->m_pointerType.get()) != nullptr;
         }
 
+        const std::unique_ptr<Pattern>& getPointerType() const {
+            return this->m_pointerType;
+        }
+
         void setPointedAtAddress(i128 address) {
             this->m_pointedAtAddress = address + this->m_pointerBase;
         }

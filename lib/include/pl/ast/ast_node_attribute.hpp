@@ -64,9 +64,9 @@ namespace pl {
             return std::any_of(this->m_attributes.begin(), this->m_attributes.end(), [&](const std::unique_ptr<ASTNodeAttribute> &attribute) {
                 if (attribute->getAttribute() == key) {
                     if (needsParameter && !attribute->getValue().has_value())
-                        LogConsole::abortEvaluation(fmt::format("attribute '{}' expected a parameter", key), attribute);
+                        err::E0008.throwError(fmt::format("Attribute '{}' expected a parameter.", key), fmt::format("Try [[{}(\"value\")]] instead.", key), attribute.get());
                     else if (!needsParameter && attribute->getValue().has_value())
-                        LogConsole::abortEvaluation(fmt::format("attribute '{}' did not expect a parameter ", key), attribute);
+                        err::E0008.throwError(fmt::format("Attribute '{}' did not expect a parameter.", key), fmt::format("Try [[{}]] instead.", key), attribute.get());
                     else
                         return true;
                 }
@@ -94,13 +94,13 @@ namespace pl {
     inline void applyTypeAttributes(Evaluator *evaluator, const ASTNode *node, Pattern *pattern) {
         auto attributable = dynamic_cast<const Attributable *>(node);
         if (attributable == nullptr)
-            LogConsole::abortEvaluation("attribute cannot be applied here", node);
+            err::E0008.throwError("Attributes cannot be applied to this statement.", {}, node);
 
         if (attributable->hasAttribute("inline", false)) {
             auto inlinable = dynamic_cast<Inlinable *>(pattern);
 
             if (inlinable == nullptr)
-                LogConsole::abortEvaluation("inline attribute can only be applied to nested types", node);
+                err::E0008.throwError("[[inline]] attribute can only be used with nested types.", "Try applying it to a struct, union, bitfield or array instead.", node);
             else
                 inlinable->setInlined(true);
         }
@@ -108,11 +108,11 @@ namespace pl {
         if (auto value = attributable->getAttributeValue("format"); value) {
             auto functions = evaluator->getCustomFunctions();
             if (!functions.contains(*value))
-                LogConsole::abortEvaluation(fmt::format("cannot find formatter function '{}'", *value), node);
+                err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", *value), {}, node);
 
             const auto &function = functions[*value];
             if (function.parameterCount != api::FunctionParameterCount::exactly(1))
-                LogConsole::abortEvaluation("formatter function needs exactly one parameter", node);
+                err::E0009.throwError(fmt::format("Formatter function '{}' needs to take exactly one parameter.", *value), fmt::format("Try 'fn {}({} value)' instead", *value, pattern->getTypeName()), node);
 
             pattern->setFormatterFunction(function);
         }
@@ -120,15 +120,15 @@ namespace pl {
         if (auto value = attributable->getAttributeValue("format_entries"); value) {
             auto functions = evaluator->getCustomFunctions();
             if (!functions.contains(*value))
-                LogConsole::abortEvaluation(fmt::format("cannot find formatter function '{}'", *value), node);
+                err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", *value), {}, node);
 
             const auto &function = functions[*value];
             if (function.parameterCount != api::FunctionParameterCount::exactly(1))
-                LogConsole::abortEvaluation("formatter function needs exactly one parameter", node);
+                err::E0009.throwError(fmt::format("Formatter function '{}' needs to take exactly one parameter.", *value), fmt::format("Try 'fn {}({} value)' instead", *value, pattern->getTypeName()), node);
 
             auto array = dynamic_cast<PatternArrayDynamic *>(pattern);
             if (array == nullptr)
-                LogConsole::abortEvaluation("inline_array attribute can only be applied to array types", node);
+                err::E0009.throwError("The [[inline_array]] attribute can only be applied to dynamic array types.", {}, node);
 
             for (const auto &entry : array->getEntries()) {
                 entry->setFormatterFunction(function);
@@ -138,11 +138,11 @@ namespace pl {
         if (auto value = attributable->getAttributeValue("transform"); value) {
             auto functions = evaluator->getCustomFunctions();
             if (!functions.contains(*value))
-                LogConsole::abortEvaluation(fmt::format("cannot find transform function '{}'", *value), node);
+                err::E0009.throwError(fmt::format("Transform function '{}' does not exist.", *value), {}, node);
 
             const auto &function = functions[*value];
             if (function.parameterCount != api::FunctionParameterCount::exactly(1))
-                LogConsole::abortEvaluation("transform function needs exactly one parameter", node);
+                err::E0009.throwError(fmt::format("Transform function '{}' needs to take exactly one parameter.", *value), fmt::format("Try 'fn {}({} value)' instead", *value, pattern->getTypeName()), node);
 
             pattern->setTransformFunction(function);
         }
@@ -150,23 +150,24 @@ namespace pl {
         if (auto value = attributable->getAttributeValue("pointer_base"); value) {
             auto functions = evaluator->getCustomFunctions();
             if (!functions.contains(*value))
-                LogConsole::abortEvaluation(fmt::format("cannot find pointer base function '{}'", *value), node);
+                err::E0009.throwError(fmt::format("Pointer base function '{}' does not exist.", *value), {}, node);
 
-            const auto &function = functions[*value];
-            if (function.parameterCount != api::FunctionParameterCount::exactly(1))
-                LogConsole::abortEvaluation("pointer base function needs exactly one parameter", node);
 
             if (auto pointerPattern = dynamic_cast<PatternPointer *>(pattern)) {
                 i128 pointerValue = pointerPattern->getPointedAtAddress();
 
+                const auto &function = functions[*value];
+                if (function.parameterCount != api::FunctionParameterCount::exactly(1))
+                    err::E0009.throwError(fmt::format("Transform function '{}' needs to take exactly one parameter.", *value), fmt::format("Try 'fn {}({} value)' instead", *value, pointerPattern->getPointerType()->getTypeName()), node);
+
                 auto result = function.func(evaluator, { pointerValue });
 
                 if (!result.has_value())
-                    LogConsole::abortEvaluation("pointer base function did not return a value", node);
+                    err::E0009.throwError(fmt::format("Pointer base function '{}' did not return a value.", *value), "Try adding a 'return <value>;' statement in all code paths.", node);
 
                 pointerPattern->rebase(Token::literalToSigned(result.value()));
             } else {
-                LogConsole::abortEvaluation("pointer_base attribute may only be applied to a pointer");
+                err::E0009.throwError("The [[pointer_base]] attribute can only be applied to pointer types.", {}, node);
             }
         }
 
@@ -191,7 +192,7 @@ namespace pl {
     inline void applyVariableAttributes(Evaluator *evaluator, const ASTNode *node, Pattern *pattern) {
         auto attributable = dynamic_cast<const Attributable *>(node);
         if (attributable == nullptr)
-            LogConsole::abortEvaluation("attribute cannot be applied here", node);
+            err::E0008.throwError("Attributes cannot be applied to this statement.", {}, node);
 
         auto endOffset          = evaluator->dataOffset();
         evaluator->dataOffset() = pattern->getOffset();

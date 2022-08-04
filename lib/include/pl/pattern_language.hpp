@@ -69,7 +69,7 @@ namespace pl {
         void setDangerousFunctionCallHandler(std::function<bool()> callback) const;
 
         [[nodiscard]] const std::vector<std::pair<LogConsole::Level, std::string>> &getConsoleLog() const;
-        [[nodiscard]] const std::optional<err::Error::Exception> &getError() const;
+        [[nodiscard]] const std::optional<err::Exception> &getError() const;
         [[nodiscard]] std::map<std::string, Token::Literal> getOutVariables() const;
 
         [[nodiscard]] u32 getCreatedPatternCount() const;
@@ -105,7 +105,7 @@ namespace pl {
 
         std::vector<std::shared_ptr<ASTNode>> m_currAST;
 
-        std::optional<err::Error::Exception> m_currError;
+        std::optional<err::Exception> m_currError;
 
         std::vector<std::shared_ptr<Pattern>> m_patterns;
 

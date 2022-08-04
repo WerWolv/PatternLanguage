@@ -7,22 +7,31 @@
 
 namespace pl {
 
-#define FLOAT_BIT_OPERATION(name)                                                    \
-    auto name(pl::floating_point auto left, auto right) const {                     \
-        pl::unused(left, right);                                                    \
-        LogConsole::abortEvaluation("invalid floating point operation", this);       \
-        return 0;                                                                    \
-    }                                                                                \
-    auto name(auto left, pl::floating_point auto right) const {                     \
-        pl::unused(left, right);                                                    \
-        LogConsole::abortEvaluation("invalid floating point operation", this);       \
-        return 0;                                                                    \
-    }                                                                                \
-    auto name(pl::floating_point auto left, pl::floating_point auto right) const { \
-        pl::unused(left, right);                                                    \
-        LogConsole::abortEvaluation("invalid floating point operation", this);       \
-        return 0;                                                                    \
-    }                                                                                \
+#define FLOAT_BIT_OPERATION(name)                                                       \
+    auto name(pl::floating_point auto left, auto right) const {                         \
+        pl::unused(left, right);                                                        \
+        err::E0002.throwError(                                                          \
+            "Invalid floating point operation.",                                        \
+            "This operation doesn't make sense to be used with floating point values.", \
+            this);                                                                      \
+        return 0;                                                                       \
+    }                                                                                   \
+    auto name(auto left, pl::floating_point auto right) const {                         \
+        pl::unused(left, right);                                                        \
+        err::E0002.throwError(                                                          \
+            "Invalid floating point operation.",                                        \
+            "This operation doesn't make sense to be used with floating point values.", \
+            this);                                                                      \
+        return 0;                                                                       \
+    }                                                                                   \
+    auto name(pl::floating_point auto left, pl::floating_point auto right) const {      \
+        pl::unused(left, right);                                                        \
+        err::E0002.throwError(                                                          \
+            "Invalid floating point operation.",                                        \
+            "This operation doesn't make sense to be used with floating point values.", \
+            this);                                                                      \
+        return 0;                                                                       \
+    }                                                                                   \
     auto name(pl::integral auto left, pl::integral auto right) const
 
     class ASTNodeMathematicalExpression : public ASTNode {
@@ -74,7 +83,7 @@ namespace pl {
 
         [[nodiscard]] std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override {
             if (this->getLeftOperand() == nullptr || this->getRightOperand() == nullptr)
-                LogConsole::abortEvaluation("attempted to use void expression in mathematical expression", this);
+                err::E0002.throwError("Void expression used in ternary expression.", "If you used a function for one of the operands, make sure it returned a value.", this);
 
             auto leftNode  = this->getLeftOperand()->evaluate(evaluator);
             auto rightNode = this->getRightOperand()->evaluate(evaluator);
@@ -97,29 +106,32 @@ namespace pl {
             const auto leftValue = Decay(left->getValue());
             const auto rightValue = Decay(right->getValue());
 
-            return std::unique_ptr<ASTNode>(std::visit(overloaded {
-               // TODO: :notlikethis:
-               [this](u128, Pattern *const ) -> ASTNode * { LogConsole::abortEvaluation("invalid operand used in mathematical expression", this); },
-               [this](i128, Pattern *const &) -> ASTNode * { LogConsole::abortEvaluation("invalid operand used in mathematical expression", this); },
-               [this](double, Pattern *const &) -> ASTNode * { LogConsole::abortEvaluation("invalid operand used in mathematical expression", this); },
-               [this](char, Pattern *const &) -> ASTNode * { LogConsole::abortEvaluation("invalid operand used in mathematical expression", this); },
-               [this](bool, Pattern *const &) -> ASTNode * { LogConsole::abortEvaluation("invalid operand used in mathematical expression", this); },
-               [this](const std::string &, Pattern *const &) -> ASTNode * { LogConsole::abortEvaluation("invalid operand used in mathematical expression", this); },
-               [this](Pattern *const &, u128) -> ASTNode * { LogConsole::abortEvaluation("invalid operand used in mathematical expression", this); },
-               [this](Pattern *const &, i128) -> ASTNode * { LogConsole::abortEvaluation("invalid operand used in mathematical expression", this); },
-               [this](Pattern *const &, double) -> ASTNode * { LogConsole::abortEvaluation("invalid operand used in mathematical expression", this); },
-               [this](Pattern *const &, char) -> ASTNode * { LogConsole::abortEvaluation("invalid operand used in mathematical expression", this); },
-               [this](Pattern *const &, bool) -> ASTNode * { LogConsole::abortEvaluation("invalid operand used in mathematical expression", this); },
-               [this](Pattern *const &, const std::string &) -> ASTNode * { LogConsole::abortEvaluation("invalid operand used in mathematical expression", this); },
-               [this](Pattern *const &, Pattern *const &) -> ASTNode * { LogConsole::abortEvaluation("invalid operand used in mathematical expression", this); },
+            const static auto throwInvalidOperandError = [this] [[noreturn]]{
+                err::E0002.throwError("Invalid operand used in mathematical expression.", { }, this);
+            };
 
-               [this](auto &&, const std::string &) -> ASTNode * { LogConsole::abortEvaluation("invalid operand used in mathematical expression", this); },
+            return std::unique_ptr<ASTNode>(std::visit(overloaded {
+               [](u128, Pattern *const ) -> ASTNode * { throwInvalidOperandError(); },
+               [](i128, Pattern *const &) -> ASTNode * { throwInvalidOperandError(); },
+               [](double, Pattern *const &) -> ASTNode * { throwInvalidOperandError(); },
+               [](char, Pattern *const &) -> ASTNode * { throwInvalidOperandError(); },
+               [](bool, Pattern *const &) -> ASTNode * { throwInvalidOperandError(); },
+               [](const std::string &, Pattern *const &) -> ASTNode * { throwInvalidOperandError(); },
+               [](Pattern *const &, u128) -> ASTNode * { throwInvalidOperandError(); },
+               [](Pattern *const &, i128) -> ASTNode * { throwInvalidOperandError();},
+               [](Pattern *const &, double) -> ASTNode * { throwInvalidOperandError(); },
+               [](Pattern *const &, char) -> ASTNode * { throwInvalidOperandError(); },
+               [](Pattern *const &, bool) -> ASTNode * { throwInvalidOperandError(); },
+               [](Pattern *const &, const std::string &) -> ASTNode * { throwInvalidOperandError(); },
+               [](Pattern *const &, Pattern *const &) -> ASTNode * { throwInvalidOperandError(); },
+
+               [](auto &&, const std::string &) -> ASTNode * { throwInvalidOperandError(); },
                [this](const std::string &left, auto &&right) -> ASTNode * {
                    switch (this->getOperator()) {
                        case Token::Operator::Star:
                            {
                                if (static_cast<i128>(right) < 0)
-                                   LogConsole::abortEvaluation("cannot repeat string a negative number of times", this);
+                                   err::E0002.throwError("Cannot repeat string a negative number of times.", { }, this);
 
                                std::string result;
                                for (u128 i = 0; i < static_cast<u128>(right); i++)
@@ -127,7 +139,7 @@ namespace pl {
                                return new ASTNodeLiteral(result);
                            }
                        default:
-                           LogConsole::abortEvaluation("invalid operand used in mathematical expression", this);
+                           throwInvalidOperandError();
                    }
                },
                [this](const std::string &left, const std::string &right) -> ASTNode * {
@@ -147,7 +159,7 @@ namespace pl {
                        case Token::Operator::BoolLessThanOrEqual:
                            return new ASTNodeLiteral(left <= right);
                        default:
-                           LogConsole::abortEvaluation("invalid operand used in mathematical expression", this);
+                           throwInvalidOperandError();
                    }
                },
                [this](const std::string &left, char right) -> ASTNode * {
@@ -155,7 +167,7 @@ namespace pl {
                        case Token::Operator::Plus:
                            return new ASTNodeLiteral(left + right);
                        default:
-                           LogConsole::abortEvaluation("invalid operand used in mathematical expression", this);
+                           throwInvalidOperandError();
                    }
                },
                [this](char left, const std::string &right) -> ASTNode * {
@@ -163,7 +175,7 @@ namespace pl {
                        case Token::Operator::Plus:
                            return new ASTNodeLiteral(left + right);
                        default:
-                           LogConsole::abortEvaluation("invalid operand used in mathematical expression", this);
+                           throwInvalidOperandError();
                    }
                },
                [this](auto &&left, auto &&right) -> ASTNode * {
@@ -175,10 +187,10 @@ namespace pl {
                        case Token::Operator::Star:
                            return new ASTNodeLiteral(left * right);
                        case Token::Operator::Slash:
-                           if (right == 0) LogConsole::abortEvaluation("division by zero!", this);
+                           if (right == 0) err::E0002.throwError("Division by zero.", { }, this);
                            return new ASTNodeLiteral(left / right);
                        case Token::Operator::Percent:
-                           if (right == 0) LogConsole::abortEvaluation("division by zero!", this);
+                           if (right == 0) err::E0002.throwError("Division by zero.", { }, this);
                            return new ASTNodeLiteral(modulus(left, right));
                        case Token::Operator::LeftShift:
                            return new ASTNodeLiteral(shiftLeft(left, right));
@@ -213,7 +225,7 @@ namespace pl {
                        case Token::Operator::BoolNot:
                            return new ASTNodeLiteral(bool(!right));
                        default:
-                           LogConsole::abortEvaluation("invalid operand used in mathematical expression", this);
+                           throwInvalidOperandError();
                    }
                }
             },

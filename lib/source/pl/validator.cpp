@@ -49,11 +49,11 @@ namespace pl {
                 }
             }
 
-        } catch (err::Error &e) {
+        } catch (err::Error<void> &e) {
             if (lastNode != nullptr)
-                this->m_error = err::Error::Exception(e.format(sourceCode, lastNode->getLine(), lastNode->getColumn()), lastNode->getLine(), lastNode->getColumn());
+                this->m_error = err::Exception(e.format(sourceCode, lastNode->getLine(), lastNode->getColumn()), lastNode->getLine(), lastNode->getColumn());
             else
-                this->m_error = err::Error::Exception(e.format(sourceCode, 1, 1), 1, 1);
+                this->m_error = err::Exception(e.format(sourceCode, 1, 1), 1, 1);
 
             return false;
         }

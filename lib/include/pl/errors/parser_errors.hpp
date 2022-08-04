@@ -1,9 +1,11 @@
+#pragma once
+
 #include <pl/errors/error.hpp>
 
 namespace pl::err {
 
     namespace {
-        class ParserError : public Error {
+        class ParserError : public Error<> {
         public:
             ParserError(u32 errorCode, std::string title) noexcept :
                     Error('P', errorCode, std::move(title)) { }

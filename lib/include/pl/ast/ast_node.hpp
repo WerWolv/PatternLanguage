@@ -3,6 +3,7 @@
 #include <pl/token.hpp>
 #include <pl/evaluator.hpp>
 #include <pl/patterns/pattern.hpp>
+#include <pl/errors/evaluator_errors.hpp>
 
 #include "helpers/utils.hpp"
 #include "helpers/guards.hpp"
@@ -45,7 +46,7 @@ namespace pl {
         virtual FunctionResult execute(Evaluator *evaluator) const {
             pl::unused(evaluator);
 
-            LogConsole::abortEvaluation("cannot execute non-function statement", this);
+            err::E0001.throwError("Cannot execute non-functional statement.", "This is a evaluator bug!", this);
         }
 
     private:

@@ -111,7 +111,7 @@ namespace pl {
         }
 
 
-        auto patterns = this->m_internals.evaluator->evaluate(this->m_currAST);
+        auto patterns = this->m_internals.evaluator->evaluate(code, this->m_currAST);
         if (!patterns.has_value()) {
             this->m_currError = this->m_internals.evaluator->getConsole().getLastHardError();
             return false;
@@ -121,7 +121,7 @@ namespace pl {
             auto returnCode = Token::literalToSigned(*mainResult);
 
             if (returnCode != 0) {
-                this->m_currError = err::Error::Exception(fmt::format("non-success value returned from main: {}", returnCode), 0, 1);
+                this->m_currError = err::Exception(fmt::format("non-success value returned from main: {}", returnCode), 0, 1);
 
                 return false;
             }
@@ -194,7 +194,7 @@ namespace pl {
         return this->m_internals.evaluator->getConsole().getLog();
     }
 
-    const std::optional<err::Error::Exception> &PatternLanguage::getError() const {
+    const std::optional<err::Exception> &PatternLanguage::getError() const {
         return this->m_currError;
     }
 

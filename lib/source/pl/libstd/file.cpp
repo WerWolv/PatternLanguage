@@ -11,6 +11,10 @@ namespace pl::libstd::file {
     void registerFunctions(pl::PatternLanguage &runtime) {
         using FunctionParameterCount = pl::api::FunctionParameterCount;
 
+        const static auto throwInvalidFileError = []{
+            err::E0001.throwError("Failed to access invalid file.", {}, nullptr);
+        };
+
         api::Namespace nsStdFile = { "builtin", "std", "file" };
         {
             static u32 fileCounter = 0;
@@ -33,13 +37,13 @@ namespace pl::libstd::file {
                         mode = fs::File::Mode::Create;
                         break;
                     default:
-                        LogConsole::abortEvaluation("invalid file open mode");
+                        err::E0012.throwError("Invalid file open mode.", "Try 'std::fs::Mode::Read', 'std::fs::Mode::Write' or 'std::fs::Mode::Create'.");
                 }
 
                 fs::File file(path, mode);
 
                 if (!file.isValid())
-                    LogConsole::abortEvaluation(fmt::format("failed to open file {}", path));
+                    err::E0012.throwError(fmt::format("Failed to open file '{}'.", path));
 
                 fileCounter++;
                 openFiles.emplace(std::pair { fileCounter, std::move(file) });
@@ -52,7 +56,7 @@ namespace pl::libstd::file {
                 const auto file = Token::literalToUnsigned(params[0]);
 
                 if (!openFiles.contains(file))
-                    LogConsole::abortEvaluation("failed to access invalid file");
+                    throwInvalidFileError();
 
                 openFiles.erase(file);
 
@@ -65,7 +69,7 @@ namespace pl::libstd::file {
                 const auto size = Token::literalToUnsigned(params[1]);
 
                 if (!openFiles.contains(file))
-                    LogConsole::abortEvaluation("failed to access invalid file");
+                    throwInvalidFileError();
 
                 return openFiles[file].readString(size);
             });
@@ -76,7 +80,7 @@ namespace pl::libstd::file {
                 const auto data = Token::literalToString(params[1], true);
 
                 if (!openFiles.contains(file))
-                    LogConsole::abortEvaluation("failed to access invalid file");
+                    throwInvalidFileError();
 
                 openFiles[file].write(data);
 
@@ -89,7 +93,7 @@ namespace pl::libstd::file {
                 const auto offset = Token::literalToUnsigned(params[1]);
 
                 if (!openFiles.contains(file))
-                    LogConsole::abortEvaluation("failed to access invalid file");
+                    throwInvalidFileError();
 
                 openFiles[file].seek(offset);
 
@@ -101,7 +105,7 @@ namespace pl::libstd::file {
                 const auto file = Token::literalToUnsigned(params[0]);
 
                 if (!openFiles.contains(file))
-                    LogConsole::abortEvaluation("failed to access invalid file");
+                    throwInvalidFileError();
 
                 return u128(openFiles[file].getSize());
             });
@@ -112,7 +116,7 @@ namespace pl::libstd::file {
                 const auto size = Token::literalToUnsigned(params[1]);
 
                 if (!openFiles.contains(file))
-                    LogConsole::abortEvaluation("failed to access invalid file");
+                    throwInvalidFileError();
 
                 openFiles[file].setSize(size);
 
@@ -124,7 +128,7 @@ namespace pl::libstd::file {
                 const auto file = Token::literalToUnsigned(params[0]);
 
                 if (!openFiles.contains(file))
-                    LogConsole::abortEvaluation("failed to access invalid file");
+                    throwInvalidFileError();
 
                 openFiles[file].flush();
 
@@ -136,7 +140,7 @@ namespace pl::libstd::file {
                 const auto file = Token::literalToUnsigned(params[0]);
 
                 if (!openFiles.contains(file))
-                    LogConsole::abortEvaluation("failed to access invalid file");
+                    throwInvalidFileError();
 
                 openFiles[file].remove();
 
