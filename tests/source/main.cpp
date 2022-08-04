@@ -49,7 +49,7 @@ int runTests(int argc, char **argv) {
         auto message   = Token::literalToString(params[1], false);
 
         if (!condition)
-            LogConsole::abortEvaluation(fmt::format("assertion failed \"{0}\"", message));
+            pl::err::E0012.throwError(fmt::format("assertion failed \"{0}\"", message));
 
         return std::nullopt;
     });
@@ -60,7 +60,7 @@ int runTests(int argc, char **argv) {
         fmt::print("Error during compilation!\n");
 
         if (auto error = runtime.getError(); error.has_value())
-            fmt::print("Compile error: {} : {}\n", error->getLineNumber(), error->what());
+            fmt::print("Compile error: {}:{} : {}\n", error->getLine(), error->getColumn(), error->what());
         for (auto &[level, message] : runtime.getConsoleLog())
             fmt::print("Evaluate error: {}\n", message);
 
