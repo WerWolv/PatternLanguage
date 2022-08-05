@@ -57,12 +57,12 @@ namespace pl {
                 auto f32 = static_cast<float>(this->getValue());
                 u32 integerResult = 0;
                 std::memcpy(&integerResult, &f32, sizeof(float));
-                return this->formatDisplayValue(fmt::format("{:e} (0x{:0{}X})", f32, integerResult, this->getSize() * 2), f32);
+                return this->formatDisplayValue(fmt::format("{:g} (0x{:0{}X})", f32, integerResult, this->getSize() * 2), f32);
             } else if (this->getSize() == 8) {
                 auto f64 = static_cast<double>(this->getValue());
                 u64 integerResult = 0;
                 std::memcpy(&integerResult, &f64, sizeof(double));
-                return this->formatDisplayValue(fmt::format("{:e} (0x{:0{}X})", f64, integerResult, this->getSize() * 2), f64);
+                return this->formatDisplayValue(fmt::format("{:g} (0x{:0{}X})", f64, integerResult, this->getSize() * 2), f64);
             } else {
                 return "Floating Point Data";
             }
