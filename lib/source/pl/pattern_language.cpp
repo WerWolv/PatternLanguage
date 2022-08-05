@@ -259,6 +259,7 @@ namespace pl {
 
         std::vector<Pattern*> results;
         std::transform(intervals.begin(), intervals.end(), std::back_inserter(results), [](const auto &interval) {
+            interval.value->setOffset(interval.start);
             return interval.value;
         });
 
