@@ -18,8 +18,11 @@ The simplest available types are the built-in standard types:
     ======== ==========
     ``u8``   1 Byte
     ``u16``  2 Bytes
+    ``u24``  3 Bytes :version:`1.19.2`
     ``u32``  4 Bytes
+    ``u48``  6 Bytes :version:`1.19.2`
     ``u64``  8 Bytes
+    ``u96``  12 Bytes :version:`1.19.2`
     ``u128`` 16 Bytes
     ======== ==========
 
@@ -33,8 +36,11 @@ The simplest available types are the built-in standard types:
     ======== ==========
     ``s8``   1 Byte
     ``s16``  2 Bytes
+    ``s24``  3 Bytes :version:`1.19.2`
     ``s32``  4 Bytes
+    ``s48``  6 Bytes :version:`1.19.2`
     ``s64``  8 Bytes
+    ``s96``  12 Bytes :version:`1.19.2`
     ``s128`` 16 Bytes
     ======== ==========
 
@@ -204,6 +210,13 @@ Pointers are variables that treat their value as an address to find the address 
     u16 *pointer : u32 @ 0x08;
 
 This code declares a pointer whose address is a ``u32`` and points to a ``u16``.
+
+
+.. code-block:: hexpat
+
+    u32 *pointerToArray[10] : s16 @ 0x10;
+
+This code declares a pointer to an array of 10 ``u32``s and the pointer has a size of ``s16``
 
 The address will always be treated as absolute. Make sure to set the base address of your data correctly in order for pointers to work as intended.
 

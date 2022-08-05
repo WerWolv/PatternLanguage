@@ -106,3 +106,11 @@ Type Attributes
 ---------------------------------------------------------------
 
 These attributes can be applied to bitfields to set if bits should be indexed from left to right or from right to left
+
+``[[sealed]]`` :version:`1.20.0`
+---------------------------------------------------------------
+
+These attributes can be applied to structs, unions and bitfields.
+It causes tools that display Patterns in some way to not display the implementation details (such as children of this type) anymore but
+instead treat like a built-in type. This is mainly useful for making custom types that should decode and display the bytes in a custom
+format using the ``[[format]]`` attribute.
