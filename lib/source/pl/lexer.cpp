@@ -558,13 +558,6 @@ namespace pl {
                     offset += integerLength;
                 } else
                     err::L0004.throwError("Unknown sequence");
-
-                if (!tokens.empty()) {
-                    auto &lastToken = tokens.back();
-
-                    lastToken.line  = line;
-                    lastToken.column = offset - lineStartOffset;
-                }
             }
 
             addToken(tkn::Separator::EndOfProgram);

@@ -60,7 +60,7 @@ namespace pl::err {
                 errorMessage += fmt::format("{}{}\n", lineNumberPrefix, errorLine);
 
                 {
-                    const auto descriptionSpacing = std::string(lineNumberPrefix.length() + column, ' ');
+                    const auto descriptionSpacing = std::string(lineNumberPrefix.length() + column - 1, ' ');
                     errorMessage += descriptionSpacing + "^\n";
                     errorMessage += descriptionSpacing + this->m_description + "\n\n";
                 }
