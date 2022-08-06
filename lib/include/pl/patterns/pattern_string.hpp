@@ -2,11 +2,11 @@
 
 #include <pl/patterns/pattern.hpp>
 
-namespace pl {
+namespace pl::ptrn {
 
     class PatternString : public Pattern {
     public:
-        PatternString(Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
+        PatternString(core::Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
             : Pattern(evaluator, offset, size, color) { }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
@@ -50,7 +50,7 @@ namespace pl {
 
             std::vector<u8> buffer(size, 0x00);
             this->getEvaluator()->readData(this->getOffset(), buffer.data(), size);
-            auto displayString = pl::encodeByteString(buffer);
+            auto displayString = hlp::encodeByteString(buffer);
 
             return this->formatDisplayValue(fmt::format("\"{0}\" {1}", displayString, size > this->getSize() ? "(truncated)" : ""), displayString);
         }

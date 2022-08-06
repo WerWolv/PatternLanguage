@@ -9,6 +9,8 @@
 
 namespace pl::test {
 
+    using namespace pl::ptrn;
+
     enum class Mode
     {
         Succeeding,
@@ -34,8 +36,8 @@ namespace pl::test {
 
         [[nodiscard]] virtual std::string getSourceCode() const = 0;
 
-        [[nodiscard]] virtual const std::vector<std::unique_ptr<Pattern>> &getPatterns() const final { return this->m_patterns; }
-        virtual void addPattern(std::unique_ptr<Pattern> &&pattern) final {
+        [[nodiscard]] virtual const std::vector<std::unique_ptr<ptrn::Pattern>> &getPatterns() const final { return this->m_patterns; }
+        virtual void addPattern(std::unique_ptr<ptrn::Pattern> &&pattern) final {
             this->m_patterns.push_back(std::move(pattern));
         }
 
@@ -54,7 +56,7 @@ namespace pl::test {
         }
 
     private:
-        std::vector<std::unique_ptr<Pattern>> m_patterns;
+        std::vector<std::unique_ptr<ptrn::Pattern>> m_patterns;
         Mode m_mode;
 
         static inline std::map<std::string, TestPattern *> s_tests;

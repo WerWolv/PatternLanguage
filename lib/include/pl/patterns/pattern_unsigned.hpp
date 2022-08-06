@@ -2,11 +2,11 @@
 
 #include <pl/patterns/pattern.hpp>
 
-namespace pl {
+namespace pl::ptrn {
 
     class PatternUnsigned : public Pattern {
     public:
-        PatternUnsigned(Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
+        PatternUnsigned(core::Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
             : Pattern(evaluator, offset, size, color) { }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
@@ -16,7 +16,7 @@ namespace pl {
         u128 getValue() const {
             u128 data = 0;
             this->getEvaluator()->readData(this->getOffset(), &data, this->getSize());
-            return pl::changeEndianess(data, this->getSize(), this->getEndian());
+            return hlp::changeEndianess(data, this->getSize(), this->getEndian());
         }
 
         [[nodiscard]] std::string getFormattedName() const override {

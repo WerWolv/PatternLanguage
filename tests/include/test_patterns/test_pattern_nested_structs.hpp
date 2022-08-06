@@ -22,7 +22,7 @@ namespace pl::test {
             {
                 auto hdr = create<PatternStruct>("Header", "hdr", HEADER_START, HEADER_SIZE);
                 {
-                    std::vector<std::shared_ptr<pl::Pattern>> hdrMembers {
+                    std::vector<std::shared_ptr<Pattern>> hdrMembers {
                         std::shared_ptr(create<PatternUnsigned>("u8", "len", HEADER_START, sizeof(u8)))
                     };
                     hdr->setMembers(std::move(hdrMembers));
@@ -32,13 +32,13 @@ namespace pl::test {
                 {
                     auto bodyArray = create<PatternArrayStatic>("u8", "arr", BODY_START, BODY_SIZE);
                     bodyArray->setEntries(create<PatternUnsigned>("u8", "", BODY_START, sizeof(u8)), BODY_SIZE);
-                    std::vector<std::shared_ptr<pl::Pattern>> bodyMembers {
+                    std::vector<std::shared_ptr<Pattern>> bodyMembers {
                         std::shared_ptr(std::move(bodyArray))
                     };
                     body->setMembers(std::move(bodyMembers));
                 }
 
-                std::vector<std::shared_ptr<pl::Pattern>> dataMembers {
+                std::vector<std::shared_ptr<Pattern>> dataMembers {
                     std::shared_ptr(std::move(hdr)),
                     std::shared_ptr(std::move(body))
                 };

@@ -2,43 +2,47 @@
 
 namespace pl {
 
-    class PatternArrayDynamic;
-    class PatternArrayStatic;
-    class PatternBitfield;
-    class PatternBitfieldField;
-    class PatternBoolean;
-    class PatternCharacter;
-    class PatternEnum;
-    class PatternFloat;
-    class PatternPadding;
-    class PatternPointer;
-    class PatternSigned;
-    class PatternString;
-    class PatternStruct;
-    class PatternUnion;
-    class PatternUnsigned;
-    class PatternWideCharacter;
-    class PatternWideString;
+    namespace ptrn {
+
+        class PatternArrayDynamic;
+        class PatternArrayStatic;
+        class PatternBitfield;
+        class PatternBitfieldField;
+        class PatternBoolean;
+        class PatternCharacter;
+        class PatternEnum;
+        class PatternFloat;
+        class PatternPadding;
+        class PatternPointer;
+        class PatternSigned;
+        class PatternString;
+        class PatternStruct;
+        class PatternUnion;
+        class PatternUnsigned;
+        class PatternWideCharacter;
+        class PatternWideString;
+
+    }
 
     class PatternVisitor
     {
     public:
-        virtual void visit(PatternArrayDynamic& pattern) = 0;
-        virtual void visit(PatternArrayStatic& pattern) = 0;
-        virtual void visit(PatternBitfield& pattern) = 0;
-        virtual void visit(PatternBitfieldField& pattern) = 0;
-        virtual void visit(PatternBoolean& pattern) = 0;
-        virtual void visit(PatternCharacter& pattern) = 0;
-        virtual void visit(PatternEnum& pattern) = 0;
-        virtual void visit(PatternFloat& pattern) = 0;
-        virtual void visit(PatternPadding& pattern) = 0;
-        virtual void visit(PatternPointer& pattern) = 0;
-        virtual void visit(PatternSigned& pattern) = 0;
-        virtual void visit(PatternString& pattern) = 0;
-        virtual void visit(PatternStruct& pattern) = 0;
-        virtual void visit(PatternUnion& pattern) = 0;
-        virtual void visit(PatternUnsigned& pattern) = 0;
-        virtual void visit(PatternWideCharacter& pattern) = 0;
-        virtual void visit(PatternWideString& pattern) = 0;
+        virtual void visit(ptrn::PatternArrayDynamic& pattern) = 0;
+        virtual void visit(ptrn::PatternArrayStatic& pattern) = 0;
+        virtual void visit(ptrn::PatternBitfield& pattern) = 0;
+        virtual void visit(ptrn::PatternBitfieldField& pattern) = 0;
+        virtual void visit(ptrn::PatternBoolean& pattern) = 0;
+        virtual void visit(ptrn::PatternCharacter& pattern) = 0;
+        virtual void visit(ptrn::PatternEnum& pattern) = 0;
+        virtual void visit(ptrn::PatternFloat& pattern) = 0;
+        virtual void visit(ptrn::PatternPadding& pattern) = 0;
+        virtual void visit(ptrn::PatternPointer& pattern) = 0;
+        virtual void visit(ptrn::PatternSigned& pattern) = 0;
+        virtual void visit(ptrn::PatternString& pattern) = 0;
+        virtual void visit(ptrn::PatternStruct& pattern) = 0;
+        virtual void visit(ptrn::PatternUnion& pattern) = 0;
+        virtual void visit(ptrn::PatternUnsigned& pattern) = 0;
+        virtual void visit(ptrn::PatternWideCharacter& pattern) = 0;
+        virtual void visit(ptrn::PatternWideString& pattern) = 0;
     };
 };

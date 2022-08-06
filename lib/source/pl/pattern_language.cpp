@@ -1,28 +1,26 @@
-#include "pl/pattern_language.hpp"
+#include <pl/pattern_language.hpp>
 
-#include "pl/preprocessor.hpp"
-#include "pl/lexer.hpp"
-#include "pl/parser.hpp"
-#include "pl/validator.hpp"
-#include "pl/evaluator.hpp"
-#include "pl/libstd.hpp"
+#include <pl/core/preprocessor.hpp>
+#include <pl/core/lexer.hpp>
+#include <pl/core/parser.hpp>
+#include <pl/core/validator.hpp>
+#include <pl/core/evaluator.hpp>
+#include <pl/lib/std/libstd.hpp>
 
-#include "helpers/fs.hpp"
-#include "helpers/file.hpp"
+#include <pl/helpers/fs.hpp>
+#include <pl/helpers/file.hpp>
 
 namespace pl {
 
-    class Pattern;
-
     PatternLanguage::PatternLanguage(bool addLibStd) {
-        this->m_internals.preprocessor  = new Preprocessor();
-        this->m_internals.lexer         = new Lexer();
-        this->m_internals.parser        = new Parser();
-        this->m_internals.validator     = new Validator();
-        this->m_internals.evaluator     = new Evaluator();
+        this->m_internals.preprocessor  = new core::Preprocessor();
+        this->m_internals.lexer         = new core::Lexer();
+        this->m_internals.parser        = new core::Parser();
+        this->m_internals.validator     = new core::Validator();
+        this->m_internals.evaluator     = new core::Evaluator();
 
         if (addLibStd)
-            libstd::registerFunctions(*this);
+            lib::libstd::registerFunctions(*this);
     }
 
     PatternLanguage::~PatternLanguage() {
@@ -48,26 +46,26 @@ namespace pl {
         other.m_internals = { nullptr };
     }
 
-    std::optional<std::vector<std::shared_ptr<ASTNode>>> PatternLanguage::parseString(const std::string &code) {
+    std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> PatternLanguage::parseString(const std::string &code) {
         auto preprocessedCode = this->m_internals.preprocessor->preprocess(*this, code);
         if (!preprocessedCode.has_value()) {
             this->m_currError = this->m_internals.preprocessor->getError();
             return std::nullopt;
         }
 
-        auto tokens = this->m_internals.lexer->lex(preprocessedCode.value());
+        auto tokens = this->m_internals.lexer->lex(code, preprocessedCode.value());
         if (!tokens.has_value()) {
             this->m_currError = this->m_internals.lexer->getError();
             return std::nullopt;
         }
 
-        auto ast = this->m_internals.parser->parse(tokens.value());
+        auto ast = this->m_internals.parser->parse(code, tokens.value());
         if (!ast.has_value()) {
             this->m_currError = this->m_internals.parser->getError();
             return std::nullopt;
         }
 
-        if (!this->m_internals.validator->validate(*ast)) {
+        if (!this->m_internals.validator->validate(code, *ast)) {
             this->m_currError = this->m_internals.validator->getError();
 
             return std::nullopt;
@@ -76,7 +74,7 @@ namespace pl {
         return ast;
     }
 
-    bool PatternLanguage::executeString(const std::string &code, const std::map<std::string, Token::Literal> &envVars, const std::map<std::string, Token::Literal> &inVariables, bool checkResult) {
+    bool PatternLanguage::executeString(const std::string &code, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
         this->m_running = true;
         PL_ON_SCOPE_EXIT { this->m_running = false; };
 
@@ -84,10 +82,7 @@ namespace pl {
             if (this->m_currError.has_value()) {
                 const auto &error = this->m_currError.value();
 
-                if (error.getLineNumber() > 0)
-                    this->m_internals.evaluator->getConsole().log(LogConsole::Level::Error, fmt::format("{}: {}", error.getLineNumber(), error.what()));
-                else
-                    this->m_internals.evaluator->getConsole().log(LogConsole::Level::Error, error.what());
+                this->m_internals.evaluator->getConsole().log(core::LogConsole::Level::Error, error.message);
             }
         };
 
@@ -114,17 +109,17 @@ namespace pl {
         }
 
 
-        auto patterns = this->m_internals.evaluator->evaluate(this->m_currAST);
+        auto patterns = this->m_internals.evaluator->evaluate(code, this->m_currAST);
         if (!patterns.has_value()) {
             this->m_currError = this->m_internals.evaluator->getConsole().getLastHardError();
             return false;
         }
 
         if (auto mainResult = this->m_internals.evaluator->getMainResult(); checkResult && mainResult.has_value()) {
-            auto returnCode = Token::literalToSigned(*mainResult);
+            auto returnCode = core::Token::literalToSigned(*mainResult);
 
             if (returnCode != 0) {
-                this->m_currError = PatternLanguageError(0, fmt::format("non-success value returned from main: {}", returnCode));
+                this->m_currError = core::err::PatternLanguageError(fmt::format("non-success value returned from main: {}", returnCode), 0, 1);
 
                 return false;
             }
@@ -136,13 +131,13 @@ namespace pl {
         return true;
     }
 
-    bool PatternLanguage::executeFile(const std::fs::path &path, const std::map<std::string, Token::Literal> &envVars, const std::map<std::string, Token::Literal> &inVariables) {
-        fs::File file(path, fs::File::Mode::Read);
+    bool PatternLanguage::executeFile(const std::fs::path &path, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables) {
+        hlp::fs::File file(path, hlp::fs::File::Mode::Read);
 
         return this->executeString(file.readString(), envVars, inVariables, true);
     }
 
-    std::pair<bool, std::optional<Token::Literal>> PatternLanguage::executeFunction(const std::string &code) {
+    std::pair<bool, std::optional<core::Token::Literal>> PatternLanguage::executeFunction(const std::string &code) {
 
         auto functionContent = fmt::format("fn main() {{ {0} }};", code);
 
@@ -184,20 +179,20 @@ namespace pl {
         this->m_internals.evaluator->setDangerousFunctionCallHandler(std::move(callback));
     }
 
-    const std::vector<std::shared_ptr<ASTNode>> &PatternLanguage::getCurrentAST() const {
+    const std::vector<std::shared_ptr<core::ast::ASTNode>> &PatternLanguage::getCurrentAST() const {
         return this->m_currAST;
     }
 
-    [[nodiscard]] std::map<std::string, Token::Literal> PatternLanguage::getOutVariables() const {
+    [[nodiscard]] std::map<std::string, core::Token::Literal> PatternLanguage::getOutVariables() const {
         return this->m_internals.evaluator->getOutVariables();
     }
 
 
-    const std::vector<std::pair<LogConsole::Level, std::string>> &PatternLanguage::getConsoleLog() const {
+    const std::vector<std::pair<core::LogConsole::Level, std::string>> &PatternLanguage::getConsoleLog() const {
         return this->m_internals.evaluator->getConsole().getLog();
     }
 
-    const std::optional<PatternLanguageError> &PatternLanguage::getError() const {
+    const std::optional<core::err::PatternLanguageError> &PatternLanguage::getError() const {
         return this->m_currError;
     }
 
@@ -251,13 +246,13 @@ namespace pl {
         this->m_flattenedPatterns = std::move(intervals);
     }
 
-    std::vector<Pattern *> PatternLanguage::getPatterns(u64 address) const {
+    std::vector<ptrn::Pattern *> PatternLanguage::getPatterns(u64 address) const {
         if (this->m_flattenedPatterns.empty())
             return { };
 
         auto intervals = this->m_flattenedPatterns.findOverlapping(address, address);
 
-        std::vector<Pattern*> results;
+        std::vector<ptrn::Pattern*> results;
         std::transform(intervals.begin(), intervals.end(), std::back_inserter(results), [](const auto &interval) {
             interval.value->setOffset(interval.start);
             return interval.value;

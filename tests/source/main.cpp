@@ -2,12 +2,12 @@
 #include <string>
 #include <cstdlib>
 
-#include <helpers/utils.hpp>
-#include <helpers/file.hpp>
+#include <pl/helpers/utils.hpp>
+#include <pl/helpers/file.hpp>
 
 #include <pl/pattern_language.hpp>
-#include <pl/evaluator.hpp>
-#include <pl/ast/ast_node.hpp>
+#include <pl/core/evaluator.hpp>
+#include <pl/core/ast/ast_node.hpp>
 #include <pl/patterns/pattern.hpp>
 
 #include "test_patterns/test_pattern.hpp"
@@ -36,7 +36,7 @@ int runTests(int argc, char **argv) {
     const auto &currTest = testPatterns[testName];
     bool failing         = currTest->getMode() == Mode::Failing;
 
-    fs::File testData("test_data", fs::File::Mode::Read);
+    hlp::fs::File testData("test_data", hlp::fs::File::Mode::Read);
     pl::PatternLanguage runtime;
     runtime.setDataSource([&testData](u64 offset, u8 *buffer, u64 size) {
         testData.seek(offset);
@@ -44,12 +44,12 @@ int runTests(int argc, char **argv) {
     }, 0x00, testData.getSize());
 
 
-    runtime.addFunction({ "std" }, "assert", api::FunctionParameterCount::exactly(2), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-        auto condition = Token::literalToBoolean(params[0]);
-        auto message   = Token::literalToString(params[1], false);
+    runtime.addFunction({ "std" }, "assert", api::FunctionParameterCount::exactly(2), [](core::Evaluator *ctx, auto params) -> std::optional<core::Token::Literal> {
+        auto condition = core::Token::literalToBoolean(params[0]);
+        auto message   = core::Token::literalToString(params[1], false);
 
         if (!condition)
-            LogConsole::abortEvaluation(fmt::format("assertion failed \"{0}\"", message));
+            core::err::E0012.throwError(fmt::format("assertion failed \"{0}\"", message));
 
         return std::nullopt;
     });
@@ -60,7 +60,7 @@ int runTests(int argc, char **argv) {
         fmt::print("Error during compilation!\n");
 
         if (auto error = runtime.getError(); error.has_value())
-            fmt::print("Compile error: {} : {}\n", error->getLineNumber(), error->what());
+            fmt::print("Compile error: {}:{} : {}\n", error->line, error->column, error->message);
         for (auto &[level, message] : runtime.getConsoleLog())
             fmt::print("Evaluate error: {}\n", message);
 

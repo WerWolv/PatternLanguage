@@ -1,15 +1,15 @@
 #pragma once
 
-#include <helpers/types.hpp>
-
-#include <pl/evaluator.hpp>
+#include <pl/core/errors/error.hpp>
+#include <pl/core/evaluator.hpp>
 #include <pl/pattern_visitor.hpp>
-#include <helpers/utils.hpp>
+#include <pl/helpers/types.hpp>
+#include <pl/helpers/utils.hpp>
 #include <fmt/format.h>
 
 #include <string>
 
-namespace pl {
+namespace pl::ptrn {
 
     using namespace ::std::literals::string_literals;
 
@@ -30,7 +30,7 @@ namespace pl {
 
     class PatternCreationLimiter {
     public:
-        explicit PatternCreationLimiter(Evaluator *evaluator) : m_evaluator(evaluator) {
+        explicit PatternCreationLimiter(core::Evaluator *evaluator) : m_evaluator(evaluator) {
             if (getEvaluator() == nullptr) return;
 
             getEvaluator()->patternCreated();
@@ -44,18 +44,18 @@ namespace pl {
             getEvaluator()->patternDestroyed();
         }
 
-        [[nodiscard]] Evaluator *getEvaluator() const {
+        [[nodiscard]] core::Evaluator *getEvaluator() const {
             return this->m_evaluator;
         }
 
     private:
-        Evaluator *m_evaluator = nullptr;
+        core::Evaluator *m_evaluator = nullptr;
     };
 
     class Pattern : public PatternCreationLimiter,
                     public Cloneable<Pattern> {
     public:
-        Pattern(Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
+        Pattern(core::Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
             : PatternCreationLimiter(evaluator), m_offset(offset), m_size(size), m_color(color) {
 
             if (color != 0)
@@ -164,7 +164,7 @@ namespace pl {
         }
 
         virtual void sort(const std::function<bool(const Pattern *left, const Pattern *right)> &comparator) {
-            pl::unused(comparator);
+            hlp::unused(comparator);
         }
 
         [[nodiscard]] virtual bool operator!=(const Pattern &other) const final { return !operator==(other); }
@@ -183,7 +183,7 @@ namespace pl {
                    this->m_memoryType == other.m_memoryType;
         }
 
-        [[nodiscard]] std::string calcDisplayValue(const std::string &value, const Token::Literal &literal) const {
+        [[nodiscard]] std::string calcDisplayValue(const std::string &value, const core::Token::Literal &literal) const {
             if (!this->m_formatterFunction.has_value())
                 return value;
             else {
@@ -198,13 +198,13 @@ namespace pl {
                     } else {
                         return "???";
                     }
-                } catch (PatternLanguageError &error) {
+                } catch (core::err::EvaluatorError::Exception &error) {
                     return "Error: "s + error.what();
                 }
             }
         }
 
-        [[nodiscard]] std::string formatDisplayValue(const std::string &value, const Token::Literal &literal) const {
+        [[nodiscard]] std::string formatDisplayValue(const std::string &value, const core::Token::Literal &literal) const {
             if (!this->m_cachedDisplayValue.has_value()) {
                 auto &currOffset = this->getEvaluator()->dataOffset();
                 auto startOffset = currOffset;
@@ -230,7 +230,7 @@ namespace pl {
         bool m_sealed = false;
 
     private:
-        friend Evaluator;
+        friend pl::core::Evaluator;
 
         u64 m_offset  = 0x00;
         size_t m_size = 0x00;

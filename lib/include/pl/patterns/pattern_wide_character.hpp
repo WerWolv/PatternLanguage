@@ -5,11 +5,11 @@
 #include <codecvt>
 #include <locale>
 
-namespace pl {
+namespace pl::ptrn {
 
     class PatternWideCharacter : public Pattern {
     public:
-        explicit PatternWideCharacter(Evaluator *evaluator, u64 offset, u32 color = 0)
+        explicit PatternWideCharacter(core::Evaluator *evaluator, u64 offset, u32 color = 0)
             : Pattern(evaluator, offset, 2, color) { }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
@@ -19,7 +19,7 @@ namespace pl {
         char16_t getValue() const {
             char16_t character = '\u0000';
             this->getEvaluator()->readData(this->getOffset(), &character, 2);
-            return pl::changeEndianess(character, this->getEndian());
+            return hlp::changeEndianess(character, this->getEndian());
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
@@ -28,7 +28,7 @@ namespace pl {
 
         [[nodiscard]] std::string toString() const override {
             char16_t character = this->getValue();
-            character = pl::changeEndianess(character, this->getEndian());
+            character = hlp::changeEndianess(character, this->getEndian());
 
             return std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>("???").to_bytes(character);
         }
