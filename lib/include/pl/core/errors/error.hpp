@@ -79,10 +79,10 @@ namespace pl::core::err {
             }
 
         private:
-            std::string m_shortMessage;
-            std::string m_title, m_description, m_hint;
             char m_prefix;
             u32 m_errorCode;
+            std::string m_shortMessage;
+            std::string m_title, m_description, m_hint;
 
             static std::vector<std::string> splitString(const std::string &string, const std::string &delimiter) {
                 size_t start = 0, end = 0;
