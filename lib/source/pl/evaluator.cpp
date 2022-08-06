@@ -341,13 +341,15 @@ namespace pl {
 
                 this->m_mainResult = mainFunction.func(this, {});
             }
-        } catch (err::Error<const ASTNode*> &e) {
+        } catch (err::Exception<const ASTNode*> &e) {
 
-            const auto line = e.getUserData()->getLine();
-            const auto column = e.getUserData()->getColumn();
+            auto node = e.getUserData();
+
+            const auto line = node == nullptr ? 0 : node->getLine();
+            const auto column = node == nullptr ? 0 : node->getColumn();
 
             this->getConsole().log(LogConsole::Level::Error, e.what());
-            this->getConsole().setHardError(err::Exception(e.format(sourceCode, line, column), line, column));
+            this->getConsole().setHardError(err::PatternLanguageError(e.format(sourceCode, line, column), line, column));
 
             patterns.clear();
 

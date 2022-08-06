@@ -11,7 +11,6 @@
 
 #include <helpers/fs.hpp>
 
-#include <pl/error.hpp>
 #include <pl/api.hpp>
 
 #include <pl/errors/preprocessor_errors.hpp>
@@ -31,7 +30,7 @@ namespace pl {
             this->m_includePaths = std::move(paths);
         }
 
-        const std::optional<err::Exception> &getError() { return this->m_error; }
+        const std::optional<err::PatternLanguageError> &getError() { return this->m_error; }
 
         [[nodiscard]] bool shouldOnlyIncludeOnce() const {
             return this->m_onlyIncludeOnce;
@@ -45,7 +44,7 @@ namespace pl {
 
         std::set<std::filesystem::path> m_onceIncludedFiles;
 
-        std::optional<err::Exception> m_error;
+        std::optional<err::PatternLanguageError> m_error;
 
         bool m_onlyIncludeOnce = false;
 

@@ -60,7 +60,7 @@ int runTests(int argc, char **argv) {
         fmt::print("Error during compilation!\n");
 
         if (auto error = runtime.getError(); error.has_value())
-            fmt::print("Compile error: {}:{} : {}\n", error->getLine(), error->getColumn(), error->what());
+            fmt::print("Compile error: {}:{} : {}\n", error->line, error->column, error->message);
         for (auto &[level, message] : runtime.getConsoleLog())
             fmt::print("Evaluate error: {}\n", message);
 

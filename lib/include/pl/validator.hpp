@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 
-#include <pl/error.hpp>
 #include <pl/errors/validator_errors.hpp>
 
 namespace pl {
@@ -20,10 +19,10 @@ namespace pl {
 
         bool validate(const std::string &sourceCode, const std::vector<std::shared_ptr<ASTNode>> &ast);
 
-        const std::optional<err::Exception> &getError() { return this->m_error; }
+        const std::optional<err::PatternLanguageError> &getError() { return this->m_error; }
 
     private:
-        std::optional<err::Exception> m_error;
+        std::optional<err::PatternLanguageError> m_error;
     };
 
 }

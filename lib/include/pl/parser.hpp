@@ -2,7 +2,6 @@
 
 #include <helpers/types.hpp>
 
-#include <pl/error.hpp>
 #include <pl/token.hpp>
 #include <pl/errors/parser_errors.hpp>
 
@@ -26,10 +25,10 @@ namespace pl {
         ~Parser() = default;
 
         std::optional<std::vector<std::shared_ptr<ASTNode>>> parse(const std::string &sourceCode, const std::vector<Token> &tokens);
-        const std::optional<err::Exception> &getError() { return this->m_error; }
+        const std::optional<err::PatternLanguageError> &getError() { return this->m_error; }
 
     private:
-        std::optional<err::Exception> m_error;
+        std::optional<err::PatternLanguageError> m_error;
         TokenIter m_curr;
         TokenIter m_originalPosition, m_partOriginalPosition;
 
@@ -57,9 +56,8 @@ namespace pl {
             auto value = std::get_if<T>(&token.value);
 
             if (value == nullptr) {
-                this->m_curr += index;
                 std::visit([&](auto &&value) {
-                    err::P0001.throwError(fmt::format("Expected {}, got {}.", typeid(T).name(), typeid(value).name()), "This is a serious parsing bug. Please open an issue on GitHub!");
+                    err::P0001.throwError(fmt::format("Expected {}, got {}.", typeid(T).name(), typeid(value).name()), "This is a serious parsing bug. Please open an issue on GitHub!", -index);
                 }, token.value);
             }
 

@@ -5,7 +5,7 @@
 namespace pl::err {
 
     namespace {
-        class ParserError : public Error<> {
+        class ParserError : public Error<u32> {
         public:
             ParserError(u32 errorCode, std::string title) noexcept :
                     Error('P', errorCode, std::move(title)) { }

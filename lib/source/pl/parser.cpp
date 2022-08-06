@@ -49,7 +49,7 @@ namespace pl {
         std::string functionName = parseNamespaceResolution();
 
         if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
-            err::P0002.throwError(fmt::format("Expected '(' after function name, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected '(' after function name, got {}.", getFormattedToken(0)), {}, 1);
 
         std::vector<std::unique_ptr<ASTNode>> params;
 
@@ -57,11 +57,11 @@ namespace pl {
             params.push_back(parseMathematicalExpression());
 
             if (MATCHES(sequence(tkn::Separator::Comma, tkn::Separator::RightParenthesis)))
-                err::P0002.throwError(fmt::format("Expected ')' at end of parameter list, got {}.", getFormattedToken(0)));
+                err::P0002.throwError(fmt::format("Expected ')' at end of parameter list, got {}.", getFormattedToken(0)), {}, 1);
             else if (MATCHES(sequence(tkn::Separator::RightParenthesis)))
                 break;
             else if (!MATCHES(sequence(tkn::Separator::Comma)))
-                err::P0002.throwError(fmt::format("Expected ',' in-between parameters, got {}.", getFormattedToken(0)));
+                err::P0002.throwError(fmt::format("Expected ',' in-between parameters, got {}.", getFormattedToken(0)), {}, 1);
         }
 
         return create(new ASTNodeFunctionCall(functionName, std::move(params)));
@@ -114,7 +114,7 @@ namespace pl {
                 break;
         }
 
-        err::P0004.throwError("Invalid scope resolution.", "Expected statement in the form of 'NamespaceA::NamespaceB::TypeName'.");
+        err::P0004.throwError("Invalid scope resolution.", "Expected statement in the form of 'NamespaceA::NamespaceB::TypeName'.", 1);
     }
 
     std::unique_ptr<ASTNode> Parser::parseRValue() {
@@ -134,14 +134,14 @@ namespace pl {
         if (MATCHES(sequence(tkn::Separator::LeftBracket))) {
             path.push_back(parseMathematicalExpression());
             if (!MATCHES(sequence(tkn::Separator::RightBracket)))
-                err::P0002.throwError(fmt::format("Expected ']' at end of array indexing, got {}.", getFormattedToken(0)));
+                err::P0002.throwError(fmt::format("Expected ']' at end of array indexing, got {}.", getFormattedToken(0)), {}, 1);
         }
 
         if (MATCHES(sequence(tkn::Separator::Dot))) {
             if (MATCHES(oneOf(tkn::Literal::Identifier(), tkn::Keyword::Parent)))
                 return this->parseRValue(path);
             else
-                err::P0002.throwError("Invalid member access, expected variable identifier or parent keyword.");
+                err::P0002.throwError("Invalid member access, expected variable identifier or parent keyword.", {}, 1);
         } else
             return create(new ASTNodeRValue(std::move(path)));
     }
@@ -155,7 +155,7 @@ namespace pl {
         else if (MATCHES(sequence(tkn::Separator::LeftParenthesis))) {
             auto node = this->parseMathematicalExpression();
             if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
-                err::P0002.throwError("Mismatched '(' in mathematical expression.");
+                err::P0002.throwError("Mismatched '(' in mathematical expression.", {}, 1);
 
             return node;
         } else if (MATCHES(sequence(tkn::Literal::Identifier()))) {
@@ -190,15 +190,15 @@ namespace pl {
             } else if (MATCHES(sequence(tkn::Operator::Dollar))) {
                 result = create(new ASTNodeTypeOperator(op));
             } else {
-                err::P0005.throwError("Expected variable identifier or built-in type.");
+                err::P0005.throwError("Expected variable identifier or built-in type.", {}, 1);
             }
 
             if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
-                err::P0002.throwError("Mismatched '(' of type operator expression.");
+                err::P0002.throwError("Mismatched '(' of type operator expression.", {}, 1);
 
             return result;
         } else {
-            err::P0002.throwError(fmt::format("Expected value, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected value, got {}.", getFormattedToken(0)), {}, 1);
         }
     }
 
@@ -208,10 +208,10 @@ namespace pl {
             auto builtinType = dynamic_cast<ASTNodeBuiltinType *>(type->getType().get());
 
             if (builtinType == nullptr)
-                err::P0006.throwError("Cannot use non-built-in type in cast expression.");
+                err::P0006.throwError("Cannot use non-built-in type in cast expression.", {}, 1);
 
             if (!peek(tkn::Separator::LeftParenthesis))
-                err::P0002.throwError(fmt::format("Expected '(' after type cast, got {}.", getFormattedToken(0)));
+                err::P0002.throwError(fmt::format("Expected '(' after type cast, got {}.", getFormattedToken(0)), {}, 1);
 
             auto node = parseFactor();
 
@@ -366,7 +366,7 @@ namespace pl {
             auto second = this->parseBooleanOr();
 
             if (!MATCHES(sequence(tkn::Operator::Colon)))
-                err::P0002.throwError(fmt::format("Expected ':' after ternary condition, got {}", getFormattedToken(0)));
+                err::P0002.throwError(fmt::format("Expected ':' after ternary condition, got {}", getFormattedToken(0)), {}, 1);
 
             auto third = this->parseBooleanOr();
             node = create(new ASTNodeTernaryExpression(std::move(node), std::move(second), std::move(third), Token::Operator::TernaryConditional));
@@ -383,11 +383,11 @@ namespace pl {
     // [[ <Identifier[( (parseStringLiteral) )], ...> ]]
     void Parser::parseAttribute(Attributable *currNode) {
         if (currNode == nullptr)
-            err::P0007.throwError("Cannot use attribute here.", "Attributes can only be applied after type or variable definitions.");
+            err::P0007.throwError("Cannot use attribute here.", "Attributes can only be applied after type or variable definitions.", 1);
 
         do {
             if (!MATCHES(sequence(tkn::Literal::Identifier())))
-                err::P0002.throwError(fmt::format("Expected attribute instruction name, got {}", getFormattedToken(0)));
+                err::P0002.throwError(fmt::format("Expected attribute instruction name, got {}", getFormattedToken(0)), {}, 1);
 
             auto attribute = getValue<Token::Identifier>(-1).get();
 
@@ -396,7 +396,7 @@ namespace pl {
                 auto string = std::get_if<std::string>(&value);
 
                 if (string == nullptr)
-                    err::P0002.throwError(fmt::format("Expected attribute value string, got {}", getFormattedToken(0)));
+                    err::P0002.throwError(fmt::format("Expected attribute value string, got {}", getFormattedToken(0)), {}, 1);
 
                 currNode->addAttribute(create(new ASTNodeAttribute(attribute, *string)));
             } else
@@ -405,7 +405,7 @@ namespace pl {
         } while (MATCHES(sequence(tkn::Separator::Comma)));
 
         if (!MATCHES(sequence(tkn::Separator::RightBracket, tkn::Separator::RightBracket)))
-            err::P0002.throwError(fmt::format("Expected ']]' after attribute, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected ']]' after attribute, got {}.", getFormattedToken(0)), {}, 1);
     }
 
     /* Functions */
@@ -425,7 +425,7 @@ namespace pl {
                 parameterPack = getValue<Token::Identifier>(-1).get();
 
                 if (MATCHES(sequence(tkn::Separator::Comma)))
-                    err::P0008.throwError("Parameter pack can only appear at the end of the parameter list.");
+                    err::P0008.throwError("Parameter pack can only appear at the end of the parameter list.", {}, 1);
 
                 break;
             } else {
@@ -443,7 +443,7 @@ namespace pl {
                     defaultParameters.push_back(parseMathematicalExpression());
                 } else {
                     if (!defaultParameters.empty())
-                        err::P0002.throwError(fmt::format("Expected default argument value for parameter '{}', got {}.", params.back().first, getFormattedToken(0)));
+                        err::P0002.throwError(fmt::format("Expected default argument value for parameter '{}', got {}.", params.back().first, getFormattedToken(0)), {}, 1);
                 }
 
                 if (!MATCHES(sequence(tkn::Separator::Comma))) {
@@ -453,10 +453,10 @@ namespace pl {
         }
 
         if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
-            err::P0002.throwError(fmt::format("Expected ')' after parameter list, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected ')' after parameter list, got {}.", getFormattedToken(0)), {}, 1);
 
         if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
-            err::P0002.throwError(fmt::format("Expected '{{' after function head, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected '{{' after function head, got {}.", getFormattedToken(0)), {}, 1);
 
 
         // Parse function body
@@ -494,7 +494,7 @@ namespace pl {
                 }
             }
         } else
-            err::P0002.throwError(fmt::format("Expected identifier in variable declaration, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected identifier in variable declaration, got {}.", getFormattedToken(0)), {}, 1);
 
         return statement;
     }
@@ -526,7 +526,7 @@ namespace pl {
             auto lhs = parseRValue();
 
             if (!MATCHES(sequence(tkn::Operator::Assign)))
-                err::P0002.throwError(fmt::format("Expected value after '=' in variable assignment, got {}.", getFormattedToken(0)));
+                err::P0002.throwError(fmt::format("Expected value after '=' in variable assignment, got {}.", getFormattedToken(0)), {}, 0);
 
             auto rhs = parseMathematicalExpression();
 
@@ -546,10 +546,10 @@ namespace pl {
         } else if (peek(tkn::Keyword::BigEndian) || peek(tkn::Keyword::LittleEndian) || peek(tkn::ValueType::Any)) {
             statement = parseFunctionVariableDecl();
         } else
-            err::P0002.throwError("Invalid function statement.");
+            err::P0002.throwError("Invalid function statement.", {}, 0);
 
         if (needsSemicolon && !MATCHES(sequence(tkn::Separator::Semicolon)))
-            err::P0002.throwError(fmt::format("Expected ';' at end of statement, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected ';' at end of statement, got {}.", getFormattedToken(0)), {}, 1);
 
         // Consume superfluous semicolons
         while (needsSemicolon && MATCHES(sequence(tkn::Separator::Semicolon)))
@@ -581,7 +581,7 @@ namespace pl {
         else if (peek(tkn::Keyword::Continue, -1))
             type = ControlFlowStatement::Continue;
         else
-            err::P0002.throwError("Invalid control flow statement.", "Control flow statements include 'return', 'break' and 'continue'.");
+            err::P0002.throwError("Invalid control flow statement.", "Control flow statements include 'return', 'break' and 'continue'.", 1);
 
         if (peek(tkn::Separator::Semicolon))
             return create(new ASTNodeControlFlowStatement(type, nullptr));
@@ -608,7 +608,7 @@ namespace pl {
         std::vector<std::unique_ptr<ASTNode>> trueBody, falseBody;
 
         if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
-            err::P0002.throwError(fmt::format("Expected ')' at end of if head, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected ')' at end of if head, got {}.", getFormattedToken(0)), {}, 1);
 
         trueBody = parseStatementBody();
 
@@ -623,7 +623,7 @@ namespace pl {
         std::vector<std::unique_ptr<ASTNode>> body;
 
         if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
-            err::P0002.throwError(fmt::format("Expected ')' at end of while head, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected ')' at end of while head, got {}.", getFormattedToken(0)), {}, 1);
 
         body = parseStatementBody();
 
@@ -634,12 +634,12 @@ namespace pl {
         auto preExpression = parseFunctionStatement();
 
         if (!MATCHES(sequence(tkn::Separator::Comma)))
-            err::P0002.throwError(fmt::format("Expected ',' after for loop expression, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected ',' after for loop expression, got {}.", getFormattedToken(0)), {}, 1);
 
         auto condition = parseMathematicalExpression();
 
         if (!MATCHES(sequence(tkn::Separator::Comma)))
-            err::P0002.throwError(fmt::format("Expected ',' after for loop expression, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected ',' after for loop expression, got {}.", getFormattedToken(0)), {}, 1);
 
         auto postExpression = parseFunctionStatement();
 
@@ -647,7 +647,7 @@ namespace pl {
 
 
         if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
-            err::P0002.throwError(fmt::format("Expected ')' at end of for loop head, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected ')' at end of for loop head, got {}.", getFormattedToken(0)), {}, 1);
 
         body = parseStatementBody();
 
@@ -674,7 +674,7 @@ namespace pl {
         } else if (MATCHES(sequence(tkn::Separator::RightParenthesis))) {
             trueBody.push_back(parseMember());
         } else
-            err::P0002.throwError(fmt::format("Expected ')' after if head, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected ')' after if head, got {}.", getFormattedToken(0)), {}, 1);
 
         if (MATCHES(sequence(tkn::Keyword::Else, tkn::Separator::LeftBrace))) {
             while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
@@ -692,7 +692,7 @@ namespace pl {
         auto condition = parseMathematicalExpression();
 
         if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
-            err::P0002.throwError(fmt::format("Expected ')' after while head, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected ')' after while head, got {}.", getFormattedToken(0)), {}, 1);
 
         return create(new ASTNodeWhileStatement(std::move(condition), {}));
     }
@@ -716,20 +716,20 @@ namespace pl {
                     return create(new ASTNodeTypeDecl({}, this->m_types[typeName], endian));
             }
 
-            err::P0003.throwError(fmt::format("Type {} has not been declared yet.", baseTypeName), fmt::format("If this type is being declared further down in the code, consider forward declaring it with 'using {};'.", baseTypeName));
+            err::P0003.throwError(fmt::format("Type {} has not been declared yet.", baseTypeName), fmt::format("If this type is being declared further down in the code, consider forward declaring it with 'using {};'.", baseTypeName), 1);
         } else if (MATCHES(sequence(tkn::ValueType::Any))) {    // Builtin type
             auto type = getValue<Token::ValueType>(-1);
 
             if (disallowSpecialTypes) {
                 if (type == Token::ValueType::Auto)
-                    err::P0002.throwError("Invalid type. 'auto' cannot be used in this context.");
+                    err::P0002.throwError("Invalid type. 'auto' cannot be used in this context.", {}, 1);
                 else if (type == Token::ValueType::String)
-                    err::P0002.throwError("Invalid type. 'str' cannot be used in this context.", "Consider using a char[] instead.");
+                    err::P0002.throwError("Invalid type. 'str' cannot be used in this context.", "Consider using a char[] instead.", 1);
             }
 
             return create(new ASTNodeTypeDecl({}, create(new ASTNodeBuiltinType(type)), endian));
         } else {
-            err::P0002.throwError(fmt::format("Invalid type. Expected built-in type or custom type name, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Invalid type. Expected built-in type or custom type name, got {}.", getFormattedToken(0)), {}, 1);
         }
     }
 
@@ -752,7 +752,7 @@ namespace pl {
             size = parseMathematicalExpression();
 
         if (!MATCHES(sequence(tkn::Separator::RightBracket)))
-            err::P0002.throwError(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)), {}, 1);
 
         return create(new ASTNodeArrayVariableDecl({}, create(new ASTNodeTypeDecl({}, create(new ASTNodeBuiltinType(Token::ValueType::Padding)))), std::move(size)));
     }
@@ -789,7 +789,7 @@ namespace pl {
                 size = parseMathematicalExpression();
 
             if (!MATCHES(sequence(tkn::Separator::RightBracket)))
-                err::P0002.throwError(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)));
+                err::P0002.throwError(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)), {}, 1);
         }
 
         if (MATCHES(sequence(tkn::Operator::At)))
@@ -804,10 +804,10 @@ namespace pl {
         auto builtinType = dynamic_cast<ASTNodeBuiltinType *>(sizeType->getType().get());
 
         if (builtinType == nullptr || !Token::isInteger(builtinType->getType()))
-            err::P0009.throwError("Pointer size needs to be a built-in type.");
+            err::P0009.throwError("Pointer size needs to be a built-in type.", {}, 1);
 
         if (Token::getTypeSize(builtinType->getType()) > 8) {
-            err::P0009.throwError("Pointer size cannot be larger than 8 bytes.");
+            err::P0009.throwError("Pointer size cannot be larger than 8 bytes.", {}, 1);
         }
 
         return sizeType;
@@ -837,11 +837,11 @@ namespace pl {
                 size = parseMathematicalExpression();
 
             if (!MATCHES(sequence(tkn::Separator::RightBracket)))
-                err::P0002.throwError(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)));
+                err::P0002.throwError(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)), {}, 1);
         }
 
         if (!MATCHES(sequence(tkn::Operator::Colon))) {
-            err::P0002.throwError(fmt::format("Expected ':' after pointer definition, got {}.", getFormattedToken(0)), "A pointer requires a integral type to specify its own size.");
+            err::P0002.throwError(fmt::format("Expected ':' after pointer definition, got {}.", getFormattedToken(0)), "A pointer requires a integral type to specify its own size.", 1);
         }
 
         auto sizeType = parsePointerSizeType();
@@ -896,7 +896,7 @@ namespace pl {
                 else if (MATCHES(sequence(tkn::Operator::Star, tkn::Literal::Identifier(), tkn::Separator::LeftBracket)))
                     member = parseMemberPointerArrayVariable(std::move(type));
                 else
-                    err::P0002.throwError("Invalid variable declaration.");
+                    err::P0002.throwError("Invalid variable declaration.", {}, 1);
             }
         } else if (MATCHES(sequence(tkn::ValueType::Padding, tkn::Separator::LeftBracket)))
             member = parsePadding();
@@ -907,13 +907,13 @@ namespace pl {
         else if (MATCHES(sequence(tkn::Keyword::Continue)))
             member = create(new ASTNodeControlFlowStatement(ControlFlowStatement::Continue, nullptr));
         else
-            err::P0002.throwError("Invalid struct member definition.");
+            err::P0002.throwError("Invalid struct member definition.", {}, 0);
 
         if (MATCHES(sequence(tkn::Separator::LeftBracket, tkn::Separator::LeftBracket)))
             parseAttribute(dynamic_cast<Attributable *>(member.get()));
 
         if (!MATCHES(sequence(tkn::Separator::Semicolon)))
-            err::P0002.throwError(fmt::format("Expected ';' at end of statement, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected ';' at end of statement, got {}.", getFormattedToken(0)), {}, 1);
 
         // Consume superfluous semicolons
         while (MATCHES(sequence(tkn::Separator::Semicolon)))
@@ -935,17 +935,17 @@ namespace pl {
             do {
                 auto inheritedTypeName = getValue<Token::Identifier>(-1).get();
                 if (!this->m_types.contains(inheritedTypeName))
-                    err::P0003.throwError(fmt::format("Cannot inherit from unknown type {}.", typeName), fmt::format("If this type is being declared further down in the code, consider forward declaring it with 'using {};'.", typeName));
+                    err::P0003.throwError(fmt::format("Cannot inherit from unknown type {}.", typeName), fmt::format("If this type is being declared further down in the code, consider forward declaring it with 'using {};'.", typeName), 1);
 
                 structNode->addInheritance(this->m_types[inheritedTypeName]->clone());
             } while (MATCHES(sequence(tkn::Separator::Comma, tkn::Literal::Identifier())));
 
         } else if (MATCHES(sequence(tkn::Operator::Colon, tkn::ValueType::Any))) {
-            err::P0003.throwError("Cannot inherit from built-in type.");
+            err::P0003.throwError("Cannot inherit from built-in type.", {}, 1);
         }
 
         if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
-            err::P0002.throwError(fmt::format("Expected '{{' after struct declaration, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected '{{' after struct declaration, got {}.", getFormattedToken(0)), {}, 1);
 
         while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
             structNode->addMember(parseMember());
@@ -974,13 +974,13 @@ namespace pl {
 
         auto underlyingType = parseType();
         if (underlyingType->getEndian().has_value())
-            err::P0002.throwError("Underlying enum type may not have an endian specifier.", "Use the 'be' or 'le' keyword when declaring a variable instead.");
+            err::P0002.throwError("Underlying enum type may not have an endian specifier.", "Use the 'be' or 'le' keyword when declaring a variable instead.", 2);
 
         auto typeDecl = addType(typeName, create(new ASTNodeEnum(std::move(underlyingType))));
         auto enumNode = static_cast<ASTNodeEnum *>(typeDecl->getType().get());
 
         if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
-            err::P0002.throwError(fmt::format("Expected '{{' after enum declaration, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected '{{' after enum declaration, got {}.", getFormattedToken(0)), {}, 1);
 
         std::unique_ptr<ASTNode> lastEntry;
         while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
@@ -1001,13 +1001,13 @@ namespace pl {
                 lastEntry = valueExpr->clone();
                 enumNode->addEntry(name, std::move(valueExpr));
             } else
-                err::P0002.throwError("Invalid enum entry definition.", "Enum entries can consist of either just a name or a name followed by a value assignment.");
+                err::P0002.throwError("Invalid enum entry definition.", "Enum entries can consist of either just a name or a name followed by a value assignment.", 1);
 
             if (!MATCHES(sequence(tkn::Separator::Comma))) {
                 if (MATCHES(sequence(tkn::Separator::RightBrace)))
                     break;
                 else
-                    err::P0002.throwError(fmt::format("Expected ',' at end of enum entry, got {}.", getFormattedToken(0)));
+                    err::P0002.throwError(fmt::format("Expected ',' at end of enum entry, got {}.", getFormattedToken(0)), {}, 1);
             }
         }
 
@@ -1037,7 +1037,7 @@ namespace pl {
             } else if (MATCHES(sequence(tkn::Separator::RightParenthesis))) {
                 trueBody.push_back(parseBitfieldEntry());
             } else
-                err::P0002.throwError(fmt::format("Expected ')' after if head, got {}.", getFormattedToken(0)));
+                err::P0002.throwError(fmt::format("Expected ')' after if head, got {}.", getFormattedToken(0)), {}, 1);
 
             if (MATCHES(sequence(tkn::Keyword::Else, tkn::Separator::LeftBrace))) {
                 while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
@@ -1050,10 +1050,10 @@ namespace pl {
             return create(new ASTNodeConditionalStatement(std::move(condition), std::move(trueBody), std::move(falseBody)));
         }
         else
-            err::P0002.throwError("Invalid bitfield member definition.");
+            err::P0002.throwError("Invalid bitfield member definition.", {}, 1);
 
         if (!MATCHES(sequence(tkn::Separator::Semicolon)))
-            err::P0002.throwError(fmt::format("Expected ';' at end of statement, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected ';' at end of statement, got {}.", getFormattedToken(0)), {}, 1);
 
         return result;
     }
@@ -1113,7 +1113,7 @@ namespace pl {
             }
 
             if (invalidType)
-                err::P0010.throwError("Invalid type.", "Allowed types are: 'char', 'bool', floating point types or integral types.");
+                err::P0010.throwError("Invalid in/out parameter type.", "Allowed types are: 'char', 'bool', floating point types or integral types.", 1);
         }
 
         return create(new ASTNodeVariableDecl(name, type, std::move(placementOffset), inVariable, outVariable));
@@ -1132,11 +1132,11 @@ namespace pl {
                 size = parseMathematicalExpression();
 
             if (!MATCHES(sequence(tkn::Separator::RightBracket)))
-                err::P0002.throwError(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)));
+                err::P0002.throwError(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)), {}, 1);
         }
 
         if (!MATCHES(sequence(tkn::Operator::At)))
-            err::P0002.throwError(fmt::format("Expected '@' after array placement, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected '@' after array placement, got {}.", getFormattedToken(0)), {}, 1);
 
         auto placementOffset = parseMathematicalExpression();
 
@@ -1150,7 +1150,7 @@ namespace pl {
         auto sizeType = parsePointerSizeType();
 
         if (!MATCHES(sequence(tkn::Operator::At)))
-            err::P0002.throwError(fmt::format("Expected '@' after pointer placement, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected '@' after pointer placement, got {}.", getFormattedToken(0)), {}, 1);
 
         auto placementOffset = parseMathematicalExpression();
 
@@ -1170,17 +1170,17 @@ namespace pl {
                 size = parseMathematicalExpression();
 
             if (!MATCHES(sequence(tkn::Separator::RightBracket)))
-                err::P0002.throwError(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)));
+                err::P0002.throwError(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)), {}, 1);
         }
 
         if (!MATCHES(sequence(tkn::Operator::Colon))) {
-            err::P0002.throwError(fmt::format("Expected ':' at end of pointer declaration, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected ':' at end of pointer declaration, got {}.", getFormattedToken(0)), {}, 1);
         }
 
         auto sizeType = parsePointerSizeType();
 
         if (!MATCHES(sequence(tkn::Operator::At)))
-            err::P0002.throwError(fmt::format("Expected '@' after array placement, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected '@' after array placement, got {}.", getFormattedToken(0)), {}, 1);
 
         auto placementOffset = parseMathematicalExpression();
 
@@ -1191,7 +1191,7 @@ namespace pl {
         std::vector<std::shared_ptr<ASTNode>> statements;
 
         if (!MATCHES(sequence(tkn::Literal::Identifier())))
-            err::P0002.throwError(fmt::format("Expected namespace identifier, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected namespace identifier, got {}.", getFormattedToken(0)), {}, 1);
 
         this->m_currNamespace.push_back(this->m_currNamespace.back());
 
@@ -1205,7 +1205,7 @@ namespace pl {
         }
 
         if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
-            err::P0002.throwError(fmt::format("Expected '{{' at beginning of namespace, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected '{{' at beginning of namespace, got {}.", getFormattedToken(0)), {}, 1);
 
         while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
             auto newStatements = parseStatements();
@@ -1229,7 +1229,7 @@ namespace pl {
         else if (MATCHES(sequence(tkn::Operator::Star, tkn::Literal::Identifier(), tkn::Separator::LeftBracket)))
             return parsePointerArrayVariablePlacement(std::move(type));
         else
-            err::P0002.throwError("Invalid placement sequence.");
+            err::P0002.throwError("Invalid placement sequence.", {}, 0);
     }
 
     /* Program */
@@ -1279,7 +1279,7 @@ namespace pl {
             parseAttribute(dynamic_cast<Attributable *>(statement.get()));
 
         if (requiresSemicolon && !MATCHES(sequence(tkn::Separator::Semicolon)))
-            err::P0002.throwError(fmt::format("Expected ';' at end of statement, got {}.", getFormattedToken(0)));
+            err::P0002.throwError(fmt::format("Expected ';' at end of statement, got {}.", getFormattedToken(0)), {}, 1);
 
         // Consume superfluous semicolons
         while (MATCHES(sequence(tkn::Separator::Semicolon)))
@@ -1322,13 +1322,16 @@ namespace pl {
             auto program = parseTillToken(tkn::Separator::EndOfProgram);
 
             if (this->m_curr != tokens.end())
-                err::P0002.throwError("Failed to parse entire input.", "Parsing stopped due to an invalid sequence before the entire input could be parsed. This is most likely a bug.");
+                err::P0002.throwError("Failed to parse entire input.", "Parsing stopped due to an invalid sequence before the entire input could be parsed. This is most likely a bug.", 1);
 
             return program;
-        } catch (err::Error<void> &e) {
-            this->m_curr -= 2;
+        } catch (err::Exception<u32> &e) {
+            this->m_curr -= e.getUserData();
 
-            this->m_error = err::Exception(e.format(sourceCode, this->m_curr->line, this->m_curr->column), this->m_curr->line, this->m_curr->column);
+            auto line   = this->m_curr->line;
+            auto column = this->m_curr->column;
+
+            this->m_error = err::PatternLanguageError(e.format(sourceCode, line, column), line, column);
 
             return std::nullopt;
         }

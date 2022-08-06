@@ -9,7 +9,6 @@
 #include <vector>
 #include <memory>
 
-#include <pl/error.hpp>
 #include <pl/errors/evaluator_errors.hpp>
 
 namespace pl {
@@ -36,14 +35,14 @@ namespace pl {
             this->m_lastHardError.reset();
         }
 
-        void setHardError(const err::Exception &error) { this->m_lastHardError = error; }
+        void setHardError(const err::PatternLanguageError &error) { this->m_lastHardError = error; }
 
-        [[nodiscard]] const std::optional<err::Exception> &getLastHardError() { return this->m_lastHardError; };
+        [[nodiscard]] const std::optional<err::PatternLanguageError> &getLastHardError() { return this->m_lastHardError; };
 
     private:
         std::vector<std::pair<Level, std::string>> m_consoleLog;
 
-        std::optional<err::Exception> m_lastHardError;
+        std::optional<err::PatternLanguageError> m_lastHardError;
         ASTNode *m_lastHardErrorNode = nullptr;
     };
 

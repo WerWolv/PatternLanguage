@@ -568,9 +568,9 @@ namespace pl {
             }
 
             addToken(tkn::Separator::EndOfProgram);
-        } catch (err::Error<void> &e) {
+        } catch (err::Exception<void> &e) {
             auto column = (offset - lineStartOffset) + 1;
-            this->m_error = err::Exception(e.format(sourceCode, line, column), line, column);
+            this->m_error = err::PatternLanguageError(e.format(sourceCode, line, column), line, column);
 
             return std::nullopt;
         }

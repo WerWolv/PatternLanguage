@@ -252,8 +252,8 @@ namespace pl {
                 } else
                     err::M0006.throwError(fmt::format("Pragma instruction '{}' does not exist.", type));
             }
-        } catch (err::Error<void> &e) {
-            this->m_error = err::Exception(e.format(code, lineNumber, 1), lineNumber, 1);
+        } catch (err::Exception<void> &e) {
+            this->m_error = err::PatternLanguageError(e.format(code, lineNumber, 1), lineNumber, 1);
 
             return std::nullopt;
         }

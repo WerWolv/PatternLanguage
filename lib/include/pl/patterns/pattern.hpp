@@ -2,6 +2,7 @@
 
 #include <helpers/types.hpp>
 
+#include <pl/errors/error.hpp>
 #include <pl/evaluator.hpp>
 #include <pl/pattern_visitor.hpp>
 #include <helpers/utils.hpp>
@@ -198,7 +199,7 @@ namespace pl {
                     } else {
                         return "???";
                     }
-                } catch (PatternLanguageError &error) {
+                } catch (err::Exception<const ASTNode *> &error) {
                     return "Error: "s + error.what();
                 }
             }

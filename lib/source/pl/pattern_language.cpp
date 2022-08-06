@@ -84,7 +84,7 @@ namespace pl {
             if (this->m_currError.has_value()) {
                 const auto &error = this->m_currError.value();
 
-                this->m_internals.evaluator->getConsole().log(LogConsole::Level::Error, error.what());
+                this->m_internals.evaluator->getConsole().log(LogConsole::Level::Error, error.message);
             }
         };
 
@@ -121,7 +121,7 @@ namespace pl {
             auto returnCode = Token::literalToSigned(*mainResult);
 
             if (returnCode != 0) {
-                this->m_currError = err::Exception(fmt::format("non-success value returned from main: {}", returnCode), 0, 1);
+                this->m_currError = err::PatternLanguageError(fmt::format("non-success value returned from main: {}", returnCode), 0, 1);
 
                 return false;
             }
@@ -194,7 +194,7 @@ namespace pl {
         return this->m_internals.evaluator->getConsole().getLog();
     }
 
-    const std::optional<err::Exception> &PatternLanguage::getError() const {
+    const std::optional<err::PatternLanguageError> &PatternLanguage::getError() const {
         return this->m_currError;
     }
 
