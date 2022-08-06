@@ -1,10 +1,10 @@
 #include <pl.hpp>
 
-const static std::map<pl::LogConsole::Level, std::string> LogLevels = {
-        { pl::LogConsole::Level::Debug,     "Debug"     },
-        { pl::LogConsole::Level::Info,      "Info"      },
-        { pl::LogConsole::Level::Warning,   "Warning"   },
-        { pl::LogConsole::Level::Error,     "Error"     }
+const static std::map<pl::core::LogConsole::Level, std::string> LogLevels = {
+        { pl::core::LogConsole::Level::Debug,     "Debug"     },
+        { pl::core::LogConsole::Level::Info,      "Info"      },
+        { pl::core::LogConsole::Level::Warning,   "Warning"   },
+        { pl::core::LogConsole::Level::Error,     "Error"     }
 };
 
 int main() {
@@ -23,7 +23,7 @@ int main() {
     // Tell the runtime where and how to read data
     patternLanguage.setDataSource([](pl::u64 address, pl::u8 *buffer, size_t size){
         std::memcpy(buffer, &Data[address], size);
-    }, Data.size());
+    }, 0x00, Data.size());
 
     // Tell the runtime how to handle dangerous functions being called
     patternLanguage.setDangerousFunctionCallHandler([]{
@@ -35,13 +35,13 @@ int main() {
     });
 
     // Create a normal builtin function called `test::normal_function` that takes a single parameter
-    patternLanguage.addFunction({ "test" }, "normal_function", pl::FunctionParameterCount::exactly(1), [](pl::Evaluator *ctx, const std::vector<pl::Token::Literal> &params) -> std::optional<pl::Token::Literal>{
+    patternLanguage.addFunction({ "test" }, "normal_function", pl::api::FunctionParameterCount::exactly(1), [](pl::core::Evaluator *ctx, const std::vector<pl::core::Token::Literal> &params) -> std::optional<pl::core::Token::Literal>{
         fmt::print("normal_function {}\n", std::get<pl::i128>(params[0]));
         return std::nullopt;
     });
 
     // Create a dangerous function called `test::dangerous_function` that takes no parameters
-    patternLanguage.addDangerousFunction({ "test" }, "dangerous_function", pl::FunctionParameterCount::none(), [](pl::Evaluator *, const std::vector<pl::Token::Literal> &) -> std::optional<pl::Token::Literal>{
+    patternLanguage.addDangerousFunction({ "test" }, "dangerous_function", pl::api::FunctionParameterCount::none(), [](pl::core::Evaluator *, const std::vector<pl::core::Token::Literal> &) -> std::optional<pl::core::Token::Literal>{
         printf("dangerous_function\n");
         return 1337;
     });
@@ -57,7 +57,8 @@ int main() {
     // Check if execution completed successfully
     if (!result) {
         // If not, print the error string
-        printf("Error: %d %s\n", result, patternLanguage.getError()->what());
+        auto error = patternLanguage.getError();
+        printf("Error: %d:%d %s\n", error->line, error->column, error->message.c_str());
 
         // Print all log messages
         for (auto [level, message] : patternLanguage.getConsoleLog()) {

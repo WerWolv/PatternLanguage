@@ -1,6 +1,5 @@
 #pragma once
 
-#include <helpers/types.hpp>
 
 #include <bit>
 #include <map>
@@ -12,11 +11,13 @@
 
 #include <IntervalTree.h>
 
-#include <pl/log_console.hpp>
-#include <pl/token.hpp>
 #include <pl/api.hpp>
 
-#include <pl/errors/error.hpp>
+#include <pl/core/log_console.hpp>
+#include <pl/core/token.hpp>
+#include <pl/core/errors/error.hpp>
+
+#include <pl/helpers/types.hpp>
 
 #include "helpers/fs.hpp"
 
@@ -26,14 +27,19 @@ namespace hex::prv {
 
 namespace pl {
 
-    class Preprocessor;
-    class Lexer;
-    class Parser;
-    class Validator;
-    class Evaluator;
-    class Pattern;
+    namespace core {
+        class Preprocessor;
+        class Lexer;
+        class Parser;
+        class Validator;
+        class Evaluator;
 
-    class ASTNode;
+        namespace ast { class ASTNode; }
+    }
+
+    namespace ptrn {
+        class Pattern;
+    }
 
     class PatternLanguage {
     public:
@@ -44,18 +50,18 @@ namespace pl {
         PatternLanguage(PatternLanguage &&other) noexcept;
 
         struct Internals {
-            Preprocessor    *preprocessor;
-            Lexer           *lexer;
-            Parser          *parser;
-            Validator       *validator;
-            Evaluator       *evaluator;
+            core::Preprocessor    *preprocessor;
+            core::Lexer           *lexer;
+            core::Parser          *parser;
+            core::Validator       *validator;
+            core::Evaluator       *evaluator;
         };
 
-        [[nodiscard]] std::optional<std::vector<std::shared_ptr<ASTNode>>> parseString(const std::string &code);
-        [[nodiscard]] bool executeString(const std::string &string, const std::map<std::string, Token::Literal> &envVars = {}, const std::map<std::string, Token::Literal> &inVariables = {}, bool checkResult = true);
-        [[nodiscard]] bool executeFile(const std::filesystem::path &path, const std::map<std::string, Token::Literal> &envVars = {}, const std::map<std::string, Token::Literal> &inVariables = {});
-        [[nodiscard]] std::pair<bool, std::optional<Token::Literal>> executeFunction(const std::string &code);
-        [[nodiscard]] const std::vector<std::shared_ptr<ASTNode>> &getCurrentAST() const;
+        [[nodiscard]] std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> parseString(const std::string &code);
+        [[nodiscard]] bool executeString(const std::string &string, const std::map<std::string, core::Token::Literal> &envVars = {}, const std::map<std::string, core::Token::Literal> &inVariables = {}, bool checkResult = true);
+        [[nodiscard]] bool executeFile(const std::filesystem::path &path, const std::map<std::string, core::Token::Literal> &envVars = {}, const std::map<std::string, core::Token::Literal> &inVariables = {});
+        [[nodiscard]] std::pair<bool, std::optional<core::Token::Literal>> executeFunction(const std::string &code);
+        [[nodiscard]] const std::vector<std::shared_ptr<core::ast::ASTNode>> &getCurrentAST() const;
 
         void abort() const;
 
@@ -68,26 +74,26 @@ namespace pl {
         void setIncludePaths(std::vector<std::fs::path> paths) const;
         void setDangerousFunctionCallHandler(std::function<bool()> callback) const;
 
-        [[nodiscard]] const std::vector<std::pair<LogConsole::Level, std::string>> &getConsoleLog() const;
-        [[nodiscard]] const std::optional<err::PatternLanguageError> &getError() const;
-        [[nodiscard]] std::map<std::string, Token::Literal> getOutVariables() const;
+        [[nodiscard]] const std::vector<std::pair<core::LogConsole::Level, std::string>> &getConsoleLog() const;
+        [[nodiscard]] const std::optional<core::err::PatternLanguageError> &getError() const;
+        [[nodiscard]] std::map<std::string, core::Token::Literal> getOutVariables() const;
 
         [[nodiscard]] u32 getCreatedPatternCount() const;
         [[nodiscard]] u32 getMaximumPatternCount() const;
 
-        [[nodiscard]] const std::vector<std::shared_ptr<Pattern>> &getPatterns() const {
-            const static std::vector<std::shared_ptr<Pattern>> empty;
+        [[nodiscard]] const std::vector<std::shared_ptr<ptrn::Pattern>> &getPatterns() const {
+            const static std::vector<std::shared_ptr<ptrn::Pattern>> empty;
 
             if (isRunning()) return empty;
             else return this->m_patterns;
         }
 
         void flattenPatterns();
-        [[nodiscard]] const interval_tree::IntervalTree<u64, Pattern*>& getFlattenedPatterns() const {
+        [[nodiscard]] const interval_tree::IntervalTree<u64, ptrn::Pattern*>& getFlattenedPatterns() const {
             return this->m_flattenedPatterns;
         }
 
-        [[nodiscard]] std::vector<Pattern *> getPatterns(u64 address) const;
+        [[nodiscard]] std::vector<ptrn::Pattern *> getPatterns(u64 address) const;
 
         void reset();
         [[nodiscard]] bool isRunning() const { return this->m_running; }
@@ -96,20 +102,20 @@ namespace pl {
         void addFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) const;
         void addDangerousFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) const;
 
-        const Internals& getInternals() const {
+        [[nodiscard]] const Internals& getInternals() const {
             return this->m_internals;
         }
 
     private:
         Internals m_internals;
 
-        std::vector<std::shared_ptr<ASTNode>> m_currAST;
+        std::vector<std::shared_ptr<core::ast::ASTNode>> m_currAST;
 
-        std::optional<err::PatternLanguageError> m_currError;
+        std::optional<core::err::PatternLanguageError> m_currError;
 
-        std::vector<std::shared_ptr<Pattern>> m_patterns;
+        std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;
 
-        interval_tree::IntervalTree<u64, Pattern*> m_flattenedPatterns;
+        interval_tree::IntervalTree<u64, ptrn::Pattern*> m_flattenedPatterns;
 
         bool m_running = false;
     };

@@ -2,12 +2,12 @@
 
 #include <pl/patterns/pattern.hpp>
 
-namespace pl {
+namespace pl::ptrn {
 
     class PatternArrayDynamic : public Pattern,
                                 public Inlinable {
     public:
-        PatternArrayDynamic(Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
+        PatternArrayDynamic(core::Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
             : Pattern(evaluator, offset, size, color) {
         }
 

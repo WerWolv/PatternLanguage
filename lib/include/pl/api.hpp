@@ -1,8 +1,7 @@
 #pragma once
 
-#include <helpers/types.hpp>
-
-#include <pl/token.hpp>
+#include <pl/core/token.hpp>
+#include <pl/helpers/types.hpp>
 
 #include <cmath>
 #include <vector>
@@ -11,8 +10,11 @@
 #include <optional>
 
 namespace pl {
-    class Evaluator;
+
     class PatternLanguage;
+
+    namespace core { class Evaluator; }
+
 }
 
 namespace pl::api {
@@ -61,11 +63,11 @@ namespace pl::api {
     };
 
     using Namespace = std::vector<std::string>;
-    using FunctionCallback  = std::function<std::optional<pl::Token::Literal>(pl::Evaluator *, const std::vector<pl::Token::Literal> &)>;
+    using FunctionCallback  = std::function<std::optional<core::Token::Literal>(core::Evaluator *, const std::vector<core::Token::Literal> &)>;
 
     struct Function {
         FunctionParameterCount parameterCount;
-        std::vector<pl::Token::Literal> defaultParameters;
+        std::vector<core::Token::Literal> defaultParameters;
         FunctionCallback func;
         bool dangerous;
     };

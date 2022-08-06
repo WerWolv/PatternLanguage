@@ -2,11 +2,11 @@
 
 #include <pl/patterns/pattern.hpp>
 
-namespace pl {
+namespace pl::ptrn {
 
     class PatternBoolean : public Pattern {
     public:
-        explicit PatternBoolean(Evaluator *evaluator, u64 offset, u32 color = 0)
+        explicit PatternBoolean(core::Evaluator *evaluator, u64 offset, u32 color = 0)
             : Pattern(evaluator, offset, 1, color) { }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {

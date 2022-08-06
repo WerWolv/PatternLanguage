@@ -5,11 +5,11 @@
 #include <codecvt>
 #include <locale>
 
-namespace pl {
+namespace pl::ptrn {
 
     class PatternWideString : public Pattern {
     public:
-        PatternWideString(Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
+        PatternWideString(core::Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
             : Pattern(evaluator, offset, size, color) { }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
@@ -25,7 +25,7 @@ namespace pl {
             this->getEvaluator()->readData(this->getOffset(), buffer.data(), size);
 
             for (auto &c : buffer)
-                c = pl::changeEndianess(c, 2, this->getEndian());
+                c = hlp::changeEndianess(c, 2, this->getEndian());
 
             auto it = std::remove_if(buffer.begin(), buffer.end(),
                                      [](auto c) { return c == 0x00; });
@@ -43,7 +43,7 @@ namespace pl {
             this->getEvaluator()->readData(this->getOffset(), buffer.data(), this->getSize());
 
             for (auto &c : buffer)
-                c = pl::changeEndianess(c, 2, this->getEndian());
+                c = hlp::changeEndianess(c, 2, this->getEndian());
 
             std::erase_if(buffer, [](auto c) {
                 return c == 0x00;

@@ -2,11 +2,11 @@
 
 #include <pl/patterns/pattern.hpp>
 
-namespace pl {
+namespace pl::ptrn {
 
     class PatternBitfieldField : public Pattern {
     public:
-        PatternBitfieldField(Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, Pattern *bitfieldPattern = nullptr, u32 color = 0)
+        PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, Pattern *bitfieldPattern = nullptr, u32 color = 0)
             : Pattern(evaluator, offset, 0, color), m_bitOffset(bitOffset), m_bitSize(bitSize), m_bitField(bitfieldPattern) {
         }
 
@@ -28,7 +28,7 @@ namespace pl {
             if (this->m_bitField->getEndian() != std::endian::native)
                 std::reverse(value.begin(), value.end());
 
-            return pl::extract(this->m_bitOffset + (this->m_bitSize - 1), this->m_bitOffset, value);
+            return hlp::extract(this->m_bitOffset + (this->m_bitSize - 1), this->m_bitOffset, value);
         }
 
         void setBitfield(Pattern *bitField) {
@@ -83,7 +83,7 @@ namespace pl {
     class PatternBitfield : public Pattern,
                             public Inlinable {
     public:
-        PatternBitfield(Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
+        PatternBitfield(core::Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
             : Pattern(evaluator, offset, size, color) {
         }
 

@@ -2,11 +2,11 @@
 
 #include <pl/patterns/pattern.hpp>
 
-namespace pl {
+namespace pl::ptrn {
 
     class PatternPadding : public Pattern {
     public:
-        PatternPadding(Evaluator *evaluator, u64 offset, size_t size) : Pattern(evaluator, offset, size, 0xFF000000) { }
+        PatternPadding(core::Evaluator *evaluator, u64 offset, size_t size) : Pattern(evaluator, offset, size, 0xFF000000) { }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
             return std::unique_ptr<Pattern>(new PatternPadding(*this));

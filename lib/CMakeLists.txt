@@ -12,22 +12,22 @@ else ()
 endif ()
 
 add_library(libpl ${LIBRARY_TYPE}
-        source/helpers/utils.cpp
-        source/helpers/file.cpp
+        source/pl/helpers/utils.cpp
+        source/pl/helpers/file.cpp
 
-        source/pl/evaluator.cpp
-        source/pl/lexer.cpp
-        source/pl/parser.cpp
         source/pl/pattern_language.cpp
-        source/pl/preprocessor.cpp
-        source/pl/validator.cpp
+        source/pl/core/evaluator.cpp
+        source/pl/core/lexer.cpp
+        source/pl/core/parser.cpp
+        source/pl/core/preprocessor.cpp
+        source/pl/core/validator.cpp
 
-        source/pl/libstd/std.cpp
-        source/pl/libstd/mem.cpp
-        source/pl/libstd/math.cpp
-        source/pl/libstd/string.cpp
-        source/pl/libstd/file.cpp
-        source/pl/libstd/time.cpp
+        source/pl/lib/std/std.cpp
+        source/pl/lib/std/mem.cpp
+        source/pl/lib/std/math.cpp
+        source/pl/lib/std/string.cpp
+        source/pl/lib/std/file.cpp
+        source/pl/lib/std/time.cpp
 )
 
 target_include_directories(libpl PUBLIC include)

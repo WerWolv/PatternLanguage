@@ -2,12 +2,12 @@
 
 #include <pl/patterns/pattern.hpp>
 
-namespace pl {
+namespace pl::ptrn {
 
     class PatternStruct : public Pattern,
                           public Inlinable {
     public:
-        PatternStruct(Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
+        PatternStruct(core::Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
             : Pattern(evaluator, offset, size, color) {
         }
 
