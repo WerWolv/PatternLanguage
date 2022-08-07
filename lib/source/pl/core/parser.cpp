@@ -499,8 +499,7 @@ namespace pl::core {
         return statement;
     }
 
-    std::unique_ptr<ast::ASTNode> Parser::parseFunctionStatement() {
-        bool needsSemicolon = true;
+    std::unique_ptr<ast::ASTNode> Parser::parseFunctionStatement(bool needsSemicolon) {
         std::unique_ptr<ast::ASTNode> statement;
 
         if (MATCHES(sequence(tkn::Literal::Identifier(), tkn::Operator::Assign)))
@@ -631,7 +630,7 @@ namespace pl::core {
     }
 
     std::unique_ptr<ast::ASTNode> Parser::parseFunctionForLoop() {
-        auto preExpression = parseFunctionStatement();
+        auto preExpression = parseFunctionStatement(false);
 
         if (!MATCHES(sequence(tkn::Separator::Comma)))
             err::P0002.throwError(fmt::format("Expected ',' after for loop expression, got {}.", getFormattedToken(0)), {}, 1);
@@ -641,7 +640,7 @@ namespace pl::core {
         if (!MATCHES(sequence(tkn::Separator::Comma)))
             err::P0002.throwError(fmt::format("Expected ',' after for loop expression, got {}.", getFormattedToken(0)), {}, 1);
 
-        auto postExpression = parseFunctionStatement();
+        auto postExpression = parseFunctionStatement(false);
 
         std::vector<std::unique_ptr<ast::ASTNode>> body;
 

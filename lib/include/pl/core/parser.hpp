@@ -107,7 +107,7 @@ namespace pl::core {
 
         std::unique_ptr<ast::ASTNode> parseFunctionDefinition();
         std::unique_ptr<ast::ASTNode> parseFunctionVariableDecl();
-        std::unique_ptr<ast::ASTNode> parseFunctionStatement();
+        std::unique_ptr<ast::ASTNode> parseFunctionStatement(bool needsSemicolon = true);
         std::unique_ptr<ast::ASTNode> parseFunctionVariableAssignment(const std::string &lvalue);
         std::unique_ptr<ast::ASTNode> parseFunctionVariableCompoundAssignment(const std::string &lvalue);
         std::unique_ptr<ast::ASTNode> parseFunctionControlFlowStatement();
