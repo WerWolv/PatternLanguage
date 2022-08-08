@@ -6,6 +6,8 @@ namespace pl {
 
 namespace pl::lib::libstd {
 
+    void registerPragmas(pl::PatternLanguage &runtime);
+
     namespace libstd    { void registerFunctions(pl::PatternLanguage &runtime); }
     namespace mem       { void registerFunctions(pl::PatternLanguage &runtime); }
     namespace math      { void registerFunctions(pl::PatternLanguage &runtime); }
@@ -14,6 +16,8 @@ namespace pl::lib::libstd {
     namespace time      { void registerFunctions(pl::PatternLanguage &runtime); }
 
     void registerFunctions(pl::PatternLanguage &runtime) {
+        registerPragmas(runtime);
+
         libstd::registerFunctions(runtime);
         mem::registerFunctions(runtime);
         math::registerFunctions(runtime);
