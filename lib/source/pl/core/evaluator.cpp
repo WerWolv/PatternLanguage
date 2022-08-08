@@ -348,7 +348,6 @@ namespace pl::core {
             const auto line = node == nullptr ? 0 : node->getLine();
             const auto column = node == nullptr ? 0 : node->getColumn();
 
-            this->getConsole().log(LogConsole::Level::Error, e.what());
             this->getConsole().setHardError(err::PatternLanguageError(e.format(sourceCode, line, column), line, column));
 
             patterns.clear();

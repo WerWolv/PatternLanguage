@@ -41,7 +41,7 @@ namespace pl::core::err {
         public:
             Exception(char prefix, u32 errorCode, std::string title, std::string description, std::string hint, UserData<T> userData = {}) :
                     UserData<T>(userData), m_prefix(prefix), m_errorCode(errorCode), m_title(std::move(title)), m_description(std::move(description)), m_hint(std::move(hint)) {
-                this->m_shortMessage = fmt::format("error[{}{:04}]: {} -- {}", this->m_prefix, this->m_errorCode, this->m_title, this->m_description).c_str();
+                this->m_shortMessage = fmt::format("error[{}{:04}]: {}\n{}", this->m_prefix, this->m_errorCode, this->m_title, this->m_description).c_str();
             }
 
             [[nodiscard]] const char *what() const noexcept override {
@@ -69,6 +69,8 @@ namespace pl::core::err {
                             errorMessage += descriptionSpacing + this->m_description + "\n\n";
                         }
                     }
+                } else {
+                    errorMessage += this->m_description + "\n";
                 }
 
                 if (!this->m_hint.empty()) {
