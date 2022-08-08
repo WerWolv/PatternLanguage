@@ -121,7 +121,7 @@ namespace pl::core::ast {
                     value.erase(std::find(value.begin(), value.end(), '\0'), value.end());
                 } else if (pattern->getMemoryLocationType() == ptrn::PatternMemoryType::Heap) {
                     value.resize(pattern->getSize());
-                    std::memcpy(value.data(), evaluator->getHeap().data(), value.size());
+                    std::memcpy(value.data(), &evaluator->getHeap()[pattern->getOffset()], value.size());
                     value.erase(std::find(value.begin(), value.end(), '\0'), value.end());
                 }
 
