@@ -56,7 +56,7 @@ namespace pl::core::err {
                 if (line != 0 && column != 0) {
                     errorMessage += fmt::format("  --> <Source Code>:{}:{}\n", line, column);
 
-                    auto lines = splitString(sourceCode, "\n");
+                    auto lines = hlp::splitString(sourceCode, "\n");
 
                     if ((line - 1) < lines.size()) {
                         const auto &errorLine = lines[line - 1];
@@ -83,27 +83,6 @@ namespace pl::core::err {
             u32 m_errorCode;
             std::string m_shortMessage;
             std::string m_title, m_description, m_hint;
-
-            static std::vector<std::string> splitString(const std::string &string, const std::string &delimiter) {
-                size_t start = 0, end = 0;
-                std::string token;
-                std::vector<std::string> res;
-
-                while ((end = string.find(delimiter, start)) != std::string::npos) {
-                    size_t size = end - start;
-                    if (start + size > string.length())
-                        break;
-                    if (start > end)
-                        break;
-
-                    token = string.substr(start, end - start);
-                    start = end + delimiter.length();
-                    res.push_back(token);
-                }
-
-                res.emplace_back(string.substr(start));
-                return res;
-            }
         };
 
         Error(char prefix, u32 errorCode, std::string title) : m_prefix(prefix), m_errorCode(errorCode), m_title(std::move(title)) {

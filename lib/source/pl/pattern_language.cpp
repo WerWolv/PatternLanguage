@@ -74,7 +74,10 @@ namespace pl {
         return ast;
     }
 
-    bool PatternLanguage::executeString(const std::string &code, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
+    bool PatternLanguage::executeString(std::string code, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
+        code = hlp::replaceAll(code, "\r\n", "\n");
+        code = hlp::replaceAll(code, "\t", "    ");
+
         this->m_running = true;
         PL_ON_SCOPE_EXIT { this->m_running = false; };
 

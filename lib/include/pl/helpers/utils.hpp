@@ -155,4 +155,7 @@ namespace pl::hlp {
 
         return iter != a.end();
     }
+
+    std::string replaceAll(std::string string, const std::string &search, const std::string &replace);
+    std::vector<std::string> splitString(const std::string &string, const std::string &delimiter);
 }
