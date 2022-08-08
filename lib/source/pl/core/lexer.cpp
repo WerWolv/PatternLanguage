@@ -285,7 +285,7 @@ namespace pl::core {
 
         const auto addToken = [&](Token token) {
             token.line = line;
-            token.column = offset - lineStartOffset;
+            token.column = (offset - lineStartOffset) + 1;
             
             tokens.push_back(token);
         };
@@ -543,7 +543,7 @@ namespace pl::core {
                     // If it's not a keyword and a builtin type, it has to be an identifier
 
                     else
-                        tokens.emplace_back(tkn::Literal::Identifier(identifier));
+                        addToken(tkn::Literal::Identifier(identifier));
 
                     offset += identifier.length();
                 } else if (std::isdigit(c)) {
