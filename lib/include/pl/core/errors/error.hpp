@@ -24,7 +24,7 @@ namespace pl::core::err {
         T m_userData = { };
     };
 
-    struct PatternLanguageError {
+    struct PatternLanguageError : public std::exception {
         PatternLanguageError(std::string message, u32 line, u32 column) : message(std::move(message)), line(line), column(column) { }
 
         std::string message;

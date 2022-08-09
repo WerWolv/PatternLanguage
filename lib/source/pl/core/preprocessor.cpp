@@ -32,6 +32,7 @@ namespace pl::core {
                     while (code[offset] != '\n' && offset < code.length())
                         offset += 1;
                 } else if (code.substr(offset, 2) == "/*") {
+                    auto commentStartLine = lineNumber;
                     while (code.substr(offset, 2) != "*/" && offset < code.length()) {
                         if (code[offset] == '\n') {
                             output += '\n';
@@ -43,7 +44,7 @@ namespace pl::core {
 
                     offset += 2;
                     if (offset >= code.length())
-                        err::M0001.throwError("Expected closing */ sequence.");
+                        err::M0001.throwError("Expected closing */ sequence.", {}, commentStartLine);
                 } else {
                     output += code[offset];
                     offset++;
@@ -83,12 +84,12 @@ namespace pl::core {
                         offset += 1;
 
                         std::string includeFile;
-                        while (code[offset] != endChar && code[offset] != '\n') {
+                        while (code[offset] != endChar) {
                             includeFile += code[offset];
                             offset += 1;
 
-                            if (offset >= code.length())
-                                err::M0003.throwError(fmt::format("missing terminating '{0}' character.", endChar));
+                            if (offset >= code.length() || code[offset] == '\n')
+                                err::M0003.throwError(fmt::format("Missing terminating '{0}' character.", endChar));
                         }
                         offset += 1;
 
@@ -123,7 +124,7 @@ namespace pl::core {
                         auto preprocessedInclude = preprocessor.preprocess(runtime, file.readString(), /*initialRun =*/false);
 
                         if (!preprocessedInclude.has_value()) {
-                            throw *preprocessor.m_error;
+                            throw err::PatternLanguageError(*preprocessor.m_error);
                         }
 
                         bool shouldInclude = true;
@@ -165,7 +166,7 @@ namespace pl::core {
                         while (std::isblank(code[offset])) {
                             offset += 1;
                             if (offset >= code.length())
-                                err::M0003.throwError("No value given in #define directive.", "A #define directive expects a name and a value in the form of #define NAME VALUE");
+                                err::M0003.throwError("No value given in #define directive.", "A #define directive expects a name and a value in the form of #define <name> <value>");
                         }
 
                         std::string replaceValue;
@@ -178,7 +179,7 @@ namespace pl::core {
                         }
 
                         if (replaceValue.empty())
-                            err::M0003.throwError("No value given in #define directive.", "A #define directive expects a name and a value in the form of #define NAME VALUE");
+                            err::M0003.throwError("No value given in #define directive.", "A #define directive expects a name and a value in the form of #define <name> <value>.");
 
                         this->m_defines.emplace(defineName, replaceValue, lineNumber);
                     } else if (code.substr(offset, 6) == "pragma") {
@@ -188,7 +189,7 @@ namespace pl::core {
                             offset += 1;
 
                             if (code[offset] == '\n' || code[offset] == '\r')
-                                err::M0003.throwError("No instruction given in #pragma directive.", "A #pragma directive expects a instruction followed by an optional value in the form of #pragma INSTRUCTION VALUE.");
+                                err::M0003.throwError("No instruction given in #pragma directive.", "A #pragma directive expects a instruction followed by an optional value in the form of #pragma <instruction> <value>.");
                         }
 
                         std::string pragmaKey;
@@ -196,7 +197,7 @@ namespace pl::core {
                             pragmaKey += code[offset];
 
                             if (offset >= code.length())
-                                err::M0003.throwError("No instruction given in #pragma directive.", "A #pragma directive expects a instruction followed by an optional value in the form of #pragma INSTRUCTION VALUE.");
+                                err::M0003.throwError("No instruction given in #pragma directive.", "A #pragma directive expects a instruction followed by an optional value in the form of #pragma <instruction> <value>.");
 
                             offset += 1;
                         }
@@ -248,12 +249,17 @@ namespace pl::core {
             for (const auto &[type, value, pragmaLine] : this->m_pragmas) {
                 if (this->m_pragmaHandlers.contains(type)) {
                     if (!this->m_pragmaHandlers[type](runtime, value))
-                        err::M0006.throwError(fmt::format("Value '{}' cannot be used with the '{}' pragma directive.", value, type));
+                        err::M0006.throwError(fmt::format("Value '{}' cannot be used with the '{}' pragma directive.", value, type), { }, pragmaLine);
                 } else
-                    err::M0006.throwError(fmt::format("Pragma instruction '{}' does not exist.", type));
+                    err::M0006.throwError(fmt::format("Pragma instruction '{}' does not exist.", type), { }, pragmaLine);
             }
         } catch (err::PreprocessorError::Exception &e) {
-            this->m_error = err::PatternLanguageError(e.format(code, lineNumber, 1), lineNumber, 1);
+            auto line = e.getUserData() == 0 ? lineNumber : e.getUserData();
+            this->m_error = err::PatternLanguageError(e.format(code, line, 1), line, 1);
+
+            return std::nullopt;
+        } catch (err::PatternLanguageError &e) {
+            this->m_error = e;
 
             return std::nullopt;
         }

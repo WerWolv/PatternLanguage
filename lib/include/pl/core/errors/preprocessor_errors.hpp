@@ -5,7 +5,7 @@
 namespace pl::core::err {
 
     namespace {
-        class PreprocessorError : public Error<> {
+        class PreprocessorError : public Error<u32> {
         public:
             PreprocessorError(u32 errorCode, std::string title) noexcept :
                     Error('M', errorCode, std::move(title)) { }
