@@ -134,7 +134,7 @@ namespace pl::core::ast {
             } else {
                 std::vector<u8> buffer(templatePattern->getSize());
                 while (true) {
-                    if (evaluator->dataOffset() > evaluator->getDataSize() - buffer.size())
+                    if (evaluator->dataOffset() > evaluator->getDataSize())
                         err::E0004.throwError("Array expanded past end of the data before a null-entry was found.", "Try using a while-sized array instead to limit the size of the array.", this);
 
                     evaluator->readData(evaluator->dataOffset(), buffer.data(), buffer.size());
@@ -195,9 +195,6 @@ namespace pl::core::ast {
                     size += pattern->getSize();
                     entryIndex++;
 
-                    if (evaluator->dataOffset() > evaluator->getDataSize() - pattern->getSize())
-                        err::E0004.throwError("Array expanded past end of the data before termination condition was met.", { }, this);
-
                     entries.push_back(std::move(pattern));
 
                     evaluator->handleAbort();
@@ -255,8 +252,12 @@ namespace pl::core::ast {
                         auto patterns       = this->m_type->createPatterns(evaluator);
                         size_t patternCount = patterns.size();
 
+                        if (evaluator->dataOffset() > evaluator->getDataSize())
+                            err::E0004.throwError("Array expanded past end of the data before termination condition was met.", { }, this);
+
                         if (!patterns.empty())
                             addEntries(std::move(patterns));
+
 
                         auto ctrlFlow = evaluator->getCurrentControlFlowStatement();
                         evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
@@ -282,7 +283,7 @@ namespace pl::core::ast {
                     for (auto &pattern : patterns) {
                         std::vector<u8> buffer(pattern->getSize());
 
-                        if (evaluator->dataOffset() > evaluator->getDataSize() - buffer.size()) {
+                        if (evaluator->dataOffset() > evaluator->getDataSize()) {
                             err::E0004.throwError("Array expanded past end of the data before a null-entry was found.", "Try using a while-sized array instead to limit the size of the array.", this);
                         }
 
