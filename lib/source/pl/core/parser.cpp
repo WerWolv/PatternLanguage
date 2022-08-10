@@ -107,7 +107,7 @@ namespace pl::core {
                             }
                         }
 
-                    return create(new ast::ASTNodeScopeResolution(this->m_types[typeName]->clone(), getValue<Token::Identifier>(-1).get()));
+                        err::P0004.throwError("No namespace with this name found.", { }, 1);
                     }
                 }
             } else
