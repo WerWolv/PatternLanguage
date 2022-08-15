@@ -207,7 +207,7 @@ namespace pl::core::ast {
                             err::E0003.throwError("Invalid use of '$' operator in rvalue.", {}, this);
 
                         if (!found) {
-                            err::E0003.throwError(fmt::format("No variable named '{}' in type '{}'.", name, currPattern->getTypeName()), {}, this);
+                            err::E0003.throwError(fmt::format("No variable named '{}' found.", name), {}, this);
                         }
                     }
                 } else {
