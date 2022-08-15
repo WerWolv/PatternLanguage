@@ -175,6 +175,10 @@ namespace pl::core::ast {
 
             evaluator->dataOffset() = startOffset + outputPattern->getSize();
 
+            if (evaluator->dataOffset() > evaluator->getDataSize())
+                err::E0004.throwError("Array expanded past end of the data.", { }, this);
+
+
             return outputPattern;
         }
 
@@ -225,8 +229,11 @@ namespace pl::core::ast {
                     for (u64 i = 0; i < entryCount; i++) {
                         evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
 
-                        auto patterns       = this->m_type->createPatterns(evaluator);
+                        auto patterns = this->m_type->createPatterns(evaluator);
                         size_t patternCount = patterns.size();
+
+                        if (evaluator->dataOffset() > evaluator->getDataSize())
+                            err::E0004.throwError("Array expanded past end of the data.", fmt::format("Entry {} exceeded data by {} bytes.", i, evaluator->getDataSize() - evaluator->dataOffset()), this);
 
                         if (!patterns.empty())
                             addEntries(std::move(patterns));
