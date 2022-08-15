@@ -302,9 +302,6 @@ namespace pl::core {
         try {
             this->setCurrentControlFlowStatement(ControlFlowStatement::None);
             pushScope(nullptr, patterns);
-            PL_ON_SCOPE_EXIT {
-                popScope();
-            };
 
             for (auto &node : ast) {
                 if (dynamic_cast<ast::ASTNodeTypeDecl *>(node.get())) {
