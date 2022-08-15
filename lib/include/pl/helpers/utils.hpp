@@ -158,4 +158,11 @@ namespace pl::hlp {
 
     std::string replaceAll(std::string string, const std::string &search, const std::string &replace);
     std::vector<std::string> splitString(const std::string &string, const std::string &delimiter);
+
+    constexpr inline size_t strnlen(const char *s, size_t n) {
+        size_t i = 0;
+        while (i < n && s[i] != '\x00') i++;
+
+        return i;
+    }
 }
