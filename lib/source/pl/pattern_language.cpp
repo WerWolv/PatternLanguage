@@ -43,7 +43,7 @@ namespace pl {
         this->m_flattenedPatterns = other.m_flattenedPatterns;
         this->m_running = other.m_running;
 
-        other.m_internals = { nullptr };
+        other.m_internals = { };
     }
 
     std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> PatternLanguage::parseString(const std::string &code) {

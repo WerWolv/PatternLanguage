@@ -213,7 +213,7 @@ namespace pl::core {
                     else if (value->getMemoryLocationType() == ptrn::PatternMemoryType::Heap)
                         std::memcpy(&heap[pattern->getOffset()], &heap[value->getOffset()], pattern->getSize());
                 },
-                [](std::string &value) { err::E0001.throwError("Cannot place string variable on the heap."); },
+                [](std::string &) { err::E0001.throwError("Cannot place string variable on the heap."); },
                 [&pattern, &heap](auto &&value) {
                     std::memcpy(&heap[pattern->getOffset()], &value, pattern->getSize());
                 }

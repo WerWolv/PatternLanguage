@@ -31,6 +31,7 @@ add_library(libpl ${LIBRARY_TYPE}
         source/pl/lib/std/time.cpp
 )
 
+target_compile_options(libpl PRIVATE -Wall -Wextra -Werror)
 target_include_directories(libpl PUBLIC include)
 target_link_libraries(libpl PUBLIC fmt::fmt intervaltree)
 set_property(TARGET libpl PROPERTY POSITION_INDEPENDENT_CODE ON)

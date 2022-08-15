@@ -25,7 +25,7 @@ namespace pl::lib::libstd::time {
     }
 
     static tm unpackTMValue(u128 value) {
-        tm tm = { 0 };
+        tm tm = { };
         tm.tm_sec   = (int)(value >> 0)  & 0xFF;
         tm.tm_min   = (int)(value >> 8)  & 0xFF;
         tm.tm_hour  = (int)(value >> 16) & 0xFF;
@@ -47,6 +47,8 @@ namespace pl::lib::libstd::time {
         {
             /* epoch() */
             runtime.addFunction(nsStdTime, "epoch", FunctionParameterCount::exactly(0), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
+                hlp::unused(params);
+
                 return { std::time(nullptr) };
             });
 
@@ -80,7 +82,6 @@ namespace pl::lib::libstd::time {
                 auto formatString = Token::literalToString(params[0], false);
                 u128 structuredTime = Token::literalToUnsigned(params[1]);
 
-                tm time = unpackTMValue(structuredTime);
                 return { fmt::format(fmt::runtime(fmt::format("{{:{}}}", formatString)), unpackTMValue(structuredTime)) };
             });
         }
