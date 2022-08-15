@@ -38,18 +38,19 @@ jobs:
       run: |
         mkdir -p build
         cd build
-        CC=gcc-12 CXX=g++-12 cmake                        \
-          -DCMAKE_BUILD_TYPE=Debug                        \
-          -DCMAKE_C_FLAGS="-O0 -fuse-ld=lld --coverage"   \
-          -DCMAKE_CXX_FLAGS="-O0 -fuse-ld=lld --coverage" \
-          -DLIBPL_ENABLE_TESTS=ON                         \
+        CC=gcc-12 CXX=g++-12 cmake                                                            \
+          -DCMAKE_BUILD_TYPE=Debug                                                            \
+          -DCMAKE_C_FLAGS="-O0 -fuse-ld=lld --coverage -fsanitize=undefined,address,leak"     \
+          -DCMAKE_CXX_FLAGS="-O0 -fuse-ld=lld --coverage  -fsanitize=undefined,address,leak"  \
+          -DCMAKE_LINK_FLAGS="-fsanitize=undefined,address,leak"                              \
+          -DLIBPL_ENABLE_TESTS=ON                                                             \
           ..
         make -j4 pattern_language_tests
 
     - name: 🧪 Perform Unit Tests
       run: |
         cd build
-        ctest
+        ctest --verbose --output-on-failure
 
     - name: ⚗️ Generate Coverage Report
       run: |
