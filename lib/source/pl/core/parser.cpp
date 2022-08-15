@@ -958,7 +958,7 @@ namespace pl::core {
         const auto &typeName = getValue<Token::Identifier>(-2).get();
 
         auto typeDecl  = addType(typeName, create(new ast::ASTNodeUnion()));
-        auto unionNode = static_cast<ast::ASTNodeStruct *>(typeDecl->getType().get());
+        auto unionNode = static_cast<ast::ASTNodeUnion *>(typeDecl->getType().get());
 
         while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
             unionNode->addMember(parseMember());
