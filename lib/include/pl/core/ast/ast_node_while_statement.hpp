@@ -65,11 +65,12 @@ namespace pl::core::ast {
                     auto result = statement->execute(evaluator);
 
                     ctrlFlow = evaluator->getCurrentControlFlowStatement();
-                    evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
                     if (ctrlFlow == ControlFlowStatement::Return)
                         return result;
-                    else if (ctrlFlow != ControlFlowStatement::None)
+                    else if (ctrlFlow != ControlFlowStatement::None) {
+                        evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
                         break;
+                    }
                 }
 
                 if (this->m_postExpression != nullptr)
