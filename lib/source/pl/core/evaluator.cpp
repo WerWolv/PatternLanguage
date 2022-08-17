@@ -59,7 +59,7 @@ namespace pl::core {
 
         pattern->setVariableName(name);
 
-        variables.push_back(std::move(std::unique_ptr<ptrn::Pattern>(pattern)));
+        variables.push_back(std::unique_ptr<ptrn::Pattern>(pattern));
     }
 
     void Evaluator::createVariable(const std::string &name, ast::ASTNode *type, const std::optional<Token::Literal> &value, bool outVariable) {
