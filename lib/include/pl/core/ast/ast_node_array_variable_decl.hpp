@@ -56,8 +56,6 @@ namespace pl::core::ast {
 
             auto type = this->m_type->evaluate(evaluator);
 
-            PL_ON_SCOPE_EXIT { evaluator->clearCurrentArrayIndex(); };
-
             std::unique_ptr<ptrn::Pattern> pattern;
             if (dynamic_cast<ASTNodeBuiltinType *>(type.get()))
                 pattern = createStaticArray(evaluator);
@@ -188,6 +186,14 @@ namespace pl::core::ast {
         }
 
         std::unique_ptr<ptrn::Pattern> createDynamicArray(Evaluator *evaluator) const {
+            auto startArrayIndex = evaluator->getCurrentArrayIndex();
+            PL_ON_SCOPE_EXIT {
+                if (startArrayIndex.has_value())
+                    evaluator->setCurrentArrayIndex(*startArrayIndex);
+                else
+                    evaluator->clearCurrentArrayIndex();
+            };
+
             auto arrayPattern = std::make_unique<ptrn::PatternArrayDynamic>(evaluator, evaluator->dataOffset(), 0);
             arrayPattern->setVariableName(this->m_name);
 

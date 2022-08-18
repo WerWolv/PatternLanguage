@@ -265,7 +265,7 @@ namespace pl::core {
 
         this->handleAbort();
 
-        this->m_scopes.push_back({ parent, &scope, { }, { }, this->m_heap.size() });
+        this->m_scopes.push_back({ parent, &scope, std::nullopt, { }, this->m_heap.size() });
     }
 
     void Evaluator::popScope() {

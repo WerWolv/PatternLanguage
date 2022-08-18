@@ -102,6 +102,16 @@ namespace pl::lib::libstd::core {
 
                 return std::nullopt;
             });
+
+            /* array_index() -> index */
+            runtime.addFunction(nsStdCore, "array_index", FunctionParameterCount::none(), [](Evaluator *ctx, auto) -> std::optional<Token::Literal> {
+                auto index = ctx->getCurrentArrayIndex();
+
+                if (index.has_value())
+                    return u128(*index);
+                else
+                    return 0;
+            });
         }
     }
 
