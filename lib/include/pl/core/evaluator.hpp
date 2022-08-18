@@ -49,7 +49,11 @@ namespace pl::core {
     public:
         Evaluator() = default;
 
-        std::optional<std::vector<std::shared_ptr<ptrn::Pattern>>> evaluate(const std::string sourceCode, const std::vector<std::shared_ptr<ast::ASTNode>> &ast);
+        [[nodiscard]] bool evaluate(const std::string &sourceCode, const std::vector<std::shared_ptr<ast::ASTNode>> &ast);
+
+        [[nodiscard]] const auto &getPatterns() const {
+            return this->m_patterns;
+        }
 
         [[nodiscard]] LogConsole &getConsole() {
             return this->m_console;
@@ -323,6 +327,8 @@ namespace pl::core {
         std::atomic<DangerousFunctionPermission> m_allowDangerousFunctions = DangerousFunctionPermission::Ask;
         ControlFlowStatement m_currControlFlowStatement = ControlFlowStatement::None;
         BitfieldOrder m_bitfieldOrder = BitfieldOrder::RightToLeft;
+
+        std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;
 
         u64 m_dataBaseAddress = 0x00;
         u64 m_dataSize = 0x00;

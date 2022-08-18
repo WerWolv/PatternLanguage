@@ -80,18 +80,21 @@ namespace pl::core::ast {
         }
 
         FunctionResult execute(Evaluator *evaluator) const override {
+            if (this->m_size == nullptr)
+                err::E0004.throwError("Function arrays cannot be unsized.", {}, this);
+
             auto sizeNode = this->m_size->evaluate(evaluator);
             auto sizeLiteral = dynamic_cast<ASTNodeLiteral*>(sizeNode.get());
+            if (sizeLiteral == nullptr)
+                err::E0004.throwError("Function arrays require a fixed size.", {}, this);
 
-            if (sizeLiteral != nullptr) {
-                auto entryCount = std::visit(hlp::overloaded {
-                    [this](const std::string &) -> i128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
-                    [this](ptrn::Pattern *pattern) -> i128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
-                    [](auto &&size) -> i128 { return size; }
-                }, sizeLiteral->getValue());
+            auto entryCount = std::visit(hlp::overloaded {
+                [this](const std::string &) -> i128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
+                [this](ptrn::Pattern *pattern) -> i128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
+                [](auto &&size) -> i128 { return size; }
+            }, sizeLiteral->getValue());
 
-                evaluator->createArrayVariable(this->m_name, this->m_type.get(), entryCount);
-            }
+            evaluator->createArrayVariable(this->m_name, this->m_type.get(), entryCount);
 
             return std::nullopt;
         }

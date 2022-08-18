@@ -277,13 +277,14 @@ namespace pl::core {
         this->m_scopes.pop_back();
     }
 
-    std::optional<std::vector<std::shared_ptr<ptrn::Pattern>>> Evaluator::evaluate(const std::string sourceCode, const std::vector<std::shared_ptr<ast::ASTNode>> &ast) {
+    bool Evaluator::evaluate(const std::string &sourceCode, const std::vector<std::shared_ptr<ast::ASTNode>> &ast) {
         this->m_stack.clear();
         this->m_customFunctions.clear();
         this->m_scopes.clear();
         this->m_mainResult.reset();
         this->m_aborted = false;
         this->m_colorIndex = 0;
+        this->m_patterns.clear();
 
         if (this->m_allowDangerousFunctions == DangerousFunctionPermission::Deny)
             this->m_allowDangerousFunctions = DangerousFunctionPermission::Ask;
@@ -297,11 +298,9 @@ namespace pl::core {
 
         this->m_customFunctionDefinitions.clear();
 
-        std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
-
         try {
             this->setCurrentControlFlowStatement(ControlFlowStatement::None);
-            pushScope(nullptr, patterns);
+            pushScope(nullptr, this->m_patterns);
 
             for (auto &node : ast) {
                 if (dynamic_cast<ast::ASTNodeTypeDecl *>(node.get())) {
@@ -321,12 +320,12 @@ namespace pl::core {
                             if (varDeclNode->isInVariable() && this->m_inVariables.contains(name))
                                 this->setVariable(name, this->m_inVariables[name]);
                         } else {
-                            patterns.push_back(std::move(pattern));
+                            this->m_patterns.push_back(std::move(pattern));
                         }
                     }
                 } else {
                     auto newPatterns = node->createPatterns(this);
-                    std::move(newPatterns.begin(), newPatterns.end(), std::back_inserter(patterns));
+                    std::move(newPatterns.begin(), newPatterns.end(), std::back_inserter(this->m_patterns));
                 }
             }
 
@@ -347,19 +346,19 @@ namespace pl::core {
 
             this->getConsole().setHardError(err::PatternLanguageError(e.format(sourceCode, line, column), line, column));
 
-            patterns.clear();
+            this->m_patterns.clear();
 
             this->m_currPatternCount = 0;
 
-            return std::nullopt;
+            return false;
         }
 
         // Remove global local variables
-        std::erase_if(patterns, [](const std::shared_ptr<ptrn::Pattern> &pattern) {
+        std::erase_if(this->m_patterns, [](const std::shared_ptr<ptrn::Pattern> &pattern) {
             return pattern->isLocal();
         });
 
-        return patterns;
+        return true;
     }
 
     void Evaluator::patternCreated() {

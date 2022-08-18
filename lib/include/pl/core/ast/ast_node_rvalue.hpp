@@ -152,7 +152,7 @@ namespace pl::core::ast {
 
 
             if (!evaluator->isGlobalScope()) {
-                auto globalScope = evaluator->getGlobalScope().scope;
+                const auto &globalScope = evaluator->getGlobalScope().scope;
                 std::copy(globalScope->begin(), globalScope->end(), std::back_inserter(searchScope));
             }
 

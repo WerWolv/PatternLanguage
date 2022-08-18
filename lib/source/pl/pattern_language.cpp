@@ -25,7 +25,6 @@ namespace pl {
 
     PatternLanguage::~PatternLanguage() {
         this->m_flattenedPatterns.clear();
-        this->m_patterns.clear();
         this->m_currAST.clear();
 
         delete this->m_internals.preprocessor;
@@ -39,7 +38,6 @@ namespace pl {
         this->m_internals = other.m_internals;
         this->m_currError = std::move(other.m_currError);
         this->m_currAST = std::move(other.m_currAST);
-        this->m_patterns = std::move(other.m_patterns);
         this->m_flattenedPatterns = other.m_flattenedPatterns;
         this->m_running = other.m_running;
 
@@ -106,8 +104,7 @@ namespace pl {
         }
 
 
-        auto patterns = this->m_internals.evaluator->evaluate(code, this->m_currAST);
-        if (!patterns.has_value()) {
+        if (!this->m_internals.evaluator->evaluate(code, this->m_currAST)) {
             this->m_currError = this->m_internals.evaluator->getConsole().getLastHardError();
             return false;
         }
@@ -122,7 +119,6 @@ namespace pl {
             }
         }
 
-        this->m_patterns = std::move(patterns.value());
         this->m_flattenedPatterns.clear();
 
         return true;
@@ -201,9 +197,12 @@ namespace pl {
         return this->m_internals.evaluator->getPatternLimit();
     }
 
+    [[nodiscard]] const std::vector<std::shared_ptr<ptrn::Pattern>> &PatternLanguage::getPatterns() const {
+        return this->m_internals.evaluator->getPatterns();
+    }
+
 
     void PatternLanguage::reset() {
-        this->m_patterns.clear();
         this->m_flattenedPatterns.clear();
 
         this->m_currAST.clear();
@@ -240,7 +239,7 @@ namespace pl {
         using Interval = decltype(this->m_flattenedPatterns)::interval;
         std::vector<Interval> intervals;
 
-        for (const auto &pattern : this->m_patterns) {
+        for (const auto &pattern : this->getPatterns()) {
             auto children = pattern->getChildren();
 
             for (const auto &[address, child]: children) {
