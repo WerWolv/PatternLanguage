@@ -134,7 +134,7 @@ namespace pl::core::ast {
                 literal = pattern;
             }
 
-            if (auto transformFunc = pattern->getTransformFunction(); transformFunc.has_value()) {
+            if (auto& transformFunc = pattern->getTransformFunction(); transformFunc != nullptr) {
                 auto result = transformFunc->func(evaluator, { std::move(literal) });
 
                 if (!result.has_value())

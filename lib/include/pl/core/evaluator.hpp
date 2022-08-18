@@ -289,6 +289,11 @@ namespace pl::core {
             return this->m_mainResult;
         }
 
+        void setCurrentArrayIndex(u64 index) { this->m_currArrayIndex = index; }
+        void clearCurrentArrayIndex() { this->m_currArrayIndex = std::nullopt; }
+        [[nodiscard]] std::optional<u64> getCurrentArrayIndex() const { return this->m_currArrayIndex; }
+
+
     private:
         void patternCreated();
         void patternDestroyed();
@@ -335,6 +340,8 @@ namespace pl::core {
         std::function<void(u64, u8*, size_t)> m_readerFunction = [](u64, u8*, size_t){
             err::E0011.throwError("No memory has been attached. Reading is disabled.");
         };
+
+        std::optional<u64> m_currArrayIndex;
 
         u32 getNextPatternColor() {
             constexpr static std::array Palette = { 0x70B4771F, 0x700E7FFF, 0x702CA02C, 0x702827D6, 0x70BD6794, 0x704B568C, 0x70C277E3, 0x707F7F7F, 0x7022BDBC, 0x70CFBE17 };

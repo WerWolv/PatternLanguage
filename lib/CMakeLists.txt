@@ -29,6 +29,7 @@ add_library(libpl ${LIBRARY_TYPE}
         source/pl/lib/std/string.cpp
         source/pl/lib/std/file.cpp
         source/pl/lib/std/time.cpp
+        source/pl/lib/std/core.cpp
 )
 
 target_compile_options(libpl PRIVATE -Wall -Wextra -Werror)

@@ -67,7 +67,32 @@ namespace pl::ptrn {
             }
         }
 
-        Pattern(const Pattern &other) = default;
+        Pattern(const Pattern &other) : PatternCreationLimiter(other) {
+            this->m_offset = other.m_offset;
+            this->m_endian = other.m_endian;
+            this->m_memoryType = other.m_memoryType;
+            this->m_variableName = other.m_variableName;
+            this->m_size = other.m_size;
+            this->m_color = other.m_color;
+            this->m_cachedDisplayValue = other.m_cachedDisplayValue;
+            this->m_hidden = other.m_hidden;
+            this->m_typeName = other.m_typeName;
+            this->m_heapAddressValid = other.m_heapAddressValid;
+            this->m_manualColor = other.m_manualColor;
+            this->m_sealed = other.m_sealed;
+
+            if (other.m_comment != nullptr)
+                this->m_comment = std::make_unique<std::string>(*other.m_comment);
+            if (other.m_displayName != nullptr)
+                this->m_displayName = std::make_unique<std::string>(*other.m_displayName);
+            if (other.m_attributes != nullptr)
+                this->m_attributes = std::make_unique<std::map<std::string, std::string>>(*other.m_attributes);
+
+            if (other.m_formatterFunction != nullptr)
+                this->m_formatterFunction = std::make_unique<api::Function>(*other.m_formatterFunction);
+            if (other.m_transformFunction != nullptr)
+                this->m_transformFunction = std::make_unique<api::Function>(*other.m_transformFunction);
+        }
 
         ~Pattern() override = default;
 
@@ -85,8 +110,8 @@ namespace pl::ptrn {
         [[nodiscard]] const std::string &getVariableName() const { return this->m_variableName; }
         void setVariableName(std::string name) { this->m_variableName = std::move(name); }
 
-        [[nodiscard]] const std::optional<std::string> &getComment() const { return this->m_comment; }
-        void setComment(std::string comment) { this->m_comment = std::move(comment); }
+        [[nodiscard]] const auto& getComment() const { return this->m_comment; }
+        void setComment(std::string comment) { this->m_comment = std::make_unique<std::string>(std::move(comment)); }
 
         [[nodiscard]] virtual std::string getTypeName() const { return this->m_typeName; }
         void setTypeName(std::string name) { this->m_typeName = std::move(name); }
@@ -111,13 +136,13 @@ namespace pl::ptrn {
         virtual void setEndian(std::endian endian) { this->m_endian = endian; }
         [[nodiscard]] bool hasOverriddenEndian() const { return this->m_endian.has_value(); }
 
-        [[nodiscard]] std::string getDisplayName() const { return this->m_displayName.value_or(this->m_variableName); }
-        void setDisplayName(const std::string &name) { this->m_displayName = name; }
+        [[nodiscard]] std::string getDisplayName() const { return this->m_displayName == nullptr ? this->m_variableName : *this->m_displayName; }
+        void setDisplayName(const std::string &name) { this->m_displayName = std::make_unique<std::string>(name); }
 
         [[nodiscard]] const auto &getTransformFunction() const { return this->m_transformFunction; }
-        void setTransformFunction(const api::Function &function) { this->m_transformFunction = function; }
+        void setTransformFunction(const api::Function &function) { this->m_transformFunction = std::make_unique<api::Function>(function); }
         [[nodiscard]] const auto &getFormatterFunction() const { return this->m_formatterFunction; }
-        void setFormatterFunction(const api::Function &function) { this->m_formatterFunction = function; }
+        void setFormatterFunction(const api::Function &function) { this->m_formatterFunction = std::make_unique<api::Function>(function); }
 
         [[nodiscard]] virtual std::string getFormattedName() const = 0;
         [[nodiscard]] virtual std::string getFormattedValue() = 0;
@@ -184,7 +209,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::string calcDisplayValue(const std::string &value, const core::Token::Literal &literal) const {
-            if (!this->m_formatterFunction.has_value())
+            if (this->m_formatterFunction == nullptr)
                 return value;
             else {
                 try {
@@ -224,6 +249,17 @@ namespace pl::ptrn {
 
         virtual void accept(PatternVisitor &v) = 0;
 
+        void addAttribute(const std::string &attribute, const std::string &value) {
+            if (this->m_attributes == nullptr)
+                this->m_attributes = std::make_unique<std::map<std::string, std::string>>();
+
+            this->m_attributes->emplace(attribute, value);
+        }
+
+        const auto &getAttributes() const {
+            return this->m_attributes;
+        }
+
     protected:
         std::optional<std::endian> m_endian;
         bool m_hidden = false;
@@ -236,14 +272,15 @@ namespace pl::ptrn {
         size_t m_size = 0x00;
 
         u32 m_color = 0x00;
-        std::optional<std::string> m_displayName;
+        std::unique_ptr<std::string> m_displayName;
         mutable std::optional<std::string> m_cachedDisplayValue;
         std::string m_variableName;
-        std::optional<std::string> m_comment;
+        std::unique_ptr<std::string> m_comment;
         std::string m_typeName;
+        std::unique_ptr<std::map<std::string, std::string>> m_attributes;
 
-        std::optional<api::Function> m_formatterFunction;
-        std::optional<api::Function> m_transformFunction;
+        std::unique_ptr<api::Function> m_formatterFunction;
+        std::unique_ptr<api::Function> m_transformFunction;
 
         PatternMemoryType m_memoryType = PatternMemoryType::Provider;
         bool m_heapAddressValid = false;

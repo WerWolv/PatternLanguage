@@ -56,6 +56,8 @@ namespace pl::core::ast {
 
             auto type = this->m_type->evaluate(evaluator);
 
+            PL_ON_SCOPE_EXIT { evaluator->clearCurrentArrayIndex(); };
+
             std::unique_ptr<ptrn::Pattern> pattern;
             if (dynamic_cast<ASTNodeBuiltinType *>(type.get()))
                 pattern = createStaticArray(evaluator);
@@ -232,6 +234,8 @@ namespace pl::core::ast {
                     for (u64 i = 0; i < entryCount; i++) {
                         evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
 
+                        evaluator->setCurrentArrayIndex(i);
+
                         auto patterns = this->m_type->createPatterns(evaluator);
                         size_t patternCount = patterns.size();
 
@@ -256,6 +260,8 @@ namespace pl::core::ast {
                         auto limit = evaluator->getArrayLimit();
                         if (entryIndex > limit)
                             err::E0007.throwError(fmt::format("Array grew past set limit of {}", limit), "If this is intended, try increasing the limit using '#pragma array_limit <new_limit>'.", this);
+
+                        evaluator->setCurrentArrayIndex(entryIndex);
 
                         evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
 
@@ -285,6 +291,8 @@ namespace pl::core::ast {
                     auto limit      = evaluator->getArrayLimit();
                     if (entryIndex > limit)
                         err::E0007.throwError(fmt::format("Array grew past set limit of {}", limit), "If this is intended, try increasing the limit using '#pragma array_limit <new_limit>'.", this);
+
+                    evaluator->setCurrentArrayIndex(entryIndex);
 
                     evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
 

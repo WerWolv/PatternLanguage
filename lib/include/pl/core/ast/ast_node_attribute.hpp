@@ -187,6 +187,9 @@ namespace pl::core::ast {
                 pattern->setColor(pattern->getColor());
             }
         }
+
+        for (const auto &attribute : attributable->getAttributes())
+            pattern->addAttribute(attribute->getAttribute(), attribute->getValue().value_or(""));
     }
 
     inline void applyVariableAttributes(Evaluator *evaluator, const ASTNode *node, ptrn::Pattern *pattern) {

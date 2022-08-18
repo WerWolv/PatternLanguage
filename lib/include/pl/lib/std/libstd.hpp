@@ -14,6 +14,7 @@ namespace pl::lib::libstd {
     namespace string    { void registerFunctions(pl::PatternLanguage &runtime); }
     namespace file      { void registerFunctions(pl::PatternLanguage &runtime); }
     namespace time      { void registerFunctions(pl::PatternLanguage &runtime); }
+    namespace core      { void registerFunctions(pl::PatternLanguage &runtime); }
 
     void registerFunctions(pl::PatternLanguage &runtime) {
         registerPragmas(runtime);
@@ -24,6 +25,7 @@ namespace pl::lib::libstd {
         string::registerFunctions(runtime);
         file::registerFunctions(runtime);
         time::registerFunctions(runtime);
+        core::registerFunctions(runtime);
     }
 
 }

@@ -176,6 +176,14 @@ namespace pl::core {
             return static_cast<u32>(type) >> 4;
         }
 
+        static ptrn::Pattern* literalToPattern(const core::Token::Literal &literal) {
+            return std::visit(hlp::overloaded {
+                    [&](ptrn::Pattern *result) -> ptrn::Pattern* { return result; },
+                    [&](const std::string &) -> ptrn::Pattern* { err::E0004.throwError("Cannot cast value to type 'pattern'."); },
+                    [](auto &&) ->  ptrn::Pattern* { err::E0004.throwError("Cannot cast value to type 'pattern'."); }
+            }, literal);
+        }
+
         static u128 literalToUnsigned(const core::Token::Literal &literal) {
             return std::visit(hlp::overloaded {
                     [&](ptrn::Pattern *) -> u128 { err::E0004.throwError("Cannot cast value to type 'integer'."); },
