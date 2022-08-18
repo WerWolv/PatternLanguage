@@ -21,6 +21,7 @@ set(AVAILABLE_TESTS
         Pointers
         Arrays
         NestedStructs
+        Attributes
 )
 
 

@@ -54,15 +54,26 @@ int runTests(int argc, char **argv) {
         return std::nullopt;
     });
 
+    auto &test = testPatterns[testName];
+
+    auto result = runtime.executeString(test->getSourceCode());
+
+    // Print console log
+    for (auto &[level, message] : runtime.getConsoleLog())
+        fmt::print("{}\n", message);
+
     // Check if compilation succeeded
-    auto result = runtime.executeString(testPatterns[testName]->getSourceCode());
     if (!result) {
         fmt::print("Error during compilation!\n");
 
         if (auto error = runtime.getError(); error.has_value())
             fmt::print("Compile error: {}:{} : {}\n", error->line, error->column, error->message);
-        for (auto &[level, message] : runtime.getConsoleLog())
-            fmt::print("Evaluate error: {}\n", message);
+
+        return failing ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
+
+    if (!test->runChecks(runtime.getPatterns())) {
+        fmt::print("Post-run checks failed!\n");
 
         return failing ? EXIT_SUCCESS : EXIT_FAILURE;
     }

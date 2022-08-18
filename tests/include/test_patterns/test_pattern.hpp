@@ -41,18 +41,18 @@ namespace pl::test {
             this->m_patterns.push_back(std::move(pattern));
         }
 
-        [[nodiscard]] auto failing() {
-            this->m_mode = Mode::Failing;
-
-            return this;
-        }
-
         [[nodiscard]] Mode getMode() {
             return this->m_mode;
         }
 
         [[nodiscard]] static auto &getTests() {
             return TestPattern::s_tests;
+        }
+
+        [[nodiscard]] virtual bool runChecks(const std::vector<std::shared_ptr<ptrn::Pattern>> &patterns) const {
+            pl::hlp::unused(patterns);
+
+            return true;
         }
 
     private:
