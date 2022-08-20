@@ -16,7 +16,7 @@ namespace pl::lib::libstd {
     namespace time      { void registerFunctions(pl::PatternLanguage &runtime); }
     namespace core      { void registerFunctions(pl::PatternLanguage &runtime); }
 
-    void registerFunctions(pl::PatternLanguage &runtime) {
+    inline void registerFunctions(pl::PatternLanguage &runtime) {
         registerPragmas(runtime);
 
         libstd::registerFunctions(runtime);
