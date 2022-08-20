@@ -216,15 +216,12 @@ namespace pl::ptrn {
                     auto result = this->m_formatterFunction->func(this->getEvaluator(), { literal });
 
                     if (result.has_value()) {
-                        if (auto displayValue = std::get_if<std::string>(&result.value()); displayValue != nullptr)
-                            return *displayValue;
-                        else
-                            return "???";
+                        return core::Token::literalToString(*result, true);
                     } else {
-                        return "???";
+                        return "";
                     }
                 } catch (core::err::EvaluatorError::Exception &error) {
-                    return "Error: "s + error.what();
+                    return error.what();
                 }
             }
         }
