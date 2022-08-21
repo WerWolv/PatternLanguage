@@ -1,5 +1,6 @@
 #include <pl.hpp>
 
+#include <pl/core/validator.hpp>
 #include <pl/core/evaluator.hpp>
 
 namespace pl::lib::libstd {
@@ -26,6 +27,7 @@ namespace pl::lib::libstd {
                 return false;
 
             runtime.getInternals().evaluator->setEvaluationDepth(limit);
+            runtime.getInternals().validator->setRecursionDepth(limit);
             return true;
         });
 

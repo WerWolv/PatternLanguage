@@ -14,5 +14,6 @@ namespace pl::core::err {
 
     const static inline ValidatorError V0001(1, "Invalid parser result");
     const static inline ValidatorError V0002(2, "Statement redefinition");
+    const static inline ValidatorError V0003(3, "Recursion error");
 
 }

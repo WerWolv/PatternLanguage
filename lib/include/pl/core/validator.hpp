@@ -21,8 +21,17 @@ namespace pl::core {
 
         const std::optional<err::PatternLanguageError> &getError() { return this->m_error; }
 
+        void setRecursionDepth(u32 limit) {
+            this->m_maxRecursionDepth = limit;
+        }
+
     private:
         std::optional<err::PatternLanguageError> m_error;
+
+        u32 m_maxRecursionDepth = 32;
+        u32 m_recursionDepth = 0;
+
+        ast::ASTNode *m_lastNode = nullptr;
     };
 
 }
