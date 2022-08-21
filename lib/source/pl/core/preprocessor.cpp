@@ -24,9 +24,10 @@ namespace pl::core {
         }
 
         std::string output;
-        output.reserve(code.length());
+        output.reserve(code.size());
 
         try {
+            bool startOfLine = true;
             while (offset < code.length()) {
                 if (code.substr(offset, 2) == "//") {
                     while (code[offset] != '\n' && offset < code.length())
@@ -37,6 +38,7 @@ namespace pl::core {
                         if (code[offset] == '\n') {
                             output += '\n';
                             lineNumber++;
+                            startOfLine = true;
                         }
 
                         offset += 1;
@@ -44,20 +46,9 @@ namespace pl::core {
 
                     offset += 2;
                     if (offset >= code.length())
-                        err::M0001.throwError("Expected closing */ sequence.", {}, commentStartLine);
-                } else {
-                    output += code[offset];
-                    offset++;
+                        err::M0001.throwError("Unterminated multiline comment. Expected closing */ sequence.", {}, commentStartLine);
                 }
-            }
 
-            offset = 0;
-            code = output;
-            output.clear();
-            output.reserve(code.size());
-
-            bool startOfLine = true;
-            while (offset < code.length()) {
                 if (offset > 0 && code[offset - 1] != '\\' && code[offset] == '\"')
                     isInString = !isInString;
                 else if (isInString) {
