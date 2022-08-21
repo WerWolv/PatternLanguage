@@ -123,8 +123,8 @@ namespace pl::core {
         std::shared_ptr<ast::ASTNodeTypeDecl> parseUsingDeclaration();
         std::unique_ptr<ast::ASTNode> parsePadding();
         std::unique_ptr<ast::ASTNodeTypeDecl> parsePointerSizeType();
-        std::unique_ptr<ast::ASTNode> parseMemberVariable(const std::shared_ptr<ast::ASTNodeTypeDecl> &type);
-        std::unique_ptr<ast::ASTNode> parseMemberArrayVariable(const std::shared_ptr<ast::ASTNodeTypeDecl> &type);
+        std::unique_ptr<ast::ASTNode> parseMemberVariable(const std::shared_ptr<ast::ASTNodeTypeDecl> &type, bool allowPlacement);
+        std::unique_ptr<ast::ASTNode> parseMemberArrayVariable(const std::shared_ptr<ast::ASTNodeTypeDecl> &type, bool allowPlacement);
         std::unique_ptr<ast::ASTNode> parseMemberPointerVariable(const std::shared_ptr<ast::ASTNodeTypeDecl> &type);
         std::unique_ptr<ast::ASTNode> parseMemberPointerArrayVariable(const std::shared_ptr<ast::ASTNodeTypeDecl> &type);
         std::unique_ptr<ast::ASTNode> parseMember();
