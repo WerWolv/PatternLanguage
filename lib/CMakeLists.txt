@@ -111,7 +111,7 @@ target_precompile_headers(libpl PRIVATE
         include/pl/patterns/pattern_wide_string.hpp
 )
 
-target_compile_options(libpl PRIVATE -Wall -Wextra -Werror)
+target_compile_options(libpl PRIVATE -Wall -Wextra -Werror -Wno-unknown-pragmas)
 target_include_directories(libpl PUBLIC include)
 target_link_libraries(libpl PUBLIC fmt::fmt intervaltree)
 set_property(TARGET libpl PROPERTY POSITION_INDEPENDENT_CODE ON)
