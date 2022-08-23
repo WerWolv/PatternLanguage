@@ -46,7 +46,6 @@ namespace pl::core::ast {
             FunctionResult result;
 
             auto variables         = *evaluator->getScope(0).scope;
-            u32 startVariableCount = variables.size();
 
             if (this->m_newScope) {
                 evaluator->pushScope(nullptr, variables);
