@@ -22,12 +22,6 @@ namespace pl::ptrn {
         bool m_inlined = false;
     };
 
-    enum class PatternMemoryType : u8 {
-        Provider,
-        Stack,
-        Heap
-    };
-
     class PatternCreationLimiter {
     public:
         explicit PatternCreationLimiter(core::Evaluator *evaluator) : m_evaluator(evaluator) {
@@ -70,14 +64,13 @@ namespace pl::ptrn {
         Pattern(const Pattern &other) : PatternCreationLimiter(other) {
             this->m_offset = other.m_offset;
             this->m_endian = other.m_endian;
-            this->m_memoryType = other.m_memoryType;
+            this->m_local = other.m_local;
             this->m_variableName = other.m_variableName;
             this->m_size = other.m_size;
             this->m_color = other.m_color;
             this->m_cachedDisplayValue = other.m_cachedDisplayValue;
             this->m_hidden = other.m_hidden;
             this->m_typeName = other.m_typeName;
-            this->m_heapAddressValid = other.m_heapAddressValid;
             this->m_manualColor = other.m_manualColor;
             this->m_sealed = other.m_sealed;
 
@@ -99,9 +92,6 @@ namespace pl::ptrn {
         [[nodiscard]] u64 getOffset() const { return this->m_offset; }
         virtual void setOffset(u64 offset) {
             this->m_offset = offset;
-
-            if (this->m_memoryType == PatternMemoryType::Heap)
-                this->m_heapAddressValid = true;
         }
 
         [[nodiscard]] size_t getSize() const { return this->m_size; }
@@ -171,21 +161,12 @@ namespace pl::ptrn {
             return this->m_sealed;
         }
 
-        virtual void setMemoryLocationType(PatternMemoryType type) {
-            this->m_memoryType = type;
-            this->m_heapAddressValid = false;
-        }
-
-        [[nodiscard]] bool isHeapAddressValid() const {
-            return this->m_heapAddressValid;
+        virtual void setLocal(bool local) {
+            this->m_local = local;
         }
 
         [[nodiscard]] bool isLocal() const {
-            return this->m_memoryType != PatternMemoryType::Provider;
-        }
-
-        [[nodiscard]] PatternMemoryType getMemoryLocationType() const {
-            return this->m_memoryType;
+            return this->m_local;
         }
 
         virtual void sort(const std::function<bool(const Pattern *left, const Pattern *right)> &comparator) {
@@ -205,7 +186,7 @@ namespace pl::ptrn {
                    this->m_variableName == other.m_variableName &&
                    this->m_typeName == other.m_typeName &&
                    this->m_comment == other.m_comment &&
-                   this->m_memoryType == other.m_memoryType;
+                   this->m_local == other.m_local;
         }
 
         [[nodiscard]] std::string calcDisplayValue(const std::string &value, const core::Token::Literal &literal) const {
@@ -279,8 +260,7 @@ namespace pl::ptrn {
         std::unique_ptr<api::Function> m_formatterFunction;
         std::unique_ptr<api::Function> m_transformFunction;
 
-        PatternMemoryType m_memoryType = PatternMemoryType::Provider;
-        bool m_heapAddressValid = false;
+        bool m_local = false;
 
         bool m_manualColor = false;
     };

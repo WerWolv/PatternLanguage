@@ -24,23 +24,20 @@ namespace pl::core {
 
     namespace ast { class ASTNode; }
 
-    enum class DangerousFunctionPermission
-    {
+    enum class DangerousFunctionPermission {
         Ask,
         Deny,
         Allow
     };
 
-    enum class ControlFlowStatement
-    {
+    enum class ControlFlowStatement {
         None,
         Continue,
         Break,
         Return
     };
 
-    enum class BitfieldOrder
-    {
+    enum class BitfieldOrder {
         RightToLeft,
         LeftToRight
     };
@@ -106,9 +103,10 @@ namespace pl::core {
         [[nodiscard]] std::map<std::string, Token::Literal> getOutVariables() const {
             std::map<std::string, Token::Literal> result;
 
-            for (const auto &[name, offset] : this->m_outVariables) {
-                result.insert({ name, this->getStack()[offset] });
-            }
+            // TODO: REIMPLEMENT OUT VARIABLES
+            //for (const auto &[name, offset] : this->m_outVariables) {
+            //    result.insert({ name, this->getStack()[offset] });
+            //}
 
             return result;
         }
@@ -217,19 +215,11 @@ namespace pl::core {
             return this->m_customFunctions;
         }
 
-        [[nodiscard]] std::vector<Token::Literal> &getStack() {
-            return this->m_stack;
-        }
-
-        [[nodiscard]] const std::vector<Token::Literal> &getStack() const {
-            return this->m_stack;
-        }
-
-        [[nodiscard]] std::vector<u8> &getHeap() {
+        [[nodiscard]] std::vector<std::vector<u8>> &getHeap() {
             return this->m_heap;
         }
 
-        [[nodiscard]] const std::vector<u8> &getHeap() const {
+        [[nodiscard]] const std::vector<std::vector<u8>> &getHeap() const {
             return this->m_heap;
         }
 
@@ -238,7 +228,6 @@ namespace pl::core {
         void createArrayVariable(const std::string &name, ast::ASTNode *type, size_t entryCount);
         void createVariable(const std::string &name, ast::ASTNode *type, const std::optional<Token::Literal> &value = std::nullopt, bool outVariable = false);
         void setVariable(const std::string &name, const Token::Literal &value);
-        void setVariable(ptrn::Pattern *pattern, const Token::Literal &value);
 
         void abort() {
             this->m_aborted = true;
@@ -319,14 +308,13 @@ namespace pl::core {
         std::map<std::string, api::Function> m_builtinFunctions;
         std::vector<std::unique_ptr<ast::ASTNode>> m_customFunctionDefinitions;
 
-        std::vector<Token::Literal> m_stack;
-        std::vector<u8> m_heap;
-
         std::optional<Token::Literal> m_mainResult;
 
         std::map<std::string, Token::Literal> m_envVariables;
         std::map<std::string, Token::Literal> m_inVariables;
         std::map<std::string, size_t> m_outVariables;
+
+        std::vector<std::vector<u8>> m_heap;
 
         std::function<bool()> m_dangerousFunctionCalledCallback = []{ return false; };
         std::atomic<DangerousFunctionPermission> m_allowDangerousFunctions = DangerousFunctionPermission::Ask;

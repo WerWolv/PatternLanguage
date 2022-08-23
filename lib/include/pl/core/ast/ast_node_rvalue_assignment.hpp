@@ -43,7 +43,7 @@ namespace pl::core::ast {
 
             auto &pattern = lhs.front();
 
-            evaluator->setVariable(pattern.get(), literal->getValue());
+            evaluator->setVariable(pattern->getVariableName(), literal->getValue());
 
             return {};
         }

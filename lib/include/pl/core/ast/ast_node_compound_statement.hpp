@@ -59,16 +59,6 @@ namespace pl::core::ast {
             }
 
             if (this->m_newScope) {
-                i64 stackSize = evaluator->getStack().size();
-                for (u32 i = startVariableCount; i < variables.size(); i++) {
-                    stackSize--;
-                }
-
-                if (stackSize < 0)
-                    err::E0001.throwError("Stack underflow.", {}, this);
-
-                evaluator->getStack().resize(stackSize);
-
                 evaluator->popScope();
             }
 

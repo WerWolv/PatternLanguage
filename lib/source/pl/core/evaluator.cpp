@@ -22,6 +22,8 @@
 #include <pl/patterns/pattern_bitfield.hpp>
 #include <pl/patterns/pattern_pointer.hpp>
 
+#include <concepts>
+
 namespace pl::core {
 
     void Evaluator::createParameterPack(const std::string &name, const std::vector<Token::Literal> &values) {
@@ -51,11 +53,11 @@ namespace pl::core {
 
         auto pattern = new ptrn::PatternArrayStatic(this, 0, typePattern->getSize() * entryCount);
         pattern->setEntries(std::move(typePattern), entryCount);
-        pattern->setMemoryLocationType(ptrn::PatternMemoryType::Heap);
+        pattern->setLocal(true);
 
         auto &heap = this->getHeap();
         pattern->setOffset(heap.size());
-        heap.resize(heap.size() + pattern->getSize());
+        heap.emplace_back();
 
         pattern->setVariableName(name);
 
@@ -74,7 +76,6 @@ namespace pl::core {
             }
         }
 
-        bool heapType = false;
         auto startOffset = this->dataOffset();
 
         std::unique_ptr<ptrn::Pattern> pattern;
@@ -99,38 +100,19 @@ namespace pl::core {
                 pattern = std::unique_ptr<ptrn::Pattern>(new ptrn::PatternCharacter(this, 0));
             else if (std::get_if<std::string>(&value.value()) != nullptr)
                 pattern = std::unique_ptr<ptrn::Pattern>(new ptrn::PatternString(this, 0, 1));
-            else if (auto patternValue = std::get_if<ptrn::Pattern *>(&value.value()); patternValue != nullptr) {
+            else if (auto patternValue = std::get_if<ptrn::Pattern *>(&value.value()); patternValue != nullptr)
                 pattern       = (*patternValue)->clone();
-                heapType = true;
-            } else
+            else
                 err::E0003.throwError("Cannot determine type of 'auto' variable.", "Try initializing it directly with a literal.", type);
         } else {
             pattern = std::move(typePattern.front());
-
-            if (dynamic_cast<ptrn::PatternStruct*>(pattern.get()) ||
-                dynamic_cast<ptrn::PatternUnion*>(pattern.get()) ||
-                dynamic_cast<ptrn::PatternArrayDynamic*>(pattern.get()) ||
-                dynamic_cast<ptrn::PatternArrayStatic*>(pattern.get()) ||
-                dynamic_cast<ptrn::PatternBitfield*>(pattern.get()) ||
-                dynamic_cast<ptrn::PatternPointer*>(pattern.get()))
-                heapType = true;
         }
 
         pattern->setVariableName(name);
 
-        if (!heapType) {
-            pattern->setOffset(this->getStack().size());
-            pattern->setMemoryLocationType(ptrn::PatternMemoryType::Stack);
-            this->getStack().emplace_back();
-        } else {
-            pattern->setMemoryLocationType(ptrn::PatternMemoryType::Heap);
-
-            auto &heap = this->getHeap();
-            if (!pattern->isHeapAddressValid()) {
-                pattern->setOffset(heap.size());
-                heap.resize(heap.size() + pattern->getSize());
-            }
-        }
+        pattern->setLocal(true);
+        pattern->setOffset(this->getHeap().size());
+        this->getHeap().emplace_back();
 
         if (outVariable)
             this->m_outVariables[name] = pattern->getOffset();
@@ -138,87 +120,59 @@ namespace pl::core {
         variables.push_back(std::move(pattern));
     }
 
-    void Evaluator::setVariable(ptrn::Pattern *pattern, const Token::Literal &value) {
-        Token::Literal castedLiteral = std::visit(hlp::overloaded {
-            [&](double &value) -> Token::Literal {
-                if (dynamic_cast<ptrn::PatternUnsigned *>(pattern))
-                    return u128(value) & hlp::bitmask(pattern->getSize() * 8);
-                else if (dynamic_cast<ptrn::PatternSigned *>(pattern))
-                    return i128(value) & hlp::bitmask(pattern->getSize() * 8);
-                else if (dynamic_cast<ptrn::PatternFloat *>(pattern))
-                    return pattern->getSize() == sizeof(float) ? double(float(value)) : value;
-                else
-                    err::E0004.throwError(fmt::format("Cannot cast value of type 'floating point' to type '{}'.", pattern->getTypeName()));
+    static Token::Literal castLiteral(const ptrn::Pattern *pattern, const Token::Literal &literal) {
+        auto truncateValue = []<typename T>(size_t bytes, const T &value) {
+            T result = { };
+            std::memcpy(&result, &value, std::min(sizeof(result), bytes));
+
+            return result;
+        };
+
+        return std::visit(hlp::overloaded {
+            [&](auto &value) -> Token::Literal {
+               if (dynamic_cast<const ptrn::PatternUnsigned*>(pattern))
+                   return truncateValue(pattern->getSize(), u128(value));
+               else if (dynamic_cast<const ptrn::PatternSigned*>(pattern))
+                   return truncateValue(pattern->getSize(), i128(value));
+               else if (dynamic_cast<const ptrn::PatternFloat*>(pattern)) {
+                   if (pattern->getSize() == sizeof(float))
+                       return double(float(value));
+                   else
+                       return double(value);
+               } else if (dynamic_cast<const ptrn::PatternBoolean*>(pattern))
+                   return value == 0 ? u128(0) : u128(1);
+               else if (dynamic_cast<const ptrn::PatternCharacter*>(pattern))
+                   return truncateValue(pattern->getSize(), u128(value));
+               else if (dynamic_cast<const ptrn::PatternWideCharacter*>(pattern))
+                   return truncateValue(pattern->getSize(), u128(value));
+               else if (dynamic_cast<const ptrn::PatternString*>(pattern))
+                   return pattern->toString();
+               else
+                   err::E0004.throwError(fmt::format("Cannot cast from type 'integer' to type '{}'.", pattern->getTypeName()));
             },
             [&](const std::string &value) -> Token::Literal {
-               if (dynamic_cast<ptrn::PatternString *>(pattern))
-                   return value;
-               else
-                   err::E0004.throwError(fmt::format("Cannot cast value of type 'string' to type '{}'.", pattern->getTypeName()));
+                if (dynamic_cast<const ptrn::PatternUnsigned*>(pattern)) {
+                    if (value.size() <= pattern->getSize()) {
+                        u128 result = 0;
+                        std::memcpy(&result, value.data(), value.size());
+                        return result;
+                    } else {
+                        err::E0004.throwError(fmt::format("String of size {} cannot be packed into integer of size {}", value.size(), pattern->getSize()));
+                    }
+                } else if (dynamic_cast<const ptrn::PatternBoolean*>(pattern))
+                    return !value.empty();
+                else if (dynamic_cast<const ptrn::PatternString*>(pattern))
+                    return value;
+                else
+                    err::E0004.throwError(fmt::format("Cannot cast from type 'string' to type '{}'.", pattern->getTypeName()));
             },
-            [&](ptrn::Pattern *value) -> Token::Literal {
-               if (value->getTypeName() == pattern->getTypeName())
-                   return value;
-               else
-                   err::E0004.throwError(fmt::format("Cannot cast value of type '{}' to type '{}'.", value->getTypeName(), pattern->getTypeName()));
-            },
-            [&](auto &&value) -> Token::Literal {
-                auto numBits = pattern->getSize() * 8;
-
-               if (dynamic_cast<ptrn::PatternUnsigned *>(pattern) || dynamic_cast<ptrn::PatternEnum *>(pattern))
-                   return u128(value) & hlp::bitmask(numBits);
-               else if (dynamic_cast<ptrn::PatternSigned *>(pattern))
-                   return hlp::signExtend(numBits, u128(value) & hlp::bitmask(numBits));
-               else if (dynamic_cast<ptrn::PatternCharacter *>(pattern))
-                   return char(value);
-               else if (dynamic_cast<ptrn::PatternBoolean *>(pattern))
-                   return bool(value);
-               else if (dynamic_cast<ptrn::PatternFloat *>(pattern))
-                   return pattern->getSize() == sizeof(float) ? double(float(value)) : value;
-               else
-                   err::E0004.throwError(fmt::format("Cannot cast value of type 'integer' to type '{}'.", pattern->getTypeName()));
+            [&](ptrn::Pattern * const value) -> Token::Literal {
+                if (value->getTypeName() == pattern->getTypeName())
+                    return value;
+                else
+                    err::E0004.throwError(fmt::format("Cannot cast from type '{}' to type '{}'.", value->getTypeName(), pattern->getTypeName()));
             }
-        }, value);
-
-        castedLiteral = std::visit(hlp::overloaded {
-           [](ptrn::Pattern *value) -> Token::Literal { return value; },
-           [](std::string &value) -> Token::Literal { return value; },
-           [&pattern](auto &&value) -> Token::Literal {
-               return hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
-           }
-        }, castedLiteral);
-
-        if (pattern->getMemoryLocationType() == ptrn::PatternMemoryType::Stack)
-            this->getStack()[pattern->getOffset()] = castedLiteral;
-        else if (pattern->getMemoryLocationType() == ptrn::PatternMemoryType::Heap) {
-            auto &heap = this->getHeap();
-            auto offset = pattern->getOffset();
-            if (!pattern->isHeapAddressValid()) {
-                pattern->setOffset(heap.size());
-                heap.resize(heap.size() + pattern->getSize());
-            }
-
-            if (offset > heap.size())
-                err::E0011.throwError(fmt::format("Cannot access out of bounds heap address 0x{:08X}.", offset));
-
-            std::visit(hlp::overloaded {
-                [this, &pattern, &heap](ptrn::Pattern *value) {
-                    if (pattern->getTypeName() != value->getTypeName())
-                        err::E0004.throwError(fmt::format("Cannot assign value of type {} to variable {} of type {}", value->getTypeName(), value->getVariableName(), pattern->getTypeName()));
-                    else if (pattern->getSize() != value->getSize())
-                        err::E0004.throwError(fmt::format("Cannot assign value of type {} to variable {} of type {} with a different size.", value->getTypeName(), value->getVariableName(), pattern->getTypeName()), "This can happen when using dynamically sized types as variable types.");
-
-                    if (value->getMemoryLocationType() == ptrn::PatternMemoryType::Provider)
-                        this->readData(value->getOffset(), &heap[pattern->getOffset()], pattern->getSize());
-                    else if (value->getMemoryLocationType() == ptrn::PatternMemoryType::Heap)
-                        std::memcpy(&heap[pattern->getOffset()], &heap[value->getOffset()], pattern->getSize());
-                },
-                [](std::string &) { err::E0001.throwError("Cannot place string variable on the heap."); },
-                [&pattern, &heap](auto &&value) {
-                    std::memcpy(&heap[pattern->getOffset()], &value, pattern->getSize());
-                }
-            }, castedLiteral);
-        }
+        }, literal);
     }
 
     void Evaluator::setVariable(const std::string &name, const Token::Literal &value) {
@@ -226,13 +180,13 @@ namespace pl::core {
         if (name == "_")
             return;
 
-        std::unique_ptr<ptrn::Pattern> pattern = nullptr;
+        ptrn::Pattern *pattern = nullptr;
 
         {
             auto &variables = *this->getScope(0).scope;
             for (auto &variable : variables) {
                 if (variable->getVariableName() == name) {
-                    pattern = variable->clone();
+                    pattern = variable.get();
                     break;
                 }
             }
@@ -245,7 +199,7 @@ namespace pl::core {
                     if (!variable->isLocal())
                         err::E0011.throwError(fmt::format("Cannot modify global variable '{}' as it has been placed in memory.", name));
 
-                    pattern = variable->clone();
+                    pattern = variable.get();
                     break;
                 }
             }
@@ -256,7 +210,45 @@ namespace pl::core {
 
         if (!pattern->isLocal()) return;
 
-        this->setVariable(pattern.get(), value);
+        // Cast values to type given by pattern
+        Token::Literal castedValue = castLiteral(pattern, value);
+
+        // Write value into variable storage
+        {
+            auto &storage = this->getHeap()[pattern->getOffset()];
+            std::visit(hlp::overloaded {
+                [&pattern, &storage](const auto &value) {
+                    auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
+
+                    storage.resize(pattern->getSize());
+                    std::memcpy(storage.data(), &adjustedValue, pattern->getSize());
+                },
+                [&pattern, &storage](const i128 &value) {
+                    auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
+                    adjustedValue = hlp::signExtend(pattern->getSize() * 6, adjustedValue);
+
+                    storage.resize(pattern->getSize());
+                    std::memcpy(storage.data(), &adjustedValue, pattern->getSize());
+                },
+                [&pattern, &storage](const std::string &value) {
+                    pattern->setSize(value.size());
+                    storage.resize(value.size());
+                    std::memcpy(storage.data(), value.data(), pattern->getSize());
+                },
+                [this, &pattern, &storage, &name](ptrn::Pattern * const value) {
+                    if (pattern->isLocal()) {
+                        storage.resize(value->getSize());
+
+                        if (value->isLocal())
+                            std::memcpy(storage.data(), this->getHeap()[value->getOffset()].data(), value->getSize());
+                        else
+                            this->readData(value->getOffset(), storage.data(), value->getSize());
+                    } else {
+                        err::E0003.throwError(fmt::format("Cannot modify variable '{}' as it's placed in memory.", name));
+                    }
+                }
+            }, castedValue);
+        }
     }
 
     void Evaluator::pushScope(ptrn::Pattern *parent, std::vector<std::shared_ptr<ptrn::Pattern>> &scope) {
@@ -278,7 +270,7 @@ namespace pl::core {
     }
 
     bool Evaluator::evaluate(const std::string &sourceCode, const std::vector<std::shared_ptr<ast::ASTNode>> &ast) {
-        this->m_stack.clear();
+        this->m_heap.clear();
         this->m_customFunctions.clear();
         this->m_scopes.clear();
         this->m_mainResult.reset();

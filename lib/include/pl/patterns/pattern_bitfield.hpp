@@ -135,11 +135,11 @@ namespace pl::ptrn {
             }
         }
 
-        void setMemoryLocationType(PatternMemoryType type) override {
+        void setLocal(bool local) override {
             for (auto &pattern : this->m_fields)
-                pattern->setMemoryLocationType(type);
+                pattern->setLocal(local);
 
-            Pattern::setMemoryLocationType(type);
+            Pattern::setLocal(local);
         }
 
         [[nodiscard]] std::string getFormattedName() const override {

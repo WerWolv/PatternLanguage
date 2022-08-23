@@ -54,11 +54,11 @@ namespace pl::ptrn {
             }
         }
 
-        void setMemoryLocationType(PatternMemoryType type) override {
+        void setLocal(bool local) override {
             for (auto &pattern : this->m_members)
-                pattern->setMemoryLocationType(type);
+                pattern->setLocal(local);
 
-            Pattern::setMemoryLocationType(type);
+            Pattern::setLocal(local);
         }
 
         void setColor(u32 color) override {

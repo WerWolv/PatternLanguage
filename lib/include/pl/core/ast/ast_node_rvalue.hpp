@@ -98,33 +98,7 @@ namespace pl::core::ast {
                 literal = value;
             } else if (dynamic_cast<ptrn::PatternString *>(pattern)) {
                 std::string value;
-
-                if (pattern->getMemoryLocationType() == ptrn::PatternMemoryType::Stack) {
-                    auto &variableValue = evaluator->getStack()[pattern->getOffset()];
-
-                    std::visit(hlp::overloaded {
-                           [&](char assignmentValue) { if (assignmentValue != 0x00) value = std::string({ assignmentValue }); },
-                           [&](std::string &assignmentValue) { value = assignmentValue; },
-                           [&, this](ptrn::Pattern *const &assignmentValue) {
-                               if (!dynamic_cast<ptrn::PatternString *>(assignmentValue) && !dynamic_cast<ptrn::PatternCharacter *>(assignmentValue))
-                                   err::E0004.throwError(fmt::format("Cannot assign value of type '{}' to variable of type 'string'.", pattern->getTypeName()), {}, this);
-
-                               readVariable(evaluator, value, assignmentValue);
-                           },
-                           [&, this](auto &&) {
-                               err::E0004.throwError(fmt::format("Cannot assign value of type '{}' to variable of type 'string'.", pattern->getTypeName()), {}, this);
-                           }
-                       }, variableValue);
-                } else if (pattern->getMemoryLocationType() == ptrn::PatternMemoryType::Provider) {
-                    value.resize(pattern->getSize());
-                    evaluator->readData(pattern->getOffset(), value.data(), value.size());
-                    value.erase(std::find(value.begin(), value.end(), '\0'), value.end());
-                } else if (pattern->getMemoryLocationType() == ptrn::PatternMemoryType::Heap) {
-                    value.resize(pattern->getSize());
-                    std::memcpy(value.data(), &evaluator->getHeap()[pattern->getOffset()], value.size());
-                    value.erase(std::find(value.begin(), value.end(), '\0'), value.end());
-                }
-
+                readVariable(evaluator, value, pattern);
                 literal = value;
             } else if (auto bitfieldFieldPattern = dynamic_cast<ptrn::PatternBitfieldField *>(pattern)) {
                 u64 value = 0;
@@ -176,9 +150,7 @@ namespace pl::core::ast {
                         searchScope     = *evaluator->getScope(scopeIndex).scope;
                         auto currParent = evaluator->getScope(scopeIndex).parent;
 
-                        if (currParent == nullptr) {
-                            currPattern = nullptr;
-                        } else {
+                        if (currParent != nullptr) {
                             currPattern = currParent->clone();
                         }
 
@@ -243,16 +215,7 @@ namespace pl::core::ast {
                     currPattern = pointerPattern->getPointedAtPattern()->clone();
                 }
 
-                ptrn::Pattern *indexPattern;
-                if (currPattern->getMemoryLocationType() == ptrn::PatternMemoryType::Stack) {
-                    auto stackLiteral = evaluator->getStack()[currPattern->getOffset()];
-                    if (auto stackPattern = std::get_if<ptrn::Pattern *>(&stackLiteral); stackPattern != nullptr)
-                        indexPattern = *stackPattern;
-                    else
-                        return hlp::moveToVector<std::unique_ptr<ptrn::Pattern>>(std::move(currPattern));
-                } else {
-                    indexPattern = currPattern.get();
-                }
+                ptrn::Pattern *indexPattern = currPattern.get();
 
                 if (auto structPattern = dynamic_cast<ptrn::PatternStruct *>(indexPattern))
                     searchScope = structPattern->getMembers();
@@ -278,28 +241,19 @@ namespace pl::core::ast {
         void readVariable(Evaluator *evaluator, auto &value, ptrn::Pattern *variablePattern) const {
             constexpr bool isString = std::same_as<std::remove_cvref_t<decltype(value)>, std::string>;
 
-            if (variablePattern->getMemoryLocationType() == ptrn::PatternMemoryType::Stack) {
-                auto &literal = evaluator->getStack()[variablePattern->getOffset()];
-
-                std::visit(hlp::overloaded {
-                    [&](std::string &assignmentValue) {
-                       if constexpr (isString) value = assignmentValue;
-                    },
-                    [&](ptrn::Pattern *assignmentValue) { readVariable(evaluator, value, assignmentValue); },
-                    [&](auto &&assignmentValue) { value = assignmentValue; }
-                }, literal);
-            } else if (variablePattern->getMemoryLocationType() == ptrn::PatternMemoryType::Heap) {
+            if (variablePattern->isLocal()) {
                 auto &heap = evaluator->getHeap();
                 auto offset = variablePattern->getOffset();
+
                 if constexpr (!isString) {
                     if (offset < heap.size())
-                        std::memcpy(&value, &heap[offset], variablePattern->getSize());
+                        std::memcpy(&value, heap[offset].data(), variablePattern->getSize());
                     else
                         value = 0;
                 } else {
                     if (offset < heap.size()) {
                         value.resize(variablePattern->getSize());
-                        std::memcpy(value.data(), &heap[offset], variablePattern->getSize());
+                        std::memcpy(value.data(), heap[offset].data(), variablePattern->getSize());
                     }
                     else {
                         value = "";

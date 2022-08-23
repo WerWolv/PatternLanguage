@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pl/core/ast/ast_node.hpp>
+#include <pl/core/ast/ast_node_literal.hpp>
 
 namespace pl::core::ast {
 
@@ -46,19 +47,6 @@ namespace pl::core::ast {
 
             auto variables     = *evaluator->getScope(0).scope;
             auto parameterPack = evaluator->getScope(0).parameterPack;
-
-            u32 startVariableCount = variables.size();
-            PL_ON_SCOPE_EXIT {
-                i64 stackSize = evaluator->getStack().size();
-                for (u32 i = startVariableCount; i < variables.size(); i++) {
-                    stackSize--;
-                }
-
-                if (stackSize < 0)
-                    err::E0001.throwError("Stack underflow.", {}, this);
-
-                evaluator->getStack().resize(stackSize);
-            };
 
             evaluator->pushScope(nullptr, variables);
             evaluator->getScope(0).parameterPack = parameterPack;

@@ -57,10 +57,10 @@ namespace pl::ptrn {
             return children;
         }
 
-        void setMemoryLocationType(PatternMemoryType type) override {
-            this->m_pointedAt->setMemoryLocationType(type);
+        void setLocal(bool local) override {
+            this->m_pointedAt->setLocal(local);
 
-            Pattern::setMemoryLocationType(type);
+            Pattern::setLocal(local);
         }
 
         void setPointedAtPattern(std::unique_ptr<Pattern> &&pattern) {

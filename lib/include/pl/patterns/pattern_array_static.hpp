@@ -51,14 +51,14 @@ namespace pl::ptrn {
             return result;
         }
 
-        void setMemoryLocationType(PatternMemoryType type) override {
+        void setLocal(bool local) override {
             if (this->m_template != nullptr)
-                this->m_template->setMemoryLocationType(type);
+                this->m_template->setLocal(local);
 
             if (this->m_highlightTemplate != nullptr)
-                this->m_highlightTemplate->setMemoryLocationType(type);
+                this->m_highlightTemplate->setLocal(local);
 
-            Pattern::setMemoryLocationType(type);
+            Pattern::setLocal(local);
         }
 
         void setColor(u32 color) override {
@@ -92,7 +92,7 @@ namespace pl::ptrn {
             this->m_highlightTemplate = this->m_template->clone();
             this->m_entryCount        = count;
 
-            this->m_template->setMemoryLocationType(this->getMemoryLocationType());
+            this->m_template->setLocal(this->isLocal());
 
             this->m_template->setBaseColor(this->getColor());
             this->m_highlightTemplate->setBaseColor(this->getColor());

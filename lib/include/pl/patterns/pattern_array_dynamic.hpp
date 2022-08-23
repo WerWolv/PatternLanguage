@@ -55,11 +55,11 @@ namespace pl::ptrn {
             return result;
         }
 
-        void setMemoryLocationType(PatternMemoryType type) override {
+        void setLocal(bool local) override {
             for (auto &pattern : this->m_entries)
-                pattern->setMemoryLocationType(type);
+                pattern->setLocal(local);
 
-            Pattern::setMemoryLocationType(type);
+            Pattern::setLocal(local);
         }
 
         [[nodiscard]] size_t getEntryCount() const {

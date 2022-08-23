@@ -1,6 +1,8 @@
 #pragma once
 
 #include <pl/core/ast/ast_node.hpp>
+#include <pl/core/ast/ast_node_literal.hpp>
+#include <pl/core/ast/ast_node_builtin_type.hpp>
 
 namespace pl::core::ast {
 
