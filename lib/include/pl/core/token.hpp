@@ -208,6 +208,14 @@ namespace pl::core {
             }, literal);
         }
 
+        static char literalToCharacter(const core::Token::Literal &literal) {
+            return std::visit(hlp::overloaded {
+                [&](ptrn::Pattern *) -> char { err::E0004.throwError("Cannot cast value to type 'char'."); },
+                [&](const std::string &) -> char { err::E0004.throwError("Cannot cast value to type 'char'."); },
+                [](auto &&result) -> char { return result; }
+            }, literal);
+        }
+
         static bool literalToBoolean(const core::Token::Literal &literal) {
             return std::visit(hlp::overloaded {
                 [](const std::string &) -> bool { err::E0004.throwError("Cannot cast value to type 'bool'."); },

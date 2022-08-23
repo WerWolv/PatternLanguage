@@ -29,9 +29,25 @@ namespace pl::core::ast {
             auto typePatterns = this->m_type->createPatterns(evaluator);
             auto &typePattern = typePatterns.front();
 
+            auto value = literal->getValue();
+
+            value = std::visit(hlp::overloaded {
+                [&](ptrn::Pattern *value) -> Token::Literal {
+                    if (Token::isInteger(type) && value->getSize() <= Token::getTypeSize(type)) {
+                        u128 result = 0;
+                        evaluator->readData(value->getOffset(), &result, value->getSize(), value->isLocal());
+
+                        return result;
+                    } else {
+                        return value;
+                    }
+                },
+                [](auto &value) -> Token::Literal { return value; }
+            }, value);
+
             return std::unique_ptr<ASTNode>(std::visit(hlp::overloaded {
                 [&, this](ptrn::Pattern *value) -> ASTNode * { err::E0004.throwError(fmt::format("Cannot cast value of type '{}' to type '{}'.", value->getTypeName(), Token::getTypeName(type)), {}, this); },
-                [&, this](const std::string &) -> ASTNode * { err::E0004.throwError(fmt::format("Cannot cast value of type 'str' to type '{}'.", Token::getTypeName(type)), {}, this); },
+                [&, this](std::string &) -> ASTNode * { err::E0004.throwError(fmt::format("Cannot cast value of type 'str' to type '{}'.", Token::getTypeName(type)), {}, this); },
                 [&, this](auto &&value) -> ASTNode * {
                    auto endianAdjustedValue = hlp::changeEndianess(value, typePattern->getSize(), typePattern->getEndian());
                    switch (type) {
@@ -81,7 +97,7 @@ namespace pl::core::ast {
                    }
                 },
             },
-            literal->getValue()));
+            value));
         }
 
     private:

@@ -4,27 +4,23 @@
 #include <pl/core/ast/ast_node.hpp>
 #include <pl/core/ast/ast_node_type_decl.hpp>
 #include <pl/core/ast/ast_node_variable_decl.hpp>
-#include <pl/core/ast/ast_node_function_call.hpp>
-#include <pl/core/ast/ast_node_function_definition.hpp>
 
 #include <pl/patterns/pattern_unsigned.hpp>
-#include <pl/patterns/pattern_signed.hpp>
-#include <pl/patterns/pattern_float.hpp>
-#include <pl/patterns/pattern_boolean.hpp>
-#include <pl/patterns/pattern_character.hpp>
-#include <pl/patterns/pattern_string.hpp>
-#include <pl/patterns/pattern_wide_string.hpp>
-#include <pl/patterns/pattern_enum.hpp>
-#include <pl/patterns/pattern_array_dynamic.hpp>
 #include <pl/patterns/pattern_array_static.hpp>
 #include <pl/patterns/pattern_struct.hpp>
 #include <pl/patterns/pattern_union.hpp>
-#include <pl/patterns/pattern_bitfield.hpp>
-#include <pl/patterns/pattern_pointer.hpp>
-
-#include <concepts>
 
 namespace pl::core {
+
+    std::map<std::string, Token::Literal> Evaluator::getOutVariables() const {
+        std::map<std::string, Token::Literal> result;
+
+        for (const auto &[name, pattern] : this->m_outVariables) {
+            result.insert({ name, pattern->getValue() });
+        }
+
+        return result;
+    }
 
     void Evaluator::createParameterPack(const std::string &name, const std::vector<Token::Literal> &values) {
         this->getScope(0).parameterPack = ParameterPack {
@@ -114,8 +110,12 @@ namespace pl::core {
         pattern->setOffset(this->getHeap().size());
         this->getHeap().emplace_back();
 
-        if (outVariable)
-            this->m_outVariables[name] = pattern->getOffset();
+        if (outVariable) {
+            if (this->isGlobalScope())
+                this->m_outVariables[name] = pattern->clone();
+            else
+                err::E0003.throwError("Out variables can only be declared in the global scope.", {}, type);
+        }
 
         variables.push_back(std::move(pattern));
     }
@@ -239,10 +239,7 @@ namespace pl::core {
                     if (pattern->isLocal()) {
                         storage.resize(value->getSize());
 
-                        if (value->isLocal())
-                            std::memcpy(storage.data(), this->getHeap()[value->getOffset()].data(), value->getSize());
-                        else
-                            this->readData(value->getOffset(), storage.data(), value->getSize());
+                        this->readData(value->getOffset(), storage.data(), value->getSize(), value->isLocal());
                     } else {
                         err::E0003.throwError(fmt::format("Cannot modify variable '{}' as it's placed in memory.", name));
                     }

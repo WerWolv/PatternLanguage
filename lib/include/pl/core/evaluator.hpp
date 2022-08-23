@@ -100,16 +100,7 @@ namespace pl::core {
             this->m_inVariables = inVariables;
         }
 
-        [[nodiscard]] std::map<std::string, Token::Literal> getOutVariables() const {
-            std::map<std::string, Token::Literal> result;
-
-            // TODO: REIMPLEMENT OUT VARIABLES
-            //for (const auto &[name, offset] : this->m_outVariables) {
-            //    result.insert({ name, this->getStack()[offset] });
-            //}
-
-            return result;
-        }
+        [[nodiscard]] std::map<std::string, Token::Literal> getOutVariables() const;
 
         void setDataSource(std::function<void(u64, u8*, size_t)> readerFunction, u64 baseAddress, size_t dataSize) {
             this->m_readerFunction = std::move(readerFunction);
@@ -133,8 +124,20 @@ namespace pl::core {
             return this->m_dataSize;
         }
 
-        void readData(u64 address, void *buffer, size_t size) const {
-            this->m_readerFunction(address, reinterpret_cast<u8*>(buffer), size);
+        void readData(u64 address, void *buffer, size_t size, bool local) const {
+            if (local) {
+                const auto &heap = this->getHeap();
+
+                if (address < heap.size())
+                    std::memcpy(buffer, heap[address].data(), size);
+                else
+                    std::memset(buffer, 0x00, size);
+            } else {
+                if (address < this->m_dataSize)
+                    this->m_readerFunction(address, reinterpret_cast<u8*>(buffer), size);
+                else
+                    std::memset(buffer, 0x00, size);
+            }
         }
 
         void setDefaultEndian(std::endian endian) {
@@ -312,7 +315,7 @@ namespace pl::core {
 
         std::map<std::string, Token::Literal> m_envVariables;
         std::map<std::string, Token::Literal> m_inVariables;
-        std::map<std::string, size_t> m_outVariables;
+        std::map<std::string, std::unique_ptr<ptrn::Pattern>> m_outVariables;
 
         std::vector<std::vector<u8>> m_heap;
 

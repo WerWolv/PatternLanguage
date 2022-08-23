@@ -13,9 +13,10 @@ namespace pl::ptrn {
             return std::unique_ptr<Pattern>(new PatternCharacter(*this));
         }
 
-        char getValue() const {
+        [[nodiscard]] core::Token::Literal getValue() const override {
             char character = '\x00';
-            this->getEvaluator()->readData(this->getOffset(), &character, 1);
+            this->getEvaluator()->readData(this->getOffset(), &character, 1, this->isLocal());
+
             return character;
         }
 
@@ -24,8 +25,8 @@ namespace pl::ptrn {
         }
 
         std::string getFormattedValue() override {
-            const char character = this->getValue();
-            return this->formatDisplayValue(fmt::format("'{0}'", character), character);
+            const char character = core::Token::literalToCharacter(this->getValue());
+            return this->formatDisplayValue(fmt::format("'{0}'", character), this->getValue());
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override { return areCommonPropertiesEqual<decltype(*this)>(other); }
@@ -35,7 +36,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::string toString() const override {
-            return fmt::format("{}", this->getValue());
+            return fmt::format("{}", char(core::Token::literalToCharacter(this->getValue())));
         }
     };
 

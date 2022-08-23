@@ -52,7 +52,7 @@ namespace pl::lib::libstd::mem {
                 const u64 bufferSize = ctx->getDataSize();
                 const u64 endOffset  = offsetTo <= offsetFrom ? bufferSize : std::min(bufferSize, u64(offsetTo));
                 for (u64 offset = offsetFrom; offset < endOffset - sequence.size(); offset++) {
-                    ctx->readData(offset, bytes.data(), bytes.size());
+                    ctx->readData(offset, bytes.data(), bytes.size(), false);
 
                     if (bytes == sequence) {
                         if (occurrences < occurrenceIndex) {
@@ -76,7 +76,7 @@ namespace pl::lib::libstd::mem {
                     err::E0012.throwError(fmt::format("Read size {} is out of range.", size), "Try a value between 1 and 16.");
 
                 u128 result = 0;
-                ctx->readData(address, &result, size);
+                ctx->readData(address, &result, size, false);
 
                 return result;
             });
@@ -91,7 +91,7 @@ namespace pl::lib::libstd::mem {
 
 
                 i128 value;
-                ctx->readData(address, &value, size);
+                ctx->readData(address, &value, size, false);
                 return hlp::signExtend(size * 8, value);
             });
 
@@ -101,7 +101,7 @@ namespace pl::lib::libstd::mem {
                 auto size    = Token::literalToUnsigned(params[1]);
 
                 std::string result(size, '\x00');
-                ctx->readData(address, result.data(), size);
+                ctx->readData(address, result.data(), size, false);
 
                 return result;
             });

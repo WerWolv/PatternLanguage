@@ -141,6 +141,10 @@ namespace pl::ptrn {
             return fmt::format("{} {} @ 0x{:X}", this->getTypeName(), this->getVariableName(), this->getOffset());
         }
 
+        [[nodiscard]] virtual core::Token::Literal getValue() const {
+            return u128();
+        }
+
         [[nodiscard]] virtual std::vector<std::pair<u64, Pattern*>> getChildren() {
             return { { this->getOffset(), this } };
         }

@@ -13,7 +13,7 @@ namespace pl::ptrn {
             return std::unique_ptr<Pattern>(new PatternString(*this));
         }
 
-        std::string getValue() const {
+        [[nodiscard]] core::Token::Literal getValue() const override {
             return this->getValue(this->getSize());
         }
 
@@ -22,10 +22,11 @@ namespace pl::ptrn {
                 return "";
 
             std::vector<u8> buffer(size, 0x00);
-            this->getEvaluator()->readData(this->getOffset(), buffer.data(), size);
+            this->getEvaluator()->readData(this->getOffset(), buffer.data(), size, this->isLocal());
 
-            auto string = reinterpret_cast<const char *>(buffer.data());
-            return { string, std::min(size, std::strlen(string)) };
+            auto string = std::string(reinterpret_cast<const char *>(buffer.data()));
+            string.resize(std::min(size, std::strlen(string.data())));
+            return string;
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
@@ -33,7 +34,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::string toString() const override {
-            return this->getValue();
+            return core::Token::literalToString(this->getValue(), false);
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override { return areCommonPropertiesEqual<decltype(*this)>(other); }
@@ -49,7 +50,7 @@ namespace pl::ptrn {
                 return "\"\"";
 
             std::vector<u8> buffer(size, 0x00);
-            this->getEvaluator()->readData(this->getOffset(), buffer.data(), size);
+            this->getEvaluator()->readData(this->getOffset(), buffer.data(), size, this->isLocal());
             auto displayString = hlp::encodeByteString(buffer);
 
             return this->formatDisplayValue(fmt::format("\"{0}\" {1}", displayString, size > this->getSize() ? "(truncated)" : ""), displayString);

@@ -59,7 +59,7 @@ namespace pl::core::ast {
             auto pointerEndOffset = evaluator->dataOffset();
 
             {
-                i128 pointerAddress = pattern->getValue();
+                i128 pointerAddress = core::Token::literalToSigned(pattern->getValue());
 
                 evaluator->dataOffset() = pointerStartOffset;
 

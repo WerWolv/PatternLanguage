@@ -16,10 +16,10 @@ namespace pl::ptrn {
             return std::unique_ptr<Pattern>(new PatternWideCharacter(*this));
         }
 
-        char16_t getValue() const {
+        [[nodiscard]] core::Token::Literal getValue() const override {
             char16_t character = '\u0000';
-            this->getEvaluator()->readData(this->getOffset(), &character, 2);
-            return hlp::changeEndianess(character, this->getEndian());
+            this->getEvaluator()->readData(this->getOffset(), &character, 2, this->isLocal());
+            return u128(hlp::changeEndianess(character, this->getEndian()));
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
@@ -27,7 +27,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::string toString() const override {
-            char16_t character = this->getValue();
+            char16_t character = core::Token::literalToUnsigned(this->getValue());
             character = hlp::changeEndianess(character, this->getEndian());
 
             return std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>("???").to_bytes(character);
@@ -40,7 +40,7 @@ namespace pl::ptrn {
         }
 
         std::string getFormattedValue() override {
-            return this->formatDisplayValue(fmt::format("'{0}'", this->toString()), u128(this->getValue()));
+            return this->formatDisplayValue(fmt::format("'{0}'", this->toString()), this->getValue());
         }
     };
 

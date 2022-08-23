@@ -64,7 +64,7 @@ namespace pl::core::ast {
             }
 
             Token::Literal literal;
-            if (dynamic_cast<ptrn::PatternUnsigned *>(pattern) || dynamic_cast<ptrn::PatternEnum *>(pattern)) {
+            if (dynamic_cast<ptrn::PatternUnsigned *>(pattern)) {
                 u128 value = 0;
                 readVariable(evaluator, value, pattern);
                 literal = value;
@@ -241,34 +241,13 @@ namespace pl::core::ast {
         void readVariable(Evaluator *evaluator, auto &value, ptrn::Pattern *variablePattern) const {
             constexpr bool isString = std::same_as<std::remove_cvref_t<decltype(value)>, std::string>;
 
-            if (variablePattern->isLocal()) {
-                auto &heap = evaluator->getHeap();
-                auto offset = variablePattern->getOffset();
-
-                if constexpr (!isString) {
-                    if (offset < heap.size())
-                        std::memcpy(&value, heap[offset].data(), variablePattern->getSize());
-                    else
-                        value = 0;
-                } else {
-                    if (offset < heap.size()) {
-                        value.resize(variablePattern->getSize());
-                        std::memcpy(value.data(), heap[offset].data(), variablePattern->getSize());
-                    }
-                    else {
-                        value = "";
-                    }
-                }
-
-            } else {
                 if constexpr (isString) {
                     value.resize(variablePattern->getSize());
-                    evaluator->readData(variablePattern->getOffset(), value.data(), value.size());
+                    evaluator->readData(variablePattern->getOffset(), value.data(), value.size(), variablePattern->isLocal());
                     value.erase(std::find(value.begin(), value.end(), '\0'), value.end());
                 } else {
-                    evaluator->readData(variablePattern->getOffset(), &value, variablePattern->getSize());
+                    evaluator->readData(variablePattern->getOffset(), &value, variablePattern->getSize(), variablePattern->isLocal());
                 }
-            }
 
             if constexpr (!isString)
                 value = hlp::changeEndianess(value, variablePattern->getSize(), variablePattern->getEndian());

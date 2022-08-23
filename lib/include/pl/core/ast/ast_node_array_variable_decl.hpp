@@ -140,7 +140,7 @@ namespace pl::core::ast {
                     if (evaluator->dataOffset() > evaluator->getDataSize())
                         err::E0004.throwError("Array expanded past end of the data before a null-entry was found.", "Try using a while-sized array instead to limit the size of the array.", this);
 
-                    evaluator->readData(evaluator->dataOffset(), buffer.data(), buffer.size());
+                    evaluator->readData(evaluator->dataOffset(), buffer.data(), buffer.size(), false);
                     evaluator->dataOffset() += buffer.size();
 
                     entryCount++;
@@ -318,7 +318,7 @@ namespace pl::core::ast {
                         if (ctrlFlow == ControlFlowStatement::None)
                             break;
 
-                        evaluator->readData(evaluator->dataOffset() - patternSize, buffer.data(), buffer.size());
+                        evaluator->readData(evaluator->dataOffset() - patternSize, buffer.data(), buffer.size(), pattern->isLocal());
                         reachedEnd = true;
                         for (u8 &byte : buffer) {
                             if (byte != 0x00) {

@@ -13,9 +13,9 @@ namespace pl::ptrn {
             return std::unique_ptr<Pattern>(new PatternUnsigned(*this));
         }
 
-        u128 getValue() const {
+        [[nodiscard]] core::Token::Literal getValue() const override {
             u128 data = 0;
-            this->getEvaluator()->readData(this->getOffset(), &data, this->getSize());
+            this->getEvaluator()->readData(this->getOffset(), &data, this->getSize(), this->isLocal());
             return hlp::changeEndianess(data, this->getSize(), this->getEndian());
         }
 
@@ -30,12 +30,12 @@ namespace pl::ptrn {
         }
 
         std::string getFormattedValue() override {
-            auto data = this->getValue();
-            return this->formatDisplayValue(fmt::format("{:d} (0x{:0{}X})", data, data, 1 * 2), data);
+            auto data = core::Token::literalToUnsigned(this->getValue());
+            return this->formatDisplayValue(fmt::format("{:d} (0x{:0{}X})", data, data, 1 * 2), this->getValue());
         }
 
         [[nodiscard]] std::string toString() const override {
-            return fmt::format("{}", this->getValue());
+            return fmt::format("{}", core::Token::literalToUnsigned(this->getValue()));
         }
     };
 

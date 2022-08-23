@@ -24,9 +24,9 @@ namespace pl::ptrn {
             return std::unique_ptr<Pattern>(new PatternPointer(*this));
         }
 
-        i128 getValue() const {
+        [[nodiscard]] core::Token::Literal getValue() const override {
             i128 data = 0;
-            this->getEvaluator()->readData(this->getOffset(), &data, this->getSize());
+            this->getEvaluator()->readData(this->getOffset(), &data, this->getSize(), this->isLocal());
             data = hlp::changeEndianess(data, this->getSize(), this->getEndian());
 
             if (this->m_signed) {
@@ -141,8 +141,8 @@ namespace pl::ptrn {
         }
 
         std::string getFormattedValue() override {
-            auto data = this->getValue();
-            return this->formatDisplayValue(fmt::format("*(0x{0:X})", data), data);
+            auto data = core::Token::literalToSigned(this->getValue());
+            return this->formatDisplayValue(fmt::format("*(0x{0:X})", data), this->getValue());
         }
 
         [[nodiscard]] std::string toString() const override {

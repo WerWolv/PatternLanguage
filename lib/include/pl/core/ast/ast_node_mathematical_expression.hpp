@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pl/core/ast/ast_node.hpp>
+#include <pl/core/ast/ast_node_literal.hpp>
 #include <pl/helpers/concepts.hpp>
 
 #include <pl/patterns/pattern_enum.hpp>
@@ -88,146 +89,162 @@ namespace pl::core::ast {
             auto leftNode  = this->getLeftOperand()->evaluate(evaluator);
             auto rightNode = this->getRightOperand()->evaluate(evaluator);
 
-            auto *left  = dynamic_cast<ASTNodeLiteral *>(leftNode.get());
-            auto *right = dynamic_cast<ASTNodeLiteral *>(rightNode.get());
-
-            constexpr static auto Decay = [](const Token::Literal &literal) {
-                return std::visit(hlp::overloaded {
-                        [](ptrn::Pattern *pattern) -> Token::Literal {
-                            if (auto enumPattern = dynamic_cast<ptrn::PatternEnum*>(pattern))
-                                return u128(enumPattern->getValue());
-                            else
-                                return pattern;
-                        },
-                        [](auto &&value) -> Token::Literal  { return value; }
-                }, literal);
-            };
-
-            const auto leftValue = Decay(left->getValue());
-            const auto rightValue = Decay(right->getValue());
+            auto leftValue  = dynamic_cast<ASTNodeLiteral *>(leftNode.get())->getValue();
+            auto rightValue = dynamic_cast<ASTNodeLiteral *>(rightNode.get())->getValue();
 
             const auto throwInvalidOperandError = [this] [[noreturn]]{
                 err::E0002.throwError("Invalid operand used in mathematical expression.", { }, this);
             };
 
+            auto handlePatternOperations = [&, this](auto left, auto right) {
+                switch (this->getOperator()) {
+                    case Token::Operator::BoolEqual:
+                        return new ASTNodeLiteral(left == right);
+                    case Token::Operator::BoolNotEqual:
+                        return new ASTNodeLiteral(left != right);
+                    case Token::Operator::BoolGreaterThan:
+                        return new ASTNodeLiteral(left > right);
+                    case Token::Operator::BoolLessThan:
+                        return new ASTNodeLiteral(left < right);
+                    case Token::Operator::BoolGreaterThanOrEqual:
+                        return new ASTNodeLiteral(left >= right);
+                    case Token::Operator::BoolLessThanOrEqual:
+                        return new ASTNodeLiteral(left <= right);
+                    default:
+                        throwInvalidOperandError();
+                }
+            };
+
             return std::unique_ptr<ASTNode>(std::visit(hlp::overloaded {
-               [&](u128, ptrn::Pattern *const ) -> ASTNode * { throwInvalidOperandError(); },
-               [&](i128, ptrn::Pattern *const &) -> ASTNode * { throwInvalidOperandError(); },
-               [&](double, ptrn::Pattern *const &) -> ASTNode * { throwInvalidOperandError(); },
-               [&](char, ptrn::Pattern *const &) -> ASTNode * { throwInvalidOperandError(); },
-               [&](bool, ptrn::Pattern *const &) -> ASTNode * { throwInvalidOperandError(); },
-               [&](const std::string &, ptrn::Pattern *const &) -> ASTNode * { throwInvalidOperandError(); },
-               [&](ptrn::Pattern *const &, u128) -> ASTNode * { throwInvalidOperandError(); },
-               [&](ptrn::Pattern *const &, i128) -> ASTNode * { throwInvalidOperandError();},
-               [&](ptrn::Pattern *const &, double) -> ASTNode * { throwInvalidOperandError(); },
-               [&](ptrn::Pattern *const &, char) -> ASTNode * { throwInvalidOperandError(); },
-               [&](ptrn::Pattern *const &, bool) -> ASTNode * { throwInvalidOperandError(); },
-               [&](ptrn::Pattern *const &, const std::string &) -> ASTNode * { throwInvalidOperandError(); },
-               [&](ptrn::Pattern *const &, ptrn::Pattern *const &) -> ASTNode * { throwInvalidOperandError(); },
+                [&](u128 left, ptrn::Pattern *const &right) -> ASTNode * { return handlePatternOperations(left, Token::literalToUnsigned(right->getValue())); },
+                [&](i128 left, ptrn::Pattern *const &right) -> ASTNode * { return handlePatternOperations(left, Token::literalToSigned(right->getValue())); },
+                [&](double left, ptrn::Pattern *const &right) -> ASTNode * { return handlePatternOperations(left, Token::literalToFloatingPoint(right->getValue())); },
+                [&](char left, ptrn::Pattern *const &right) -> ASTNode * { return handlePatternOperations(left, Token::literalToUnsigned(right->getValue())); },
+                [&](bool left, ptrn::Pattern *const &right) -> ASTNode * { return handlePatternOperations(left, Token::literalToBoolean(right->getValue())); },
+                [&](const std::string &, ptrn::Pattern *const &) -> ASTNode * { throwInvalidOperandError(); },
+                [&](ptrn::Pattern *const &left, u128 right) -> ASTNode * { return handlePatternOperations(Token::literalToUnsigned(left->getValue()), right); },
+                [&](ptrn::Pattern *const &left, i128 right) -> ASTNode * { return handlePatternOperations(Token::literalToSigned(left->getValue()), right); },
+                [&](ptrn::Pattern *const &left, double right) -> ASTNode * { return handlePatternOperations(Token::literalToFloatingPoint(left->getValue()), right); },
+                [&](ptrn::Pattern *const &left, char right) -> ASTNode * { return handlePatternOperations(Token::literalToUnsigned(left->getValue()), right); },
+                [&](ptrn::Pattern *const &left, bool right) -> ASTNode * { return handlePatternOperations(Token::literalToBoolean(left->getValue()), right); },
+                [&](ptrn::Pattern *const &, const std::string &) -> ASTNode * { throwInvalidOperandError(); },
+                [&, this](ptrn::Pattern *const &left, ptrn::Pattern *const &right) -> ASTNode * {
+                    std::vector<u8> leftBytes(left->getSize()), rightBytes(right->getSize());
 
-               [&](auto &&, const std::string &) -> ASTNode * { throwInvalidOperandError(); },
-               [&, this](const std::string &left, auto &&right) -> ASTNode * {
-                   switch (this->getOperator()) {
-                       case Token::Operator::Star:
-                           {
-                               if (static_cast<i128>(right) < 0)
-                                   err::E0002.throwError("Cannot repeat string a negative number of times.", { }, this);
+                    evaluator->readData(left->getOffset(), leftBytes.data(), leftBytes.size(), left->isLocal());
+                    evaluator->readData(right->getOffset(), rightBytes.data(), rightBytes.size(), right->isLocal());
+                    switch (this->getOperator()) {
+                        case Token::Operator::BoolEqual:
+                            return new ASTNodeLiteral(leftBytes == rightBytes);
+                        case Token::Operator::BoolNotEqual:
+                            return new ASTNodeLiteral(leftBytes != rightBytes);
+                        default:
+                            throwInvalidOperandError();
+                    }
+                },
+                [&](auto &&, const std::string &) -> ASTNode * { throwInvalidOperandError(); },
+                [&, this](const std::string &left, auto right) -> ASTNode * {
+                    switch (this->getOperator()) {
+                        case Token::Operator::Star:
+                            {
+                                if (static_cast<i128>(right) < 0)
+                                    err::E0002.throwError("Cannot repeat string a negative number of times.", { }, this);
 
-                               std::string result;
-                               for (u128 i = 0; i < static_cast<u128>(right); i++)
-                                   result += left;
-                               return new ASTNodeLiteral(result);
-                           }
-                       default:
-                           throwInvalidOperandError();
-                   }
-               },
-               [&, this](const std::string &left, const std::string &right) -> ASTNode * {
-                   switch (this->getOperator()) {
-                       case Token::Operator::Plus:
-                           return new ASTNodeLiteral(left + right);
-                       case Token::Operator::BoolEqual:
-                           return new ASTNodeLiteral(left == right);
-                       case Token::Operator::BoolNotEqual:
-                           return new ASTNodeLiteral(left != right);
-                       case Token::Operator::BoolGreaterThan:
-                           return new ASTNodeLiteral(left > right);
-                       case Token::Operator::BoolLessThan:
-                           return new ASTNodeLiteral(left < right);
-                       case Token::Operator::BoolGreaterThanOrEqual:
-                           return new ASTNodeLiteral(left >= right);
-                       case Token::Operator::BoolLessThanOrEqual:
-                           return new ASTNodeLiteral(left <= right);
-                       default:
-                           throwInvalidOperandError();
-                   }
-               },
-               [&, this](const std::string &left, char right) -> ASTNode * {
-                   switch (this->getOperator()) {
-                       case Token::Operator::Plus:
-                           return new ASTNodeLiteral(left + right);
-                       default:
-                           throwInvalidOperandError();
-                   }
-               },
-               [&, this](char left, const std::string &right) -> ASTNode * {
-                   switch (this->getOperator()) {
-                       case Token::Operator::Plus:
-                           return new ASTNodeLiteral(left + right);
-                       default:
-                           throwInvalidOperandError();
-                   }
-               },
-               [&, this](auto &&left, auto &&right) -> ASTNode * {
-                   switch (this->getOperator()) {
-                       case Token::Operator::Plus:
-                           return new ASTNodeLiteral(left + right);
-                       case Token::Operator::Minus:
-                           return new ASTNodeLiteral(left - right);
-                       case Token::Operator::Star:
-                           return new ASTNodeLiteral(left * right);
-                       case Token::Operator::Slash:
-                           if (right == 0) err::E0002.throwError("Division by zero.", { }, this);
-                           return new ASTNodeLiteral(left / right);
-                       case Token::Operator::Percent:
-                           if (right == 0) err::E0002.throwError("Division by zero.", { }, this);
-                           return new ASTNodeLiteral(modulus(left, right));
-                       case Token::Operator::LeftShift:
-                           return new ASTNodeLiteral(shiftLeft(left, right));
-                       case Token::Operator::RightShift:
-                           return new ASTNodeLiteral(shiftRight(left, right));
-                       case Token::Operator::BitAnd:
-                           return new ASTNodeLiteral(bitAnd(left, right));
-                       case Token::Operator::BitXor:
-                           return new ASTNodeLiteral(bitXor(left, right));
-                       case Token::Operator::BitOr:
-                           return new ASTNodeLiteral(bitOr(left, right));
-                       case Token::Operator::BitNot:
-                           return new ASTNodeLiteral(bitNot(left, right));
-                       case Token::Operator::BoolEqual:
-                           return new ASTNodeLiteral(bool(left == static_cast<decltype(left)>(right)));
-                       case Token::Operator::BoolNotEqual:
-                           return new ASTNodeLiteral(bool(left != static_cast<decltype(left)>(right)));
-                       case Token::Operator::BoolGreaterThan:
-                           return new ASTNodeLiteral(bool(left > static_cast<decltype(left)>(right)));
-                       case Token::Operator::BoolLessThan:
-                           return new ASTNodeLiteral(bool(left < static_cast<decltype(left)>(right)));
-                       case Token::Operator::BoolGreaterThanOrEqual:
-                           return new ASTNodeLiteral(bool(left >= static_cast<decltype(left)>(right)));
-                       case Token::Operator::BoolLessThanOrEqual:
-                           return new ASTNodeLiteral(bool(left <= static_cast<decltype(left)>(right)));
-                       case Token::Operator::BoolAnd:
-                           return new ASTNodeLiteral(bool(left && right));
-                       case Token::Operator::BoolXor:
-                           return new ASTNodeLiteral(bool((left && !right) || (!left && right)));
-                       case Token::Operator::BoolOr:
-                           return new ASTNodeLiteral(bool(left || right));
-                       case Token::Operator::BoolNot:
-                           return new ASTNodeLiteral(bool(!right));
-                       default:
-                           throwInvalidOperandError();
-                   }
-               }
+                                std::string result;
+                                for (u128 i = 0; i < static_cast<u128>(right); i++)
+                                    result += left;
+                                return new ASTNodeLiteral(result);
+                            }
+                        default:
+                            throwInvalidOperandError();
+                    }
+                },
+                [&, this](const std::string &left, const std::string &right) -> ASTNode * {
+                    switch (this->getOperator()) {
+                        case Token::Operator::Plus:
+                            return new ASTNodeLiteral(left + right);
+                        case Token::Operator::BoolEqual:
+                            return new ASTNodeLiteral(left == right);
+                        case Token::Operator::BoolNotEqual:
+                            return new ASTNodeLiteral(left != right);
+                        case Token::Operator::BoolGreaterThan:
+                            return new ASTNodeLiteral(left > right);
+                        case Token::Operator::BoolLessThan:
+                            return new ASTNodeLiteral(left < right);
+                        case Token::Operator::BoolGreaterThanOrEqual:
+                            return new ASTNodeLiteral(left >= right);
+                        case Token::Operator::BoolLessThanOrEqual:
+                            return new ASTNodeLiteral(left <= right);
+                        default:
+                            throwInvalidOperandError();
+                    }
+                },
+                [&, this](const std::string &left, char right) -> ASTNode * {
+                    switch (this->getOperator()) {
+                        case Token::Operator::Plus:
+                            return new ASTNodeLiteral(left + right);
+                        default:
+                            throwInvalidOperandError();
+                    }
+                },
+                [&, this](char left, const std::string &right) -> ASTNode * {
+                    switch (this->getOperator()) {
+                        case Token::Operator::Plus:
+                            return new ASTNodeLiteral(left + right);
+                        default:
+                            throwInvalidOperandError();
+                    }
+                },
+                [&, this](auto left, auto right) -> ASTNode * {
+                    switch (this->getOperator()) {
+                        case Token::Operator::Plus:
+                            return new ASTNodeLiteral(left + right);
+                        case Token::Operator::Minus:
+                            return new ASTNodeLiteral(left - right);
+                        case Token::Operator::Star:
+                            return new ASTNodeLiteral(left * right);
+                        case Token::Operator::Slash:
+                            if (right == 0) err::E0002.throwError("Division by zero.", { }, this);
+                            return new ASTNodeLiteral(left / right);
+                        case Token::Operator::Percent:
+                            if (right == 0) err::E0002.throwError("Division by zero.", { }, this);
+                            return new ASTNodeLiteral(modulus(left, right));
+                        case Token::Operator::LeftShift:
+                            return new ASTNodeLiteral(shiftLeft(left, right));
+                        case Token::Operator::RightShift:
+                            return new ASTNodeLiteral(shiftRight(left, right));
+                        case Token::Operator::BitAnd:
+                            return new ASTNodeLiteral(bitAnd(left, right));
+                        case Token::Operator::BitXor:
+                            return new ASTNodeLiteral(bitXor(left, right));
+                        case Token::Operator::BitOr:
+                            return new ASTNodeLiteral(bitOr(left, right));
+                        case Token::Operator::BitNot:
+                            return new ASTNodeLiteral(bitNot(left, right));
+                        case Token::Operator::BoolEqual:
+                            return new ASTNodeLiteral(bool(left == static_cast<decltype(left)>(right)));
+                        case Token::Operator::BoolNotEqual:
+                            return new ASTNodeLiteral(bool(left != static_cast<decltype(left)>(right)));
+                        case Token::Operator::BoolGreaterThan:
+                            return new ASTNodeLiteral(bool(left > static_cast<decltype(left)>(right)));
+                        case Token::Operator::BoolLessThan:
+                            return new ASTNodeLiteral(bool(left < static_cast<decltype(left)>(right)));
+                        case Token::Operator::BoolGreaterThanOrEqual:
+                            return new ASTNodeLiteral(bool(left >= static_cast<decltype(left)>(right)));
+                        case Token::Operator::BoolLessThanOrEqual:
+                            return new ASTNodeLiteral(bool(left <= static_cast<decltype(left)>(right)));
+                        case Token::Operator::BoolAnd:
+                            return new ASTNodeLiteral(bool(left && right));
+                        case Token::Operator::BoolXor:
+                            return new ASTNodeLiteral(bool((left && !right) || (!left && right)));
+                        case Token::Operator::BoolOr:
+                            return new ASTNodeLiteral(bool(left || right));
+                        case Token::Operator::BoolNot:
+                            return new ASTNodeLiteral(bool(!right));
+                        default:
+                            throwInvalidOperandError();
+                    }
+                }
             },
             leftValue,
             rightValue));

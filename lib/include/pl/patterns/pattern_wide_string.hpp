@@ -16,13 +16,13 @@ namespace pl::ptrn {
             return std::unique_ptr<Pattern>(new PatternWideString(*this));
         }
 
-        std::string getValue() const {
+        [[nodiscard]] core::Token::Literal getValue() const override {
             return this->getValue(this->getSize());
         }
 
         std::string getValue(size_t size) const {
             std::u16string buffer(this->getSize() / sizeof(char16_t), 0x00);
-            this->getEvaluator()->readData(this->getOffset(), buffer.data(), size);
+            this->getEvaluator()->readData(this->getOffset(), buffer.data(), size, this->isLocal());
 
             for (auto &c : buffer)
                 c = hlp::changeEndianess(c, 2, this->getEndian());
@@ -40,7 +40,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string toString() const override {
             std::u16string buffer(this->getSize() / sizeof(char16_t), 0x00);
-            this->getEvaluator()->readData(this->getOffset(), buffer.data(), this->getSize());
+            this->getEvaluator()->readData(this->getOffset(), buffer.data(), this->getSize(), this->isLocal());
 
             for (auto &c : buffer)
                 c = hlp::changeEndianess(c, 2, this->getEndian());

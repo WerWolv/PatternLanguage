@@ -14,9 +14,10 @@ namespace pl::ptrn {
             return std::unique_ptr<Pattern>(new PatternEnum(*this));
         }
 
-        u64 getValue() const {
-            u64 value = 0;
-            this->getEvaluator()->readData(this->getOffset(), &value, this->getSize());
+        [[nodiscard]] core::Token::Literal getValue() const override {
+            u128 value = 0;
+            this->getEvaluator()->readData(this->getOffset(), &value, this->getSize(), this->isLocal());
+
             return hlp::changeEndianess(value, this->getSize(), this->getEndian());
         }
 
@@ -57,11 +58,13 @@ namespace pl::ptrn {
         }
 
         std::string getFormattedValue() override {
-            return this->formatDisplayValue(fmt::format("{} (0x{:0{}X})", this->toString().c_str(), this->getValue(), this->getSize() * 2), this);
+            auto value =core::Token::literalToUnsigned(this->getValue());
+
+            return this->formatDisplayValue(fmt::format("{} (0x{:0{}X})", this->toString().c_str(), value, this->getSize() * 2), this);
         }
 
         [[nodiscard]] std::string toString() const override {
-            u64 value = this->getValue();
+            u64 value = core::Token::literalToUnsigned(this->getValue());
 
             std::string valueString = this->getTypeName() + "::";
 

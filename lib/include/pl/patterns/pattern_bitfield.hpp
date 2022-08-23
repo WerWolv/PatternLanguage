@@ -21,14 +21,14 @@ namespace pl::ptrn {
             return std::unique_ptr<Pattern>(new PatternBitfieldField(*this));
         }
 
-        u64 getValue() const {
+        [[nodiscard]] core::Token::Literal getValue() const override {
             std::vector<u8> value(this->m_bitField->getSize(), 0);
-            this->getEvaluator()->readData(this->m_bitField->getOffset(), &value[0], value.size());
+            this->getEvaluator()->readData(this->m_bitField->getOffset(), &value[0], value.size(), this->isLocal());
 
             if (this->m_bitField->getEndian() != std::endian::native)
                 std::reverse(value.begin(), value.end());
 
-            return hlp::extract(this->m_bitOffset + (this->m_bitSize - 1), this->m_bitOffset, value);
+            return u128(hlp::extract(this->m_bitOffset + (this->m_bitSize - 1), this->m_bitOffset, value));
         }
 
         void setBitfield(Pattern *bitField) {
@@ -64,11 +64,12 @@ namespace pl::ptrn {
         }
 
         std::string getFormattedValue() override {
-            return this->formatDisplayValue(fmt::format("{0} (0x{1:X})", this->getValue(), this->getValue()), u128(this->getValue()));
+            auto value = core::Token::literalToUnsigned(this->getValue());
+            return this->formatDisplayValue(fmt::format("{0} (0x{1:X})", value, value), this->getValue());
         }
 
         [[nodiscard]] std::string toString() const override {
-            return fmt::format("{}", this->getValue());
+            return fmt::format("{}", core::Token::literalToUnsigned(this->getValue()));
         }
 
         [[nodiscard]] bool isPadding() const { return this->m_padding; }
@@ -94,16 +95,6 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
             return std::unique_ptr<Pattern>(new PatternBitfield(*this));
-        }
-
-        std::vector<u8> getValue() const {
-            std::vector<u8> value(this->getSize(), 0);
-            this->getEvaluator()->readData(this->getOffset(), &value[0], value.size());
-
-            if (this->getEndian() == std::endian::little)
-                std::reverse(value.begin(), value.end());
-
-            return value;
         }
 
         void forEachMember(const std::function<void(Pattern&)>& fn) {
@@ -203,9 +194,15 @@ namespace pl::ptrn {
         }
 
         std::string getFormattedValue() override {
+            std::vector<u8> bytes(this->getSize(), 0);
+            this->getEvaluator()->readData(this->getOffset(), bytes.data(), bytes.size(), this->isLocal());
+
+            if (this->getEndian() == std::endian::little)
+                std::reverse(bytes.begin(), bytes.end());
+
             std::string valueString = "{ ";
-            for (auto i : this->getValue())
-                valueString += fmt::format("{0:02X} ", i);
+            for (auto byte : bytes)
+                valueString += fmt::format("{0:02X} ", byte);
             valueString += "}";
 
             return this->formatDisplayValue(valueString, this);

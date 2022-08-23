@@ -13,9 +13,10 @@ namespace pl::ptrn {
             return std::unique_ptr<Pattern>(new PatternBoolean(*this));
         }
 
-        u8 getValue() const {
-            u8 boolean = false;
-            this->getEvaluator()->readData(this->getOffset(), &boolean, 1);
+        [[nodiscard]] core::Token::Literal getValue() const override {
+            bool boolean = false;
+            this->getEvaluator()->readData(this->getOffset(), &boolean, 1, this->isLocal());
+
             return boolean;
         }
 
@@ -24,7 +25,7 @@ namespace pl::ptrn {
         }
 
         std::string getFormattedValue() override {
-            switch (this->getValue()) {
+            switch (core::Token::literalToUnsigned(this->getValue())) {
                 case 0: return "false";
                 case 1: return "true";
                 default: return "true*";
@@ -38,7 +39,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::string toString() const override {
-            return fmt::format("{}", this->getValue() ? "true" : "false");
+            return fmt::format("{}", core::Token::literalToUnsigned(this->getValue()) ? "true" : "false");
         }
     };
 
