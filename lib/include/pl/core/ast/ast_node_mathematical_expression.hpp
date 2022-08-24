@@ -125,7 +125,7 @@ namespace pl::core::ast {
                 [&](ptrn::Pattern *const &left, u128 right)         -> ASTNode * { return handlePatternOperations(Token::literalToUnsigned(left->getValue()), right); },
                 [&](ptrn::Pattern *const &left, i128 right)         -> ASTNode * { return handlePatternOperations(Token::literalToSigned(left->getValue()), right); },
                 [&](ptrn::Pattern *const &left, double right)       -> ASTNode * { return handlePatternOperations(Token::literalToFloatingPoint(left->getValue()), right); },
-                [&](ptrn::Pattern *const &left, char right)         -> ASTNode * { return handlePatternOperations(Token::literalToUnsigned(left->getValue()), right); },
+                [&](ptrn::Pattern *const &left, char right)         -> ASTNode * { return handlePatternOperations(Token::literalToSigned(left->getValue()), right); },
                 [&](ptrn::Pattern *const &left, bool right)         -> ASTNode * { return handlePatternOperations(Token::literalToBoolean(left->getValue()), right); },
                 [&](ptrn::Pattern *const &, const std::string &)    -> ASTNode * { throwInvalidOperandError(); },
                 [&, this](ptrn::Pattern *const &left, ptrn::Pattern *const &right) -> ASTNode * {
