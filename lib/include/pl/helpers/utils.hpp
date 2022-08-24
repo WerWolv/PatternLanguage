@@ -114,7 +114,7 @@ namespace pl::hlp {
 
     template<typename T, typename... Args>
     void moveToVector(std::vector<T> &buffer, T &&first, Args &&...rest) {
-        buffer.push_back(std::move(first));
+        buffer.push_back(std::forward<T>(first));
 
         if constexpr (sizeof...(rest) > 0)
             moveToVector(buffer, std::move(rest)...);
@@ -123,7 +123,7 @@ namespace pl::hlp {
     template<typename T, typename... Args>
     std::vector<T> moveToVector(T &&first, Args &&...rest) {
         std::vector<T> result;
-        moveToVector(result, T(std::move(first)), std::move(rest)...);
+        moveToVector(result, T(std::forward<T>(first)), std::move(rest)...);
 
         return result;
     }
