@@ -4,11 +4,18 @@
 #include <pl/core/ast/ast_node.hpp>
 #include <pl/core/ast/ast_node_type_decl.hpp>
 #include <pl/core/ast/ast_node_variable_decl.hpp>
+#include <pl/core/ast/ast_node_function_call.hpp>
+#include <pl/core/ast/ast_node_function_definition.hpp>
 
 #include <pl/patterns/pattern_unsigned.hpp>
 #include <pl/patterns/pattern_array_static.hpp>
 #include <pl/patterns/pattern_struct.hpp>
 #include <pl/patterns/pattern_union.hpp>
+#include <pl/patterns/pattern_float.hpp>
+#include <pl/patterns/pattern_boolean.hpp>
+#include <pl/patterns/pattern_character.hpp>
+#include <pl/patterns/pattern_wide_character.hpp>
+#include <pl/patterns/pattern_string.hpp>
 
 namespace pl::core {
 
