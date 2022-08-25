@@ -121,9 +121,8 @@ namespace pl::core::ast {
 
         [[nodiscard]] std::vector<std::unique_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             std::vector<std::shared_ptr<ptrn::Pattern>> searchScope;
-            std::unique_ptr<ptrn::Pattern> currPattern;
+            std::unique_ptr<ptrn::Pattern> currPattern = nullptr;
             i32 scopeIndex = 0;
-
 
             if (!evaluator->isGlobalScope()) {
                 const auto &globalScope = evaluator->getGlobalScope().scope;
@@ -131,7 +130,7 @@ namespace pl::core::ast {
             }
 
             {
-                auto currScope = evaluator->getScope(scopeIndex).scope;
+                auto currScope = evaluator->getScope(0).scope;
                 std::copy(currScope->begin(), currScope->end(), std::back_inserter(searchScope));
             }
 
@@ -150,7 +149,9 @@ namespace pl::core::ast {
                         searchScope     = *evaluator->getScope(scopeIndex).scope;
                         auto currParent = evaluator->getScope(scopeIndex).parent;
 
-                        if (currParent != nullptr) {
+                        if (currParent == nullptr) {
+                            currPattern = nullptr;
+                        } else {
                             currPattern = currParent->clone();
                         }
 
@@ -188,24 +189,26 @@ namespace pl::core::ast {
                     auto index = dynamic_cast<ASTNodeLiteral *>(node.get());
 
                     std::visit(hlp::overloaded {
-                        [this](const std::string &) { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
-                        [this](ptrn::Pattern *pattern) {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
-                        [&, this](auto &&index) {
-                            if (auto dynamicArrayPattern = dynamic_cast<ptrn::PatternArrayDynamic *>(currPattern.get())) {
-                                if (static_cast<u128>(index) >= searchScope.size() || static_cast<i128>(index) < 0)
-                                    err::E0006.throwError(fmt::format("Cannot out of bounds index '{}'.", index), {}, this);
+                            [this](const std::string &) { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
+                            [this](ptrn::Pattern *pattern) { err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
+                            [&, this](auto &&index) {
+                               if (auto dynamicArrayPattern = dynamic_cast<ptrn::PatternArrayDynamic *>(currPattern.get())) {
+                                   if (static_cast<u128>(index) >= searchScope.size() || static_cast<i128>(index) < 0)
+                                       err::E0006.throwError(fmt::format("Cannot out of bounds index '{}'.", index), {}, this);
 
-                                currPattern = searchScope[index]->clone();
-                            } else if (auto staticArrayPattern = dynamic_cast<ptrn::PatternArrayStatic *>(currPattern.get())) {
-                                if (static_cast<u128>(index) >= staticArrayPattern->getEntryCount() || static_cast<i128>(index) < 0)
-                                    err::E0006.throwError(fmt::format("Cannot out of bounds index '{}'.", index), {}, this);
+                                   currPattern = searchScope[index]->clone();
+                               } else if (auto staticArrayPattern = dynamic_cast<ptrn::PatternArrayStatic *>(currPattern.get())) {
+                                   if (static_cast<u128>(index) >= staticArrayPattern->getEntryCount() || static_cast<i128>(index) < 0)
+                                       err::E0006.throwError(fmt::format("Cannot out of bounds index '{}'.", index), {}, this);
 
-                                auto newPattern = searchScope.front()->clone();
-                                newPattern->setOffset(staticArrayPattern->getOffset() + index * staticArrayPattern->getTemplate()->getSize());
-                                currPattern = std::move(newPattern);
-                           }
-                        }
-                    }, index->getValue());
+                                   auto newPattern = searchScope.front()->clone();
+                                   newPattern->setOffset(staticArrayPattern->getOffset() + index * staticArrayPattern->getTemplate()->getSize());
+                                   currPattern = std::move(newPattern);
+                               }
+                            }
+                        },
+                        index->getValue()
+                    );
                 }
 
                 if (currPattern == nullptr)
@@ -241,13 +244,13 @@ namespace pl::core::ast {
         void readVariable(Evaluator *evaluator, auto &value, ptrn::Pattern *variablePattern) const {
             constexpr bool isString = std::same_as<std::remove_cvref_t<decltype(value)>, std::string>;
 
-                if constexpr (isString) {
-                    value.resize(variablePattern->getSize());
-                    evaluator->readData(variablePattern->getOffset(), value.data(), value.size(), variablePattern->isLocal());
-                    value.erase(std::find(value.begin(), value.end(), '\0'), value.end());
-                } else {
-                    evaluator->readData(variablePattern->getOffset(), &value, variablePattern->getSize(), variablePattern->isLocal());
-                }
+            if constexpr (isString) {
+                value.resize(variablePattern->getSize());
+                evaluator->readData(variablePattern->getOffset(), value.data(), value.size(), variablePattern->isLocal());
+                value.erase(std::find(value.begin(), value.end(), '\0'), value.end());
+            } else {
+                evaluator->readData(variablePattern->getOffset(), &value, variablePattern->getSize(), variablePattern->isLocal());
+            }
 
             if constexpr (!isString)
                 value = hlp::changeEndianess(value, variablePattern->getSize(), variablePattern->getEndian());

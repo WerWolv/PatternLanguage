@@ -105,7 +105,9 @@ namespace pl::core::ast {
                 std::string parameters;
                 for (auto param : evaluatedParams)
                     parameters += fmt::format("{}, ", Token::literalToString(param, true));
-                parameters.resize(parameters.size() - 2);
+
+                if (!evaluatedParams.empty())
+                    parameters.resize(parameters.size() - 2);
 
                 return parameters;
             }()));
