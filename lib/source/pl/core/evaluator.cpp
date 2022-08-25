@@ -17,8 +17,6 @@
 #include <pl/patterns/pattern_wide_character.hpp>
 #include <pl/patterns/pattern_string.hpp>
 
-#include <fmt/ranges.h>
-
 namespace pl::core {
 
     std::map<std::string, Token::Literal> Evaluator::getOutVariables() const {
@@ -263,7 +261,7 @@ namespace pl::core {
 
                     this->readData(value->getOffset(), storage.data(), value->getSize(), value->isLocal());
 
-                    this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {::02X}.", pattern->getVariableName(), storage));
+                    this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {:02X}.", pattern->getVariableName(), fmt::join(storage, " ")));
                 }
             }, castedValue);
         }
