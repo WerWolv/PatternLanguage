@@ -73,6 +73,14 @@ namespace pl::lib::libstd {
             }
         });
 
+        runtime.addPragma("debug", [](pl::PatternLanguage &runtime, const std::string &value) {
+            if (!value.empty())
+                return false;
+
+            runtime.getInternals().evaluator->setDebugMode(true);
+
+            return true;
+        });
 
     }
 

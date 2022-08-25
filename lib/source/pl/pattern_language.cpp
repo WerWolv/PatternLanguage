@@ -119,8 +119,6 @@ namespace pl {
             }
         }
 
-        this->m_flattenedPatterns.clear();
-
         return true;
     }
 
@@ -208,13 +206,15 @@ namespace pl {
         this->m_currAST.clear();
 
         this->m_currError.reset();
+        this->m_internals.validator->setRecursionDepth(32);
+
         this->m_internals.evaluator->getConsole().clear();
         this->m_internals.evaluator->setDefaultEndian(std::endian::native);
-        this->m_internals.validator->setRecursionDepth(32);
         this->m_internals.evaluator->setEvaluationDepth(32);
         this->m_internals.evaluator->setArrayLimit(0x10000);
         this->m_internals.evaluator->setPatternLimit(0x20000);
         this->m_internals.evaluator->setLoopLimit(0x1000);
+        this->m_internals.evaluator->setDebugMode(false);
     }
 
 

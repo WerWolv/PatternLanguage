@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <optional>
 #include <string>
 #include <string_view>
@@ -18,16 +17,17 @@ namespace pl::core {
     class LogConsole {
     public:
         enum class Level : u8 {
-            Debug,
-            Info,
-            Warning,
-            Error
+            Debug       = 0,
+            Info        = 1,
+            Warning     = 2,
+            Error       = 3
         };
 
         [[nodiscard]] const auto &getLog() const { return this->m_consoleLog; }
 
-        void log(Level level, const std::string &message) {
-            this->m_consoleLog.emplace_back(level, message);
+        void log(Level level, const std::string &message) const {
+            if (u8(level) >= u8(this->m_logLevel))
+                this->m_consoleLog.emplace_back(level, message);
         }
 
         void clear() {
@@ -39,11 +39,15 @@ namespace pl::core {
 
         [[nodiscard]] const std::optional<err::PatternLanguageError> &getLastHardError() { return this->m_lastHardError; };
 
-    private:
-        std::vector<std::pair<Level, std::string>> m_consoleLog;
+        void setLogLevel(Level level) {
+            this->m_logLevel = level;
+        }
 
+    private:
+        Level m_logLevel = Level::Info;
+
+        mutable std::vector<std::pair<Level, std::string>> m_consoleLog;
         std::optional<err::PatternLanguageError> m_lastHardError;
-        ast::ASTNode *m_lastHardErrorNode = nullptr;
     };
 
 }

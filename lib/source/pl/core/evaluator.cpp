@@ -17,6 +17,8 @@
 #include <pl/patterns/pattern_wide_character.hpp>
 #include <pl/patterns/pattern_string.hpp>
 
+#include <fmt/ranges.h>
+
 namespace pl::core {
 
     std::map<std::string, Token::Literal> Evaluator::getOutVariables() const {
@@ -63,6 +65,8 @@ namespace pl::core {
         heap.emplace_back();
 
         pattern->setVariableName(name);
+
+        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Creating local array variable '{} {}[{}]' at heap address 0x{:X}.", pattern->getTypeName(), pattern->getVariableName(), entryCount, pattern->getOffset()));
 
         variables.push_back(std::unique_ptr<ptrn::Pattern>(pattern));
     }
@@ -124,23 +128,29 @@ namespace pl::core {
                 err::E0003.throwError("Out variables can only be declared in the global scope.", {}, type);
         }
 
+        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Creating local variable '{} {}' at heap address 0x{:X}.", pattern->getTypeName(), pattern->getVariableName(), pattern->getOffset()));
+
         variables.push_back(std::move(pattern));
     }
 
+    template<typename T>
+    static T truncateValue(size_t bytes, const T &value) {
+        T result = { };
+        std::memcpy(&result, &value, std::min(sizeof(result), bytes));
+
+        if (std::signed_integral<T>)
+            result = hlp::signExtend(bytes * 8, result);
+
+        return result;
+    }
+
     static Token::Literal castLiteral(const ptrn::Pattern *pattern, const Token::Literal &literal) {
-        auto truncateValue = []<typename T>(size_t bytes, const T &value) {
-            T result = { };
-            std::memcpy(&result, &value, std::min(sizeof(result), bytes));
-
-            return result;
-        };
-
         return std::visit(hlp::overloaded {
             [&](auto &value) -> Token::Literal {
                if (dynamic_cast<const ptrn::PatternUnsigned*>(pattern))
-                   return truncateValue(pattern->getSize(), u128(value));
+                   return truncateValue<u128>(pattern->getSize(), u128(value));
                else if (dynamic_cast<const ptrn::PatternSigned*>(pattern))
-                   return truncateValue(pattern->getSize(), i128(value));
+                   return truncateValue<i128>(pattern->getSize(), i128(value));
                else if (dynamic_cast<const ptrn::PatternFloat*>(pattern)) {
                    if (pattern->getSize() == sizeof(float))
                        return double(float(value));
@@ -224,32 +234,36 @@ namespace pl::core {
         {
             auto &storage = this->getHeap()[pattern->getOffset()];
             std::visit(hlp::overloaded {
-                [&pattern, &storage](const auto &value) {
+                [this, &pattern, &storage](const auto &value) {
                     auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
 
                     storage.resize(pattern->getSize());
                     std::memcpy(storage.data(), &adjustedValue, pattern->getSize());
+
+                    this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
                 },
-                [&pattern, &storage](const i128 &value) {
+                [this, &pattern, &storage](const i128 &value) {
                     auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
-                    adjustedValue = hlp::signExtend(pattern->getSize() * 6, adjustedValue);
+                    adjustedValue = hlp::signExtend(pattern->getSize() * 8, adjustedValue);
 
                     storage.resize(pattern->getSize());
                     std::memcpy(storage.data(), &adjustedValue, pattern->getSize());
+
+                    this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
                 },
-                [&pattern, &storage](const std::string &value) {
+                [this, &pattern, &storage](const std::string &value) {
                     pattern->setSize(value.size());
                     storage.resize(value.size());
                     std::memcpy(storage.data(), value.data(), pattern->getSize());
-                },
-                [this, &pattern, &storage, &name](ptrn::Pattern * const value) {
-                    if (pattern->isLocal()) {
-                        storage.resize(value->getSize());
 
-                        this->readData(value->getOffset(), storage.data(), value->getSize(), value->isLocal());
-                    } else {
-                        err::E0003.throwError(fmt::format("Cannot modify variable '{}' as it's placed in memory.", name));
-                    }
+                    this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
+                },
+                [this, &pattern, &storage](ptrn::Pattern * const value) {
+                    storage.resize(value->getSize());
+
+                    this->readData(value->getOffset(), storage.data(), value->getSize(), value->isLocal());
+
+                    this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {::02X}.", pattern->getVariableName(), storage));
                 }
             }, castedValue);
         }
@@ -262,13 +276,20 @@ namespace pl::core {
         this->handleAbort();
 
         this->m_scopes.push_back({ parent, &scope, std::nullopt, { }, this->m_heap.size() });
+
+        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Entering new scope #{}. Parent: '{}', Heap Size: {}.", this->m_scopes.size(), parent == nullptr ? "None" : parent->getVariableName(), this->m_heap.size()));
     }
 
     void Evaluator::popScope() {
         if (this->m_scopes.empty())
             return;
 
-        this->m_heap.resize(this->m_scopes.back().heapStartSize);
+        auto &currScope = this->getScope(0);
+
+        this->m_heap.resize(currScope.heapStartSize);
+
+        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Exiting scope #{}. Parent: '{}', Heap Size: {}.", this->m_scopes.size(), currScope.parent == nullptr ? "None" : currScope.parent->getVariableName(), this->m_heap.size()));
+
 
         this->m_scopes.pop_back();
     }
@@ -287,6 +308,11 @@ namespace pl::core {
 
         PL_ON_SCOPE_EXIT {
             this->m_envVariables.clear();
+
+            // Remove global local variables
+            std::erase_if(this->m_patterns, [](const std::shared_ptr<ptrn::Pattern> &pattern) {
+                return pattern->isLocal();
+            });
         };
 
         this->dataOffset()       = 0x00;
@@ -342,17 +368,16 @@ namespace pl::core {
 
             this->getConsole().setHardError(err::PatternLanguageError(e.format(sourceCode, line, column), line, column));
 
+            // Don't clear patterns on error if debug mode is enabled
+            if (this->m_debugMode)
+                return false;
+
             this->m_patterns.clear();
 
             this->m_currPatternCount = 0;
 
             return false;
         }
-
-        // Remove global local variables
-        std::erase_if(this->m_patterns, [](const std::shared_ptr<ptrn::Pattern> &pattern) {
-            return pattern->isLocal();
-        });
 
         return true;
     }

@@ -138,6 +138,8 @@ namespace pl::core {
                 else
                     std::memset(buffer, 0x00, size);
             }
+
+            this->m_console.log(LogConsole::Level::Debug, fmt::format("Reading {} bytes from {} address 0x{:02X}", address, local ? "local" : "data", size));
         }
 
         void setDefaultEndian(std::endian endian) {
@@ -285,13 +287,22 @@ namespace pl::core {
         void clearCurrentArrayIndex() { this->m_currArrayIndex = std::nullopt; }
         [[nodiscard]] std::optional<u64> getCurrentArrayIndex() const { return this->m_currArrayIndex; }
 
+        void setDebugMode(bool enabled) {
+            this->m_debugMode = enabled;
 
+            if (enabled)
+                this->m_console.setLogLevel(LogConsole::Level::Debug);
+            else
+                this->m_console.setLogLevel(LogConsole::Level::Info);
+        }
     private:
         void patternCreated();
         void patternDestroyed();
 
     private:
         u64 m_currOffset = 0x00;
+
+        bool m_debugMode = false;
         LogConsole m_console;
 
         u32 m_colorIndex = 0;
