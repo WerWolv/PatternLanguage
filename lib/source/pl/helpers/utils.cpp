@@ -7,35 +7,11 @@
 namespace pl::hlp {
 
     std::string to_string(u128 value) {
-        char data[45] = {0};
-
-        u8 index = sizeof(data) - 2;
-        while (value != 0 && index != 0) {
-            data[index] = '0' + value % 10;
-            value /= 10;
-            index--;
-        }
-
-        return {data + index + 1};
+        return fmt::format("{}", value);
     }
 
     std::string to_string(i128 value) {
-        char data[45] = {0};
-
-        u128 unsignedValue = value < 0 ? -value : value;
-
-        u8 index = sizeof(data) - 2;
-        while (unsignedValue != 0 && index != 0) {
-            data[index] = '0' + unsignedValue % 10;
-            unsignedValue /= 10;
-            index--;
-        }
-
-        if (value < 0) {
-            data[index] = '-';
-            return {data + index};
-        } else
-            return {data + index + 1};
+        return fmt::format("{}", value);
     }
 
     std::string encodeByteString(const std::vector<u8> &bytes) {

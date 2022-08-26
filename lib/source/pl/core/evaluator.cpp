@@ -59,7 +59,7 @@ namespace pl::core {
         pattern->setLocal(true);
 
         auto &heap = this->getHeap();
-        pattern->setOffset(heap.size());
+        pattern->setOffset(u64(heap.size()) << 32);
         heap.emplace_back();
 
         pattern->setVariableName(name);
@@ -116,7 +116,7 @@ namespace pl::core {
         pattern->setVariableName(name);
 
         pattern->setLocal(true);
-        pattern->setOffset(this->getHeap().size());
+        pattern->setOffset(u64(this->getHeap().size()) << 32);
         this->getHeap().emplace_back();
 
         if (outVariable) {
@@ -161,7 +161,7 @@ namespace pl::core {
                else if (dynamic_cast<const ptrn::PatternWideCharacter*>(pattern))
                    return truncateValue(pattern->getSize(), u128(value));
                else if (dynamic_cast<const ptrn::PatternString*>(pattern))
-                   return pattern->toString();
+                   return Token::literalToString(value, false);
                else
                    err::E0004.throwError(fmt::format("Cannot cast from type 'integer' to type '{}'.", pattern->getTypeName()));
             },
@@ -195,42 +195,63 @@ namespace pl::core {
         if (name == "_")
             return;
 
-        ptrn::Pattern *pattern = nullptr;
+        auto pattern = [&]() -> ptrn::Pattern * {
+            std::shared_ptr<ptrn::Pattern> *variablePattern;
 
-        {
-            auto &variables = *this->getScope(0).scope;
-            for (auto &variable : variables) {
-                if (variable->getVariableName() == name) {
-                    pattern = variable.get();
-                    break;
+            // Search for variable in current scope
+            {
+                auto &variables = *this->getScope(0).scope;
+                for (auto &variable : variables) {
+                    if (variable->getVariableName() == name) {
+                        variablePattern = &variable;
+                        break;
+                    }
                 }
             }
-        }
 
-        if (pattern == nullptr) {
-            auto &variables = *this->getGlobalScope().scope;
-            for (auto &variable : variables) {
-                if (variable->getVariableName() == name) {
-                    if (!variable->isLocal())
-                        err::E0011.throwError(fmt::format("Cannot modify global variable '{}' as it has been placed in memory.", name));
+            // If there's no variable with that name in the current scope, search the global scope
+            if (variablePattern == nullptr) {
+                auto &variables = *this->getGlobalScope().scope;
+                for (auto &variable : variables) {
+                    if (variable->getVariableName() == name) {
+                        if (!variable->isLocal())
+                            err::E0011.throwError(fmt::format("Cannot modify global variable '{}' as it has been placed in memory.", name));
 
-                    pattern = variable.get();
-                    break;
+                        variablePattern = &variable;
+                        break;
+                    }
                 }
             }
-        }
+
+            // If the global scope also doesn't have a variable with this name, it doesn't exist. Bail out
+            if (variablePattern == nullptr)
+                return nullptr;
+
+            // If the variable is being set to a pattern, adjust its layout to the real layout as it potentially contains dynamically sized members
+            std::visit(hlp::overloaded {
+                [&](ptrn::Pattern * const value) {
+                    *variablePattern = value->clone();
+                },
+                [](const auto &) {}
+            }, value);
+
+            return variablePattern->get();
+        }();
 
         if (pattern == nullptr)
             err::E0003.throwError(fmt::format("Cannot find variable '{}' in this scope.", name));
 
         if (!pattern->isLocal()) return;
 
+        if (pattern->getSize() > 0xFFFF'FFFF)
+            err::E0003.throwError(fmt::format("Value is too large to place into local variable '{}'.", name));
+
         // Cast values to type given by pattern
         Token::Literal castedValue = castLiteral(pattern, value);
 
         // Write value into variable storage
         {
-            auto &storage = this->getHeap()[pattern->getOffset()];
+            auto &storage = this->getHeap()[pattern->getHeapAddress()];
             std::visit(hlp::overloaded {
                 [this, &pattern, &storage](const auto &value) {
                     auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
@@ -273,9 +294,11 @@ namespace pl::core {
 
         this->handleAbort();
 
-        this->m_scopes.push_back({ parent, &scope, std::nullopt, { }, this->m_heap.size() });
+        const auto &heap = this->getHeap();
 
-        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Entering new scope #{}. Parent: '{}', Heap Size: {}.", this->m_scopes.size(), parent == nullptr ? "None" : parent->getVariableName(), this->m_heap.size()));
+        this->m_scopes.push_back({ parent, &scope, std::nullopt, { }, heap.size() });
+
+        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Entering new scope #{}. Parent: '{}', Heap Size: {}.", this->m_scopes.size(), parent == nullptr ? "None" : parent->getVariableName(), heap.size()));
     }
 
     void Evaluator::popScope() {
@@ -284,9 +307,11 @@ namespace pl::core {
 
         auto &currScope = this->getScope(0);
 
-        this->m_heap.resize(currScope.heapStartSize);
+        auto &heap = this->getHeap();
 
-        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Exiting scope #{}. Parent: '{}', Heap Size: {}.", this->m_scopes.size(), currScope.parent == nullptr ? "None" : currScope.parent->getVariableName(), this->m_heap.size()));
+        heap.resize(currScope.heapStartSize);
+
+        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Exiting scope #{}. Parent: '{}', Heap Size: {}.", this->m_scopes.size(), currScope.parent == nullptr ? "None" : currScope.parent->getVariableName(), heap.size()));
 
 
         this->m_scopes.pop_back();

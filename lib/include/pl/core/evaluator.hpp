@@ -128,10 +128,17 @@ namespace pl::core {
             if (local) {
                 const auto &heap = this->getHeap();
 
-                if (address < heap.size())
-                    std::memcpy(buffer, heap[address].data(), size);
+                auto heapAddress = (address >> 32);
+                auto storageAddress = address & 0xFFFF'FFFF;
+                if (heapAddress < heap.size()) {
+                    auto &storage = heap[heapAddress];
+                    if (((storageAddress + size) - 1) > storage.size())
+                        err::E0011.throwError(fmt::format("Tried reading bytes 0x{:02X} - 0x{:02X} from heap cell of size 0x{:02X}. This is a bug.", storageAddress, (storageAddress + size) - 1, storage.size()));
+
+                    std::memcpy(buffer, storage.data() + storageAddress, size);
+                }
                 else
-                    std::memset(buffer, 0x00, size);
+                    err::E0011.throwError(fmt::format("Tried accessing out of bounds heap cell at address {}. This is a bug.", address));
             } else {
                 if (address < this->m_dataSize)
                     this->m_readerFunction(address, reinterpret_cast<u8*>(buffer), size);

@@ -94,9 +94,11 @@ namespace pl::ptrn {
             for (const auto &member : this->m_members)
                 result += fmt::format("{}, ", member->toString());
 
-            // Remove trailing ", "
-            result.pop_back();
-            result.pop_back();
+            if (!this->m_members.empty()) {
+                // Remove trailing ", "
+                result.pop_back();
+                result.pop_back();
+            }
 
             result += " }";
 

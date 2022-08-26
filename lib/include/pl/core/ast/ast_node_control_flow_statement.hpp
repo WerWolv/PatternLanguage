@@ -50,7 +50,11 @@ namespace pl::core::ast {
                             auto clonedPattern = pattern->clone();
                             auto result = clonedPattern.get();
 
-                            evaluator->getScope(-1).savedPatterns.push_back(std::move(clonedPattern));
+                            auto &prevScope = evaluator->getScope(-1);
+                            auto &currScope = evaluator->getScope(0);
+
+                            prevScope.savedPatterns.push_back(std::move(clonedPattern));
+                            currScope.heapStartSize = evaluator->getHeap().size();
 
                             return result;
                         }

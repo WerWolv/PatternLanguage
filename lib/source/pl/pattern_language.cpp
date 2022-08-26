@@ -244,6 +244,9 @@ namespace pl {
             auto children = pattern->getChildren();
 
             for (const auto &[address, child]: children) {
+                if (child->getSize() == 0)
+                    continue;
+
                 intervals.emplace_back(address, address + child->getSize() - 1, child);
             }
         }

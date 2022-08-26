@@ -90,6 +90,7 @@ namespace pl::ptrn {
         ~Pattern() override = default;
 
         [[nodiscard]] u64 getOffset() const { return this->m_offset; }
+        [[nodiscard]] u32 getHeapAddress() const { return this->getOffset() >> 32; }
         virtual void setOffset(u64 offset) {
             this->m_offset = offset;
         }
