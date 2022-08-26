@@ -196,7 +196,7 @@ namespace pl::core {
             return;
 
         auto pattern = [&]() -> ptrn::Pattern * {
-            std::shared_ptr<ptrn::Pattern> *variablePattern;
+            std::shared_ptr<ptrn::Pattern> *variablePattern = nullptr;
 
             // Search for variable in current scope
             {
