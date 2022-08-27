@@ -121,13 +121,13 @@ namespace pl::core::ast {
                 [&](double left, ptrn::Pattern *const &right)               -> ASTNode * { return handlePatternOperations(left, Token::literalToFloatingPoint(right->getValue())); },
                 [&](char left, ptrn::Pattern *const &right)                 -> ASTNode * { return handlePatternOperations(left, Token::literalToSigned(right->getValue())); },
                 [&](bool left, ptrn::Pattern *const &right)                 -> ASTNode * { return handlePatternOperations(left, Token::literalToBoolean(right->getValue())); },
-                [&](const std::string &left, ptrn::Pattern *const &right)   -> ASTNode * { return handlePatternOperations(left, Token::literalToString(right->getValue(), false)); },
+                [&](const std::string &left, ptrn::Pattern *const &right)   -> ASTNode * { return handlePatternOperations(left, Token::literalToString(right->getValue(), true)); },
                 [&](ptrn::Pattern *const &left, u128 right)                 -> ASTNode * { return handlePatternOperations(Token::literalToUnsigned(left->getValue()), right); },
                 [&](ptrn::Pattern *const &left, i128 right)                 -> ASTNode * { return handlePatternOperations(Token::literalToSigned(left->getValue()), right); },
                 [&](ptrn::Pattern *const &left, double right)               -> ASTNode * { return handlePatternOperations(Token::literalToFloatingPoint(left->getValue()), right); },
                 [&](ptrn::Pattern *const &left, char right)                 -> ASTNode * { return handlePatternOperations(Token::literalToSigned(left->getValue()), right); },
                 [&](ptrn::Pattern *const &left, bool right)                 -> ASTNode * { return handlePatternOperations(Token::literalToBoolean(left->getValue()), right); },
-                [&](ptrn::Pattern *const &left, const std::string &right)   -> ASTNode * { return handlePatternOperations(Token::literalToString(left->getValue(), false), right); },
+                [&](ptrn::Pattern *const &left, const std::string &right)   -> ASTNode * { return handlePatternOperations(Token::literalToString(left->getValue(), true), right); },
                 [&, this](ptrn::Pattern *const &left, ptrn::Pattern *const &right) -> ASTNode * {
                     std::vector<u8> leftBytes(left->getSize()), rightBytes(right->getSize());
 
