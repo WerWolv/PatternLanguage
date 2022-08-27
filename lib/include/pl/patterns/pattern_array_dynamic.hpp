@@ -71,8 +71,19 @@ namespace pl::ptrn {
         }
 
         void forEachArrayEntry(u64 end, const std::function<void(u64, Pattern&)>& fn) {
-            for (u64 i = 0; i < std::min<u64>(end, this->m_entries.size()); i++)
+            auto evaluator = this->getEvaluator();
+            auto startArrayIndex = evaluator->getCurrentArrayIndex();
+            PL_ON_SCOPE_EXIT {
+                if (startArrayIndex.has_value())
+                    evaluator->setCurrentArrayIndex(*startArrayIndex);
+                else
+                    evaluator->clearCurrentArrayIndex();
+            };
+
+            for (u64 i = 0; i < std::min<u64>(end, this->m_entries.size()); i++) {
+                evaluator->setCurrentArrayIndex(i);
                 fn(i, *this->m_entries[i]);
+            }
         }
 
         void setEntries(std::vector<std::shared_ptr<Pattern>> &&entries) {

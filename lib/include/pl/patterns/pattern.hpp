@@ -3,6 +3,7 @@
 #include <pl/core/errors/error.hpp>
 #include <pl/core/evaluator.hpp>
 #include <pl/pattern_visitor.hpp>
+#include <pl/helpers/guards.hpp>
 #include <pl/helpers/types.hpp>
 #include <pl/helpers/utils.hpp>
 #include <fmt/format.h>
