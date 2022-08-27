@@ -230,7 +230,14 @@ namespace pl::core {
             // If the variable is being set to a pattern, adjust its layout to the real layout as it potentially contains dynamically sized members
             std::visit(hlp::overloaded {
                 [&](ptrn::Pattern * const value) {
+                    auto offset = variablePattern->get()->getOffset();
+
                     *variablePattern = value->clone();
+
+                    auto pattern = variablePattern->get();
+                    pattern->setVariableName(name);
+                    pattern->setLocal(true);
+                    pattern->setOffset(offset);
                 },
                 [](const auto &) {}
             }, value);
