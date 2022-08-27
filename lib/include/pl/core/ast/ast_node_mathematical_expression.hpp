@@ -128,6 +128,10 @@ namespace pl::core::ast {
                 [&](ptrn::Pattern *const &left, char right)                 -> ASTNode * { return handlePatternOperations(Token::literalToSigned(left->getValue()), right); },
                 [&](ptrn::Pattern *const &left, bool right)                 -> ASTNode * { return handlePatternOperations(Token::literalToBoolean(left->getValue()), right); },
                 [&](ptrn::Pattern *const &left, const std::string &right)   -> ASTNode * { return handlePatternOperations(Token::literalToString(left->getValue(), true), right); },
+                [&](u128, const std::string &)                              -> ASTNode * { throwInvalidOperandError(); },
+                [&](i128, const std::string &)                              -> ASTNode * { throwInvalidOperandError(); },
+                [&](double, const std::string &)                            -> ASTNode * { throwInvalidOperandError(); },
+                [&](bool, const std::string &)                              -> ASTNode * { throwInvalidOperandError(); },
                 [&, this](ptrn::Pattern *const &left, ptrn::Pattern *const &right) -> ASTNode * {
                     std::vector<u8> leftBytes(left->getSize()), rightBytes(right->getSize());
 
@@ -142,7 +146,6 @@ namespace pl::core::ast {
                             throwInvalidOperandError();
                     }
                 },
-                [&](auto &&, const std::string &) -> ASTNode * { throwInvalidOperandError(); },
                 [&, this](const std::string &left, auto right) -> ASTNode * {
                     switch (this->getOperator()) {
                         case Token::Operator::Star:
