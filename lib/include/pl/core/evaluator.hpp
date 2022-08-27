@@ -125,6 +125,9 @@ namespace pl::core {
         }
 
         void readData(u64 address, void *buffer, size_t size, bool local) const {
+            if (size == 0 || buffer == nullptr)
+                return;
+
             if (local) {
                 const auto &heap = this->getHeap();
 
