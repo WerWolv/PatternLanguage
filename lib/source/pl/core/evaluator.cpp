@@ -117,7 +117,7 @@ namespace pl::core {
 
         pattern->setLocal(true);
         pattern->setOffset(u64(this->getHeap().size()) << 32);
-        this->getHeap().emplace_back();
+        this->getHeap().emplace_back().resize(pattern->getSize());
 
         if (outVariable) {
             if (this->isGlobalScope())
