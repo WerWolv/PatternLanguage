@@ -34,8 +34,8 @@ namespace pl::core::ast {
             };
 
             for (auto &member : this->m_members) {
+                evaluator->dataOffset() = startOffset;
                 for (auto &memberPattern : member->createPatterns(evaluator)) {
-                    memberPattern->setOffset(startOffset);
                     size = std::max(memberPattern->getSize(), size);
 
                     memberPatterns.push_back(std::move(memberPattern));
