@@ -34,6 +34,7 @@ namespace pl::test {
                 std::assert((0xAA >> 4) == 0x0A, ">> operator error");
                 std::assert((0xAA << 4) == 0xAA0, "<< operator error");
                 std::assert((0xFF00FF | 0x00AA00) == 0xFFAAFF, "| operator error");
+                std::assert((s32(-1) >> 31) == -1, "Signed shift right doesn't sign extend");
 
                 // Basic operations
                 std::assert((100 + 200) == 300, "+ operator error");
