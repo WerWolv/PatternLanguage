@@ -5,6 +5,12 @@
 #include <pl/core/evaluator.hpp>
 #include <pl/patterns/pattern.hpp>
 
+#include <pl/patterns/pattern_struct.hpp>
+#include <pl/patterns/pattern_union.hpp>
+#include <pl/patterns/pattern_bitfield.hpp>
+#include <pl/patterns/pattern_array_static.hpp>
+#include <pl/patterns/pattern_array_dynamic.hpp>
+
 #include <vector>
 #include <string>
 
@@ -111,6 +117,46 @@ namespace pl::lib::libstd::core {
                     return u128(*index);
                 else
                     return 0;
+            });
+
+            /* member_count(pattern) -> count */
+            runtime.addFunction(nsStdCore, "member_count", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
+                auto pattern = Token::literalToPattern(params[0]);
+
+                if (auto structPattern = dynamic_cast<ptrn::PatternStruct*>(pattern))
+                    return u128(structPattern->getMembers().size());
+                else if (auto unionPattern = dynamic_cast<ptrn::PatternUnion*>(pattern))
+                    return u128(unionPattern->getMembers().size());
+                else if (auto bitfieldPattern = dynamic_cast<ptrn::PatternBitfield*>(pattern))
+                    return u128(bitfieldPattern->getFields().size());
+                else if (auto dynamicArrayPattern = dynamic_cast<ptrn::PatternArrayDynamic*>(pattern))
+                    return u128(dynamicArrayPattern->getEntryCount());
+                else if (auto staticArrayPattern = dynamic_cast<ptrn::PatternArrayStatic*>(pattern))
+                    return u128(staticArrayPattern->getEntryCount());
+                else
+                    return u128(0);
+            });
+
+            /* has_member(pattern, name) -> member_exists */
+            runtime.addFunction(nsStdCore, "has_member", FunctionParameterCount::exactly(2), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
+                auto pattern = Token::literalToPattern(params[0]);
+                auto name = Token::literalToString(params[1], false);
+
+                auto hasMember = [&](const auto &members) {
+                    return std::any_of(members.begin(), members.end(),
+                        [&](const std::shared_ptr<ptrn::Pattern> &member) {
+                            return member->getVariableName() == name;
+                        });
+                };
+
+                if (auto structPattern = dynamic_cast<ptrn::PatternStruct*>(pattern))
+                    return hasMember(structPattern->getMembers());
+                else if (auto unionPattern = dynamic_cast<ptrn::PatternUnion*>(pattern))
+                    return hasMember(unionPattern->getMembers());
+                else if (auto bitfieldPattern = dynamic_cast<ptrn::PatternBitfield*>(pattern))
+                    return hasMember(bitfieldPattern->getFields());
+                else
+                    return false;
             });
         }
     }
