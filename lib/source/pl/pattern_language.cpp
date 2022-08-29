@@ -119,6 +119,8 @@ namespace pl {
             }
         }
 
+        this->flattenPatterns();
+
         return true;
     }
 
@@ -195,7 +197,7 @@ namespace pl {
         return this->m_internals.evaluator->getPatternLimit();
     }
 
-    [[nodiscard]] const std::vector<std::shared_ptr<ptrn::Pattern>> &PatternLanguage::getPatterns() const {
+    [[nodiscard]] const std::vector<std::shared_ptr<ptrn::Pattern>> &PatternLanguage::getAllPatterns() const {
         return this->m_internals.evaluator->getPatterns();
     }
 
@@ -240,7 +242,7 @@ namespace pl {
         using Interval = decltype(this->m_flattenedPatterns)::interval;
         std::vector<Interval> intervals;
 
-        for (const auto &pattern : this->getPatterns()) {
+        for (const auto &pattern : this->getAllPatterns()) {
             auto children = pattern->getChildren();
 
             for (const auto &[address, child]: children) {
@@ -254,7 +256,7 @@ namespace pl {
         this->m_flattenedPatterns = std::move(intervals);
     }
 
-    std::vector<ptrn::Pattern *> PatternLanguage::getPatterns(u64 address) const {
+    std::vector<ptrn::Pattern *> PatternLanguage::getPatternsAtAddress(u64 address) const {
         if (this->m_flattenedPatterns.empty())
             return { };
 

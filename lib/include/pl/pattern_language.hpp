@@ -81,14 +81,8 @@ namespace pl {
         [[nodiscard]] u32 getCreatedPatternCount() const;
         [[nodiscard]] u32 getMaximumPatternCount() const;
 
-        [[nodiscard]] const std::vector<std::shared_ptr<ptrn::Pattern>> &getPatterns() const;
-
-        void flattenPatterns();
-        [[nodiscard]] const interval_tree::IntervalTree<u64, ptrn::Pattern*>& getFlattenedPatterns() const {
-            return this->m_flattenedPatterns;
-        }
-
-        [[nodiscard]] std::vector<ptrn::Pattern *> getPatterns(u64 address) const;
+        [[nodiscard]] const std::vector<std::shared_ptr<ptrn::Pattern>> &getAllPatterns() const;
+        [[nodiscard]] std::vector<ptrn::Pattern *> getPatternsAtAddress(u64 address) const;
 
         void reset();
         [[nodiscard]] bool isRunning() const { return this->m_running; }
@@ -102,6 +96,10 @@ namespace pl {
         }
 
     private:
+        void flattenPatterns();
+
+    private:
+
         Internals m_internals;
 
         std::vector<std::shared_ptr<core::ast::ASTNode>> m_currAST;
