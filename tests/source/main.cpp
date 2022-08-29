@@ -72,7 +72,10 @@ int runTests(int argc, char **argv) {
         return failing ? EXIT_SUCCESS : EXIT_FAILURE;
     }
 
-    if (!test->runChecks(runtime.getPatterns())) {
+    const auto &evaluatedPatterns = runtime.getAllPatterns();
+    const auto &controlPatterns   = currTest->getPatterns();
+
+    if (!test->runChecks(evaluatedPatterns)) {
         fmt::print("Post-run checks failed!\n");
 
         return failing ? EXIT_SUCCESS : EXIT_FAILURE;
@@ -84,15 +87,15 @@ int runTests(int argc, char **argv) {
     }
 
     // Check if the right number of patterns have been produced
-    if (runtime.getPatterns().size() != currTest->getPatterns().size() && !currTest->getPatterns().empty()) {
+    if (evaluatedPatterns.size() != controlPatterns.size() && !controlPatterns.empty()) {
         fmt::print("Source didn't produce expected number of patterns\n");
         return EXIT_FAILURE;
     }
 
     // Check if the produced patterns are the ones expected
-    for (u32 i = 0; i < currTest->getPatterns().size(); i++) {
-        auto &evaluatedPattern = *runtime.getPatterns()[i];
-        auto &controlPattern   = *currTest->getPatterns()[i];
+    for (u32 i = 0; i < std::min(evaluatedPatterns.size(), controlPatterns.size()); i++) {
+        auto &evaluatedPattern = *evaluatedPatterns[i];
+        auto &controlPattern   = *controlPatterns[i];
 
         if (evaluatedPattern != controlPattern) {
             fmt::print("Pattern with name {}:{} didn't match template\n", evaluatedPattern.getTypeName(), evaluatedPattern.getVariableName());
