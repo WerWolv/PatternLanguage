@@ -15,7 +15,7 @@ namespace pl::cli {
         void visit(pl::ptrn::PatternEnum& pattern)          override { formatString(&pattern);  }
         void visit(pl::ptrn::PatternFloat& pattern)         override { formatValue(&pattern);   }
         void visit(pl::ptrn::PatternPadding& pattern)       override { hlp::unused(pattern);    }
-        void visit(pl::ptrn::PatternPointer& pattern)       override { formatPointer(&pattern);  }
+        void visit(pl::ptrn::PatternPointer& pattern)       override { formatPointer(&pattern); }
         void visit(pl::ptrn::PatternSigned& pattern)        override { formatValue(&pattern);   }
         void visit(pl::ptrn::PatternString& pattern)        override { formatValue(&pattern);   }
         void visit(pl::ptrn::PatternStruct& pattern)        override { formatObject(&pattern);  }
@@ -89,7 +89,7 @@ namespace pl::cli {
         }
 
         void formatValue(pl::ptrn::Pattern *pattern) {
-            addLine(pattern->getVariableName(), pattern->toString());
+            addLine(pattern->getVariableName(), fmt::format("{},", pattern->toString()));
         }
 
     private:
