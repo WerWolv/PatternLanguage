@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 23)
 
 option(LIBPL_SHARED_LIBRARY "Compile the library as a shared library" OFF)
 option(LIBPL_ENABLE_TESTS "Enable testing" OFF)
+option(LIBPL_ENABLE_CLI "Enable building the CLI tool" ON)
 
 if (NOT TARGET fmt::fmt)
     add_subdirectory(external/fmt EXCLUDE_FROM_ALL)
@@ -22,6 +23,10 @@ add_subdirectory(example EXCLUDE_FROM_ALL)
 if (LIBPL_ENABLE_TESTS)
     enable_testing()
     add_subdirectory(tests EXCLUDE_FROM_ALL)
+endif ()
+
+if (LIBPL_ENABLE_CLI)
+    add_subdirectory(main EXCLUDE_FROM_ALL)
 endif ()
 
 add_library(pl::libpl ALIAS libpl)
