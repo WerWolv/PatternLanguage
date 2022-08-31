@@ -158,6 +158,13 @@ namespace pl::lib::libstd::core {
                 else
                     return false;
             });
+
+            /* formatted_value(pattern) -> str */
+            runtime.addFunction(nsStdCore, "formatted_value", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
+                auto pattern = Token::literalToPattern(params[0]);
+
+                return pattern->getFormattedValue();
+            });
         }
     }
 
