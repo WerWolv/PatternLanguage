@@ -5,7 +5,7 @@
 
 This repository contains the source code for the Pattern Language used by the [ImHex](https://github.com/WerWolv/ImHex) Hex Editor.
 
-**[Documentation](https://imhex.werwolv.net/docs/pattern_language/pattern_language.html)**
+**[Documentation](https://imhex.werwolv.net/docs)**
 
 ## Examples
 
