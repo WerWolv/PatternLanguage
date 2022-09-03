@@ -49,6 +49,9 @@ namespace pl::core::ast {
                     [this](ptrn::Pattern *) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
                     [](auto &&offset) -> u64 { return offset; } },
                 offset->getValue());
+
+                if (evaluator->dataOffset() < evaluator->getDataBaseAddress() || evaluator->dataOffset() > evaluator->getDataBaseAddress() + evaluator->getDataSize())
+                    err::E0005.throwError(fmt::format("Cannot place variable '{}' at out of bounds address 0x{:08X}", this->m_name, evaluator->dataOffset()), { }, this);
             }
 
             auto patterns = this->m_type->createPatterns(evaluator);
