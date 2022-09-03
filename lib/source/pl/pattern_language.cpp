@@ -24,6 +24,7 @@ namespace pl {
     }
 
     PatternLanguage::~PatternLanguage() {
+        this->m_patterns.clear();
         this->m_flattenedPatterns.clear();
         this->m_currAST.clear();
 
@@ -35,13 +36,16 @@ namespace pl {
     }
 
     PatternLanguage::PatternLanguage(PatternLanguage &&other) noexcept {
-        this->m_internals = other.m_internals;
-        this->m_currError = std::move(other.m_currError);
-        this->m_currAST = std::move(other.m_currAST);
-        this->m_flattenedPatterns = other.m_flattenedPatterns;
-        this->m_running = other.m_running;
-
+        this->m_internals           = other.m_internals;
         other.m_internals = { };
+
+        this->m_currError           = std::move(other.m_currError);
+        this->m_currAST             = std::move(other.m_currAST);
+
+        this->m_patterns            = std::move(other.m_patterns);
+        this->m_flattenedPatterns   = other.m_flattenedPatterns;
+
+        this->m_running             = other.m_running;
     }
 
     std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> PatternLanguage::parseString(const std::string &code) {
