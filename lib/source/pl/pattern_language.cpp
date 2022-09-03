@@ -119,6 +119,13 @@ namespace pl {
             }
         }
 
+        this->m_patterns = this->m_internals.evaluator->getPatterns();
+
+        // Remove global local variables
+        std::erase_if(this->m_patterns, [](const std::shared_ptr<ptrn::Pattern> &pattern) {
+            return pattern->isLocal();
+        });
+
         this->flattenPatterns();
 
         return true;
@@ -198,7 +205,7 @@ namespace pl {
     }
 
     [[nodiscard]] const std::vector<std::shared_ptr<ptrn::Pattern>> &PatternLanguage::getAllPatterns() const {
-        return this->m_internals.evaluator->getPatterns();
+        return this->m_patterns;
     }
 
 

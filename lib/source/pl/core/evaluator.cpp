@@ -338,11 +338,6 @@ namespace pl::core {
 
         PL_ON_SCOPE_EXIT {
             this->m_envVariables.clear();
-
-            // Remove global local variables
-            std::erase_if(this->m_patterns, [](const std::shared_ptr<ptrn::Pattern> &pattern) {
-                return pattern->isLocal();
-            });
         };
 
         this->dataOffset()       = 0x00;
