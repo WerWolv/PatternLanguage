@@ -332,12 +332,14 @@ namespace pl::core {
         this->m_aborted = false;
         this->m_colorIndex = 0;
         this->m_patterns.clear();
+        this->m_evaluated = false;
 
         if (this->m_allowDangerousFunctions == DangerousFunctionPermission::Deny)
             this->m_allowDangerousFunctions = DangerousFunctionPermission::Ask;
 
         PL_ON_SCOPE_EXIT {
             this->m_envVariables.clear();
+            this->m_evaluated = true;
         };
 
         this->dataOffset()       = 0x00;
@@ -408,7 +410,7 @@ namespace pl::core {
     }
 
     void Evaluator::patternCreated() {
-        if (this->m_currPatternCount > this->m_patternLimit)
+        if (this->m_currPatternCount > this->m_patternLimit && !this->m_evaluated)
             err::E0007.throwError(fmt::format("Pattern count exceeded set limit of '{}'.", this->getPatternLimit()), "If this is intended, try increasing the limit using '#pragma pattern_limit <new_limit>'.");
         this->m_currPatternCount++;
     }

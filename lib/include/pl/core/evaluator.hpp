@@ -312,6 +312,7 @@ namespace pl::core {
     private:
         u64 m_currOffset = 0x00;
 
+        bool m_evaluated = false;
         bool m_debugMode = false;
         LogConsole m_console;
 
