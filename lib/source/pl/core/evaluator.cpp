@@ -145,7 +145,7 @@ namespace pl::core {
     static Token::Literal castLiteral(const ptrn::Pattern *pattern, const Token::Literal &literal) {
         return std::visit(hlp::overloaded {
             [&](auto &value) -> Token::Literal {
-               if (dynamic_cast<const ptrn::PatternUnsigned*>(pattern))
+               if (dynamic_cast<const ptrn::PatternUnsigned*>(pattern) || dynamic_cast<const ptrn::PatternEnum*>(pattern))
                    return truncateValue<u128>(pattern->getSize(), u128(value));
                else if (dynamic_cast<const ptrn::PatternSigned*>(pattern))
                    return truncateValue<i128>(pattern->getSize(), i128(value));
