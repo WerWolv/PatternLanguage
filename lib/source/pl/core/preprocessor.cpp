@@ -34,6 +34,8 @@ namespace pl::core {
         bool isInString = false;
 
         if (initialRun) {
+            this->m_onceIncludedFiles.clear();
+            this->m_onlyIncludeOnce = false;
             this->m_defines.clear();
             this->m_pragmas.clear();
         }
@@ -131,10 +133,6 @@ namespace pl::core {
                             throw err::PatternLanguageError(*preprocessor.m_error);
                         }
 
-                        std::copy(preprocessor.m_onceIncludedFiles.begin(), preprocessor.m_onceIncludedFiles.end(), std::inserter(this->m_onceIncludedFiles, this->m_onceIncludedFiles.begin()));
-                        std::copy(preprocessor.m_defines.begin(), preprocessor.m_defines.end(), std::inserter(this->m_defines, this->m_defines.begin()));
-                        std::copy(preprocessor.m_pragmas.begin(), preprocessor.m_pragmas.end(), std::inserter(this->m_pragmas, this->m_pragmas.begin()));
-
                         bool shouldInclude = true;
                         if (preprocessor.shouldOnlyIncludeOnce()) {
                             auto [iter, added] = this->m_onceIncludedFiles.insert(includePath);
@@ -142,6 +140,10 @@ namespace pl::core {
                                 shouldInclude = false;
                             }
                         }
+
+                        std::copy(preprocessor.m_onceIncludedFiles.begin(), preprocessor.m_onceIncludedFiles.end(), std::inserter(this->m_onceIncludedFiles, this->m_onceIncludedFiles.begin()));
+                        std::copy(preprocessor.m_defines.begin(), preprocessor.m_defines.end(), std::inserter(this->m_defines, this->m_defines.begin()));
+                        std::copy(preprocessor.m_pragmas.begin(), preprocessor.m_pragmas.end(), std::inserter(this->m_pragmas, this->m_pragmas.begin()));
 
                         if (shouldInclude) {
                             auto content = preprocessedInclude.value();
