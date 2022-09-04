@@ -3,8 +3,9 @@
 #include <pl/core/token.hpp>
 #include <pl/core/log_console.hpp>
 #include <pl/core/evaluator.hpp>
-#include <pl/patterns/pattern.hpp>
+#include <pl/lib/std/types.hpp>
 
+#include <pl/patterns/pattern.hpp>
 #include <pl/patterns/pattern_struct.hpp>
 #include <pl/patterns/pattern_union.hpp>
 #include <pl/patterns/pattern_bitfield.hpp>
@@ -13,6 +14,7 @@
 
 #include <vector>
 #include <string>
+
 
 namespace pl::lib::libstd::core {
 
@@ -48,21 +50,9 @@ namespace pl::lib::libstd::core {
 
             /* set_endian(endian) */
             runtime.addFunction(nsStdCore, "set_endian", FunctionParameterCount::exactly(1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto endian = Token::literalToUnsigned(params[0]);
+                types::Endian endian = Token::literalToUnsigned(params[0]);
 
-                switch (endian) {
-                    case 0:
-                        ctx->setDefaultEndian(std::endian::native);
-                        break;
-                    case 1:
-                        ctx->setDefaultEndian(std::endian::big);
-                        break;
-                    case 2:
-                        ctx->setDefaultEndian(std::endian::little);
-                        break;
-                    default:
-                        err::E0012.throwError("Invalid endian value.", "Try one of the values in the std::core::Endian enum.");
-                }
+                ctx->setDefaultEndian(endian);
 
                 return std::nullopt;
             });

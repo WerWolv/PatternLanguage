@@ -4,9 +4,11 @@
 #include <pl/core/log_console.hpp>
 #include <pl/core/evaluator.hpp>
 #include <pl/patterns/pattern.hpp>
+#include <pl/lib/std/types.hpp>
 
 #include <vector>
 #include <string>
+
 
 namespace pl::lib::libstd::mem {
 
@@ -68,23 +70,26 @@ namespace pl::lib::libstd::mem {
             });
 
             /* read_unsigned(address, size) */
-            runtime.addFunction(nsStdMem, "read_unsigned", FunctionParameterCount::exactly(2), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto address = Token::literalToUnsigned(params[0]);
-                auto size    = Token::literalToSigned(params[1]);
+            runtime.addFunction(nsStdMem, "read_unsigned", FunctionParameterCount::exactly(3), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
+                auto address            = Token::literalToUnsigned(params[0]);
+                auto size               = Token::literalToSigned(params[1]);
+                types::Endian endian    = Token::literalToUnsigned(params[2]);
 
                 if (size < 1 || size > 16)
                     err::E0012.throwError(fmt::format("Read size {} is out of range.", size), "Try a value between 1 and 16.");
 
                 u128 result = 0;
                 ctx->readData(address, &result, size, false);
+                result = hlp::changeEndianess(result, size, endian);
 
                 return result;
             });
 
             /* read_signed(address, size) */
-            runtime.addFunction(nsStdMem, "read_signed", FunctionParameterCount::exactly(2), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto address = Token::literalToUnsigned(params[0]);
-                auto size    = Token::literalToSigned(params[1]);
+            runtime.addFunction(nsStdMem, "read_signed", FunctionParameterCount::exactly(3), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
+                auto address            = Token::literalToUnsigned(params[0]);
+                auto size               = Token::literalToSigned(params[1]);
+                types::Endian endian    = Token::literalToUnsigned(params[2]);
 
                 if (size < 1 || size > 16)
                     err::E0012.throwError(fmt::format("Read size {} is out of range.", size), "Try a value between 1 and 16.");
@@ -92,6 +97,8 @@ namespace pl::lib::libstd::mem {
 
                 i128 value;
                 ctx->readData(address, &value, size, false);
+                value = hlp::changeEndianess(value, size, endian);
+
                 return hlp::signExtend(size * 8, value);
             });
 
