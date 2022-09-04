@@ -37,6 +37,9 @@ namespace pl::core {
         }
 
     private:
+        Preprocessor(const Preprocessor &);
+
+    private:
         std::unordered_map<std::string, api::PragmaHandler> m_pragmaHandlers;
 
         std::set<std::tuple<std::string, std::string, u32>> m_defines;

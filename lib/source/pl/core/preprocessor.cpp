@@ -13,6 +13,21 @@ namespace pl::core {
         });
     }
 
+    Preprocessor::Preprocessor(const Preprocessor &other) {
+        this->m_defines = other.m_defines;
+        this->m_pragmas = other.m_pragmas;
+        this->m_onceIncludedFiles = other.m_onceIncludedFiles;
+        this->m_includePaths = other.m_includePaths;
+        this->m_onlyIncludeOnce = false;
+        this->m_pragmaHandlers = other.m_pragmaHandlers;
+
+        this->addPragmaHandler("once", [this](PatternLanguage&, const std::string &value) {
+            this->m_onlyIncludeOnce = true;
+
+            return value.empty();
+        });
+    }
+
     std::optional<std::string> Preprocessor::preprocess(PatternLanguage &runtime, std::string code, bool initialRun) {
         u32 offset      = 0;
         u32 lineNumber  = 1;
@@ -109,14 +124,16 @@ namespace pl::core {
                         }
 
                         Preprocessor preprocessor(*this);
-                        preprocessor.m_onlyIncludeOnce = false;
-                        preprocessor.m_error = std::nullopt;
 
                         auto preprocessedInclude = preprocessor.preprocess(runtime, file.readString(), /*initialRun =*/false);
 
                         if (!preprocessedInclude.has_value()) {
                             throw err::PatternLanguageError(*preprocessor.m_error);
                         }
+
+                        std::copy(preprocessor.m_onceIncludedFiles.begin(), preprocessor.m_onceIncludedFiles.end(), std::inserter(this->m_onceIncludedFiles, this->m_onceIncludedFiles.begin()));
+                        std::copy(preprocessor.m_defines.begin(), preprocessor.m_defines.end(), std::inserter(this->m_defines, this->m_defines.begin()));
+                        std::copy(preprocessor.m_pragmas.begin(), preprocessor.m_pragmas.end(), std::inserter(this->m_pragmas, this->m_pragmas.begin()));
 
                         bool shouldInclude = true;
                         if (preprocessor.shouldOnlyIncludeOnce()) {
@@ -134,10 +151,6 @@ namespace pl::core {
 
                             output += content;
                         }
-
-                        this->m_defines           = preprocessor.m_defines;
-                        this->m_pragmas           = preprocessor.m_pragmas;
-                        this->m_onceIncludedFiles = preprocessor.m_onceIncludedFiles;
                     } else if (code.substr(offset, 6) == "define") {
                         offset += 6;
 

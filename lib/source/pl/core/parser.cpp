@@ -1306,7 +1306,7 @@ namespace pl::core {
             return this->m_types.at(typeName);
         } else {
             if (this->m_types.contains(typeName))
-                err::P0011.throwError(fmt::format("Type with name '{}' has already been declared.", "Try using another name for this type."));
+                err::P0011.throwError(fmt::format("Type with name '{}' has already been declared.", typeName), "Try using another name for this type.");
 
             std::shared_ptr typeDecl = create(new ast::ASTNodeTypeDecl(typeName, std::move(node), endian));
             this->m_types.insert({ typeName, typeDecl });
