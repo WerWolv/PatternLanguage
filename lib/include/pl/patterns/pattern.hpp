@@ -244,6 +244,10 @@ namespace pl::ptrn {
             return this->m_attributes;
         }
 
+        void setFormatValue(const std::string &value) {
+            this->m_cachedDisplayValue = value;
+        }
+
     protected:
         std::optional<std::endian> m_endian;
         bool m_hidden = false;

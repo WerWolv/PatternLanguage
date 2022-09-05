@@ -57,13 +57,16 @@ namespace pl::core::ast {
                 }
             }
 
-            auto &customFunctions = evaluator->getCustomFunctions();
-            auto functions        = evaluator->getBuiltinFunctions();
+            const auto &customFunctions = evaluator->getCustomFunctions();
+            const auto &functions        = evaluator->getBuiltinFunctions();
 
-            for (auto &func : customFunctions)
-                functions.insert(func);
+            api::Function function = { };
 
-            if (!functions.contains(this->m_functionName)) {
+            if (functions.contains(this->m_functionName))
+                function = functions.at(this->m_functionName);
+            else if (customFunctions.contains(this->m_functionName))
+                function = customFunctions.at(this->m_functionName);
+            else {
                 if (this->m_functionName.starts_with("std::")) {
                     evaluator->getConsole().log(LogConsole::Level::Warning, "This function might be part of the standard library.\nYou can install the standard library though\nthe Content Store found under Help -> Content Store and then\ninclude the correct file.");
                 }
@@ -71,7 +74,6 @@ namespace pl::core::ast {
                 err::E0003.throwError(fmt::format("Cannot call unknown function '{}'.", this->m_functionName), fmt::format("Try defining it first using 'fn {}() {{ }}'", this->m_functionName), this);
             }
 
-            auto function = functions[this->m_functionName];
             const auto &[min, max] = function.parameterCount;
 
             if (evaluatedParams.size() >= min && evaluatedParams.size() < max) {

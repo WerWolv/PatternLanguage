@@ -13,6 +13,7 @@ namespace pl::ptrn {
 
         PatternArrayStatic(const PatternArrayStatic &other) : Pattern(other) {
             this->setEntries(other.getTemplate()->clone(), other.getEntryCount());
+            this->m_formatCache = other.m_formatCache;
         }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
@@ -31,11 +32,18 @@ namespace pl::ptrn {
 
             auto entry = std::shared_ptr(this->m_template->clone());
             for (u64 index = 0; index < std::min<u64>(end, this->m_entryCount); index++) {
-                entry->clearFormatCache();
                 entry->setVariableName(fmt::format("[{0}]", index));
                 entry->setOffset(this->getOffset() + index * this->m_template->getSize());
                 evaluator->setCurrentArrayIndex(index);
+
+                if (this->m_formatCache.contains(index))
+                    entry->setFormatValue(this->m_formatCache[index]);
+                else
+                    entry->clearFormatCache();
+
                 fn(index, *entry);
+
+                this->m_formatCache[index] = entry->getFormattedValue();
             }
         }
 
@@ -52,7 +60,6 @@ namespace pl::ptrn {
 
             for (size_t index = 0; index < this->m_entryCount; index++) {
                 this->m_highlightTemplate->setOffset(this->getOffset() + index * this->m_highlightTemplate->getSize());
-                this->m_highlightTemplate->clearFormatCache();
 
                 auto children = this->m_highlightTemplate->getChildren();
                 std::copy(children.begin(), children.end(), std::back_inserter(result));
@@ -127,9 +134,6 @@ namespace pl::ptrn {
         }
 
         std::string getFormattedValue() override {
-            this->m_template->clearFormatCache();
-            this->m_highlightTemplate->clearFormatCache();
-
             return this->formatDisplayValue("{ ... }", this);
         }
 
@@ -163,6 +167,8 @@ namespace pl::ptrn {
         std::shared_ptr<Pattern> m_template = nullptr;
         std::unique_ptr<Pattern> m_highlightTemplate = nullptr;
         size_t m_entryCount = 0;
+
+        std::map<u64, std::string> m_formatCache;
     };
 
 }
