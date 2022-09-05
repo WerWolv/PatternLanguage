@@ -203,12 +203,28 @@ namespace pl::ptrn {
             if (this->getEndian() == std::endian::little)
                 std::reverse(bytes.begin(), bytes.end());
 
-            std::string valueString = "{ ";
-            for (auto byte : bytes)
-                valueString += fmt::format("{0:02X} ", byte);
-            valueString += "}";
+            std::string valueString;
 
-            return this->formatDisplayValue(valueString, this);
+            for (const auto &pattern : this->m_fields) {
+                auto field = static_cast<PatternBitfieldField *>(pattern.get());
+
+                auto fieldValue = core::Token::literalToUnsigned(field->getValue());
+
+                if (fieldValue > 0) {
+                    if (field->getBitSize() == 1)
+                        valueString += fmt::format("{} | ", field->getVariableName());
+                    else
+                        valueString += fmt::format("{}({}) | ", field->getVariableName(), fieldValue);
+                }
+            }
+
+            if (valueString.size() >= 3) {
+                valueString.pop_back();
+                valueString.pop_back();
+                valueString.pop_back();
+            }
+
+            return this->formatDisplayValue(fmt::format("{{ {} }}", valueString), this);
         }
 
     private:
