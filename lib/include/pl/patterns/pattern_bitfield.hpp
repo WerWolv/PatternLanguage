@@ -148,6 +148,9 @@ namespace pl::ptrn {
                 field->setSize(this->getSize());
                 field->setColor(this->getColor());
             }
+
+            if (!this->m_fields.empty())
+                this->setBaseColor(this->m_fields.front()->getColor());
         }
 
         void setColor(u32 color) override {

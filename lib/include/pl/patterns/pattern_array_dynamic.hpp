@@ -92,6 +92,9 @@ namespace pl::ptrn {
             for (auto &entry : this->m_entries) {
                 entry->setBaseColor(this->getColor());
             }
+
+            if (!this->m_entries.empty())
+                this->setBaseColor(this->m_entries.front()->getColor());
         }
 
         [[nodiscard]] std::string toString() const override {

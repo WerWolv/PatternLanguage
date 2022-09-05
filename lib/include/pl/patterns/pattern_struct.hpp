@@ -104,6 +104,9 @@ namespace pl::ptrn {
                 this->m_sortedMembers.push_back(member.get());
                 this->m_members.push_back(std::move(member));
             }
+
+            if (!this->m_members.empty())
+                this->setBaseColor(this->m_members.front()->getColor());
         }
 
         void sort(const std::function<bool (const Pattern *, const Pattern *)> &comparator) override {

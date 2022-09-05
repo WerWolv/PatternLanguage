@@ -357,7 +357,7 @@ namespace pl::core {
         std::optional<u64> m_currArrayIndex;
 
         u32 getNextPatternColor() {
-            constexpr static std::array Palette = { 0x70B4771F, 0x700E7FFF, 0x702CA02C, 0x702827D6, 0x70BD6794, 0x704B568C, 0x70C277E3, 0x707F7F7F, 0x7022BDBC, 0x70CFBE17 };
+            constexpr static std::array Palette = { 0x70B4771F, 0x700E7FFF, 0x702CA02C, 0x702827D6, 0x70BD6794, 0x704B568C, 0x70C277E3, 0x7022BDBC, 0x70CFBE17 };
 
             auto index = this->m_colorIndex;
             this->m_colorIndex = (this->m_colorIndex + 1) % Palette.size();
