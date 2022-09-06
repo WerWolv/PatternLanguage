@@ -151,7 +151,7 @@ namespace pl::ptrn {
         }
 
         std::string getFormattedValue() override {
-            return this->formatDisplayValue("{ ... }", this);
+            return this->formatDisplayValue("[ ... ]", this);
         }
 
     private:
