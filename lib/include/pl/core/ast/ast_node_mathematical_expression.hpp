@@ -203,7 +203,10 @@ namespace pl::core::ast {
                         case Token::Operator::Plus:
                             return new ASTNodeLiteral(left + right);
                         case Token::Operator::Minus:
-                            return new ASTNodeLiteral(left - right);
+                            if (left < static_cast<decltype(left)>(right) && std::unsigned_integral<decltype(left)> && std::unsigned_integral<decltype(right)>)
+                                return new ASTNodeLiteral(i128(left) - i128(right));
+                            else
+                                return new ASTNodeLiteral(left - right);
                         case Token::Operator::Star:
                             return new ASTNodeLiteral(left * right);
                         case Token::Operator::Slash:

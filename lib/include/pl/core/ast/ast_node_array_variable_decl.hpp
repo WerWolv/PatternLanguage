@@ -134,6 +134,9 @@ namespace pl::core::ast {
 
                 if (entryCount < 0)
                     err::E0004.throwError("Array size cannot be negative.", { }, this);
+                else if (entryCount > evaluator->getArrayLimit())
+                    err::E0007.throwError(fmt::format("Array grew past set limit of {}", evaluator->getArrayLimit()), "If this is intended, try increasing the limit using '#pragma array_limit <new_limit>'.", this);
+
             } else {
                 std::vector<u8> buffer(templatePattern->getSize());
                 while (true) {

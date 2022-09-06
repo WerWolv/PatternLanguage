@@ -214,6 +214,7 @@ namespace pl {
 
 
     void PatternLanguage::reset() {
+        this->m_patterns.clear();
         this->m_flattenedPatterns.clear();
 
         this->m_currAST.clear();
