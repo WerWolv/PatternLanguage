@@ -160,7 +160,7 @@ namespace pl::ptrn {
 
             result += " ]";
 
-            return result;
+            return this->formatDisplayValue(result, this->clone().get());
         }
 
     private:

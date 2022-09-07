@@ -146,7 +146,9 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::string toString() const override {
-            return this->m_pointedAt->toString();
+            auto result = this->m_pointedAt->toString();
+
+            return this->formatDisplayValue(result, this->clone().get());
         }
 
     private:

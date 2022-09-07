@@ -70,7 +70,9 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::string toString() const override {
-            return fmt::format("{}", core::Token::literalToFloatingPoint(this->getValue()));
+            auto result = fmt::format("{}", core::Token::literalToFloatingPoint(this->getValue()));
+
+            return this->formatDisplayValue(result, this->getValue());
         }
     };
 

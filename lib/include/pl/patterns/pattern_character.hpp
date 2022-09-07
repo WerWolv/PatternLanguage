@@ -36,7 +36,9 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::string toString() const override {
-            return fmt::format("{}", char(core::Token::literalToCharacter(this->getValue())));
+            auto result = fmt::format("{}", char(core::Token::literalToCharacter(this->getValue())));
+
+            return this->formatDisplayValue(result, this->getValue());
         }
     };
 

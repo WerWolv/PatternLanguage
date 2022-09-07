@@ -119,7 +119,7 @@ namespace pl::ptrn {
 
             result += " ]";
 
-            return result;
+            return this->formatDisplayValue(result, this->clone().get());
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override {

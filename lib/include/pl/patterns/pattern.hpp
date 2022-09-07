@@ -140,7 +140,9 @@ namespace pl::ptrn {
         [[nodiscard]] virtual std::string getFormattedValue() = 0;
 
         [[nodiscard]] virtual std::string toString() const {
-            return fmt::format("{} {} @ 0x{:X}", this->getTypeName(), this->getVariableName(), this->getOffset());
+            auto result = fmt::format("{} {} @ 0x{:X}", this->getTypeName(), this->getVariableName(), this->getOffset());
+
+            return this->formatDisplayValue(result, this->getValue());
         }
 
         [[nodiscard]] virtual core::Token::Literal getValue() const {
@@ -196,11 +198,12 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::string calcDisplayValue(const std::string &value, const core::Token::Literal &literal) const {
-            if (this->m_formatterFunction == nullptr)
+            const auto &formatterFunction = this->getFormatterFunction();
+            if (formatterFunction == nullptr)
                 return value;
             else {
                 try {
-                    auto result = this->m_formatterFunction->func(this->getEvaluator(), { literal });
+                    auto result = formatterFunction->func(this->getEvaluator(), { literal });
 
                     if (result.has_value()) {
                         return core::Token::literalToString(*result, true);

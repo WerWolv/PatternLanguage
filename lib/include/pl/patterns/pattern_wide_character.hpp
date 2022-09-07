@@ -30,7 +30,9 @@ namespace pl::ptrn {
             char16_t character = core::Token::literalToUnsigned(this->getValue());
             character = hlp::changeEndianess(character, this->getEndian());
 
-            return std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>("???").to_bytes(character);
+            auto result = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>("???").to_bytes(character);
+
+            return this->formatDisplayValue(result, this->getValue());
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override { return areCommonPropertiesEqual<decltype(*this)>(other); }

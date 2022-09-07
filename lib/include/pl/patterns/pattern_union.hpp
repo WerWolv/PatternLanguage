@@ -105,7 +105,7 @@ namespace pl::ptrn {
 
             result += " }";
 
-            return result;
+            return this->formatDisplayValue(result, this->clone().get());
         }
 
         void sort(const std::function<bool (const Pattern *, const Pattern *)> &comparator) override {

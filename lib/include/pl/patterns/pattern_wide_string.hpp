@@ -49,7 +49,9 @@ namespace pl::ptrn {
                 return c == 0x00;
             });
 
-            return std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>("???").to_bytes(buffer);
+            auto result = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>("???").to_bytes(buffer);
+
+            return this->formatDisplayValue(result, this->getValue());
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override { return areCommonPropertiesEqual<decltype(*this)>(other); }

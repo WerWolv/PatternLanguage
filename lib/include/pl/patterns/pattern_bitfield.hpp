@@ -69,7 +69,9 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::string toString() const override {
-            return fmt::format("{}", core::Token::literalToUnsigned(this->getValue()));
+            auto result = fmt::format("{}", core::Token::literalToUnsigned(this->getValue()));
+
+            return this->formatDisplayValue(result, this->getValue());
         }
 
         [[nodiscard]] bool isPadding() const { return this->m_padding; }
@@ -193,7 +195,7 @@ namespace pl::ptrn {
 
             result += " }";
 
-            return result;
+            return this->formatDisplayValue(result, this->clone().get());
         }
 
         std::string getFormattedValue() override {

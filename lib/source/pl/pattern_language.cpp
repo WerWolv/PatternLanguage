@@ -142,6 +142,8 @@ namespace pl {
 
     bool PatternLanguage::executeFile(const std::fs::path &path, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables) {
         hlp::fs::File file(path, hlp::fs::File::Mode::Read);
+        if (!file.isValid())
+            return false;
 
         return this->executeString(file.readString(), envVars, inVariables, true);
     }

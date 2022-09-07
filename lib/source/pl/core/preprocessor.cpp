@@ -220,7 +220,7 @@ namespace pl::core {
                             offset += 1;
                         }
 
-                        this->m_pragmas.emplace(pragmaKey, pragmaValue, lineNumber);
+                        this->m_pragmas.emplace(pragmaKey, pragmaValue, lineNumber - 1);
                     } else {
                         err::M0002.throwError("Expected 'include', 'define' or 'pragma'");
                     }

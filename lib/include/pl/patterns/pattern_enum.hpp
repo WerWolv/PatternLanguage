@@ -66,14 +66,14 @@ namespace pl::ptrn {
         [[nodiscard]] std::string toString() const override {
             u64 value = core::Token::literalToUnsigned(this->getValue());
 
-            std::string valueString = this->getTypeName() + "::";
+            std::string result = this->getTypeName() + "::";
 
             bool foundValue = false;
             for (auto &[entryValueLiteral, entryName] : this->getEnumValues()) {
                 auto visitor = hlp::overloaded {
                         [&, name = entryName](auto &entryValue) {
                             if (static_cast<decltype(entryValue)>(value) == entryValue) {
-                                valueString += name;
+                                result += name;
                                 foundValue = true;
                                 return true;
                             }
@@ -90,9 +90,9 @@ namespace pl::ptrn {
             }
 
             if (!foundValue)
-                valueString += "???";
+                result += "???";
 
-            return valueString;
+            return this->formatDisplayValue(result, this->clone().get());
         }
 
     private:

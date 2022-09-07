@@ -92,7 +92,7 @@ namespace pl::ptrn {
 
             result += " }";
 
-            return result;
+            return this->formatDisplayValue(result, this->clone().get());
         }
 
         void setMembers(std::vector<std::shared_ptr<Pattern>> &&members) {

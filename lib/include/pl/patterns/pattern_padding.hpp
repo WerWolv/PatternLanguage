@@ -31,7 +31,9 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::string toString() const override {
-            return fmt::format("padding[{}]", this->getSize());
+            auto result = fmt::format("padding[{}]", this->getSize());
+
+            return this->formatDisplayValue(result, this->getValue());
         }
     };
 
