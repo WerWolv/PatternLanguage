@@ -52,6 +52,14 @@ jobs:
         cd build
         ctest --output-on-failure
 
+    - name: ✉️ Run ImHex-Patterns tests
+      uses: mvasigh/dispatch-action@main
+      with:
+        token: ${{ secrets.DISPATCH_TOKEN }}
+        repo: ImHex-Patterns
+        owner: WerWolv
+        event_type: update_submodule
+
     - name: ⚗️ Generate Coverage Report
       run: |
         cd build
