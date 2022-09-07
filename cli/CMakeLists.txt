@@ -5,6 +5,10 @@ set(CMAKE_CXX_STANDARD 20)
 
 add_executable(plcli
         source/main.cpp
+
+        source/helpers/utils.cpp
+
+        source/subcommands/format.cpp
 )
 
 add_subdirectory(../external/cli11 ../external/cli11)

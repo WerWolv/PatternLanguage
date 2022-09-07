@@ -23,7 +23,7 @@
 #include <string>
 #include <utility>
 
-namespace pl::cli {
+namespace pl::fmt {
 
     class Formatter {
     public:

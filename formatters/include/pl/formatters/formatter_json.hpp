@@ -1,6 +1,6 @@
 #include <pl/formatters/formatter.hpp>
 
-namespace pl::cli {
+namespace pl::fmt {
 
     class JsonPatternVisitor : public PatternVisitor {
     public:
@@ -46,7 +46,7 @@ namespace pl::cli {
         void addLine(const std::string &variableName, const std::string& str, bool noVariableName = false) {
             this->m_result += std::string(this->m_indent, ' ');
             if (!noVariableName && !this->m_inArray)
-                this->m_result += fmt::format("\"{}\": ", variableName);
+                this->m_result += ::fmt::format("\"{}\": ", variableName);
 
             this->m_result  += str + "\n";
 
@@ -58,7 +58,7 @@ namespace pl::cli {
             result = hlp::replaceAll(result, "\n", " ");
             result = hlp::encodeByteString({ result.begin(), result.end() });
 
-            addLine(pattern->getVariableName(), fmt::format("\"{}\",", result));
+            addLine(pattern->getVariableName(), ::fmt::format("\"{}\",", result));
         }
 
         template<typename T>
@@ -100,7 +100,7 @@ namespace pl::cli {
             if (pattern->getFormatterFunction() != nullptr)
                 formatString(pattern);
             else
-                addLine(pattern->getVariableName(), fmt::format("{},", pattern->toString()));
+                addLine(pattern->getVariableName(), ::fmt::format("{},", pattern->toString()));
         }
 
     private:
@@ -126,7 +126,7 @@ namespace pl::cli {
             visitor.popIndent();
 
             auto result = visitor.getResult();
-            result = fmt::format("{{\n{}}}", result);
+            result = ::fmt::format("{{\n{}}}", result);
 
             return { result.begin(), result.end() };
         }
