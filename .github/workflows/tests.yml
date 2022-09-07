@@ -58,7 +58,7 @@ jobs:
         token: ${{ secrets.DISPATCH_TOKEN }}
         repo: ImHex-Patterns
         owner: WerWolv
-        event_type: update_submodule
+        event_type: run_tests
 
     - name: ⚗️ Generate Coverage Report
       run: |
