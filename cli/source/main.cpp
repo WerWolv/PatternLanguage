@@ -1,23 +1,14 @@
 #include <pl.hpp>
+#include <pl/helpers/file.hpp>
+#include <pl/formatters.hpp>
+
 #include <CLI/CLI.hpp>
+
 #include <fmt/format.h>
 #include <fmt/std.h>
 #include <fmt/ranges.h>
 
-#include <pl/helpers/file.hpp>
-
-#include <formatters/formatter.hpp>
-#include <formatters/formatter_json.hpp>
-
 using namespace pl;
-
-// Available formatters. Add new ones here to make them available
-// First one will be used as the default formatter
-using Formatters = std::tuple<
-        pl::cli::FormatterJson
->;
-
-
 
 template<size_t N = 0>
 auto createFormatters(std::array<std::unique_ptr<pl::cli::Formatter>, std::tuple_size_v<Formatters>> &&result = {}) {
@@ -31,6 +22,8 @@ auto createFormatters(std::array<std::unique_ptr<pl::cli::Formatter>, std::tuple
         return result;
     }
 }
+
+static bool ignorePragma(PatternLanguage&, const std::string &) { return true; }
 
 int main(int argc, char** argv) {
     CLI::App app("Pattern Language CLI");
@@ -49,7 +42,7 @@ int main(int argc, char** argv) {
     app.add_option("-i,--input,INPUT_FILE", inputFilePath, "Input file")->required()->check(CLI::ExistingFile);
     app.add_option("-p,--pattern,PATTERN_FILE", patternFilePath, "Pattern file")->required()->check(CLI::ExistingFile);
     app.add_option("-o,--output,OUTPUT_FILE", outputFilePath, "Output file")->check(CLI::NonexistentPath);
-    app.add_option("-I,--includes", outputFilePath, "Include file paths")->take_all()->check(CLI::ExistingDirectory);
+    app.add_option("-I,--includes", includePaths, "Include file paths")->take_all()->check(CLI::ExistingDirectory);
     app.add_option("-v,--verbose", verbose, "Verbose output")->default_val(false);
     app.add_option("-d,--dangerous", allowDangerousFunctions, "Allow dangerous functions")->default_val(false);
     app.add_option("-b,--base", baseAddress, "Base address")->default_val(0x00);
@@ -87,8 +80,10 @@ int main(int argc, char** argv) {
 
     {
         // If no output path was given, use the input path with the formatter's file extension
-        if (outputFilePath.empty())
-            outputFilePath = inputFilePath.replace_extension(formatter->getFileExtension());
+        if (outputFilePath.empty()) {
+            outputFilePath = inputFilePath;
+            outputFilePath.replace_extension(formatter->getFileExtension());
+        }
 
         // Create and configure Pattern Language runtime
         PatternLanguage runtime;
@@ -97,10 +92,17 @@ int main(int argc, char** argv) {
             return allowDangerousFunctions;
         });
 
+        runtime.addPragma("MIME", ignorePragma);
+
         runtime.setIncludePaths(includePaths);
 
         // Use input file as data source
         hlp::fs::File inputFile(inputFilePath, hlp::fs::File::Mode::Read);
+        if (!inputFile.isValid()) {
+            fmt::print("Failed to open file '{}'\n", inputFilePath.string());
+            return EXIT_FAILURE;
+        }
+
         runtime.setDataSource([&](u64 address, void *buffer, size_t size) {
             inputFile.seek(address - baseAddress);
             inputFile.readBuffer(static_cast<u8*>(buffer), size);

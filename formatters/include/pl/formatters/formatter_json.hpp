@@ -1,4 +1,4 @@
-#include <formatters/formatter.hpp>
+#include <pl/formatters/formatter.hpp>
 
 namespace pl::cli {
 
@@ -17,7 +17,7 @@ namespace pl::cli {
         void visit(pl::ptrn::PatternPadding& pattern)       override { hlp::unused(pattern);    }
         void visit(pl::ptrn::PatternPointer& pattern)       override { formatPointer(&pattern); }
         void visit(pl::ptrn::PatternSigned& pattern)        override { formatValue(&pattern);   }
-        void visit(pl::ptrn::PatternString& pattern)        override { formatValue(&pattern);   }
+        void visit(pl::ptrn::PatternString& pattern)        override { formatString(&pattern);   }
         void visit(pl::ptrn::PatternStruct& pattern)        override { formatObject(&pattern);  }
         void visit(pl::ptrn::PatternUnion& pattern)         override { formatObject(&pattern);  }
         void visit(pl::ptrn::PatternUnsigned& pattern)      override { formatValue(&pattern);   }
@@ -35,7 +35,7 @@ namespace pl::cli {
         void popIndent() {
             this->m_indent -= 4;
 
-            if (this->m_result.size() >= 2) {
+            if (this->m_result.size() >= 2 && this->m_result.substr(this->m_result.size() - 2) == ",\n") {
                 this->m_result.pop_back();
                 this->m_result.pop_back();
                 this->m_result.push_back('\n');
@@ -54,7 +54,11 @@ namespace pl::cli {
         }
 
         void formatString(pl::ptrn::Pattern *pattern) {
-            addLine(pattern->getVariableName(), fmt::format("\"{}\",", pattern->toString()));
+            auto result = pattern->toString();
+            result = hlp::replaceAll(result, "\n", " ");
+            result = hlp::encodeByteString({ result.begin(), result.end() });
+
+            addLine(pattern->getVariableName(), fmt::format("\"{}\",", result));
         }
 
         template<typename T>
@@ -79,17 +83,24 @@ namespace pl::cli {
 
         template<typename T>
         void formatObject(T *pattern) {
-            addLine(pattern->getVariableName(), "{");
-            pushIndent();
-            pattern->forEachMember([&](auto &member) {
-                member.accept(*this);
-            });
-            popIndent();
-            addLine("", "},", true);
+            if (pattern->isSealed()) {
+                formatValue(pattern);
+            } else {
+                addLine(pattern->getVariableName(), "{");
+                pushIndent();
+                pattern->forEachMember([&](auto &member) {
+                    member.accept(*this);
+                });
+                popIndent();
+                addLine("", "},", true);
+            }
         }
 
         void formatValue(pl::ptrn::Pattern *pattern) {
-            addLine(pattern->getVariableName(), fmt::format("{},", pattern->toString()));
+            if (pattern->getFormatterFunction() != nullptr)
+                formatString(pattern);
+            else
+                addLine(pattern->getVariableName(), fmt::format("{},", pattern->toString()));
         }
 
     private:
