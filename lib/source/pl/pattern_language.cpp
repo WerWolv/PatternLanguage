@@ -81,6 +81,7 @@ namespace pl {
         code = hlp::replaceAll(code, "\t", "    ");
 
         this->m_running = true;
+        this->m_aborted = false;
         PL_ON_SCOPE_EXIT { this->m_running = false; };
 
         PL_ON_SCOPE_EXIT {
@@ -132,6 +133,10 @@ namespace pl {
 
         this->flattenPatterns();
 
+        if (this->m_aborted) {
+            this->reset();
+        }
+
         return true;
     }
 
@@ -151,8 +156,9 @@ namespace pl {
         return { success, std::move(result) };
     }
 
-    void PatternLanguage::abort() const {
+    void PatternLanguage::abort() {
         this->m_internals.evaluator->abort();
+        this->m_aborted = true;
     }
 
     void PatternLanguage::setIncludePaths(std::vector<std::fs::path> paths) const {
@@ -258,6 +264,9 @@ namespace pl {
             auto children = pattern->getChildren();
 
             for (const auto &[address, child]: children) {
+                if (this->m_aborted)
+                    return;
+
                 if (child->getSize() == 0)
                     continue;
 

@@ -1,6 +1,6 @@
 #pragma once
 
-
+#include <atomic>
 #include <bit>
 #include <map>
 #include <optional>
@@ -63,7 +63,7 @@ namespace pl {
         [[nodiscard]] std::pair<bool, std::optional<core::Token::Literal>> executeFunction(const std::string &code);
         [[nodiscard]] const std::vector<std::shared_ptr<core::ast::ASTNode>> &getCurrentAST() const;
 
-        void abort() const;
+        void abort();
 
         void setDataSource(std::function<void(u64, u8*, size_t)> readFunction, u64 baseAddress, u64 size) const;
         void setDataBaseAddress(u64 baseAddress) const;
@@ -108,6 +108,7 @@ namespace pl {
         interval_tree::IntervalTree<u64, ptrn::Pattern*> m_flattenedPatterns;
 
         bool m_running = false;
+        std::atomic<bool> m_aborted = false;
     };
 
 }
