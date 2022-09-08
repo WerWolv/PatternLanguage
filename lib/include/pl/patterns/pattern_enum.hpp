@@ -6,6 +6,15 @@ namespace pl::ptrn {
 
     class PatternEnum : public Pattern {
     public:
+        struct EnumValue {
+            core::Token::Literal min, max;
+            std::string name;
+
+            [[nodiscard]] bool operator==(const EnumValue &other) const = default;
+            [[nodiscard]] bool operator!=(const EnumValue &other) const = default;
+        };
+
+    public:
         PatternEnum(core::Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
             : Pattern(evaluator, offset, size, color) {
         }
@@ -29,7 +38,7 @@ namespace pl::ptrn {
             return Pattern::getTypeName();
         }
 
-        void setEnumValues(const std::vector<std::pair<core::Token::Literal, std::string>> &enumValues) {
+        void setEnumValues(const std::vector<EnumValue> &enumValues) {
             this->m_enumValues = enumValues;
         }
 
@@ -69,24 +78,15 @@ namespace pl::ptrn {
             std::string result = this->getTypeName() + "::";
 
             bool foundValue = false;
-            for (auto &[entryValueLiteral, entryName] : this->getEnumValues()) {
-                auto visitor = hlp::overloaded {
-                        [&, name = entryName](auto &entryValue) {
-                            if (static_cast<decltype(entryValue)>(value) == entryValue) {
-                                result += name;
-                                foundValue = true;
-                                return true;
-                            }
+            for (auto &entry : this->getEnumValues()) {
+                auto min = core::Token::literalToUnsigned(entry.min);
+                auto max = core::Token::literalToUnsigned(entry.max);
 
-                            return false;
-                        },
-                        [](const std::string &) { return false; },
-                        [](Pattern * const) { return false; },
-                };
-
-                bool matches = std::visit(visitor, entryValueLiteral);
-                if (matches)
+                if (value >= min && value <= max) {
+                    result += entry.name;
+                    foundValue = true;
                     break;
+                }
             }
 
             if (!foundValue)
@@ -96,7 +96,7 @@ namespace pl::ptrn {
         }
 
     private:
-        std::vector<std::pair<core::Token::Literal, std::string>> m_enumValues;
+        std::vector<EnumValue> m_enumValues;
     };
 
 }

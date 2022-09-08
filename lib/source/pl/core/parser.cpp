@@ -990,24 +990,32 @@ namespace pl::core {
 
         std::unique_ptr<ast::ASTNode> lastEntry;
         while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
+            std::unique_ptr<ast::ASTNode> enumValue;
+            std::string name;
+
             if (MATCHES(sequence(tkn::Literal::Identifier(), tkn::Operator::Assign))) {
-                auto name  = getValue<Token::Identifier>(-2).get();
-                auto value = parseMathematicalExpression();
+                name  = getValue<Token::Identifier>(-2).get();
+                enumValue = parseMathematicalExpression();
 
-                lastEntry = value->clone();
-                enumNode->addEntry(name, std::move(value));
+                lastEntry = enumValue->clone();
             } else if (MATCHES(sequence(tkn::Literal::Identifier()))) {
-                std::unique_ptr<ast::ASTNode> valueExpr;
-                auto name = getValue<Token::Identifier>(-1).get();
+                name = getValue<Token::Identifier>(-1).get();
                 if (enumNode->getEntries().empty())
-                    valueExpr = create(new ast::ASTNodeLiteral(u128(0)));
+                    enumValue = create(new ast::ASTNodeLiteral(u128(0)));
                 else
-                    valueExpr = create(new ast::ASTNodeMathematicalExpression(lastEntry->clone(), create(new ast::ASTNodeLiteral(u128(1))), Token::Operator::Plus));
+                    enumValue = create(new ast::ASTNodeMathematicalExpression(lastEntry->clone(), create(new ast::ASTNodeLiteral(u128(1))), Token::Operator::Plus));
 
-                lastEntry = valueExpr->clone();
-                enumNode->addEntry(name, std::move(valueExpr));
+                lastEntry = enumValue->clone();
             } else
                 err::P0002.throwError("Invalid enum entry definition.", "Enum entries can consist of either just a name or a name followed by a value assignment.", 1);
+
+            if (MATCHES(sequence(tkn::Separator::Dot, tkn::Separator::Dot, tkn::Separator::Dot))) {
+                auto endExpr = parseMathematicalExpression();
+                enumNode->addEntry(name, std::move(enumValue), std::move(endExpr));
+            } else {
+                auto clonedExpr = enumValue->clone();
+                enumNode->addEntry(name, std::move(enumValue), std::move(clonedExpr));
+            }
 
             if (!MATCHES(sequence(tkn::Separator::Comma))) {
                 if (MATCHES(sequence(tkn::Separator::RightBrace)))
