@@ -10,7 +10,7 @@
 namespace pl::cli::sub {
 
     void addFormatSubcommand(CLI::App *app) {
-        static const auto formatters = pl::fmt::createFormatters();
+        static const auto formatters = pl::gen::fmt::createFormatters();
 
         static std::fs::path inputFilePath, outputFilePath, patternFilePath;
         static std::vector<std::fs::path> includePaths;
@@ -101,7 +101,7 @@ namespace pl::cli::sub {
             }
 
             // Call selected formatter to format the results
-            auto result = formatter->format(runtime.getAllPatterns());
+            auto result = formatter->format(runtime);
 
             // Write results to output file
             hlp::fs::File outputFile(outputFilePath, hlp::fs::File::Mode::Create);

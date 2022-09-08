@@ -19,7 +19,7 @@ if (NOT TARGET intervaltree)
 endif ()
 
 add_subdirectory(lib)
-add_subdirectory(formatters EXCLUDE_FROM_ALL)
+add_subdirectory(generators EXCLUDE_FROM_ALL)
 
 if (LIBPL_ENABLE_EXAMPLE)
     add_subdirectory(example EXCLUDE_FROM_ALL)

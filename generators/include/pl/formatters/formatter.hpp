@@ -1,5 +1,6 @@
 #pragma once
 
+#include <pl/pattern_language.hpp>
 #include <pl/pattern_visitor.hpp>
 
 #include <pl/patterns/pattern.hpp>
@@ -23,7 +24,7 @@
 #include <string>
 #include <utility>
 
-namespace pl::fmt {
+namespace pl::gen::fmt {
 
     class Formatter {
     public:
@@ -35,7 +36,7 @@ namespace pl::fmt {
         }
 
         [[nodiscard]] virtual std::string getFileExtension() const = 0;
-        [[nodiscard]] virtual std::vector<u8> format(const std::vector<std::shared_ptr<ptrn::Pattern>> &patterns) = 0;
+        [[nodiscard]] virtual std::vector<u8> format(const PatternLanguage &runtime) = 0;
 
     private:
         std::string m_name;

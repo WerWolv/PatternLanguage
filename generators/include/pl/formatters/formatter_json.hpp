@@ -1,6 +1,6 @@
 #include <pl/formatters/formatter.hpp>
 
-namespace pl::fmt {
+namespace pl::gen::fmt {
 
     class JsonPatternVisitor : public PatternVisitor {
     public:
@@ -17,7 +17,7 @@ namespace pl::fmt {
         void visit(pl::ptrn::PatternPadding& pattern)       override { hlp::unused(pattern);    }
         void visit(pl::ptrn::PatternPointer& pattern)       override { formatPointer(&pattern); }
         void visit(pl::ptrn::PatternSigned& pattern)        override { formatValue(&pattern);   }
-        void visit(pl::ptrn::PatternString& pattern)        override { formatString(&pattern);   }
+        void visit(pl::ptrn::PatternString& pattern)        override { formatString(&pattern);  }
         void visit(pl::ptrn::PatternStruct& pattern)        override { formatObject(&pattern);  }
         void visit(pl::ptrn::PatternUnion& pattern)         override { formatObject(&pattern);  }
         void visit(pl::ptrn::PatternUnsigned& pattern)      override { formatValue(&pattern);   }
@@ -116,11 +116,11 @@ namespace pl::fmt {
 
         [[nodiscard]] std::string getFileExtension() const override { return ".json"; }
 
-        [[nodiscard]] std::vector<u8> format(const std::vector<std::shared_ptr<ptrn::Pattern>> &patterns) override {
+        [[nodiscard]] std::vector<u8> format(const PatternLanguage &runtime) override {
             JsonPatternVisitor visitor;
 
             visitor.pushIndent();
-            for (const auto& pattern : patterns) {
+            for (const auto& pattern : runtime.getAllPatterns()) {
                 pattern->accept(visitor);
             }
             visitor.popIndent();
