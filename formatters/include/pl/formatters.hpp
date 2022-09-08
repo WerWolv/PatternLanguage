@@ -2,12 +2,14 @@
 
 #include <pl/formatters/formatter.hpp>
 #include <pl/formatters/formatter_json.hpp>
+#include <pl/formatters/formatter_yaml.hpp>
 
 namespace pl::fmt {
 
     // Available formatters. Add new ones here to make them available
     using Formatters = std::tuple<
-            pl::fmt::FormatterJson
+            FormatterJson,
+            FormatterYaml
     >;
 
 

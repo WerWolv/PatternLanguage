@@ -3,7 +3,6 @@
 #include <CLI/CLI.hpp>
 
 #include <fmt/format.h>
-#include <fmt/std.h>
 
 // Available subcommands
 namespace pl::cli::sub {
