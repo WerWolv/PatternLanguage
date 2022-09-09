@@ -26,6 +26,32 @@
 
 namespace pl::gen::fmt {
 
+    class FormatterPatternVisitor : public pl::PatternVisitor {
+    public:
+        void enableMetaInformation(bool enable) { this->m_metaInformation = enable; }
+        [[nodiscard]] bool isMetaInformationEnabled() const { return this->m_metaInformation; }
+
+        std::vector<std::pair<std::string, std::string>> getMetaInformation(ptrn::Pattern *pattern) const {
+            if (!this->m_metaInformation)
+                return { };
+
+            std::vector<std::pair<std::string, std::string>> result;
+
+            result.emplace_back("__type", ::fmt::format("{}", pattern->getTypeName()));
+            result.emplace_back("__address", ::fmt::format("{}", pattern->getOffset()));
+            result.emplace_back("__size", ::fmt::format("{}", pattern->getSize()));
+            result.emplace_back("__color", ::fmt::format("#{:08X}", pattern->getColor()));
+            result.emplace_back("__endian", ::fmt::format("{}", pattern->getEndian() == std::endian::little ? "little" : "big"));
+            if (const auto &comment = pattern->getComment(); comment != nullptr)
+                result.emplace_back("__comment", ::fmt::format("{}", *comment));
+
+            return result;
+        }
+
+    private:
+        bool m_metaInformation = false;
+    };
+
     class Formatter {
     public:
         explicit Formatter(std::string name) : m_name(std::move(name)) { }
@@ -38,8 +64,12 @@ namespace pl::gen::fmt {
         [[nodiscard]] virtual std::string getFileExtension() const = 0;
         [[nodiscard]] virtual std::vector<u8> format(const PatternLanguage &runtime) = 0;
 
+        void enableMetaInformation(bool enable) { this->m_metaInformation = enable; }
+        [[nodiscard]] bool isMetaInformationEnabled() const { return this->m_metaInformation; }
+
     private:
         std::string m_name;
+        bool m_metaInformation = false;
     };
 
 }

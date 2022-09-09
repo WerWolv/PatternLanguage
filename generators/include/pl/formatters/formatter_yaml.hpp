@@ -2,7 +2,7 @@
 
 namespace pl::gen::fmt {
 
-    class YamlPatternVisitor : public PatternVisitor {
+    class YamlPatternVisitor : public FormatterPatternVisitor {
     public:
         YamlPatternVisitor() = default;
 
@@ -73,6 +73,10 @@ namespace pl::gen::fmt {
             } else {
                 addLine(pattern->getVariableName());
                 pushIndent();
+
+                for (const auto &[name, value] : this->getMetaInformation(pattern))
+                    addLine(name, ::fmt::format("\"{}\"", value));
+
                 pattern->forEachMember([&](auto &member) {
                     member.accept(*this);
                 });
@@ -103,6 +107,8 @@ namespace pl::gen::fmt {
         bool m_inArray = false;
         std::string m_result;
         u32 m_indent = 0;
+
+        bool m_metaInformation = false;
     };
 
     class FormatterYaml : public Formatter {
@@ -114,6 +120,7 @@ namespace pl::gen::fmt {
 
         [[nodiscard]] std::vector<u8> format(const PatternLanguage &runtime) override {
             YamlPatternVisitor visitor;
+            visitor.enableMetaInformation(this->isMetaInformationEnabled());
 
             for (const auto& pattern : runtime.getAllPatterns()) {
                 pattern->accept(visitor);

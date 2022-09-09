@@ -18,6 +18,7 @@ namespace pl::cli::sub {
         static std::string formatterName;
         static bool verbose = false;
         static bool allowDangerousFunctions = false;
+        static bool metaInformation = false;
         static u64 baseAddress = 0x00;
 
         auto subcommand = app->add_subcommand("format");
@@ -27,9 +28,10 @@ namespace pl::cli::sub {
         subcommand->add_option("-p,--pattern,PATTERN_FILE", patternFilePath, "Pattern file")->required()->check(CLI::ExistingFile);
         subcommand->add_option("-o,--output,OUTPUT_FILE", outputFilePath, "Output file")->check(CLI::NonexistentPath);
         subcommand->add_option("-I,--includes", includePaths, "Include file paths")->take_all()->check(CLI::ExistingDirectory);
-        subcommand->add_option("-v,--verbose", verbose, "Verbose output")->default_val(false);
-        subcommand->add_option("-d,--dangerous", allowDangerousFunctions, "Allow dangerous functions")->default_val(false);
         subcommand->add_option("-b,--base", baseAddress, "Base address")->default_val(0x00);
+        subcommand->add_flag("-v,--verbose", verbose, "Verbose output")->default_val(false);
+        subcommand->add_flag("-d,--dangerous", allowDangerousFunctions, "Allow dangerous functions")->default_val(false);
+        subcommand->add_flag("-m,--metadata", metaInformation, "Include meta type information")->default_val(0x00);
         subcommand->add_option("-f,--formatter", formatterName, "Formatter")->default_val("default")->check([&](const auto &value) -> std::string {
             // Validate if the selected formatter exists
             if (std::any_of(formatters.begin(), formatters.end(), [&](const auto &formatter) { return formatter->getName() == value; }))
@@ -99,6 +101,9 @@ namespace pl::cli::sub {
                     }
                 }
             }
+
+            // Set formatter settings
+            formatter->enableMetaInformation(metaInformation);
 
             // Call selected formatter to format the results
             auto result = formatter->format(runtime);

@@ -2,7 +2,7 @@
 
 namespace pl::gen::fmt {
 
-    class JsonPatternVisitor : public PatternVisitor {
+    class JsonPatternVisitor : public FormatterPatternVisitor {
     public:
         JsonPatternVisitor() = default;
 
@@ -88,6 +88,10 @@ namespace pl::gen::fmt {
             } else {
                 addLine(pattern->getVariableName(), "{");
                 pushIndent();
+
+                for (const auto &[name, value] : this->getMetaInformation(pattern))
+                    addLine(name, ::fmt::format("\"{}\",", value));
+
                 pattern->forEachMember([&](auto &member) {
                     member.accept(*this);
                 });
@@ -118,6 +122,7 @@ namespace pl::gen::fmt {
 
         [[nodiscard]] std::vector<u8> format(const PatternLanguage &runtime) override {
             JsonPatternVisitor visitor;
+            visitor.enableMetaInformation(this->isMetaInformationEnabled());
 
             visitor.pushIndent();
             for (const auto& pattern : runtime.getAllPatterns()) {
