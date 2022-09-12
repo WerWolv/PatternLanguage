@@ -71,7 +71,7 @@ namespace pl::cli::sub {
 
             // Open pattern file
             hlp::fs::File patternFile(patternFilePath, hlp::fs::File::Mode::Read);
-            if (!inputFile.isValid()) {
+            if (!patternFile.isValid()) {
                 ::fmt::print("Failed to open file '{}'\n", patternFilePath.string());
                 std::exit(EXIT_FAILURE);
             }
