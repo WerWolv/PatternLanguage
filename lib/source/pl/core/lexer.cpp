@@ -139,7 +139,7 @@ namespace pl::core {
         }
     }
 
-    std::optional<std::pair<char, size_t>> getCharacter(const std::string &string) {
+    std::optional<std::pair<char, size_t>> getCharacter(std::string_view string) {
 
         if (string.length() < 1)
             err::L0001.throwError("Expected character");
@@ -226,7 +226,7 @@ namespace pl::core {
  };
     }
 
-    std::optional<std::pair<std::string, size_t>> getStringLiteral(const std::string &string) {
+    std::optional<std::pair<std::string, size_t>> getStringLiteral(std::string_view string) {
         if (!string.starts_with('\"'))
             err::L0002.throwError(fmt::format("Expected opening \" character, got {}", string[0]));
 
@@ -253,7 +253,7 @@ namespace pl::core {
         };
     }
 
-    std::optional<std::pair<char, size_t>> getCharacterLiteral(const std::string &string) {
+    std::optional<std::pair<char, size_t>> getCharacterLiteral(std::string_view string) {
         if (string.empty())
             err::L0001.throwError("Reached end of input");
 
@@ -287,10 +287,10 @@ namespace pl::core {
             token.line = line;
             token.column = (offset - lineStartOffset) + 1;
             
-            tokens.push_back(token);
+            tokens.emplace_back(std::move(token));
         };
         
-        const std::string &code = preprocessedSourceCode;
+        const std::string_view code = preprocessedSourceCode;
 
         try {
 
@@ -428,7 +428,7 @@ namespace pl::core {
 
                     auto [character, charSize] = lexedCharacter.value();
 
-                    addToken(tkn::Literal::Numeric(character));
+                    addToken(tkn::Literal::NumericValue(character));
                     offset += charSize;
                 } else if (c == '\"') {
                     auto string = getStringLiteral(code.substr(offset));
@@ -438,7 +438,7 @@ namespace pl::core {
 
                     auto [s, stringSize] = string.value();
 
-                    addToken(tkn::Literal::String(s));
+                    addToken(tkn::Literal::StringValue(s));
                     offset += stringSize;
                 } else if (isIdentifierCharacter(c) && !std::isdigit(c)) {
                     std::string identifier = matchTillInvalid(&code[offset], isIdentifierCharacter);
@@ -464,9 +464,9 @@ namespace pl::core {
                     else if (identifier == "else")
                         addToken(tkn::Keyword::Else);
                     else if (identifier == "false")
-                        addToken(tkn::Literal::Numeric(false));
+                        addToken(tkn::Literal::NumericValue(false));
                     else if (identifier == "true")
-                        addToken(tkn::Literal::Numeric(true));
+                        addToken(tkn::Literal::NumericValue(true));
                     else if (identifier == "parent")
                         addToken(tkn::Keyword::Parent);
                     else if (identifier == "this")
@@ -543,7 +543,7 @@ namespace pl::core {
                     // If it's not a keyword and a builtin type, it has to be an identifier
 
                     else
-                        addToken(tkn::Literal::Identifier(identifier));
+                        addToken(tkn::Literal::IdentifierValue(identifier));
 
                     offset += identifier.length();
                 } else if (std::isdigit(c)) {
@@ -554,7 +554,7 @@ namespace pl::core {
                         err::L0003.throwError("Invalid integer literal");
 
 
-                    addToken(tkn::Literal::Numeric(integer.value()));
+                    addToken(tkn::Literal::NumericValue(integer.value()));
                     offset += integerLength;
                 } else
                     err::L0004.throwError("Unknown sequence");

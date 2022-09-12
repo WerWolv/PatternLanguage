@@ -77,7 +77,7 @@ namespace pl::core {
         while (true) {
             name += getValue<Token::Identifier>(-1).get();
 
-            if (MATCHES(sequence(tkn::Operator::ScopeResolution, tkn::Literal::Identifier()))) {
+            if (MATCHES(sequence(tkn::Operator::ScopeResolution, tkn::Literal::Identifier))) {
                 name += "::";
                 continue;
             } else
@@ -93,8 +93,8 @@ namespace pl::core {
         while (true) {
             typeName += getValue<Token::Identifier>(-1).get();
 
-            if (MATCHES(sequence(tkn::Operator::ScopeResolution, tkn::Literal::Identifier()))) {
-                if (peek(tkn::Operator::ScopeResolution, 0) && peek(tkn::Literal::Identifier(), 1)) {
+            if (MATCHES(sequence(tkn::Operator::ScopeResolution, tkn::Literal::Identifier))) {
+                if (peek(tkn::Operator::ScopeResolution, 0) && peek(tkn::Literal::Identifier, 1)) {
                     typeName += "::";
                     continue;
                 } else {
@@ -124,7 +124,7 @@ namespace pl::core {
 
     // <Identifier[.]...>
     std::unique_ptr<ast::ASTNode> Parser::parseRValue(ast::ASTNodeRValue::Path &path) {
-        if (peek(tkn::Literal::Identifier(), -1))
+        if (peek(tkn::Literal::Identifier, -1))
             path.push_back(getValue<Token::Identifier>(-1).get());
         else if (peek(tkn::Keyword::Parent, -1))
             path.emplace_back("parent");
@@ -138,7 +138,7 @@ namespace pl::core {
         }
 
         if (MATCHES(sequence(tkn::Separator::Dot))) {
-            if (MATCHES(oneOf(tkn::Literal::Identifier(), tkn::Keyword::Parent)))
+            if (MATCHES(oneOf(tkn::Literal::Identifier, tkn::Keyword::Parent)))
                 return this->parseRValue(path);
             else
                 err::P0002.throwError("Invalid member access, expected variable identifier or parent keyword.", {}, 1);
@@ -148,7 +148,7 @@ namespace pl::core {
 
     // <Integer|((parseMathematicalExpression))>
     std::unique_ptr<ast::ASTNode> Parser::parseFactor() {
-        if (MATCHES(sequence(tkn::Literal::Numeric())))
+        if (MATCHES(sequence(tkn::Literal::Numeric)))
             return create(new ast::ASTNodeLiteral(getValue<Token::Literal>(-1)));
         else if (peek(tkn::Operator::Plus) || peek(tkn::Operator::Minus) || peek(tkn::Operator::BitNot) || peek(tkn::Operator::BoolNot))
             return this->parseMathematicalExpression();
@@ -158,7 +158,7 @@ namespace pl::core {
                 err::P0002.throwError("Mismatched '(' in mathematical expression.", {}, 1);
 
             return node;
-        } else if (MATCHES(sequence(tkn::Literal::Identifier()))) {
+        } else if (MATCHES(sequence(tkn::Literal::Identifier))) {
             auto originalPos = this->m_curr;
             parseNamespaceResolution();
             bool isFunction = peek(tkn::Separator::LeftParenthesis);
@@ -181,7 +181,7 @@ namespace pl::core {
 
             std::unique_ptr<ast::ASTNode> result;
 
-            if (MATCHES(oneOf(tkn::Literal::Identifier(), tkn::Keyword::Parent, tkn::Keyword::This))) {
+            if (MATCHES(oneOf(tkn::Literal::Identifier, tkn::Keyword::Parent, tkn::Keyword::This))) {
                 result = create(new ast::ASTNodeTypeOperator(op, this->parseRValue()));
             } else if (MATCHES(sequence(tkn::ValueType::Any))) {
                 auto type = getValue<Token::ValueType>(-1);
@@ -225,7 +225,7 @@ namespace pl::core {
             auto op = getValue<Token::Operator>(-1);
 
             return create(new ast::ASTNodeMathematicalExpression(create(new ast::ASTNodeLiteral(0)), this->parseCastExpression(), op));
-        } else if (MATCHES(sequence(tkn::Literal::String()))) {
+        } else if (MATCHES(sequence(tkn::Literal::String))) {
             return this->parseStringLiteral();
         }
 
@@ -386,12 +386,12 @@ namespace pl::core {
             err::P0007.throwError("Cannot use attribute here.", "Attributes can only be applied after type or variable definitions.", 1);
 
         do {
-            if (!MATCHES(sequence(tkn::Literal::Identifier())))
+            if (!MATCHES(sequence(tkn::Literal::Identifier)))
                 err::P0002.throwError(fmt::format("Expected attribute instruction name, got {}", getFormattedToken(0)), {}, 1);
 
             auto attribute = getValue<Token::Identifier>(-1).get();
 
-            if (MATCHES(sequence(tkn::Separator::LeftParenthesis, tkn::Literal::String(), tkn::Separator::RightParenthesis))) {
+            if (MATCHES(sequence(tkn::Separator::LeftParenthesis, tkn::Literal::String, tkn::Separator::RightParenthesis))) {
                 auto value  = getValue<Token::Literal>(-2);
                 auto string = std::get_if<std::string>(&value);
 
@@ -421,7 +421,7 @@ namespace pl::core {
         std::vector<std::unique_ptr<ast::ASTNode>> defaultParameters;
 
         while (hasParams) {
-            if (MATCHES(sequence(tkn::ValueType::Auto, tkn::Separator::Dot, tkn::Separator::Dot, tkn::Separator::Dot, tkn::Literal::Identifier()))) {
+            if (MATCHES(sequence(tkn::ValueType::Auto, tkn::Separator::Dot, tkn::Separator::Dot, tkn::Separator::Dot, tkn::Literal::Identifier))) {
                 parameterPack = getValue<Token::Identifier>(-1).get();
 
                 if (MATCHES(sequence(tkn::Separator::Comma)))
@@ -431,7 +431,7 @@ namespace pl::core {
             } else {
                 auto type = parseType();
 
-                if (MATCHES(sequence(tkn::Literal::Identifier())))
+                if (MATCHES(sequence(tkn::Literal::Identifier)))
                     params.emplace_back(getValue<Token::Identifier>(-1).get(), std::move(type));
                 else {
                     params.emplace_back(std::to_string(unnamedParamCount), std::move(type));
@@ -473,7 +473,7 @@ namespace pl::core {
         std::unique_ptr<ast::ASTNode> statement;
         auto type = parseType();
 
-        if (MATCHES(sequence(tkn::Literal::Identifier()))) {
+        if (MATCHES(sequence(tkn::Literal::Identifier))) {
             auto identifier = getValue<Token::Identifier>(-1).get();
 
             if (MATCHES(sequence(tkn::Separator::LeftBracket) && !peek(tkn::Separator::LeftBracket))) {
@@ -502,11 +502,11 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parseFunctionStatement(bool needsSemicolon) {
         std::unique_ptr<ast::ASTNode> statement;
 
-        if (MATCHES(sequence(tkn::Literal::Identifier(), tkn::Operator::Assign)))
+        if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Operator::Assign)))
             statement = parseFunctionVariableAssignment(getValue<Token::Identifier>(-2).get());
         else if (MATCHES(sequence(tkn::Operator::Dollar, tkn::Operator::Assign)))
             statement = parseFunctionVariableAssignment("$");
-        else if (MATCHES(oneOf(tkn::Literal::Identifier()) && oneOf(tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::Star, tkn::Operator::Slash, tkn::Operator::Percent, tkn::Operator::LeftShift, tkn::Operator::RightShift, tkn::Operator::BitOr, tkn::Operator::BitAnd, tkn::Operator::BitXor) && sequence(tkn::Operator::Assign)))
+        else if (MATCHES(oneOf(tkn::Literal::Identifier) && oneOf(tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::Star, tkn::Operator::Slash, tkn::Operator::Percent, tkn::Operator::LeftShift, tkn::Operator::RightShift, tkn::Operator::BitOr, tkn::Operator::BitAnd, tkn::Operator::BitXor) && sequence(tkn::Operator::Assign)))
             statement = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(-3).get());
         else if (MATCHES(oneOf(tkn::Operator::Dollar) && oneOf(tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::Star, tkn::Operator::Slash, tkn::Operator::Percent, tkn::Operator::LeftShift, tkn::Operator::RightShift, tkn::Operator::BitOr, tkn::Operator::BitAnd, tkn::Operator::BitXor) && sequence(tkn::Operator::Assign)))
             statement = parseFunctionVariableCompoundAssignment("$");
@@ -521,7 +521,7 @@ namespace pl::core {
         } else if (MATCHES(sequence(tkn::Keyword::For, tkn::Separator::LeftParenthesis))) {
             statement      = parseFunctionForLoop();
             needsSemicolon = false;
-        } else if (MATCHES(sequence(tkn::Literal::Identifier()) && (peek(tkn::Separator::Dot) || peek(tkn::Separator::LeftBracket)))) {
+        } else if (MATCHES(sequence(tkn::Literal::Identifier) && (peek(tkn::Separator::Dot) || peek(tkn::Separator::LeftBracket)))) {
             auto lhs = parseRValue();
 
             if (!MATCHES(sequence(tkn::Operator::Assign)))
@@ -530,7 +530,7 @@ namespace pl::core {
             auto rhs = parseMathematicalExpression();
 
             statement = create(new ast::ASTNodeRValueAssignment(std::move(lhs), std::move(rhs)));
-        } else if (MATCHES(sequence(tkn::Literal::Identifier()))) {
+        } else if (MATCHES(sequence(tkn::Literal::Identifier))) {
             auto originalPos = this->m_curr;
             parseNamespaceResolution();
             bool isFunction = peek(tkn::Separator::LeftParenthesis);
@@ -707,7 +707,7 @@ namespace pl::core {
         else if (MATCHES(sequence(tkn::Keyword::BigEndian)))
             endian = std::endian::big;
 
-        if (MATCHES(sequence(tkn::Literal::Identifier()))) {    // Custom type
+        if (MATCHES(sequence(tkn::Literal::Identifier))) {    // Custom type
             auto baseTypeName = parseNamespaceResolution();
 
             for (const auto &typeName : getNamespacePrefixedNames(baseTypeName)) {
@@ -764,7 +764,7 @@ namespace pl::core {
 
             do {
                 variables.push_back(create(new ast::ASTNodeVariableDecl(getValue<Token::Identifier>(-1).get(), type)));
-            } while (MATCHES(sequence(tkn::Separator::Comma, tkn::Literal::Identifier())));
+            } while (MATCHES(sequence(tkn::Separator::Comma, tkn::Literal::Identifier)));
 
             return create(new ast::ASTNodeMultiVariableDecl(std::move(variables)));
         } else if (MATCHES(sequence(tkn::Operator::At))) {
@@ -867,16 +867,16 @@ namespace pl::core {
             member = parseFunctionVariableAssignment("$");
         else if (MATCHES(sequence(tkn::Operator::Dollar) && oneOf(tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::Star, tkn::Operator::Slash, tkn::Operator::Percent, tkn::Operator::LeftShift, tkn::Operator::RightShift, tkn::Operator::BitOr, tkn::Operator::BitAnd, tkn::Operator::BitXor) && sequence(tkn::Operator::Assign)))
             member = parseFunctionVariableCompoundAssignment("$");
-        else if (MATCHES(sequence(tkn::Literal::Identifier(), tkn::Operator::Assign)))
+        else if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Operator::Assign)))
             member = parseFunctionVariableAssignment(getValue<Token::Identifier>(-2).get());
-        else if (MATCHES(sequence(tkn::Literal::Identifier()) && oneOf(tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::Star, tkn::Operator::Slash, tkn::Operator::Percent, tkn::Operator::LeftShift, tkn::Operator::RightShift, tkn::Operator::BitOr, tkn::Operator::BitAnd, tkn::Operator::BitXor) && sequence(tkn::Operator::Assign)))
+        else if (MATCHES(sequence(tkn::Literal::Identifier) && oneOf(tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::Star, tkn::Operator::Slash, tkn::Operator::Percent, tkn::Operator::LeftShift, tkn::Operator::RightShift, tkn::Operator::BitOr, tkn::Operator::BitAnd, tkn::Operator::BitXor) && sequence(tkn::Operator::Assign)))
             member = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(-3).get());
-        else if (peek(tkn::Keyword::BigEndian) || peek(tkn::Keyword::LittleEndian) || peek(tkn::ValueType::Any) || peek(tkn::Literal::Identifier())) {
+        else if (peek(tkn::Keyword::BigEndian) || peek(tkn::Keyword::LittleEndian) || peek(tkn::ValueType::Any) || peek(tkn::Literal::Identifier)) {
             // Some kind of variable definition
 
             bool isFunction = false;
 
-            if (peek(tkn::Literal::Identifier())) {
+            if (peek(tkn::Literal::Identifier)) {
                 auto originalPos = this->m_curr;
                 this->m_curr++;
                 parseNamespaceResolution();
@@ -893,13 +893,13 @@ namespace pl::core {
             if (!isFunction) {
                 auto type = parseType();
 
-                if (MATCHES(sequence(tkn::Literal::Identifier(), tkn::Separator::LeftBracket) && sequence<Not>(tkn::Separator::LeftBracket)))
+                if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Separator::LeftBracket) && sequence<Not>(tkn::Separator::LeftBracket)))
                     member = parseMemberArrayVariable(std::move(type), true);
-                else if (MATCHES(sequence(tkn::Literal::Identifier())))
+                else if (MATCHES(sequence(tkn::Literal::Identifier)))
                     member = parseMemberVariable(std::move(type), true);
-                else if (MATCHES(sequence(tkn::Operator::Star, tkn::Literal::Identifier(), tkn::Operator::Colon)))
+                else if (MATCHES(sequence(tkn::Operator::Star, tkn::Literal::Identifier, tkn::Operator::Colon)))
                     member = parseMemberPointerVariable(std::move(type));
-                else if (MATCHES(sequence(tkn::Operator::Star, tkn::Literal::Identifier(), tkn::Separator::LeftBracket)))
+                else if (MATCHES(sequence(tkn::Operator::Star, tkn::Literal::Identifier, tkn::Separator::LeftBracket)))
                     member = parseMemberPointerArrayVariable(std::move(type));
                 else
                     err::P0002.throwError("Invalid variable declaration.", {}, 1);
@@ -935,7 +935,7 @@ namespace pl::core {
         auto typeDecl   = addType(typeName, create(new ast::ASTNodeStruct()));
         auto structNode = static_cast<ast::ASTNodeStruct *>(typeDecl->getType().get());
 
-        if (MATCHES(sequence(tkn::Operator::Colon, tkn::Literal::Identifier()))) {
+        if (MATCHES(sequence(tkn::Operator::Colon, tkn::Literal::Identifier))) {
             // Inheritance
 
             do {
@@ -944,7 +944,7 @@ namespace pl::core {
                     err::P0003.throwError(fmt::format("Cannot inherit from unknown type {}.", typeName), fmt::format("If this type is being declared further down in the code, consider forward declaring it with 'using {};'.", typeName), 1);
 
                 structNode->addInheritance(this->m_types[inheritedTypeName]->clone());
-            } while (MATCHES(sequence(tkn::Separator::Comma, tkn::Literal::Identifier())));
+            } while (MATCHES(sequence(tkn::Separator::Comma, tkn::Literal::Identifier)));
 
         } else if (MATCHES(sequence(tkn::Operator::Colon, tkn::ValueType::Any))) {
             err::P0003.throwError("Cannot inherit from built-in type.", {}, 1);
@@ -993,12 +993,12 @@ namespace pl::core {
             std::unique_ptr<ast::ASTNode> enumValue;
             std::string name;
 
-            if (MATCHES(sequence(tkn::Literal::Identifier(), tkn::Operator::Assign))) {
+            if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Operator::Assign))) {
                 name  = getValue<Token::Identifier>(-2).get();
                 enumValue = parseMathematicalExpression();
 
                 lastEntry = enumValue->clone();
-            } else if (MATCHES(sequence(tkn::Literal::Identifier()))) {
+            } else if (MATCHES(sequence(tkn::Literal::Identifier))) {
                 name = getValue<Token::Identifier>(-1).get();
                 if (enumNode->getEntries().empty())
                     enumValue = create(new ast::ASTNodeLiteral(u128(0)));
@@ -1032,7 +1032,7 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parseBitfieldEntry() {
         std::unique_ptr<ast::ASTNode> result;
 
-        if (MATCHES(sequence(tkn::Literal::Identifier(), tkn::Operator::Colon))) {
+        if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Operator::Colon))) {
             auto name = getValue<Token::Identifier>(-2).get();
             result = create(new ast::ASTNodeBitfieldField(name, parseMathematicalExpression()));
 
@@ -1204,7 +1204,7 @@ namespace pl::core {
     std::vector<std::shared_ptr<ast::ASTNode>> Parser::parseNamespace() {
         std::vector<std::shared_ptr<ast::ASTNode>> statements;
 
-        if (!MATCHES(sequence(tkn::Literal::Identifier())))
+        if (!MATCHES(sequence(tkn::Literal::Identifier)))
             err::P0002.throwError(fmt::format("Expected namespace identifier, got {}.", getFormattedToken(0)), {}, 1);
 
         this->m_currNamespace.push_back(this->m_currNamespace.back());
@@ -1212,7 +1212,7 @@ namespace pl::core {
         while (true) {
             this->m_currNamespace.back().push_back(getValue<Token::Identifier>(-1).get());
 
-            if (MATCHES(sequence(tkn::Operator::ScopeResolution, tkn::Literal::Identifier())))
+            if (MATCHES(sequence(tkn::Operator::ScopeResolution, tkn::Literal::Identifier)))
                 continue;
             else
                 break;
@@ -1234,13 +1234,13 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parsePlacement() {
         auto type = parseType(true);
 
-        if (MATCHES(sequence(tkn::Literal::Identifier(), tkn::Separator::LeftBracket)))
+        if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Separator::LeftBracket)))
             return parseArrayVariablePlacement(std::move(type));
-        else if (MATCHES(sequence(tkn::Literal::Identifier())))
+        else if (MATCHES(sequence(tkn::Literal::Identifier)))
             return parseVariablePlacement(std::move(type));
-        else if (MATCHES(sequence(tkn::Operator::Star, tkn::Literal::Identifier(), tkn::Operator::Colon)))
+        else if (MATCHES(sequence(tkn::Operator::Star, tkn::Literal::Identifier, tkn::Operator::Colon)))
             return parsePointerVariablePlacement(std::move(type));
-        else if (MATCHES(sequence(tkn::Operator::Star, tkn::Literal::Identifier(), tkn::Separator::LeftBracket)))
+        else if (MATCHES(sequence(tkn::Operator::Star, tkn::Literal::Identifier, tkn::Separator::LeftBracket)))
             return parsePointerArrayVariablePlacement(std::move(type));
         else
             err::P0002.throwError("Invalid placement sequence.", {}, 0);
@@ -1253,13 +1253,13 @@ namespace pl::core {
         std::shared_ptr<ast::ASTNode> statement;
         bool requiresSemicolon = true;
 
-        if (MATCHES(sequence(tkn::Keyword::Using, tkn::Literal::Identifier(), tkn::Operator::Assign)))
+        if (MATCHES(sequence(tkn::Keyword::Using, tkn::Literal::Identifier, tkn::Operator::Assign)))
             statement = parseUsingDeclaration();
-        else if (MATCHES(sequence(tkn::Keyword::Using, tkn::Literal::Identifier())))
+        else if (MATCHES(sequence(tkn::Keyword::Using, tkn::Literal::Identifier)))
             parseForwardDeclaration();
         else if (peek(tkn::Keyword::BigEndian) || peek(tkn::Keyword::LittleEndian) || peek(tkn::ValueType::Any))
             statement = parsePlacement();
-        else if (peek(tkn::Literal::Identifier()) && !peek(tkn::Operator::Assign, 1) && !peek(tkn::Separator::Dot, 1)  && !peek(tkn::Separator::LeftBracket, 1)) {
+        else if (peek(tkn::Literal::Identifier) && !peek(tkn::Operator::Assign, 1) && !peek(tkn::Separator::Dot, 1)  && !peek(tkn::Separator::LeftBracket, 1)) {
             auto originalPos = this->m_curr;
             this->m_curr++;
             parseNamespaceResolution();
@@ -1272,15 +1272,15 @@ namespace pl::core {
             } else
                 statement = parsePlacement();
         }
-        else if (MATCHES(sequence(tkn::Keyword::Struct, tkn::Literal::Identifier())))
+        else if (MATCHES(sequence(tkn::Keyword::Struct, tkn::Literal::Identifier)))
             statement = parseStruct();
-        else if (MATCHES(sequence(tkn::Keyword::Union, tkn::Literal::Identifier(), tkn::Separator::LeftBrace)))
+        else if (MATCHES(sequence(tkn::Keyword::Union, tkn::Literal::Identifier, tkn::Separator::LeftBrace)))
             statement = parseUnion();
-        else if (MATCHES(sequence(tkn::Keyword::Enum, tkn::Literal::Identifier(), tkn::Operator::Colon)))
+        else if (MATCHES(sequence(tkn::Keyword::Enum, tkn::Literal::Identifier, tkn::Operator::Colon)))
             statement = parseEnum();
-        else if (MATCHES(sequence(tkn::Keyword::Bitfield, tkn::Literal::Identifier(), tkn::Separator::LeftBrace)))
+        else if (MATCHES(sequence(tkn::Keyword::Bitfield, tkn::Literal::Identifier, tkn::Separator::LeftBrace)))
             statement = parseBitfield();
-        else if (MATCHES(sequence(tkn::Keyword::Function, tkn::Literal::Identifier(), tkn::Separator::LeftParenthesis)))
+        else if (MATCHES(sequence(tkn::Keyword::Function, tkn::Literal::Identifier, tkn::Separator::LeftParenthesis)))
             statement = parseFunctionDefinition();
         else if (MATCHES(sequence(tkn::Keyword::Namespace)))
             return parseNamespace();

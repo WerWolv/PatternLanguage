@@ -242,8 +242,10 @@ namespace pl {
 
     static std::string getFunctionName(const api::Namespace &ns, const std::string &name) {
         std::string functionName;
+
+
         for (auto &scope : ns)
-            functionName += scope + "::";
+            functionName += fmt::format("{}::", scope);
 
         functionName += name;
 

@@ -229,9 +229,13 @@ namespace pl::core {
 
         namespace Literal {
 
-            constexpr auto Identifier   = [](const std::string &name = { }) -> Token     { return createToken(core::Token::Type::Identifier, Token::Identifier(name)); };
-            constexpr auto Numeric      = [](const Token::Literal &value = { }) -> Token { return createToken(core::Token::Type::Integer, value); };
-            constexpr auto String       = [](const std::string &value = { }) -> Token    { return createToken(core::Token::Type::String, Token::Literal(value)); };
+            constexpr auto IdentifierValue   = [](const std::string &name = { }) -> Token     { return createToken(core::Token::Type::Identifier, Token::Identifier(name)); };
+            constexpr auto NumericValue      = [](const Token::Literal &value = { }) -> Token { return createToken(core::Token::Type::Integer, value); };
+            constexpr auto StringValue       = [](const std::string &value = { }) -> Token    { return createToken(core::Token::Type::String, Token::Literal(value)); };
+
+            constexpr auto Identifier = createToken(core::Token::Type::Identifier, { });
+            constexpr auto Numeric = createToken(core::Token::Type::Integer, { });
+            constexpr auto String = createToken(core::Token::Type::String, { });
 
         }
 

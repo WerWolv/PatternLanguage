@@ -28,7 +28,7 @@ namespace pl::core {
         });
     }
 
-    std::optional<std::string> Preprocessor::preprocess(PatternLanguage &runtime, std::string code, bool initialRun) {
+    std::optional<std::string> Preprocessor::preprocess(PatternLanguage &runtime, std::string sourceCode, bool initialRun) {
         u32 offset      = 0;
         u32 lineNumber  = 1;
         bool isInString = false;
@@ -41,7 +41,9 @@ namespace pl::core {
         }
 
         std::string output;
-        output.reserve(code.size());
+        output.reserve(sourceCode.size());
+
+        std::string_view code = sourceCode;
 
         try {
             bool startOfLine = true;
@@ -261,7 +263,7 @@ namespace pl::core {
             }
         } catch (err::PreprocessorError::Exception &e) {
             auto line = e.getUserData() == 0 ? lineNumber : e.getUserData();
-            this->m_error = err::PatternLanguageError(e.format(code, line, 1), line, 1);
+            this->m_error = err::PatternLanguageError(e.format(sourceCode, line, 1), line, 1);
 
             return std::nullopt;
         } catch (err::PatternLanguageError &e) {

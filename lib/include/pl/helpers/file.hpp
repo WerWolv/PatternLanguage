@@ -39,7 +39,7 @@ namespace pl::hlp::fs {
 
 
         [[nodiscard]] bool isValid() const {
-            return this->m_file != nullptr && hlp::fs::exists(this->m_path) && !hlp::fs::isDirectory(this->m_path);
+            return this->m_file != nullptr;
         }
 
         void seek(u64 offset);
