@@ -2,6 +2,7 @@
 
 #include <pl/core/ast/ast_node.hpp>
 #include <pl/core/ast/ast_node_attribute.hpp>
+#include <pl/core/ast/ast_node_literal.hpp>
 
 #include <pl/patterns/pattern_enum.hpp>
 

@@ -9,6 +9,7 @@ add_executable(plcli
         source/helpers/utils.cpp
 
         source/subcommands/format.cpp
+        source/subcommands/codegen.cpp
 )
 
 add_subdirectory(../external/cli11 ../external/cli11)

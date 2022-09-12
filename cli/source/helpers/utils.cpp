@@ -35,4 +35,29 @@ namespace pl::cli {
         }
     }
 
+    std::vector<std::shared_ptr<pl::core::ast::ASTNode>> parsePattern(
+            PatternLanguage &runtime,
+            pl::hlp::fs::File &patternFile,
+            const std::vector<std::fs::path> &includePaths,
+            bool allowDangerousFunctions) {
+
+        runtime.setDangerousFunctionCallHandler([&]() {
+            return allowDangerousFunctions;
+        });
+
+        runtime.addPragma("MIME", ignorePragma);
+
+        runtime.setIncludePaths(includePaths);
+
+        // Execute pattern file
+        auto ast = runtime.parseString(patternFile.readString());
+        if (!ast.has_value()) {
+            auto error = runtime.getError().value();
+            fmt::print("Pattern Error: {}:{} -> {}\n", error.line, error.column, error.message);
+            std::exit(EXIT_FAILURE);
+        }
+
+        return *ast;
+    }
+
 }
