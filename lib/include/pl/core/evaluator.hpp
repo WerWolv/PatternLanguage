@@ -124,19 +124,21 @@ namespace pl::core {
             return this->m_dataSize;
         }
 
-        void readData(u64 address, void *buffer, size_t size, bool local) const {
+        void readData(u64 address, void *buffer, size_t size, bool local) {
             if (size == 0 || buffer == nullptr)
                 return;
 
             if (local) {
-                const auto &heap = this->getHeap();
+                auto &heap = this->getHeap();
 
                 auto heapAddress = (address >> 32);
                 auto storageAddress = address & 0xFFFF'FFFF;
                 if (heapAddress < heap.size()) {
                     auto &storage = heap[heapAddress];
-                    if (((storageAddress + size) - 1) > storage.size())
-                        err::E0011.throwError(fmt::format("Tried reading bytes 0x{:02X} - 0x{:02X} from heap cell of size 0x{:02X}. This is a bug.", storageAddress, (storageAddress + size) - 1, storage.size()));
+
+                    if (storageAddress + size > storage.size()) {
+                        storage.resize(storageAddress + size);
+                    }
 
                     std::memcpy(buffer, storage.data() + storageAddress, size);
                 }
@@ -243,6 +245,7 @@ namespace pl::core {
         void createArrayVariable(const std::string &name, ast::ASTNode *type, size_t entryCount);
         void createVariable(const std::string &name, ast::ASTNode *type, const std::optional<Token::Literal> &value = std::nullopt, bool outVariable = false);
         void setVariable(const std::string &name, const Token::Literal &value);
+        void setVariable(ptrn::Pattern *pattern, const Token::Literal &value);
 
         void abort() {
             this->m_aborted = true;

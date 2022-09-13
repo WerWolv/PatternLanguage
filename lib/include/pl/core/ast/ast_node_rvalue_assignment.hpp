@@ -36,14 +36,14 @@ namespace pl::core::ast {
         FunctionResult execute(Evaluator *evaluator) const override {
             const auto lhs     = this->getLValue()->createPatterns(evaluator);
             const auto rhs     = this->getRValue()->evaluate(evaluator);
-            const auto literal = dynamic_cast<ASTNodeLiteral *>(rhs.get());
 
             if (lhs.empty())
                 err::E0003.throwError("Cannot find variable in this scope.", {}, this);
 
             auto &pattern = lhs.front();
+            const auto literal = dynamic_cast<ASTNodeLiteral *>(rhs.get());
 
-            evaluator->setVariable(pattern->getVariableName(), literal->getValue());
+            evaluator->setVariable(pattern.get(), literal->getValue());
 
             return {};
         }

@@ -248,10 +248,14 @@ namespace pl::core {
         if (pattern == nullptr)
             err::E0003.throwError(fmt::format("Cannot find variable '{}' in this scope.", name));
 
+        this->setVariable(pattern, value);
+    }
+
+    void Evaluator::setVariable(ptrn::Pattern *pattern, const Token::Literal &value) {
         if (!pattern->isLocal()) return;
 
         if (pattern->getSize() > 0xFFFF'FFFF)
-            err::E0003.throwError(fmt::format("Value is too large to place into local variable '{}'.", name));
+            err::E0003.throwError(fmt::format("Value is too large to place into local variable '{}'.", pattern->getVariableName()));
 
         // Cast values to type given by pattern
         Token::Literal castedValue = castLiteral(pattern, value);
@@ -260,37 +264,37 @@ namespace pl::core {
         {
             auto &storage = this->getHeap()[pattern->getHeapAddress()];
             std::visit(hlp::overloaded {
-                [this, &pattern, &storage](const auto &value) {
-                    auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
+                    [this, &pattern, &storage](const auto &value) {
+                        auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
 
-                    storage.resize(pattern->getSize());
-                    std::memcpy(storage.data(), &adjustedValue, pattern->getSize());
+                        storage.resize(pattern->getSize());
+                        std::memcpy(storage.data(), &adjustedValue, pattern->getSize());
 
-                    this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
-                },
-                [this, &pattern, &storage](const i128 &value) {
-                    auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
-                    adjustedValue = hlp::signExtend(pattern->getSize() * 8, adjustedValue);
+                        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
+                    },
+                    [this, &pattern, &storage](const i128 &value) {
+                        auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
+                        adjustedValue = hlp::signExtend(pattern->getSize() * 8, adjustedValue);
 
-                    storage.resize(pattern->getSize());
-                    std::memcpy(storage.data(), &adjustedValue, pattern->getSize());
+                        storage.resize(pattern->getSize());
+                        std::memcpy(storage.data(), &adjustedValue, pattern->getSize());
 
-                    this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
-                },
-                [this, &pattern, &storage](const std::string &value) {
-                    pattern->setSize(value.size());
-                    storage.resize(value.size());
-                    std::memcpy(storage.data(), value.data(), pattern->getSize());
+                        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
+                    },
+                    [this, &pattern, &storage](const std::string &value) {
+                        pattern->setSize(value.size());
+                        storage.resize(value.size());
+                        std::memcpy(storage.data(), value.data(), pattern->getSize());
 
-                    this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
-                },
-                [this, &pattern, &storage](ptrn::Pattern * const value) {
-                    storage.resize(value->getSize());
+                        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
+                    },
+                    [this, &pattern, &storage](ptrn::Pattern * const value) {
+                        storage.resize(value->getSize());
 
-                    this->readData(value->getOffset(), storage.data(), value->getSize(), value->isLocal());
+                        this->readData(value->getOffset(), storage.data(), value->getSize(), value->isLocal());
 
-                    this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {:02X}.", pattern->getVariableName(), fmt::join(storage, " ")));
-                }
+                        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {:02X}.", pattern->getVariableName(), fmt::join(storage, " ")));
+                    }
             }, castedValue);
         }
     }
