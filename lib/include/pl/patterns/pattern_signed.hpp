@@ -22,7 +22,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
-            return fmt::format("s{}", this->getSize() * 8);
+            return this->getTypeName();
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override { return areCommonPropertiesEqual<decltype(*this)>(other); }
