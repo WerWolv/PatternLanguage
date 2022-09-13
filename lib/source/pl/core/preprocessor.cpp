@@ -51,6 +51,10 @@ namespace pl::core {
                 if (code.substr(offset, 2) == "//") {
                     while (code[offset] != '\n' && offset < code.length())
                         offset += 1;
+
+                    if (code.length() == offset)
+                        break;
+
                 } else if (code.substr(offset, 2) == "/*") {
                     auto commentStartLine = lineNumber;
                     while (code.substr(offset, 2) != "*/" && offset < code.length()) {
