@@ -704,6 +704,9 @@ namespace pl::core {
 
         bool reference = MATCHES(sequence(tkn::Keyword::Reference));
 
+        if (disallowSpecialTypes && reference)
+            err::P0002.throwError("Cannot use reference type in this context.", {}, 1);
+
         if (MATCHES(sequence(tkn::Keyword::LittleEndian)))
             endian = std::endian::little;
         else if (MATCHES(sequence(tkn::Keyword::BigEndian)))
