@@ -702,6 +702,8 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNodeTypeDecl> Parser::parseType(bool disallowSpecialTypes) {
         std::optional<std::endian> endian;
 
+        bool reference = MATCHES(sequence(tkn::Keyword::Reference));
+
         if (MATCHES(sequence(tkn::Keyword::LittleEndian)))
             endian = std::endian::little;
         else if (MATCHES(sequence(tkn::Keyword::BigEndian)))
@@ -712,7 +714,7 @@ namespace pl::core {
 
             for (const auto &typeName : getNamespacePrefixedNames(baseTypeName)) {
                 if (this->m_types.contains(typeName))
-                    return create(new ast::ASTNodeTypeDecl({}, this->m_types[typeName], endian));
+                    return create(new ast::ASTNodeTypeDecl({}, this->m_types[typeName], endian, reference));
             }
 
             err::P0003.throwError(fmt::format("Type {} has not been declared yet.", baseTypeName), fmt::format("If this type is being declared further down in the code, consider forward declaring it with 'using {};'.", baseTypeName), 1);
@@ -726,7 +728,7 @@ namespace pl::core {
                     err::P0002.throwError("Invalid type. 'str' cannot be used in this context.", "Consider using a char[] instead.", 1);
             }
 
-            return create(new ast::ASTNodeTypeDecl({}, create(new ast::ASTNodeBuiltinType(type)), endian));
+            return create(new ast::ASTNodeTypeDecl({}, create(new ast::ASTNodeBuiltinType(type)), endian, reference));
         } else {
             err::P0002.throwError(fmt::format("Invalid type. Expected built-in type or custom type name, got {}.", getFormattedToken(0)), {}, 1);
         }

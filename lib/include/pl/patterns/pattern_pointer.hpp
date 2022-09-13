@@ -63,6 +63,12 @@ namespace pl::ptrn {
             Pattern::setLocal(local);
         }
 
+        void setReference(bool reference) override {
+            this->m_pointedAt->setReference(reference);
+
+            Pattern::setReference(reference);
+        }
+
         void setPointedAtPattern(std::unique_ptr<Pattern> &&pattern) {
             this->m_pointedAt = std::move(pattern);
             this->m_pointedAt->setVariableName(fmt::format("*({})", this->getVariableName()));

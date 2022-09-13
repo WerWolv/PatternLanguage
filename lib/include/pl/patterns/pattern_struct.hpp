@@ -61,6 +61,13 @@ namespace pl::ptrn {
             Pattern::setLocal(local);
         }
 
+        void setReference(bool reference) override {
+            for (auto &pattern : this->m_members)
+                pattern->setReference(reference);
+
+            Pattern::setReference(reference);
+        }
+
         void setColor(u32 color) override {
             Pattern::setColor(color);
             for (auto &member : this->m_members) {

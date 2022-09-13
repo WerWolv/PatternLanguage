@@ -22,8 +22,7 @@ namespace pl::core {
 
     class Token {
     public:
-        enum class Type : u64
-        {
+        enum class Type : u64 {
             Keyword,
             ValueType,
             Operator,
@@ -33,8 +32,7 @@ namespace pl::core {
             Separator
         };
 
-        enum class Keyword
-        {
+        enum class Keyword {
             Struct,
             Union,
             Using,
@@ -54,11 +52,11 @@ namespace pl::core {
             In,
             Out,
             Break,
-            Continue
+            Continue,
+            Reference
         };
 
-        enum class Operator
-        {
+        enum class Operator {
             At,
             Assign,
             Colon,
@@ -90,8 +88,7 @@ namespace pl::core {
             ScopeResolution
         };
 
-        enum class ValueType
-        {
+        enum class ValueType {
             Unsigned8Bit   = 0x10,
             Signed8Bit     = 0x11,
             Unsigned16Bit  = 0x20,
@@ -125,8 +122,7 @@ namespace pl::core {
             Any           = 0xFFFF
         };
 
-        enum class Separator
-        {
+        enum class Separator {
             LeftParenthesis,
             RightParenthesis,
             LeftBrace,
@@ -224,6 +220,7 @@ namespace pl::core {
             constexpr auto This         = createToken(core::Token::Type::Keyword, Token::Keyword::This);
             constexpr auto In           = createToken(core::Token::Type::Keyword, Token::Keyword::In);
             constexpr auto Out          = createToken(core::Token::Type::Keyword, Token::Keyword::Out);
+            constexpr auto Reference    = createToken(core::Token::Type::Keyword, Token::Keyword::Reference);
 
         }
 

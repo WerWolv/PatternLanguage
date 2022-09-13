@@ -162,6 +162,7 @@ namespace pl::core {
                                       case Out: return "out";
                                       case Break: return "break";
                                       case Continue: return "continue";
+                                      case Reference: return "ref";
                                   }
 
                                   return "";

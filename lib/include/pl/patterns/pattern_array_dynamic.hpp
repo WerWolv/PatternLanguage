@@ -62,6 +62,13 @@ namespace pl::ptrn {
             Pattern::setLocal(local);
         }
 
+        void setReference(bool reference) override {
+            for (auto &pattern : this->m_entries)
+                pattern->setReference(reference);
+
+            Pattern::setReference(reference);
+        }
+
         [[nodiscard]] size_t getEntryCount() const {
             return this->m_entries.size();
         }

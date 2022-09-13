@@ -78,6 +78,16 @@ namespace pl::ptrn {
             Pattern::setLocal(local);
         }
 
+        void setReference(bool reference) override {
+            if (this->m_template != nullptr)
+                this->m_template->setReference(reference);
+
+            if (this->m_highlightTemplate != nullptr)
+                this->m_highlightTemplate->setReference(reference);
+
+            Pattern::setReference(reference);
+        }
+
         void setColor(u32 color) override {
             Pattern::setColor(color);
             this->m_template->setColor(color);

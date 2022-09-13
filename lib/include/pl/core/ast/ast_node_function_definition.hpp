@@ -87,7 +87,11 @@ namespace pl::core::ast {
                 for (u32 paramIndex = 0; paramIndex < this->m_params.size() && paramIndex < params.size(); paramIndex++) {
                     const auto &[name, type] = this->m_params[paramIndex];
 
-                    ctx->createVariable(name, type.get(), params[paramIndex]);
+                    bool reference = false;
+                    if (auto typeNode = dynamic_cast<ASTNodeTypeDecl *>(type.get()); typeNode != nullptr && typeNode->isReference())
+                        reference = true;
+
+                    ctx->createVariable(name, type.get(), params[paramIndex], false, reference);
                     ctx->setVariable(name, params[paramIndex]);
                 }
 

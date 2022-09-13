@@ -177,6 +177,14 @@ namespace pl::ptrn {
             return this->m_local;
         }
 
+        virtual void setReference(bool reference) {
+            this->m_reference = reference;
+        }
+
+        [[nodiscard]] bool isReference() const {
+            return this->m_reference;
+        }
+
         virtual void sort(const std::function<bool(const Pattern *left, const Pattern *right)> &comparator) {
             hlp::unused(comparator);
         }
@@ -274,6 +282,7 @@ namespace pl::ptrn {
         std::unique_ptr<api::Function> m_transformFunction;
 
         bool m_local = false;
+        bool m_reference = false;
 
         bool m_manualColor = false;
     };

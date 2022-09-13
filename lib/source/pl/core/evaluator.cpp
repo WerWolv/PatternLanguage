@@ -69,7 +69,7 @@ namespace pl::core {
         variables.push_back(std::unique_ptr<ptrn::Pattern>(pattern));
     }
 
-    void Evaluator::createVariable(const std::string &name, ast::ASTNode *type, const std::optional<Token::Literal> &value, bool outVariable) {
+    void Evaluator::createVariable(const std::string &name, ast::ASTNode *type, const std::optional<Token::Literal> &value, bool outVariable, bool reference) {
         // A variable named _ gets treated as "don't care"
         if (name == "_")
             return;
@@ -115,9 +115,12 @@ namespace pl::core {
 
         pattern->setVariableName(name);
 
-        pattern->setLocal(true);
-        pattern->setOffset(u64(this->getHeap().size()) << 32);
-        this->getHeap().emplace_back().resize(pattern->getSize());
+        if (!reference) {
+            pattern->setLocal(true);
+            pattern->setOffset(u64(this->getHeap().size()) << 32);
+            this->getHeap().emplace_back().resize(pattern->getSize());
+        }
+        pattern->setReference(reference);
 
         if (outVariable) {
             if (this->isGlobalScope())
@@ -231,13 +234,18 @@ namespace pl::core {
             std::visit(hlp::overloaded {
                 [&](ptrn::Pattern * const value) {
                     auto offset = variablePattern->get()->getOffset();
+                    bool reference = variablePattern->get()->isReference();
 
                     *variablePattern = value->clone();
 
                     auto pattern = variablePattern->get();
                     pattern->setVariableName(name);
-                    pattern->setLocal(true);
-                    pattern->setOffset(offset);
+                    pattern->setReference(reference);
+
+                    if (!reference) {
+                        pattern->setLocal(true);
+                        pattern->setOffset(offset);
+                    }
                 },
                 [](const auto &) {}
             }, value);

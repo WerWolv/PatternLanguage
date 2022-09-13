@@ -135,6 +135,13 @@ namespace pl::ptrn {
             Pattern::setLocal(local);
         }
 
+        void setReference(bool reference) override {
+            for (auto &pattern : this->m_fields)
+                pattern->setReference(reference);
+
+            Pattern::setReference(reference);
+        }
+
         [[nodiscard]] std::string getFormattedName() const override {
             return "bitfield " + Pattern::getTypeName();
         }
