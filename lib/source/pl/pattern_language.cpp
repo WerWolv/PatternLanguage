@@ -175,6 +175,10 @@ namespace pl {
         this->m_internals.preprocessor->removePragmaHandler(name);
     }
 
+    void PatternLanguage::addDefine(const std::string &name, const std::string &value) const {
+        this->m_internals.preprocessor->addDefine(name, value);
+    }
+
     void PatternLanguage::setDataSource(std::function<void(u64, u8*, size_t)> readFunction, u64 baseAddress, u64 size) const {
         this->m_internals.evaluator->setDataSource(std::move(readFunction), baseAddress, size);
     }

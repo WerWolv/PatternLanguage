@@ -71,6 +71,7 @@ namespace pl {
 
         void addPragma(const std::string &name, const api::PragmaHandler &callback) const;
         void removePragma(const std::string &name) const;
+        void addDefine(const std::string &name, const std::string &value = "") const;
         void setIncludePaths(std::vector<std::fs::path> paths) const;
         void setDangerousFunctionCallHandler(std::function<bool()> callback) const;
 

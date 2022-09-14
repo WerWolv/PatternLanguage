@@ -40,7 +40,6 @@ namespace pl::core {
         if (initialRun) {
             this->m_onceIncludedFiles.clear();
             this->m_onlyIncludeOnce = false;
-            this->m_defines.clear();
             this->m_pragmas.clear();
         }
 
@@ -285,7 +284,13 @@ namespace pl::core {
             return std::nullopt;
         }
 
+        this->m_defines.clear();
+
         return output;
+    }
+
+    void Preprocessor::addDefine(const std::string &name, const std::string &value) {
+        this->m_defines[name] = { value, 0 };
     }
 
     void Preprocessor::addPragmaHandler(const std::string &pragmaType, const api::PragmaHandler &handler) {
