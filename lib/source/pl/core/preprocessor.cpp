@@ -152,13 +152,13 @@ namespace pl::core {
                             else
                                 err::M0003.throwError("Expected path wrapped in \"path\" or <path>.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
 
-                            std::fs::path includePath = *includeFile;
+                            std::fs::path includePath = includeFile->substr(1, includeFile->length() - 2);
 
                             if (includePath.is_relative()) {
                                 for (const auto &dir : this->m_includePaths) {
-                                    std::fs::path tempPath = dir / includePath;
-                                    if (hlp::fs::isRegularFile(tempPath)) {
-                                        includePath = tempPath;
+                                    std::fs::path potentialPath = dir / includePath;
+                                    if (hlp::fs::isRegularFile(potentialPath)) {
+                                        includePath = potentialPath;
                                         break;
                                     }
                                 }
