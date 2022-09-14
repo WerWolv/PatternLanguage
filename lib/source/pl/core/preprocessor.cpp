@@ -33,6 +33,10 @@ namespace pl::core {
         u32 lineNumber  = 1;
         bool isInString = false;
 
+        std::vector<bool> ifDefs;
+
+        std::string_view code = sourceCode;
+
         if (initialRun) {
             this->m_onceIncludedFiles.clear();
             this->m_onlyIncludeOnce = false;
@@ -40,10 +44,38 @@ namespace pl::core {
             this->m_pragmas.clear();
         }
 
+        auto getDirectiveValue = [&](bool allowWhitespace = false) -> std::optional<std::string> {
+            while (std::isblank(code[offset])) {
+                offset += 1;
+
+                if (code[offset] == '\n' || code[offset] == '\r')
+                    return std::nullopt;
+            }
+
+            std::string value;
+            while ((allowWhitespace || !std::isblank(code[offset])) && code[offset] != '\n' && code[offset] != '\r') {
+                value += code[offset];
+
+                if (offset >= code.length())
+                    return std::nullopt;
+
+                offset += 1;
+            }
+
+            hlp::trim(value);
+
+            return value;
+        };
+
+        auto getDirective = [&](const std::string &directive) {
+            if (code.substr(offset, directive.length()) == directive) {
+                offset += directive.length();
+                return true;
+            } else return false;
+        };
+
         std::string output;
         output.reserve(sourceCode.size());
-
-        std::string_view code = sourceCode;
 
         try {
             bool startOfLine = true;
@@ -83,152 +115,121 @@ namespace pl::core {
                 if (code[offset] == '#' && startOfLine) {
                     offset += 1;
 
-                    if (code.substr(offset, 7) == "include") {
-                        offset += 7;
+                    if (getDirective("ifdef")) {
+                        auto defineName = getDirectiveValue();
+                        if (!defineName.has_value())
+                            err::M0003.throwError("No define name given to #ifdef directive.");
 
-                        while (std::isblank(code[offset]) || std::isspace(code[offset]))
-                            offset += 1;
+                        if (!ifDefs.empty() && !ifDefs.back())
+                            ifDefs.push_back(false);
+                        else
+                            ifDefs.push_back(this->m_defines.contains(*defineName));
+                    } else if (getDirective("ifndef")) {
+                        auto defineName = getDirectiveValue();
+                        if (!defineName.has_value())
+                            err::M0003.throwError("No define name given to #ifdef directive.");
 
-                        if (code[offset] != '<' && code[offset] != '"')
-                            err::M0003.throwError("#include expects \"path/to/file\" or <path/to/file>.");
+                        if (!ifDefs.empty() && !ifDefs.back())
+                            ifDefs.push_back(false);
+                        else
+                            ifDefs.push_back(!this->m_defines.contains(*defineName));
+                    } else if (getDirective("endif")) {
+                         if (ifDefs.empty())
+                             err::M0003.throwError("#endif without #ifdef.");
+                         else
+                             ifDefs.pop_back();
+                    } else if (ifDefs.empty() || ifDefs.back()) {
+                        if (getDirective("include")) {
+                            auto includeFile = getDirectiveValue();
 
-                        char endChar = code[offset];
-                        if (endChar == '<') endChar = '>';
+                            if (!includeFile.has_value())
+                                err::M0003.throwError("No file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
 
-                        offset += 1;
+                            if (includeFile->starts_with('"') && includeFile->ends_with('"'))
+                                ; // Parsed path wrapped in ""
+                            else if (includeFile->starts_with('<') && includeFile->ends_with('>'))
+                                ; // Parsed path wrapped in <>
+                            else
+                                err::M0003.throwError("Expected path wrapped in \"path\" or <path>.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
 
-                        std::string includeFile;
-                        while (code[offset] != endChar) {
-                            includeFile += code[offset];
-                            offset += 1;
+                            std::fs::path includePath = *includeFile;
 
-                            if (offset >= code.length() || code[offset] == '\n')
-                                err::M0003.throwError(fmt::format("Missing terminating '{0}' character.", endChar));
-                        }
-                        offset += 1;
-
-                        std::fs::path includePath = includeFile;
-
-                        if (includeFile[0] != '/') {
-                            for (const auto &dir : this->m_includePaths) {
-                                std::fs::path tempPath = dir / includePath;
-                                if (hlp::fs::isRegularFile(tempPath)) {
-                                    includePath = tempPath;
-                                    break;
+                            if (includePath.is_relative()) {
+                                for (const auto &dir : this->m_includePaths) {
+                                    std::fs::path tempPath = dir / includePath;
+                                    if (hlp::fs::isRegularFile(tempPath)) {
+                                        includePath = tempPath;
+                                        break;
+                                    }
                                 }
                             }
-                        }
 
-                        if (!hlp::fs::isRegularFile(includePath)) {
-                            if (includePath.parent_path().filename().string() == "std")
-                                err::M0004.throwError("Path doesn't point to a valid file.", "This file might be part of the standard library. Make sure it's installed");
-                            else
-                                err::M0004.throwError("Path doesn't point to a valid file.");
-                        }
-
-                        hlp::fs::File file(includePath, hlp::fs::File::Mode::Read);
-                        if (!file.isValid()) {
-                            err::M0005.throwError(fmt::format("Failed to open file.", includeFile.c_str()));
-                        }
-
-                        Preprocessor preprocessor(*this);
-
-                        auto preprocessedInclude = preprocessor.preprocess(runtime, file.readString(), /*initialRun =*/false);
-
-                        if (!preprocessedInclude.has_value()) {
-                            throw err::PatternLanguageError(*preprocessor.m_error);
-                        }
-
-                        bool shouldInclude = true;
-                        if (preprocessor.shouldOnlyIncludeOnce()) {
-                            auto [iter, added] = this->m_onceIncludedFiles.insert(includePath);
-                            if (!added) {
-                                shouldInclude = false;
+                            if (!hlp::fs::isRegularFile(includePath)) {
+                                if (includePath.parent_path().filename().string() == "std")
+                                    err::M0004.throwError("Path doesn't point to a valid file.", "This file might be part of the standard library. Make sure it's installed.");
+                                else
+                                    err::M0004.throwError("Path doesn't point to a valid file.");
                             }
-                        }
 
-                        std::copy(preprocessor.m_onceIncludedFiles.begin(), preprocessor.m_onceIncludedFiles.end(), std::inserter(this->m_onceIncludedFiles, this->m_onceIncludedFiles.begin()));
-                        std::copy(preprocessor.m_defines.begin(), preprocessor.m_defines.end(), std::inserter(this->m_defines, this->m_defines.begin()));
-                        std::copy(preprocessor.m_pragmas.begin(), preprocessor.m_pragmas.end(), std::inserter(this->m_pragmas, this->m_pragmas.begin()));
+                            hlp::fs::File file(includePath, hlp::fs::File::Mode::Read);
+                            if (!file.isValid()) {
+                                err::M0005.throwError(fmt::format("Failed to open file.", *includeFile));
+                            }
 
-                        if (shouldInclude) {
-                            auto content = preprocessedInclude.value();
+                            Preprocessor preprocessor(*this);
 
-                            std::replace(content.begin(), content.end(), '\n', ' ');
-                            std::replace(content.begin(), content.end(), '\r', ' ');
+                            auto preprocessedInclude = preprocessor.preprocess(runtime, file.readString(), /*initialRun =*/false);
 
-                            output += content;
-                        }
-                    } else if (code.substr(offset, 6) == "define") {
-                        offset += 6;
+                            if (!preprocessedInclude.has_value()) {
+                                throw err::PatternLanguageError(*preprocessor.m_error);
+                            }
 
-                        while (std::isblank(code[offset])) {
-                            offset += 1;
-                        }
+                            bool shouldInclude = true;
+                            if (preprocessor.shouldOnlyIncludeOnce()) {
+                                auto [iter, added] = this->m_onceIncludedFiles.insert(includePath);
+                                if (!added) {
+                                    shouldInclude = false;
+                                }
+                            }
 
-                        std::string defineName;
-                        while (!std::isblank(code[offset])) {
-                            defineName += code[offset];
+                            std::copy(preprocessor.m_onceIncludedFiles.begin(), preprocessor.m_onceIncludedFiles.end(), std::inserter(this->m_onceIncludedFiles, this->m_onceIncludedFiles.begin()));
+                            std::copy(preprocessor.m_defines.begin(), preprocessor.m_defines.end(), std::inserter(this->m_defines, this->m_defines.begin()));
+                            std::copy(preprocessor.m_pragmas.begin(), preprocessor.m_pragmas.end(), std::inserter(this->m_pragmas, this->m_pragmas.begin()));
 
-                            if (offset >= code.length() || code[offset] == '\n' || code[offset] == '\r')
+                            if (shouldInclude) {
+                                auto content = preprocessedInclude.value();
+
+                                std::replace(content.begin(), content.end(), '\n', ' ');
+                                std::replace(content.begin(), content.end(), '\r', ' ');
+
+                                output += content;
+                            }
+                        } else if (getDirective("define")) {
+                            auto defineName = getDirectiveValue();
+                            if (!defineName.has_value())
                                 err::M0003.throwError("No name given in #define directive.", "A #define directive expects a name and a value in the form of #define NAME VALUE");
-                            offset += 1;
-                        }
 
-                        while (std::isblank(code[offset])) {
-                            offset += 1;
-                            if (offset >= code.length())
-                                err::M0003.throwError("No value given in #define directive.", "A #define directive expects a name and a value in the form of #define <name> <value>");
-                        }
+                            auto defineValue = getDirectiveValue(true);
 
-                        std::string replaceValue;
-                        while (code[offset] != '\n' && code[offset] != '\r') {
-                            if (offset >= code.length())
-                                err::M0003.throwError("Missing new line after preprocessor directive.");
-
-                            replaceValue += code[offset];
-                            offset += 1;
-                        }
-
-                        if (replaceValue.empty())
-                            err::M0003.throwError("No value given in #define directive.", "A #define directive expects a name and a value in the form of #define <name> <value>.");
-
-                        this->m_defines.emplace(defineName, replaceValue, lineNumber);
-                    } else if (code.substr(offset, 6) == "pragma") {
-                        offset += 6;
-
-                        while (std::isblank(code[offset])) {
-                            offset += 1;
-
-                            if (code[offset] == '\n' || code[offset] == '\r')
-                                err::M0003.throwError("No instruction given in #pragma directive.", "A #pragma directive expects a instruction followed by an optional value in the form of #pragma <instruction> <value>.");
-                        }
-
-                        std::string pragmaKey;
-                        while (!std::isblank(code[offset]) && code[offset] != '\n' && code[offset] != '\r') {
-                            pragmaKey += code[offset];
-
-                            if (offset >= code.length())
+                            this->m_defines[*defineName] = { defineValue.value_or(""), lineNumber };
+                        } else if (getDirective("pragma")) {
+                            auto pragmaKey = getDirectiveValue();
+                            if (!pragmaKey.has_value())
                                 err::M0003.throwError("No instruction given in #pragma directive.", "A #pragma directive expects a instruction followed by an optional value in the form of #pragma <instruction> <value>.");
 
-                            offset += 1;
+                            auto pragmaValue = getDirectiveValue(true);
+
+                            this->m_pragmas[*pragmaKey] = { pragmaValue.value_or(""), lineNumber - 1 };
+                        } else if (getDirective("error")) {
+                            auto error = getDirectiveValue(true);
+
+                            if (error.has_value())
+                                err::M0007.throwError(error.value());
+                            else
+                                err::M0003.throwError("No value given to #error directive");
+                        } else {
+                            err::M0002.throwError("Expected 'include', 'define' or 'pragma'");
                         }
-
-                        while (std::isblank(code[offset]))
-                            offset += 1;
-
-                        std::string pragmaValue;
-                        while (code[offset] != '\n' && code[offset] != '\r') {
-                            if (offset >= code.length())
-                                err::M0003.throwError("Missing new line after preprocessor directive.");
-
-                            pragmaValue += code[offset];
-                            offset += 1;
-                        }
-
-                        this->m_pragmas.emplace(pragmaKey, pragmaValue, lineNumber - 1);
-                    } else {
-                        err::M0002.throwError("Expected 'include', 'define' or 'pragma'");
                     }
                 }
 
@@ -238,32 +239,40 @@ namespace pl::core {
                 } else if (!std::isspace(code[offset]))
                     startOfLine = false;
 
-                output += code[offset];
+                if (ifDefs.empty() || ifDefs.back() || code[offset] == '\n')
+                    output += code[offset];
+
                 offset += 1;
             }
 
             // Apply defines
             std::vector<std::tuple<std::string, std::string, u32>> sortedDefines;
-            std::copy(this->m_defines.begin(), this->m_defines.end(), std::back_inserter(sortedDefines));
+            std::for_each(this->m_defines.begin(), this->m_defines.end(), [&sortedDefines](const auto &entry){
+                const auto &[key, data] = entry;
+                const auto &[value, line] = data;
+
+                sortedDefines.emplace_back(key, value, line);
+            });
             std::sort(sortedDefines.begin(), sortedDefines.end(), [](const auto &left, const auto &right) {
                 return std::get<0>(left).size() > std::get<0>(right).size();
             });
 
             for (const auto &[define, value, defineLine] : sortedDefines) {
-                size_t index = 0;
-                while ((index = output.find(define, index)) != std::string::npos) {
-                    output.replace(index, define.length(), value);
-                    index += value.length();
-                }
+                if (value.empty())
+                    continue;
+
+                output = hlp::replaceAll(output, define, value);
             }
 
             // Handle pragmas
-            for (const auto &[type, value, pragmaLine] : this->m_pragmas) {
+            for (const auto &[type, data] : this->m_pragmas) {
+                const auto &[value, line] = data;
+
                 if (this->m_pragmaHandlers.contains(type)) {
                     if (!this->m_pragmaHandlers[type](runtime, value))
-                        err::M0006.throwError(fmt::format("Value '{}' cannot be used with the '{}' pragma directive.", value, type), { }, pragmaLine);
+                        err::M0006.throwError(fmt::format("Value '{}' cannot be used with the '{}' pragma directive.", value, type), { }, line);
                 } else
-                    err::M0006.throwError(fmt::format("Pragma instruction '{}' does not exist.", type), { }, pragmaLine);
+                    err::M0006.throwError(fmt::format("Pragma instruction '{}' does not exist.", type), { }, line);
             }
         } catch (err::PreprocessorError::Exception &e) {
             auto line = e.getUserData() == 0 ? lineNumber : e.getUserData();

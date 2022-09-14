@@ -18,5 +18,6 @@ namespace pl::core::err {
     const static inline PreprocessorError M0004(4, "No such file or directory");
     const static inline PreprocessorError M0005(5, "File I/O error");
     const static inline PreprocessorError M0006(6, "Pragma usage error");
+    const static inline PreprocessorError M0007(7, "#error directive");
 
 }

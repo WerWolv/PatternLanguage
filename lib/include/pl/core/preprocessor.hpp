@@ -42,8 +42,8 @@ namespace pl::core {
     private:
         std::unordered_map<std::string, api::PragmaHandler> m_pragmaHandlers;
 
-        std::set<std::tuple<std::string, std::string, u32>> m_defines;
-        std::set<std::tuple<std::string, std::string, u32>> m_pragmas;
+        std::unordered_map<std::string, std::pair<std::string, u32>> m_defines;
+        std::unordered_map<std::string, std::pair<std::string, u32>> m_pragmas;
 
         std::set<std::filesystem::path> m_onceIncludedFiles;
 
