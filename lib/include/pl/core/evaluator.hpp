@@ -145,7 +145,7 @@ namespace pl::core {
                 else
                     err::E0011.throwError(fmt::format("Tried accessing out of bounds heap cell at address {}. This is a bug.", address));
             } else {
-                if (address < this->m_dataSize)
+                if (address < this->m_dataBaseAddress + this->m_dataSize)
                     this->m_readerFunction(address, reinterpret_cast<u8*>(buffer), size);
                 else
                     std::memset(buffer, 0x00, size);
