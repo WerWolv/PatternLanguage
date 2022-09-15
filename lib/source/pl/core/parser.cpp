@@ -131,7 +131,7 @@ namespace pl::core {
         else if (peek(tkn::Keyword::This, -1))
             path.emplace_back("this");
 
-        if (MATCHES(sequence(tkn::Separator::LeftBracket))) {
+        if (MATCHES(sequence(tkn::Separator::LeftBracket) && !peek(tkn::Separator::LeftBracket))) {
             path.push_back(parseMathematicalExpression());
             if (!MATCHES(sequence(tkn::Separator::RightBracket)))
                 err::P0002.throwError(fmt::format("Expected ']' at end of array indexing, got {}.", getFormattedToken(0)), {}, 1);
