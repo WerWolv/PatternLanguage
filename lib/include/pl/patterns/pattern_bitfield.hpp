@@ -64,8 +64,10 @@ namespace pl::ptrn {
         }
 
         std::string getFormattedValue() override {
+            auto literal = this->getValue();
             auto value = core::Token::literalToUnsigned(this->getValue());
-            return this->formatDisplayValue(fmt::format("{0} (0x{1:X})", value, value), this->getValue());
+
+            return this->formatDisplayValue(fmt::format("{0} (0x{1:X})", value, value), literal);
         }
 
         [[nodiscard]] std::string toString() const override {

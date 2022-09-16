@@ -67,7 +67,7 @@ namespace pl::ptrn {
         }
 
         std::string getFormattedValue() override {
-            auto value =core::Token::literalToUnsigned(this->getValue());
+            auto value = core::Token::literalToUnsigned(this->getValue());
 
             return this->formatDisplayValue(fmt::format("{} (0x{:0{}X})", this->toString().c_str(), value, this->getSize() * 2), this);
         }

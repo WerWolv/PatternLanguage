@@ -34,9 +34,10 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::string toString() const override {
-            auto result = core::Token::literalToString(this->getValue(), false);
+            auto value = this->getValue();
+            auto result = core::Token::literalToString(value, false);
 
-            return this->formatDisplayValue(result, this->getValue());
+            return this->formatDisplayValue(result, value);
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override { return areCommonPropertiesEqual<decltype(*this)>(other); }

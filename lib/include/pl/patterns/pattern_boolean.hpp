@@ -39,9 +39,10 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::string toString() const override {
-            auto result = fmt::format("{}", core::Token::literalToUnsigned(this->getValue()) ? "true" : "false");
+            auto value = this->getValue();
+            auto result = fmt::format("{}", core::Token::literalToBoolean(value) ? "true" : "false");
 
-            return this->formatDisplayValue(result, this->getValue());
+            return this->formatDisplayValue(result, value);
         }
     };
 
