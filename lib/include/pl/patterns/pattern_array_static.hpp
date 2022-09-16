@@ -159,7 +159,8 @@ namespace pl::ptrn {
                     break;
                 }
 
-                this->m_highlightTemplate->setOffset(this->getOffset() + index * this->m_highlightTemplate->getSize());
+                entry->setOffset(this->getOffset() + index * this->m_template->getSize());
+                entry->clearFormatCache();
 
                 result += fmt::format("{}, ", entry->toString());
             }
