@@ -57,13 +57,13 @@ namespace pl::ptrn {
             std::vector<std::pair<u64, Pattern*>> result;
 
             this->m_highlightTemplate->setVariableName(this->getVariableName());
+            this->m_highlightTemplate->setOffset(this->getOffset());
+            auto children = this->m_highlightTemplate->getChildren();
 
-            for (size_t index = 0; index < this->m_entryCount; index++) {
-                this->m_highlightTemplate->setOffset(this->getOffset() + index * this->m_highlightTemplate->getSize());
+            result.reserve(this->getEntryCount() * children.size());
 
-                auto children = this->m_highlightTemplate->getChildren();
+            for (size_t i = 0; i < this->getEntryCount(); i++)
                 std::copy(children.begin(), children.end(), std::back_inserter(result));
-            }
 
             return result;
         }
