@@ -57,15 +57,15 @@ namespace pl::core::ast {
                 }
             }
 
-            const auto &customFunctions = evaluator->getCustomFunctions();
-            const auto &functions        = evaluator->getBuiltinFunctions();
+            const auto &customFunctions     = evaluator->getCustomFunctions();
+            const auto &builtinFunctions    = evaluator->getBuiltinFunctions();
 
-            api::Function function = { };
+            const api::Function *function = nullptr;
 
-            if (functions.contains(this->m_functionName))
-                function = functions.at(this->m_functionName);
-            else if (customFunctions.contains(this->m_functionName))
-                function = customFunctions.at(this->m_functionName);
+            if (auto customFunction = customFunctions.find(this->m_functionName); customFunction != customFunctions.end())
+                function = &customFunction->second;
+            else if (auto builtinFunction = builtinFunctions.find(this->m_functionName); builtinFunction != builtinFunctions.end())
+                function = &builtinFunction->second;
             else {
                 if (this->m_functionName.starts_with("std::")) {
                     evaluator->getConsole().log(LogConsole::Level::Warning, "This function might be part of the standard library.\nYou can install the standard library though\nthe Content Store found under Help -> Content Store and then\ninclude the correct file.");
@@ -74,7 +74,7 @@ namespace pl::core::ast {
                 err::E0003.throwError(fmt::format("Cannot call unknown function '{}'.", this->m_functionName), fmt::format("Try defining it first using 'fn {}() {{ }}'", this->m_functionName), this);
             }
 
-            const auto &[min, max] = function.parameterCount;
+            const auto &[min, max] = function->parameterCount;
 
             if (evaluatedParams.size() >= min && evaluatedParams.size() < max) {
                 while (true) {
@@ -83,10 +83,10 @@ namespace pl::core::ast {
                         break;
 
                     auto offset = evaluatedParams.size() - min;
-                    if (offset >= function.defaultParameters.size())
+                    if (offset >= function->defaultParameters.size())
                         break;
 
-                    evaluatedParams.push_back(function.defaultParameters[offset]);
+                    evaluatedParams.push_back(function->defaultParameters[offset]);
                 }
             }
 
@@ -95,7 +95,7 @@ namespace pl::core::ast {
             else if (evaluatedParams.size() > max)
                 err::E0009.throwError(fmt::format("Too many parameters passed to function '{0}'. Expected {1} but got {2}.", this->m_functionName, max, evaluatedParams.size()), { }, this);
 
-            if (function.dangerous && evaluator->getDangerousFunctionPermission() != DangerousFunctionPermission::Allow) {
+            if (function->dangerous && evaluator->getDangerousFunctionPermission() != DangerousFunctionPermission::Allow) {
                 evaluator->dangerousFunctionCalled();
 
                 if (evaluator->getDangerousFunctionPermission() == DangerousFunctionPermission::Deny) {
@@ -106,7 +106,7 @@ namespace pl::core::ast {
             if (evaluator->isDebugModeEnabled())
                 evaluator->getConsole().log(LogConsole::Level::Debug, fmt::format("Calling function {}({}).", this->m_functionName, [&]{
                     std::string parameters;
-                    for (auto param : evaluatedParams)
+                    for (const auto &param : evaluatedParams)
                         parameters += fmt::format("{}, ", Token::literalToString(param, true));
 
                     if (!evaluatedParams.empty())
@@ -115,7 +115,7 @@ namespace pl::core::ast {
                     return parameters;
                 }()));
 
-            auto result = function.func(evaluator, evaluatedParams);
+            auto result = function->func(evaluator, evaluatedParams);
 
             if (result.has_value())
                 return std::unique_ptr<ASTNode>(new ASTNodeLiteral(std::move(result.value())));

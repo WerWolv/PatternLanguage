@@ -224,11 +224,11 @@ namespace pl::core {
             return inserted;
         }
 
-        [[nodiscard]] const std::map<std::string, api::Function> &getBuiltinFunctions() const {
+        [[nodiscard]] const std::unordered_map<std::string, api::Function> &getBuiltinFunctions() const {
             return this->m_builtinFunctions;
         }
 
-        [[nodiscard]] const std::map<std::string, api::Function> &getCustomFunctions() const {
+        [[nodiscard]] const std::unordered_map<std::string, api::Function> &getCustomFunctions() const {
             return this->m_customFunctions;
         }
 
@@ -336,8 +336,8 @@ namespace pl::core {
         std::atomic<bool> m_aborted;
 
         std::vector<Scope> m_scopes;
-        std::map<std::string, api::Function> m_customFunctions;
-        std::map<std::string, api::Function> m_builtinFunctions;
+        std::unordered_map <std::string, api::Function> m_customFunctions;
+        std::unordered_map <std::string, api::Function> m_builtinFunctions;
         std::vector<std::unique_ptr<ast::ASTNode>> m_customFunctionDefinitions;
 
         std::optional<Token::Literal> m_mainResult;

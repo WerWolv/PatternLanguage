@@ -89,8 +89,8 @@ namespace pl::core::ast {
             auto leftNode  = this->getLeftOperand()->evaluate(evaluator);
             auto rightNode = this->getRightOperand()->evaluate(evaluator);
 
-            auto leftValue  = dynamic_cast<ASTNodeLiteral *>(leftNode.get())->getValue();
-            auto rightValue = dynamic_cast<ASTNodeLiteral *>(rightNode.get())->getValue();
+            auto leftValue  = static_cast<ASTNodeLiteral *>(leftNode.get())->getValue();
+            auto rightValue = static_cast<ASTNodeLiteral *>(rightNode.get())->getValue();
 
             const auto throwInvalidOperandError = [this] [[noreturn]]{
                 err::E0002.throwError("Invalid operand used in mathematical expression.", { }, this);
