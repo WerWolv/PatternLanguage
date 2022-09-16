@@ -308,6 +308,10 @@ namespace pl::core {
             else
                 this->m_console.setLogLevel(LogConsole::Level::Info);
         }
+
+        bool isDebugModeEnabled() const {
+            return this->m_debugMode;
+        }
     private:
         void patternCreated();
         void patternDestroyed();

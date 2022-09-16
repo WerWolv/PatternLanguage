@@ -103,16 +103,17 @@ namespace pl::core::ast {
                 }
             }
 
-            evaluator->getConsole().log(LogConsole::Level::Debug, fmt::format("Calling function {}({}).", this->m_functionName, [&]{
-                std::string parameters;
-                for (auto param : evaluatedParams)
-                    parameters += fmt::format("{}, ", Token::literalToString(param, true));
+            if (evaluator->isDebugModeEnabled())
+                evaluator->getConsole().log(LogConsole::Level::Debug, fmt::format("Calling function {}({}).", this->m_functionName, [&]{
+                    std::string parameters;
+                    for (auto param : evaluatedParams)
+                        parameters += fmt::format("{}, ", Token::literalToString(param, true));
 
-                if (!evaluatedParams.empty())
-                    parameters.resize(parameters.size() - 2);
+                    if (!evaluatedParams.empty())
+                        parameters.resize(parameters.size() - 2);
 
-                return parameters;
-            }()));
+                    return parameters;
+                }()));
 
             auto result = function.func(evaluator, evaluatedParams);
 

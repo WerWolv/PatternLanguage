@@ -64,7 +64,8 @@ namespace pl::core {
 
         pattern->setVariableName(name);
 
-        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Creating local array variable '{} {}[{}]' at heap address 0x{:X}.", pattern->getTypeName(), pattern->getVariableName(), entryCount, pattern->getOffset()));
+        if (this->isDebugModeEnabled())
+            this->getConsole().log(LogConsole::Level::Debug, fmt::format("Creating local array variable '{} {}[{}]' at heap address 0x{:X}.", pattern->getTypeName(), pattern->getVariableName(), entryCount, pattern->getOffset()));
 
         variables.push_back(std::unique_ptr<ptrn::Pattern>(pattern));
     }
@@ -129,7 +130,8 @@ namespace pl::core {
                 err::E0003.throwError("Out variables can only be declared in the global scope.", {}, type);
         }
 
-        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Creating local variable '{} {}' at heap address 0x{:X}.", pattern->getTypeName(), pattern->getVariableName(), pattern->getOffset()));
+        if (this->isDebugModeEnabled())
+            this->getConsole().log(LogConsole::Level::Debug, fmt::format("Creating local variable '{} {}' at heap address 0x{:X}.", pattern->getTypeName(), pattern->getVariableName(), pattern->getOffset()));
 
         variables.push_back(std::move(pattern));
     }
@@ -278,7 +280,8 @@ namespace pl::core {
                         storage.resize(pattern->getSize());
                         std::memcpy(storage.data(), &adjustedValue, pattern->getSize());
 
-                        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
+                        if (this->isDebugModeEnabled())
+                            this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
                     },
                     [this, &pattern, &storage](const i128 &value) {
                         auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
@@ -287,21 +290,24 @@ namespace pl::core {
                         storage.resize(pattern->getSize());
                         std::memcpy(storage.data(), &adjustedValue, pattern->getSize());
 
-                        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
+                        if (this->isDebugModeEnabled())
+                            this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
                     },
                     [this, &pattern, &storage](const std::string &value) {
                         pattern->setSize(value.size());
                         storage.resize(value.size());
                         std::memcpy(storage.data(), value.data(), pattern->getSize());
 
-                        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
+                        if (this->isDebugModeEnabled())
+                            this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
                     },
                     [this, &pattern, &storage](ptrn::Pattern * const value) {
                         storage.resize(value->getSize());
 
                         this->readData(value->getOffset(), storage.data(), value->getSize(), value->isLocal());
 
-                        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {:02X}.", pattern->getVariableName(), fmt::join(storage, " ")));
+                        if (this->isDebugModeEnabled())
+                            this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {:02X}.", pattern->getVariableName(), fmt::join(storage, " ")));
                     }
             }, castedValue);
         }
@@ -317,7 +323,8 @@ namespace pl::core {
 
         this->m_scopes.push_back({ parent, &scope, std::nullopt, { }, heap.size() });
 
-        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Entering new scope #{}. Parent: '{}', Heap Size: {}.", this->m_scopes.size(), parent == nullptr ? "None" : parent->getVariableName(), heap.size()));
+        if (this->isDebugModeEnabled())
+            this->getConsole().log(LogConsole::Level::Debug, fmt::format("Entering new scope #{}. Parent: '{}', Heap Size: {}.", this->m_scopes.size(), parent == nullptr ? "None" : parent->getVariableName(), heap.size()));
     }
 
     void Evaluator::popScope() {
@@ -330,7 +337,8 @@ namespace pl::core {
 
         heap.resize(currScope.heapStartSize);
 
-        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Exiting scope #{}. Parent: '{}', Heap Size: {}.", this->m_scopes.size(), currScope.parent == nullptr ? "None" : currScope.parent->getVariableName(), heap.size()));
+        if (this->isDebugModeEnabled())
+            this->getConsole().log(LogConsole::Level::Debug, fmt::format("Exiting scope #{}. Parent: '{}', Heap Size: {}.", this->m_scopes.size(), currScope.parent == nullptr ? "None" : currScope.parent->getVariableName(), heap.size()));
 
 
         this->m_scopes.pop_back();
