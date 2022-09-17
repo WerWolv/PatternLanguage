@@ -28,7 +28,7 @@ namespace pl::core {
         });
     }
 
-    std::optional<std::string> Preprocessor::preprocess(PatternLanguage &runtime, std::string sourceCode, bool initialRun) {
+    std::optional<std::string> Preprocessor::preprocess(PatternLanguage &runtime, const std::string &sourceCode, bool initialRun) {
         u32 offset      = 0;
         u32 lineNumber  = 1;
         bool isInString = false;
@@ -80,7 +80,7 @@ namespace pl::core {
             bool startOfLine = true;
             while (offset < code.length()) {
                 if (code.substr(offset, 2) == "//") {
-                    while (code[offset] != '\n' && offset < code.length())
+                    while (offset < code.length() && code[offset] != '\n')
                         offset += 1;
 
                     if (code.length() == offset)
@@ -88,7 +88,7 @@ namespace pl::core {
 
                 } else if (code.substr(offset, 2) == "/*") {
                     auto commentStartLine = lineNumber;
-                    while (code.substr(offset, 2) != "*/" && offset < code.length()) {
+                    while (offset < code.length() && code.substr(offset, 2) != "*/") {
                         if (code[offset] == '\n') {
                             output += '\n';
                             lineNumber++;

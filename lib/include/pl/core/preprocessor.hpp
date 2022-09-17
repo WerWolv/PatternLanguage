@@ -21,7 +21,7 @@ namespace pl::core {
     public:
         Preprocessor();
 
-        std::optional<std::string> preprocess(PatternLanguage &runtime, std::string code, bool initialRun = true);
+        std::optional<std::string> preprocess(PatternLanguage &runtime, const std::string &code, bool initialRun = true);
 
         void addDefine(const std::string &name, const std::string &value = "");
         void addPragmaHandler(const std::string &pragmaType, const api::PragmaHandler &handler);
