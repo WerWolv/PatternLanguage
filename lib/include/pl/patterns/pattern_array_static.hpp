@@ -62,8 +62,11 @@ namespace pl::ptrn {
 
             result.reserve(this->getEntryCount() * children.size());
 
-            for (size_t i = 0; i < this->getEntryCount(); i++)
-                std::copy(children.begin(), children.end(), std::back_inserter(result));
+            for (size_t i = 0; i < this->getEntryCount(); i++) {
+                for (const auto &[offset, child] : children) {
+                    result.emplace_back(child->getOffset() + i * this->m_template->getSize(), child);
+                }
+            }
 
             return result;
         }
