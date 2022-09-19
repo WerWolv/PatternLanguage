@@ -5,7 +5,8 @@
 namespace pl::ptrn {
 
     class PatternArrayDynamic : public Pattern,
-                                public Inlinable {
+                                public Inlinable,
+                                public Iteratable {
     public:
         PatternArrayDynamic(core::Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
             : Pattern(evaluator, offset, size, color) {
@@ -69,7 +70,11 @@ namespace pl::ptrn {
             Pattern::setReference(reference);
         }
 
-        [[nodiscard]] size_t getEntryCount() const {
+        [[nodiscard]] Pattern* getEntry(size_t index) const override {
+            return this->m_entries[index].get();
+        }
+
+        [[nodiscard]] size_t getEntryCount() const override {
             return this->m_entries.size();
         }
 
@@ -77,9 +82,10 @@ namespace pl::ptrn {
             return this->m_entries;
         }
 
-        void forEachArrayEntry(u64 end, const std::function<void(u64, Pattern&)>& fn) {
+        void forEachEntry(u64 start, u64 end, const std::function<void(u64, Pattern*)>& fn) override {
             auto evaluator = this->getEvaluator();
             auto startArrayIndex = evaluator->getCurrentArrayIndex();
+
             PL_ON_SCOPE_EXIT {
                 if (startArrayIndex.has_value())
                     evaluator->setCurrentArrayIndex(*startArrayIndex);
@@ -87,9 +93,9 @@ namespace pl::ptrn {
                     evaluator->clearCurrentArrayIndex();
             };
 
-            for (u64 i = 0; i < std::min<u64>(end, this->m_entries.size()); i++) {
+            for (u64 i = start; i < std::min<u64>(end, this->m_entries.size()); i++) {
                 evaluator->setCurrentArrayIndex(i);
-                fn(i, *this->m_entries[i]);
+                fn(i, this->m_entries[i].get());
             }
         }
 

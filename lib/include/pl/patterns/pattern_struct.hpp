@@ -5,7 +5,8 @@
 namespace pl::ptrn {
 
     class PatternStruct : public Pattern,
-                          public Inlinable {
+                          public Inlinable,
+                          public Iteratable {
     public:
         PatternStruct(core::Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
             : Pattern(evaluator, offset, size, color) {
@@ -24,12 +25,20 @@ namespace pl::ptrn {
             return std::unique_ptr<Pattern>(new PatternStruct(*this));
         }
 
-        void forEachMember(const std::function<void(Pattern&)>& fn) {
+        [[nodiscard]] Pattern* getEntry(size_t index) const override {
+            return this->m_members[index].get();
+        }
+
+        void forEachEntry(u64 start, u64 end, const std::function<void(u64, Pattern*)>& fn) override {
             if (this->isSealed())
                 return;
 
-            for (auto &member : this->m_sortedMembers)
-                fn(*member);
+            for (u64 i = start; i < this->m_members.size() && i < end; i++)
+                fn(i, this->m_members[i].get());
+        }
+
+        size_t getEntryCount() const override {
+            return this->m_members.size();
         }
 
         void setOffset(u64 offset) override {

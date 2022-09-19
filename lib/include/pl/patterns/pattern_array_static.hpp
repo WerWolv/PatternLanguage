@@ -5,7 +5,8 @@
 namespace pl::ptrn {
 
     class PatternArrayStatic : public Pattern,
-                               public Inlinable {
+                               public Inlinable,
+                               public Iteratable {
     public:
         PatternArrayStatic(core::Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
             : Pattern(evaluator, offset, size, color) {
@@ -20,7 +21,13 @@ namespace pl::ptrn {
             return std::unique_ptr<Pattern>(new PatternArrayStatic(*this));
         }
 
-        void forEachArrayEntry(u64 end, const std::function<void(u64, Pattern&)>& fn) {
+        [[nodiscard]] Pattern* getEntry(size_t index) const override {
+            this->m_highlightTemplate->setOffset(this->getOffset() + index * this->m_highlightTemplate->getSize());
+
+            return this->m_highlightTemplate.get();
+        }
+
+        void forEachEntry(u64 start, u64 end, const std::function<void(u64, Pattern*)>& fn) override {
             auto evaluator = this->getEvaluator();
             auto startArrayIndex = evaluator->getCurrentArrayIndex();
             PL_ON_SCOPE_EXIT {
@@ -31,7 +38,7 @@ namespace pl::ptrn {
             };
 
             auto entry = std::shared_ptr(this->m_template->clone());
-            for (u64 index = 0; index < std::min<u64>(end, this->m_entryCount); index++) {
+            for (u64 index = start; index < std::min<u64>(end, this->m_entryCount); index++) {
                 entry->setVariableName(fmt::format("[{0}]", index));
                 entry->setOffset(this->getOffset() + index * this->m_template->getSize());
                 evaluator->setCurrentArrayIndex(index);
@@ -41,7 +48,7 @@ namespace pl::ptrn {
                 else
                     entry->clearFormatCache();
 
-                fn(index, *entry);
+                fn(index, entry.get());
 
                 this->m_formatCache[index] = entry->getFormattedValue();
             }
