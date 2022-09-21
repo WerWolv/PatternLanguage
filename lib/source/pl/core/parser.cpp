@@ -758,7 +758,7 @@ namespace pl::core {
         if (!MATCHES(sequence(tkn::Separator::RightBracket)))
             err::P0002.throwError(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)), {}, 1);
 
-        return create(new ast::ASTNodeArrayVariableDecl({}, create(new ast::ASTNodeTypeDecl({}, create(new ast::ASTNodeBuiltinType(Token::ValueType::Padding)))), std::move(size)));
+        return create(new ast::ASTNodeArrayVariableDecl("$padding$", create(new ast::ASTNodeTypeDecl({}, create(new ast::ASTNodeBuiltinType(Token::ValueType::Padding)))), std::move(size)));
     }
 
     // (parseType) Identifier
@@ -1046,7 +1046,7 @@ namespace pl::core {
             if (MATCHES(sequence(tkn::Separator::LeftBracket, tkn::Separator::LeftBracket)))
                 parseAttribute(dynamic_cast<ast::Attributable *>(result.get()));
         } else if (MATCHES(sequence(tkn::ValueType::Padding, tkn::Operator::Colon))) {
-            result = create(new ast::ASTNodeBitfieldField("padding", parseMathematicalExpression()));
+            result = create(new ast::ASTNodeBitfieldField("$padding$", parseMathematicalExpression()));
         } else if (MATCHES(sequence(tkn::Keyword::If, tkn::Separator::LeftParenthesis))) {
             auto condition = parseMathematicalExpression();
             std::vector<std::unique_ptr<ast::ASTNode>> trueBody, falseBody;
