@@ -99,6 +99,14 @@ namespace pl::core::ast {
             return std::nullopt;
         }
 
+        [[nodiscard]] const std::string &getName() const {
+            return this->m_name;
+        }
+
+        [[nodiscard]] const std::shared_ptr<ASTNodeTypeDecl> &getType() const {
+            return this->m_type;
+        }
+
     private:
         std::string m_name;
         std::shared_ptr<ASTNodeTypeDecl> m_type;

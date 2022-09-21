@@ -765,7 +765,7 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parseMemberVariable(const std::shared_ptr<ast::ASTNodeTypeDecl> &type, bool allowPlacement) {
         if (peek(tkn::Separator::Comma)) {
 
-            std::vector<std::unique_ptr<ast::ASTNode>> variables;
+            std::vector<std::shared_ptr<ast::ASTNode>> variables;
 
             do {
                 variables.push_back(create(new ast::ASTNodeVariableDecl(getValue<Token::Identifier>(-1).get(), type)));
@@ -1291,10 +1291,6 @@ namespace pl::core {
             statement = parseFunctionDefinition();
         else if (MATCHES(sequence(tkn::Keyword::Namespace)))
             return parseNamespace();
-        else if (MATCHES(sequence(tkn::Keyword::If, tkn::Separator::LeftParenthesis))) {
-            statement = parseConditional();
-            requiresSemicolon = false;
-        }
         else {
             statement = parseFunctionStatement();
             requiresSemicolon = false;

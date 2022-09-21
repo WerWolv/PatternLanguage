@@ -8,7 +8,7 @@ namespace pl::core::ast {
 
     class ASTNodeMultiVariableDecl : public ASTNode {
     public:
-        explicit ASTNodeMultiVariableDecl(std::vector<std::unique_ptr<ASTNode>> &&variables) : m_variables(std::move(variables)) { }
+        explicit ASTNodeMultiVariableDecl(std::vector<std::shared_ptr<ASTNode>> &&variables) : m_variables(std::move(variables)) { }
 
         ASTNodeMultiVariableDecl(const ASTNodeMultiVariableDecl &other) : ASTNode(other) {
             for (auto &variable : other.m_variables)
@@ -19,7 +19,7 @@ namespace pl::core::ast {
             return std::unique_ptr<ASTNode>(new ASTNodeMultiVariableDecl(*this));
         }
 
-        [[nodiscard]] const std::vector<std::unique_ptr<ASTNode>> &getVariables() {
+        [[nodiscard]] const std::vector<std::shared_ptr<ASTNode>> &getVariables() {
             return this->m_variables;
         }
 
@@ -46,7 +46,7 @@ namespace pl::core::ast {
         }
 
     private:
-        std::vector<std::unique_ptr<ASTNode>> m_variables;
+        std::vector<std::shared_ptr<ASTNode>> m_variables;
     };
 
 }

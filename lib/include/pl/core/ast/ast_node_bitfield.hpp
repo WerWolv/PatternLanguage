@@ -21,7 +21,7 @@ namespace pl::core::ast {
             return std::unique_ptr<ASTNode>(new ASTNodeBitfield(*this));
         }
 
-        [[nodiscard]] const std::vector<std::unique_ptr<ASTNode>> &getEntries() const { return this->m_entries; }
+        [[nodiscard]] const std::vector<std::shared_ptr<ASTNode>> &getEntries() const { return this->m_entries; }
         void addEntry(std::unique_ptr<ASTNode> &&entry) { this->m_entries.emplace_back(std::move(entry)); }
 
         [[nodiscard]] std::vector<std::unique_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
@@ -99,8 +99,7 @@ namespace pl::core::ast {
         }
 
     private:
-        std::vector<std::unique_ptr<ASTNode>> m_entries;
-        mutable size_t m_bitOffset = 0x00;
+        std::vector<std::shared_ptr<ASTNode>> m_entries;
     };
 
 }
