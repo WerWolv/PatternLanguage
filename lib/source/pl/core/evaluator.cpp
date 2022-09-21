@@ -396,6 +396,11 @@ namespace pl::core {
                     auto newPatterns = node->createPatterns(this);
                     std::move(newPatterns.begin(), newPatterns.end(), std::back_inserter(this->m_patterns));
                 }
+
+                if (this->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
+                    break;
+                else
+                    this->setCurrentControlFlowStatement(ControlFlowStatement::None);
             }
 
             if (this->m_customFunctions.contains("main")) {

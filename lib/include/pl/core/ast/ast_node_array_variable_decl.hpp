@@ -253,7 +253,7 @@ namespace pl::core::ast {
 
                         auto ctrlFlow = evaluator->getCurrentControlFlowStatement();
                         evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
-                        if (ctrlFlow == ControlFlowStatement::Break)
+                        if (ctrlFlow == ControlFlowStatement::Break || ctrlFlow == ControlFlowStatement::Return)
                             break;
                         else if (ctrlFlow == ControlFlowStatement::Continue) {
 

@@ -917,6 +917,8 @@ namespace pl::core {
             member = create(new ast::ASTNodeControlFlowStatement(ControlFlowStatement::Break, nullptr));
         else if (MATCHES(sequence(tkn::Keyword::Continue)))
             member = create(new ast::ASTNodeControlFlowStatement(ControlFlowStatement::Continue, nullptr));
+        else if (MATCHES(sequence(tkn::Keyword::Return)))
+            member = create(new ast::ASTNodeControlFlowStatement(ControlFlowStatement::Return, nullptr));
         else
             err::P0002.throwError("Invalid struct member definition.", {}, 0);
 
@@ -1289,6 +1291,10 @@ namespace pl::core {
             statement = parseFunctionDefinition();
         else if (MATCHES(sequence(tkn::Keyword::Namespace)))
             return parseNamespace();
+        else if (MATCHES(sequence(tkn::Keyword::If, tkn::Separator::LeftParenthesis))) {
+            statement = parseConditional();
+            requiresSemicolon = false;
+        }
         else {
             statement = parseFunctionStatement();
             requiresSemicolon = false;
