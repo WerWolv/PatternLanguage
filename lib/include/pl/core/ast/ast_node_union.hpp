@@ -35,10 +35,24 @@ namespace pl::core::ast {
 
             for (auto &member : this->m_members) {
                 evaluator->dataOffset() = startOffset;
+
                 for (auto &memberPattern : member->createPatterns(evaluator)) {
                     size = std::max(memberPattern->getSize(), size);
-
                     memberPatterns.push_back(std::move(memberPattern));
+                }
+
+                if (!evaluator->getCurrentArrayIndex().has_value()) {
+                    if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
+                        break;
+                    else if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Break) {
+                        evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
+                        break;
+                    } else if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Continue) {
+                        evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
+                        memberPatterns.clear();
+                        evaluator->dataOffset() = startOffset;
+                        break;
+                    }
                 }
             }
 

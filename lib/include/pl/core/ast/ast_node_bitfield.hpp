@@ -64,6 +64,20 @@ namespace pl::core::ast {
                         }
                     }
                 }
+
+                if (!evaluator->getCurrentArrayIndex().has_value()) {
+                    if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
+                        break;
+                    else if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Break) {
+                        evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
+                        break;
+                    } else if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Continue) {
+                        evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
+                        potentialPatterns.clear();
+                        bitOffset = 0;
+                        break;
+                    }
+                }
             }
 
             for (auto &pattern : potentialPatterns) {
