@@ -95,7 +95,7 @@ namespace pl::lib::libstd::mem {
                     err::E0012.throwError(fmt::format("Read size {} is out of range.", size), "Try a value between 1 and 16.");
 
 
-                i128 value;
+                i128 value = 0;
                 ctx->readData(address, &value, size, false);
                 value = hlp::changeEndianess(value, size, endian);
 
