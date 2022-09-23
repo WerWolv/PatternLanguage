@@ -10,7 +10,9 @@
 #include <pl/patterns/pattern_float.hpp>
 #include <pl/patterns/pattern_boolean.hpp>
 #include <pl/patterns/pattern_character.hpp>
+#include <pl/patterns/pattern_wide_character.hpp>
 #include <pl/patterns/pattern_string.hpp>
+#include <pl/patterns/pattern_wide_string.hpp>
 #include <pl/patterns/pattern_array_dynamic.hpp>
 #include <pl/patterns/pattern_array_static.hpp>
 #include <pl/patterns/pattern_struct.hpp>
@@ -121,8 +123,19 @@ namespace pl::core::ast {
 
         [[nodiscard]] std::vector<std::unique_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             std::vector<std::shared_ptr<ptrn::Pattern>> searchScope;
-            ptrn::Pattern *currPattern = nullptr;
+            std::variant<std::shared_ptr<ptrn::Pattern>, ptrn::Pattern*> currPattern;
             i32 scopeIndex = 0;
+
+            auto getCurrPattern = [&]{
+                return std::visit(hlp::overloaded {
+                    [](std::shared_ptr<ptrn::Pattern> ptr) -> ptrn::Pattern* {
+                        return ptr.get();
+                    },
+                    [](ptrn::Pattern* ptr) -> ptrn::Pattern* {
+                        return ptr;
+                    }
+                }, currPattern);
+            };
 
             if (!evaluator->isGlobalScope()) {
                 const auto &globalScope = evaluator->getGlobalScope().scope;
@@ -192,33 +205,45 @@ namespace pl::core::ast {
                             [this](const std::string &) { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
                             [this](ptrn::Pattern *pattern) { err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
                             [&, this](auto &&index) {
-                               if (auto dynamicArrayPattern = dynamic_cast<ptrn::PatternArrayDynamic *>(currPattern)) {
-                                   if (static_cast<u128>(index) >= searchScope.size() || static_cast<i128>(index) < 0)
-                                       err::E0006.throwError(fmt::format("Cannot out of bounds index '{}'.", index), {}, this);
+                                auto pattern = getCurrPattern();
+                                if (auto dynamicArrayPattern = dynamic_cast<ptrn::PatternArrayDynamic *>(pattern)) {
+                                    if (static_cast<u128>(index) >= searchScope.size() || static_cast<i128>(index) < 0)
+                                        err::E0006.throwError(fmt::format("Cannot access out of bounds index '{}'.", index), {}, this);
 
-                                   currPattern = searchScope[index].get();
-                               } else if (auto staticArrayPattern = dynamic_cast<ptrn::PatternArrayStatic *>(currPattern)) {
-                                   if (static_cast<u128>(index) >= staticArrayPattern->getEntryCount() || static_cast<i128>(index) < 0)
-                                       err::E0006.throwError(fmt::format("Cannot out of bounds index '{}'.", index), {}, this);
+                                    currPattern = searchScope[index].get();
+                                } else if (auto staticArrayPattern = dynamic_cast<ptrn::PatternArrayStatic *>(pattern)) {
+                                    if (static_cast<u128>(index) >= staticArrayPattern->getEntryCount() || static_cast<i128>(index) < 0)
+                                        err::E0006.throwError(fmt::format("Cannot access out of bounds index '{}'.", index), {}, this);
 
-                                   auto newPattern = searchScope.front();
-                                   newPattern->setOffset(staticArrayPattern->getOffset() + index * staticArrayPattern->getTemplate()->getSize());
-                                   currPattern = newPattern.get();
-                               }
+                                    auto newPattern = searchScope.front();
+                                    newPattern->setOffset(staticArrayPattern->getOffset() + index * staticArrayPattern->getTemplate()->getSize());
+                                    currPattern = newPattern.get();
+                                } else if (auto stringPattern = dynamic_cast<ptrn::PatternString *>(pattern)) {
+                                    if (static_cast<u128>(index) >= (stringPattern->getSize() / sizeof(char)) || static_cast<i128>(index) < 0)
+                                        err::E0006.throwError(fmt::format("Cannot access out of bounds index '{}'.", index), {}, this);
+
+                                    currPattern = std::make_unique<ptrn::PatternCharacter>(evaluator, stringPattern->getOffset() + index * sizeof(char));
+                                } else if (auto wideStringPattern = dynamic_cast<ptrn::PatternWideString *>(pattern)) {
+                                    if (static_cast<u128>(index) >= (wideStringPattern->getSize() / sizeof(char16_t)) || static_cast<i128>(index) < 0)
+                                        err::E0006.throwError(fmt::format("Cannot access out of bounds index '{}'.", index), {}, this);
+
+                                    currPattern = std::make_unique<ptrn::PatternWideCharacter>(evaluator, wideStringPattern->getOffset() + index * sizeof(char16_t));
+                                } else {
+                                    err::E0006.throwError(fmt::format("Cannot access non-array type '{}'.", pattern->getTypeName()), {}, this);
+                                }
                             }
                         },
                         index->getValue()
                     );
                 }
 
-                if (currPattern == nullptr)
+                ptrn::Pattern *indexPattern = getCurrPattern();
+                if (indexPattern == nullptr)
                     break;
 
-                if (auto pointerPattern = dynamic_cast<ptrn::PatternPointer *>(currPattern)) {
-                    currPattern = pointerPattern->getPointedAtPattern().get();
-                }
 
-                ptrn::Pattern *indexPattern = currPattern;
+                if (auto pointerPattern = dynamic_cast<ptrn::PatternPointer *>(indexPattern))
+                    currPattern = pointerPattern->getPointedAtPattern().get();
 
                 if (auto structPattern = dynamic_cast<ptrn::PatternStruct *>(indexPattern))
                     searchScope = structPattern->getMembers();
@@ -232,10 +257,10 @@ namespace pl::core::ast {
                     searchScope = { staticArrayPattern->getTemplate()->clone() };
             }
 
-            if (currPattern == nullptr)
+            if (auto pattern = getCurrPattern(); pattern == nullptr)
                 err::E0003.throwError("Cannot reference global scope.", {}, this);
-
-            return hlp::moveToVector<std::unique_ptr<ptrn::Pattern>>(currPattern->clone());
+            else
+                return hlp::moveToVector<std::unique_ptr<ptrn::Pattern>>(pattern->clone());
         }
 
     private:
