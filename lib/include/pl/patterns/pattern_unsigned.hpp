@@ -31,7 +31,7 @@ namespace pl::ptrn {
 
         std::string getFormattedValue() override {
             auto data = core::Token::literalToUnsigned(this->getValue());
-            return this->formatDisplayValue(fmt::format("{:d} (0x{:0{}X})", data, data, 1 * 2), this->getValue());
+            return this->formatDisplayValue(fmt::format("{:d} (0x{:0{}X})", data, data, this->getSize() * 2), this->getValue());
         }
 
         [[nodiscard]] std::string toString() const override {
