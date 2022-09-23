@@ -319,13 +319,14 @@ namespace pl::core::ast {
                             err::E0004.throwError("Array expanded past end of the data before a null-entry was found.", "Try using a while-sized array instead to limit the size of the array.", this);
 
                         const auto patternSize = pattern->getSize();
+                        evaluator->readData(evaluator->dataOffset() - patternSize, buffer.data(), buffer.size(), pattern->isLocal());
+
                         addEntries(hlp::moveToVector(std::move(pattern)));
 
                         auto ctrlFlow = evaluator->getCurrentControlFlowStatement();
                         if (ctrlFlow == ControlFlowStatement::None)
                             break;
 
-                        evaluator->readData(evaluator->dataOffset() - patternSize, buffer.data(), buffer.size(), pattern->isLocal());
                         reachedEnd = true;
                         for (u8 &byte : buffer) {
                             if (byte != 0x00) {
