@@ -39,7 +39,8 @@ namespace pl::core::ast {
             }, first->getValue());
 
             return std::visit(hlp::overloaded {
-                [condition]<typename T>(const T &second, const T &third) -> std::unique_ptr<ASTNode> { return std::unique_ptr<ASTNode>(new ASTNodeLiteral(condition ? second : third)); },
+                [condition]<typename T, typename U> requires std::convertible_to<T, U> && std::convertible_to<U, T>
+                (const T &second, const U &third) -> std::unique_ptr<ASTNode> { return std::unique_ptr<ASTNode>(new ASTNodeLiteral(condition ? second : third)); },
                 [this](auto &&, auto &&) -> std::unique_ptr<ASTNode> { err::E0002.throwError("Second and third operand in ternary expression have different types.", {}, this); }
             }, second->getValue(), third->getValue());
         }
