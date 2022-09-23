@@ -237,13 +237,16 @@ namespace pl::core::ast {
                     );
                 }
 
-                ptrn::Pattern *indexPattern = getCurrPattern();
-                if (indexPattern == nullptr)
+                if (auto pattern = getCurrPattern(); pattern == nullptr)
                     break;
+                else {
 
+                    if (auto pointerPattern = dynamic_cast<ptrn::PatternPointer *>(pattern))
+                        currPattern = pointerPattern->getPointedAtPattern().get();
 
-                if (auto pointerPattern = dynamic_cast<ptrn::PatternPointer *>(indexPattern))
-                    currPattern = pointerPattern->getPointedAtPattern().get();
+                }
+
+                auto indexPattern = getCurrPattern();
 
                 if (auto structPattern = dynamic_cast<ptrn::PatternStruct *>(indexPattern))
                     searchScope = structPattern->getMembers();
