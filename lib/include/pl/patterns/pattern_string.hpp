@@ -21,12 +21,10 @@ namespace pl::ptrn {
             if (size == 0)
                 return "";
 
-            std::vector<u8> buffer(size, 0x00);
+            std::string buffer(size, '\x00');
             this->getEvaluator()->readData(this->getOffset(), buffer.data(), size, this->isLocal());
 
-            auto string = std::string(reinterpret_cast<const char *>(buffer.data()));
-            string.resize(std::min(size, std::strlen(string.data())));
-            return string;
+            return buffer;
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
