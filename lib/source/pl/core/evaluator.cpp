@@ -4,6 +4,7 @@
 #include <pl/core/ast/ast_node.hpp>
 #include <pl/core/ast/ast_node_type_decl.hpp>
 #include <pl/core/ast/ast_node_variable_decl.hpp>
+#include <pl/core/ast/ast_node_array_variable_decl.hpp>
 #include <pl/core/ast/ast_node_function_call.hpp>
 #include <pl/core/ast/ast_node_function_definition.hpp>
 
@@ -54,13 +55,22 @@ namespace pl::core {
 
         this->dataOffset() = startOffset;
 
-        auto pattern = new ptrn::PatternArrayStatic(this, 0, typePattern->getSize() * entryCount);
-        pattern->setEntries(std::move(typePattern), entryCount);
-        pattern->setLocal(true);
+        auto pattern = new ptrn::PatternArrayDynamic(this, 0, typePattern->getSize() * entryCount);
 
-        auto &heap = this->getHeap();
-        pattern->setOffset(u64(heap.size()) << 32);
-        heap.emplace_back();
+        typePattern->setLocal(true);
+        std::vector<std::shared_ptr<ptrn::Pattern>> entries;
+        for (size_t i = 0; i < entryCount; i++) {
+            auto entryPattern = typePattern->clone();
+
+            auto &heap = this->getHeap();
+            entryPattern->setOffset(u64(heap.size()) << 32);
+            heap.emplace_back();
+
+            entries.push_back(std::move(entryPattern));
+        }
+
+        pattern->setEntries(std::move(entries));
+        pattern->setLocal(true);
 
         pattern->setVariableName(name);
 
@@ -388,6 +398,17 @@ namespace pl::core {
 
                             if (varDeclNode->isInVariable() && this->m_inVariables.contains(name))
                                 this->setVariable(name, this->m_inVariables[name]);
+                        } else {
+                            this->m_patterns.push_back(std::move(pattern));
+                        }
+                    }
+                } else if (auto arrayVarDeclNode = dynamic_cast<ast::ASTNodeArrayVariableDecl *>(node.get())) {
+                    for (auto &pattern : node->createPatterns(this)) {
+                        if (arrayVarDeclNode->getPlacementOffset() == nullptr) {
+                            auto type = arrayVarDeclNode->getType()->evaluate(this);
+
+                            auto &name = pattern->getVariableName();
+                            this->createArrayVariable(name, type.get(), dynamic_cast<ptrn::Iteratable*>(pattern.get())->getEntryCount());
                         } else {
                             this->m_patterns.push_back(std::move(pattern));
                         }

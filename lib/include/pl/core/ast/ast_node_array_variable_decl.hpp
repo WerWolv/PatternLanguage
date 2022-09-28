@@ -107,6 +107,14 @@ namespace pl::core::ast {
             return this->m_type;
         }
 
+        [[nodiscard]] const std::unique_ptr<ASTNode> &getSize() const {
+            return this->m_size;
+        }
+
+        [[nodiscard]] const std::unique_ptr<ASTNode> &getPlacementOffset() const {
+            return this->m_placementOffset;
+        }
+
     private:
         std::string m_name;
         std::shared_ptr<ASTNodeTypeDecl> m_type;
