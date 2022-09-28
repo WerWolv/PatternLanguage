@@ -1156,10 +1156,9 @@ namespace pl::core {
                 err::P0002.throwError(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)), {}, 1);
         }
 
-        if (!MATCHES(sequence(tkn::Operator::At)))
-            err::P0002.throwError(fmt::format("Expected '@' after array placement, got {}.", getFormattedToken(0)), {}, 1);
-
-        auto placementOffset = parseMathematicalExpression();
+        std::unique_ptr<ast::ASTNode> placementOffset;
+        if (MATCHES(sequence(tkn::Operator::At)))
+            placementOffset = parseMathematicalExpression();
 
         return create(new ast::ASTNodeArrayVariableDecl(name, type, std::move(size), std::move(placementOffset)));
     }
