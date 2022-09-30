@@ -121,21 +121,10 @@ namespace pl::core::ast {
             return std::unique_ptr<ASTNode>(new ASTNodeLiteral(std::move(literal)));
         }
 
-        [[nodiscard]] std::vector<std::unique_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             std::vector<std::shared_ptr<ptrn::Pattern>> searchScope;
-            std::variant<std::shared_ptr<ptrn::Pattern>, ptrn::Pattern*> currPattern;
+            std::shared_ptr<ptrn::Pattern> currPattern;
             i32 scopeIndex = 0;
-
-            auto getCurrPattern = [&]{
-                return std::visit(hlp::overloaded {
-                    [](std::shared_ptr<ptrn::Pattern> ptr) -> ptrn::Pattern* {
-                        return ptr.get();
-                    },
-                    [](ptrn::Pattern* ptr) -> ptrn::Pattern* {
-                        return ptr;
-                    }
-                }, currPattern);
-            };
 
             if (!evaluator->isGlobalScope()) {
                 const auto &globalScope = evaluator->getGlobalScope().scope;
@@ -183,7 +172,7 @@ namespace pl::core::ast {
                         bool found = false;
                         for (auto iter = searchScope.crbegin(); iter != searchScope.crend(); ++iter) {
                             if ((*iter)->getVariableName() == name) {
-                                currPattern = iter->get();
+                                currPattern = std::move(*iter);
                                 found       = true;
                                 break;
                             }
@@ -205,19 +194,19 @@ namespace pl::core::ast {
                             [this](const std::string &) { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
                             [this](ptrn::Pattern *pattern) { err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
                             [&, this](auto &&index) {
-                                auto pattern = getCurrPattern();
+                                auto pattern = currPattern.get();
                                 if (auto dynamicArrayPattern = dynamic_cast<ptrn::PatternArrayDynamic *>(pattern)) {
                                     if (static_cast<u128>(index) >= searchScope.size() || static_cast<i128>(index) < 0)
                                         err::E0006.throwError(fmt::format("Cannot access out of bounds index '{}'.", index), {}, this);
 
-                                    currPattern = searchScope[index].get();
+                                    currPattern = std::move(searchScope[index]);
                                 } else if (auto staticArrayPattern = dynamic_cast<ptrn::PatternArrayStatic *>(pattern)) {
                                     if (static_cast<u128>(index) >= staticArrayPattern->getEntryCount() || static_cast<i128>(index) < 0)
                                         err::E0006.throwError(fmt::format("Cannot access out of bounds index '{}'.", index), {}, this);
 
                                     auto newPattern = searchScope.front();
                                     newPattern->setOffset(staticArrayPattern->getOffset() + index * staticArrayPattern->getTemplate()->getSize());
-                                    currPattern = newPattern.get();
+                                    currPattern = std::move(newPattern);
                                 } else if (auto stringPattern = dynamic_cast<ptrn::PatternString *>(pattern)) {
                                     if (static_cast<u128>(index) >= (stringPattern->getSize() / sizeof(char)) || static_cast<i128>(index) < 0)
                                         err::E0006.throwError(fmt::format("Cannot access out of bounds index '{}'.", index), {}, this);
@@ -237,16 +226,14 @@ namespace pl::core::ast {
                     );
                 }
 
-                if (auto pattern = getCurrPattern(); pattern == nullptr)
+                if (currPattern == nullptr)
                     break;
-                else {
 
-                    if (auto pointerPattern = dynamic_cast<ptrn::PatternPointer *>(pattern))
-                        currPattern = pointerPattern->getPointedAtPattern().get();
 
-                }
+                if (auto pointerPattern = dynamic_cast<ptrn::PatternPointer *>(currPattern.get()))
+                    currPattern = pointerPattern->getPointedAtPattern();
 
-                auto indexPattern = getCurrPattern();
+                auto indexPattern = currPattern.get();
 
                 if (auto structPattern = dynamic_cast<ptrn::PatternStruct *>(indexPattern))
                     searchScope = structPattern->getMembers();
@@ -260,10 +247,10 @@ namespace pl::core::ast {
                     searchScope = { staticArrayPattern->getTemplate()->clone() };
             }
 
-            if (auto pattern = getCurrPattern(); pattern == nullptr)
+            if (currPattern == nullptr)
                 err::E0003.throwError("Cannot reference global scope.", {}, this);
             else
-                return hlp::moveToVector<std::unique_ptr<ptrn::Pattern>>(pattern->clone());
+                return hlp::moveToVector(std::move(currPattern));
         }
 
     private:

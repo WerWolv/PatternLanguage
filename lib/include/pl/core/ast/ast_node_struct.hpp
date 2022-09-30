@@ -23,13 +23,13 @@ namespace pl::core::ast {
             return std::unique_ptr<ASTNode>(new ASTNodeStruct(*this));
         }
 
-        [[nodiscard]] std::vector<std::unique_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
-            auto pattern = std::make_unique<ptrn::PatternStruct>(evaluator, evaluator->dataOffset(), 0);
+        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+            auto pattern = std::make_shared<ptrn::PatternStruct>(evaluator, evaluator->dataOffset(), 0);
 
             u64 startOffset = evaluator->dataOffset();
             std::vector<std::shared_ptr<ptrn::Pattern>> memberPatterns;
 
-            evaluator->pushScope(pattern.get(), memberPatterns);
+            evaluator->pushScope(pattern, memberPatterns);
             PL_ON_SCOPE_EXIT {
                 evaluator->popScope();
             };
@@ -73,7 +73,7 @@ namespace pl::core::ast {
 
             applyTypeAttributes(evaluator, this, pattern.get());
 
-            return hlp::moveToVector<std::unique_ptr<ptrn::Pattern>>(std::move(pattern));
+            return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
         }
 
         [[nodiscard]] const std::vector<std::shared_ptr<ASTNode>> &getMembers() const { return this->m_members; }

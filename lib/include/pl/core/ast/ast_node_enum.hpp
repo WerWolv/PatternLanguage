@@ -23,7 +23,7 @@ namespace pl::core::ast {
             return std::unique_ptr<ASTNode>(new ASTNodeEnum(*this));
         }
 
-        [[nodiscard]] std::vector<std::unique_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             auto pattern = std::make_unique<ptrn::PatternEnum>(evaluator, evaluator->dataOffset(), 0);
 
             std::vector<ptrn::PatternEnum::EnumValue> enumEntries;
@@ -53,7 +53,7 @@ namespace pl::core::ast {
 
             applyTypeAttributes(evaluator, this, pattern.get());
 
-            return hlp::moveToVector<std::unique_ptr<ptrn::Pattern>>(std::move(pattern));
+            return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
         }
 
         [[nodiscard]] const std::map<std::string, std::pair<std::unique_ptr<ASTNode>, std::unique_ptr<ASTNode>>> &getEntries() const { return this->m_entries; }

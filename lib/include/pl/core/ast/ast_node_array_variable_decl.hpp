@@ -40,7 +40,7 @@ namespace pl::core::ast {
             return std::unique_ptr<ASTNode>(new ASTNodeArrayVariableDecl(*this));
         }
 
-        [[nodiscard]] std::vector<std::unique_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             auto startOffset = evaluator->dataOffset();
 
             if (this->m_placementOffset != nullptr) {
@@ -76,7 +76,7 @@ namespace pl::core::ast {
                 evaluator->dataOffset() = startOffset;
             }
 
-            return hlp::moveToVector(std::move(pattern));
+            return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
         }
 
         FunctionResult execute(Evaluator *evaluator) const override {
@@ -218,7 +218,7 @@ namespace pl::core::ast {
             size_t size    = 0;
             u64 entryIndex = 0;
 
-            auto addEntries = [&](std::vector<std::unique_ptr<ptrn::Pattern>> &&patterns) {
+            auto addEntries = [&](std::vector<std::shared_ptr<ptrn::Pattern>> &&patterns) {
                 for (auto &pattern : patterns) {
                     pattern->setVariableName(fmt::format("[{}]", entryIndex));
                     pattern->setEndian(arrayPattern->getEndian());

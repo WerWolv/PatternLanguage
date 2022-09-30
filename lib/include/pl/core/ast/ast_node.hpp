@@ -35,7 +35,7 @@ namespace pl::core::ast {
             return this->clone();
         }
 
-        [[nodiscard]] virtual std::vector<std::unique_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const {
+        [[nodiscard]] virtual std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const {
             hlp::unused(evaluator);
 
             return {};

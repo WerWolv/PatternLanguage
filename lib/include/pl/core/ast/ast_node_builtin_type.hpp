@@ -24,7 +24,7 @@ namespace pl::core::ast {
             return std::unique_ptr<ASTNode>(new ASTNodeBuiltinType(*this));
         }
 
-        [[nodiscard]] std::vector<std::unique_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             auto offset = evaluator->dataOffset();
             auto size   = Token::getTypeSize(this->m_type);
 
@@ -54,7 +54,7 @@ namespace pl::core::ast {
 
             pattern->setTypeName(Token::getTypeName(this->m_type));
 
-            return hlp::moveToVector(std::move(pattern));
+            return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
         }
 
     private:

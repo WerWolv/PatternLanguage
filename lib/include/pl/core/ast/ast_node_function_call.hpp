@@ -33,7 +33,7 @@ namespace pl::core::ast {
             return this->m_params;
         }
 
-        [[nodiscard]] std::vector<std::unique_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
 
             this->execute(evaluator);
 

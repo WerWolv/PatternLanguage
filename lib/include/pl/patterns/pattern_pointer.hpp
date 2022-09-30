@@ -69,7 +69,7 @@ namespace pl::ptrn {
             Pattern::setReference(reference);
         }
 
-        void setPointedAtPattern(std::unique_ptr<Pattern> &&pattern) {
+        void setPointedAtPattern(std::shared_ptr<Pattern> &&pattern) {
             this->m_pointedAt = std::move(pattern);
             this->m_pointedAt->setVariableName(fmt::format("*({})", this->getVariableName()));
             this->m_pointedAt->setOffset(this->m_pointedAtAddress);
@@ -78,14 +78,14 @@ namespace pl::ptrn {
                 this->m_pointedAt->setColor(this->getColor());
         }
 
-        void setPointerTypePattern(std::unique_ptr<Pattern> &&pattern) {
+        void setPointerTypePattern(std::shared_ptr<Pattern> &&pattern) {
             Pattern::setSize(pattern->getSize());
             Pattern::setEndian(pattern->getEndian());
             this->m_pointerType = std::move(pattern);
             this->m_signed = dynamic_cast<const PatternSigned *>(this->m_pointerType.get()) != nullptr;
         }
 
-        const std::unique_ptr<Pattern>& getPointerType() const {
+        const std::shared_ptr<Pattern>& getPointerType() const {
             return this->m_pointerType;
         }
 
@@ -159,7 +159,7 @@ namespace pl::ptrn {
 
     private:
         std::shared_ptr<Pattern> m_pointedAt;
-        std::unique_ptr<Pattern> m_pointerType;
+        std::shared_ptr<Pattern> m_pointerType;
         i128 m_pointedAtAddress = 0;
         u64 m_pointerBase = 0;
         bool m_signed = false;

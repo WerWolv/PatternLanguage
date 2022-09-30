@@ -24,8 +24,8 @@ namespace pl::core::ast {
         [[nodiscard]] const std::vector<std::shared_ptr<ASTNode>> &getEntries() const { return this->m_entries; }
         void addEntry(std::unique_ptr<ASTNode> &&entry) { this->m_entries.emplace_back(std::move(entry)); }
 
-        [[nodiscard]] std::vector<std::unique_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
-            auto bitfieldPattern = std::make_unique<ptrn::PatternBitfield>(evaluator, evaluator->dataOffset(), 0);
+        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+            auto bitfieldPattern = std::make_shared<ptrn::PatternBitfield>(evaluator, evaluator->dataOffset(), 0);
 
             size_t bitOffset = 0x00;
 
@@ -45,7 +45,7 @@ namespace pl::core::ast {
             if (order == BitfieldOrder::LeftToRight)
                 std::reverse(entries.begin(), entries.end());
 
-            evaluator->pushScope(bitfieldPattern.get(), potentialPatterns);
+            evaluator->pushScope(bitfieldPattern, potentialPatterns);
             PL_ON_SCOPE_EXIT {
                 evaluator->popScope();
             };
@@ -95,7 +95,7 @@ namespace pl::core::ast {
 
             applyTypeAttributes(evaluator, this, bitfieldPattern.get());
 
-            return hlp::moveToVector<std::unique_ptr<ptrn::Pattern>>(std::move(bitfieldPattern));
+            return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(bitfieldPattern));
         }
 
     private:

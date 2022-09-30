@@ -62,14 +62,14 @@ namespace pl::core {
         };
 
         struct Scope {
-            ptrn::Pattern *parent;
+            std::shared_ptr<ptrn::Pattern> parent;
             std::vector<std::shared_ptr<ptrn::Pattern>> *scope;
             std::optional<ParameterPack> parameterPack;
-            std::vector<std::unique_ptr<ptrn::Pattern>> savedPatterns;
+            std::vector<std::shared_ptr<ptrn::Pattern>> savedPatterns;
             size_t heapStartSize;
         };
 
-        void pushScope(ptrn::Pattern *parent, std::vector<std::shared_ptr<ptrn::Pattern>> &scope);
+        void pushScope(const std::shared_ptr<ptrn::Pattern> &parent, std::vector<std::shared_ptr<ptrn::Pattern>> &scope);
         void popScope();
 
         [[nodiscard]] Scope &getScope(i32 index) {

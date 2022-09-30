@@ -51,7 +51,7 @@ namespace pl::core::ast {
             return type;
         }
 
-        [[nodiscard]] std::vector<std::unique_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             auto patterns = this->getType()->createPatterns(evaluator);
 
             for (auto &pattern : patterns) {

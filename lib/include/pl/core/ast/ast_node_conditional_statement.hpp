@@ -24,7 +24,7 @@ namespace pl::core::ast {
             return std::unique_ptr<ASTNode>(new ASTNodeConditionalStatement(*this));
         }
 
-        [[nodiscard]] std::vector<std::unique_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             auto &scope = *evaluator->getScope(0).scope;
             auto &body  = evaluateCondition(evaluator) ? this->m_trueBody : this->m_falseBody;
 

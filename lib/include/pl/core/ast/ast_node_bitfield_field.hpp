@@ -27,7 +27,7 @@ namespace pl::core::ast {
 
         [[nodiscard]] bool isPadding() const { return this->getName() == "padding"; }
 
-        [[nodiscard]] std::vector<std::unique_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             auto literal = this->m_size->evaluate(evaluator);
 
             u8 bitSize = std::visit(hlp::overloaded {
@@ -42,7 +42,7 @@ namespace pl::core::ast {
 
             applyVariableAttributes(evaluator, this, pattern.get());
 
-            return hlp::moveToVector<std::unique_ptr<ptrn::Pattern>>({ std::move(pattern) });
+            return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>({ std::move(pattern) });
         }
 
     private:

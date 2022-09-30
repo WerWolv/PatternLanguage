@@ -33,7 +33,7 @@ namespace pl::core::ast {
         [[nodiscard]] constexpr const std::shared_ptr<ASTNodeTypeDecl> &getSizeType() const { return this->m_sizeType; }
         [[nodiscard]] constexpr const std::unique_ptr<ASTNode> &getPlacementOffset() const { return this->m_placementOffset; }
 
-        [[nodiscard]] std::vector<std::unique_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             auto startOffset = evaluator->dataOffset();
 
             if (this->m_placementOffset != nullptr) {
@@ -80,7 +80,7 @@ namespace pl::core::ast {
                 evaluator->dataOffset() = pointerEndOffset;
             }
 
-            return hlp::moveToVector<std::unique_ptr<ptrn::Pattern>>(std::move(pattern));
+            return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
         }
 
     private:

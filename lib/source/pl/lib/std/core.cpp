@@ -48,6 +48,26 @@ namespace pl::lib::libstd::core {
                     return attributes->at(attributeName);
             });
 
+            /* set_pattern_color(pattern, color) */
+            runtime.addFunction(nsStdCore, "set_pattern_color", FunctionParameterCount::exactly(2), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
+                auto pattern = Token::literalToPattern(params[0]);
+                auto color = Token::literalToUnsigned(params[1]);
+
+                pattern->setColor(color);
+
+                return std::nullopt;
+            });
+
+            /* set_pattern_comment(pattern, comment) */
+            runtime.addFunction(nsStdCore, "set_pattern_comment", FunctionParameterCount::exactly(2), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
+                auto pattern = Token::literalToPattern(params[0]);
+                auto comment = Token::literalToString(params[1], false);
+
+                pattern->setComment(comment);
+
+                return std::nullopt;
+            });
+
             /* set_endian(endian) */
             runtime.addFunction(nsStdCore, "set_endian", FunctionParameterCount::exactly(1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 types::Endian endian = Token::literalToUnsigned(params[0]);

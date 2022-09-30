@@ -94,7 +94,7 @@ namespace pl::core {
 
         auto startOffset = this->dataOffset();
 
-        std::unique_ptr<ptrn::Pattern> pattern;
+        std::shared_ptr<ptrn::Pattern> pattern;
         auto typePattern = type->createPatterns(this);
 
         this->dataOffset() = startOffset;
@@ -323,7 +323,7 @@ namespace pl::core {
         }
     }
 
-    void Evaluator::pushScope(ptrn::Pattern *parent, std::vector<std::shared_ptr<ptrn::Pattern>> &scope) {
+    void Evaluator::pushScope(const std::shared_ptr<ptrn::Pattern> &parent, std::vector<std::shared_ptr<ptrn::Pattern>> &scope) {
         if (this->m_scopes.size() > this->getEvaluationDepth())
             err::E0007.throwError(fmt::format("Evaluation depth exceeded set limit of '{}'.", this->getEvaluationDepth()), "If this is intended, try increasing the limit using '#pragma eval_depth <new_limit>'.");
 

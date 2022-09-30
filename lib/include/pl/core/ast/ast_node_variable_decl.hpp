@@ -37,7 +37,7 @@ namespace pl::core::ast {
         [[nodiscard]] constexpr bool isInVariable() const { return this->m_inVariable; }
         [[nodiscard]] constexpr bool isOutVariable() const { return this->m_outVariable; }
 
-        [[nodiscard]] std::vector<std::unique_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             u64 startOffset = evaluator->dataOffset();
 
             if (this->m_placementOffset != nullptr) {
@@ -64,7 +64,7 @@ namespace pl::core::ast {
                 evaluator->dataOffset() = startOffset;
             }
 
-            return hlp::moveToVector<std::unique_ptr<ptrn::Pattern>>(std::move(pattern));
+            return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
         }
 
         FunctionResult execute(Evaluator *evaluator) const override {
