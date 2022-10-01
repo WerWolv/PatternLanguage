@@ -232,6 +232,9 @@ namespace pl::core {
                     }
                 }
 
+                if (offset >= code.length())
+                    break;
+
                 if (code[offset] == '\n') {
                     lineNumber++;
                     startOfLine = true;
