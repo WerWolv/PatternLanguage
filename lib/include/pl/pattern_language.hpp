@@ -59,7 +59,7 @@ namespace pl {
 
         [[nodiscard]] std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> parseString(const std::string &code);
         [[nodiscard]] bool executeString(std::string string, const std::map<std::string, core::Token::Literal> &envVars = {}, const std::map<std::string, core::Token::Literal> &inVariables = {}, bool checkResult = true);
-        [[nodiscard]] bool executeFile(const std::filesystem::path &path, const std::map<std::string, core::Token::Literal> &envVars = {}, const std::map<std::string, core::Token::Literal> &inVariables = {});
+        [[nodiscard]] bool executeFile(const std::filesystem::path &path, const std::map<std::string, core::Token::Literal> &envVars = {}, const std::map<std::string, core::Token::Literal> &inVariables = {}, bool checkResult = true);
         [[nodiscard]] std::pair<bool, std::optional<core::Token::Literal>> executeFunction(const std::string &code);
         [[nodiscard]] const std::vector<std::shared_ptr<core::ast::ASTNode>> &getCurrentAST() const;
 
@@ -68,6 +68,9 @@ namespace pl {
         void setDataSource(std::function<void(u64, u8*, size_t)> readFunction, u64 baseAddress, u64 size) const;
         void setDataBaseAddress(u64 baseAddress) const;
         void setDataSize(u64 size) const;
+        void setDefaultEndian(std::endian endian);
+        void setStartAddress(u64 address);
+
 
         void addPragma(const std::string &name, const api::PragmaHandler &callback) const;
         void removePragma(const std::string &name) const;
@@ -110,6 +113,9 @@ namespace pl {
 
         bool m_running = false;
         std::atomic<bool> m_aborted = false;
+
+        std::optional<u64> m_startAddress;
+        std::endian m_defaultEndian = std::endian::little;
     };
 
 }

@@ -80,6 +80,8 @@ namespace pl {
         code = hlp::replaceAll(code, "\r\n", "\n");
         code = hlp::replaceAll(code, "\t", "    ");
 
+        auto &evaluator = this->m_internals.evaluator;
+
         this->m_running = true;
         this->m_aborted = false;
         PL_ON_SCOPE_EXIT { this->m_running = false; };
@@ -88,15 +90,15 @@ namespace pl {
             if (this->m_currError.has_value()) {
                 const auto &error = this->m_currError.value();
 
-                this->m_internals.evaluator->getConsole().log(core::LogConsole::Level::Error, error.message);
+                evaluator->getConsole().log(core::LogConsole::Level::Error, error.message);
             }
         };
 
         this->reset();
-        this->m_internals.evaluator->setInVariables(inVariables);
+        evaluator->setInVariables(inVariables);
 
         for (const auto &[name, value] : envVars)
-            this->m_internals.evaluator->setEnvVariable(name, value);
+            evaluator->setEnvVariable(name, value);
 
         this->m_currAST.clear();
 
@@ -108,13 +110,15 @@ namespace pl {
             this->m_currAST = std::move(ast.value());
         }
 
+        evaluator->dataOffset() = this->m_startAddress.value_or(evaluator->getDataBaseAddress());
 
-        if (!this->m_internals.evaluator->evaluate(code, this->m_currAST)) {
-            this->m_currError = this->m_internals.evaluator->getConsole().getLastHardError();
+
+        if (!evaluator->evaluate(code, this->m_currAST)) {
+            this->m_currError = evaluator->getConsole().getLastHardError();
             return false;
         }
 
-        if (auto mainResult = this->m_internals.evaluator->getMainResult(); checkResult && mainResult.has_value()) {
+        if (auto mainResult = evaluator->getMainResult(); checkResult && mainResult.has_value()) {
             auto returnCode = core::Token::literalToSigned(*mainResult);
 
             if (returnCode != 0) {
@@ -124,7 +128,7 @@ namespace pl {
             }
         }
 
-        this->m_patterns = this->m_internals.evaluator->getPatterns();
+        this->m_patterns = evaluator->getPatterns();
 
         // Remove global local variables
         std::erase_if(this->m_patterns, [](const std::shared_ptr<ptrn::Pattern> &pattern) {
@@ -140,12 +144,12 @@ namespace pl {
         return true;
     }
 
-    bool PatternLanguage::executeFile(const std::fs::path &path, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables) {
+    bool PatternLanguage::executeFile(const std::fs::path &path, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
         hlp::fs::File file(path, hlp::fs::File::Mode::Read);
         if (!file.isValid())
             return false;
 
-        return this->executeString(file.readString(), envVars, inVariables, true);
+        return this->executeString(file.readString(), envVars, inVariables, checkResult);
     }
 
     std::pair<bool, std::optional<core::Token::Literal>> PatternLanguage::executeFunction(const std::string &code) {
@@ -189,6 +193,14 @@ namespace pl {
 
     void PatternLanguage::setDataSize(u64 size) const {
         this->m_internals.evaluator->setDataSize(size);
+    }
+
+    void PatternLanguage::setDefaultEndian(std::endian endian) {
+        this->m_defaultEndian = endian;
+    }
+
+    void PatternLanguage::setStartAddress(u64 address) {
+        this->m_startAddress = address;
     }
 
     void PatternLanguage::setDangerousFunctionCallHandler(std::function<bool()> callback) const {
@@ -235,7 +247,7 @@ namespace pl {
         this->m_internals.validator->setRecursionDepth(32);
 
         this->m_internals.evaluator->getConsole().clear();
-        this->m_internals.evaluator->setDefaultEndian(std::endian::native);
+        this->m_internals.evaluator->setDefaultEndian(this->m_defaultEndian);
         this->m_internals.evaluator->setEvaluationDepth(32);
         this->m_internals.evaluator->setArrayLimit(0x10000);
         this->m_internals.evaluator->setPatternLimit(0x20000);

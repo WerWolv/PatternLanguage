@@ -372,7 +372,6 @@ namespace pl::core {
             this->m_evaluated = true;
         };
 
-        this->dataOffset()       = 0x00;
         this->m_currPatternCount = 0;
 
         this->m_customFunctionDefinitions.clear();
@@ -382,6 +381,8 @@ namespace pl::core {
             pushScope(nullptr, this->m_patterns);
 
             for (auto &node : ast) {
+                auto startOffset = this->dataOffset();
+
                 if (dynamic_cast<ast::ASTNodeTypeDecl *>(node.get())) {
                     ;    // Don't create patterns from type declarations
                 } else if (dynamic_cast<ast::ASTNodeFunctionCall *>(node.get())) {
@@ -398,6 +399,8 @@ namespace pl::core {
 
                             if (varDeclNode->isInVariable() && this->m_inVariables.contains(name))
                                 this->setVariable(name, this->m_inVariables[name]);
+
+                            this->dataOffset() = startOffset;
                         } else {
                             this->m_patterns.push_back(std::move(pattern));
                         }
@@ -409,6 +412,8 @@ namespace pl::core {
 
                             auto &name = pattern->getVariableName();
                             this->createArrayVariable(name, type.get(), dynamic_cast<ptrn::Iteratable*>(pattern.get())->getEntryCount());
+
+                            this->dataOffset() = startOffset;
                         } else {
                             this->m_patterns.push_back(std::move(pattern));
                         }
