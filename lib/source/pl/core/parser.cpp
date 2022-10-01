@@ -1121,6 +1121,13 @@ namespace pl::core {
             inVariable = true;
         } else if (MATCHES(sequence(tkn::Keyword::Out))) {
             outVariable = true;
+        } else if (MATCHES(sequence(tkn::Operator::Assign))) {
+            std::vector<std::unique_ptr<ast::ASTNode>> compounds;
+
+            compounds.push_back(create(new ast::ASTNodeVariableDecl(name, type, std::move(placementOffset), inVariable, outVariable)));
+            compounds.push_back(create(new ast::ASTNodeLValueAssignment(name, parseMathematicalExpression())));
+
+            return create(new ast::ASTNodeCompoundStatement(std::move(compounds)));
         }
 
         if (inVariable || outVariable) {

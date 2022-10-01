@@ -21,6 +21,8 @@ namespace pl::core::ast {
             return std::unique_ptr<ASTNode>(new ASTNodeCompoundStatement(*this));
         }
 
+        [[nodiscard]] const std::vector<std::unique_ptr<ASTNode>>& getStatements() const { return this->m_statements; }
+
         [[nodiscard]] std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override {
             std::unique_ptr<ASTNode> result = nullptr;
 

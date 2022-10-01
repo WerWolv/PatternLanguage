@@ -7,6 +7,7 @@
 #include <pl/core/ast/ast_node_array_variable_decl.hpp>
 #include <pl/core/ast/ast_node_function_call.hpp>
 #include <pl/core/ast/ast_node_function_definition.hpp>
+#include <pl/core/ast/ast_node_compound_statement.hpp>
 
 #include <pl/patterns/pattern_unsigned.hpp>
 #include <pl/patterns/pattern_array_static.hpp>
@@ -380,53 +381,66 @@ namespace pl::core {
             this->setCurrentControlFlowStatement(ControlFlowStatement::None);
             pushScope(nullptr, this->m_patterns);
 
-            for (auto &node : ast) {
-                auto startOffset = this->dataOffset();
+            for (auto &topLevelNode : ast) {
 
-                if (dynamic_cast<ast::ASTNodeTypeDecl *>(node.get())) {
-                    ;    // Don't create patterns from type declarations
-                } else if (dynamic_cast<ast::ASTNodeFunctionCall *>(node.get())) {
-                    (void)node->evaluate(this);
-                } else if (dynamic_cast<ast::ASTNodeFunctionDefinition *>(node.get())) {
-                    this->m_customFunctionDefinitions.push_back(node->evaluate(this));
-                } else if (auto varDeclNode = dynamic_cast<ast::ASTNodeVariableDecl *>(node.get())) {
-                    for (auto &pattern : node->createPatterns(this)) {
-                        if (varDeclNode->getPlacementOffset() == nullptr) {
-                            auto type = varDeclNode->getType()->evaluate(this);
+                std::vector<ast::ASTNode*> nodes;
 
-                            auto &name = pattern->getVariableName();
-                            this->createVariable(name, type.get(), std::nullopt, varDeclNode->isOutVariable());
-
-                            if (varDeclNode->isInVariable() && this->m_inVariables.contains(name))
-                                this->setVariable(name, this->m_inVariables[name]);
-
-                            this->dataOffset() = startOffset;
-                        } else {
-                            this->m_patterns.push_back(std::move(pattern));
-                        }
-                    }
-                } else if (auto arrayVarDeclNode = dynamic_cast<ast::ASTNodeArrayVariableDecl *>(node.get())) {
-                    for (auto &pattern : node->createPatterns(this)) {
-                        if (arrayVarDeclNode->getPlacementOffset() == nullptr) {
-                            auto type = arrayVarDeclNode->getType()->evaluate(this);
-
-                            auto &name = pattern->getVariableName();
-                            this->createArrayVariable(name, type.get(), dynamic_cast<ptrn::Iteratable*>(pattern.get())->getEntryCount());
-
-                            this->dataOffset() = startOffset;
-                        } else {
-                            this->m_patterns.push_back(std::move(pattern));
-                        }
-                    }
+                if (auto compoundNode = dynamic_cast<ast::ASTNodeCompoundStatement*>(topLevelNode.get())) {
+                    for (const auto &statement : compoundNode->getStatements())
+                        nodes.push_back(statement.get());
                 } else {
-                    auto newPatterns = node->createPatterns(this);
-                    std::move(newPatterns.begin(), newPatterns.end(), std::back_inserter(this->m_patterns));
+                    nodes.push_back(topLevelNode.get());
                 }
 
-                if (this->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
-                    break;
-                else
-                    this->setCurrentControlFlowStatement(ControlFlowStatement::None);
+                for (auto node : nodes) {
+
+                    auto startOffset = this->dataOffset();
+
+                    if (dynamic_cast<ast::ASTNodeTypeDecl *>(node)) {
+                        ;    // Don't create patterns from type declarations
+                    } else if (dynamic_cast<ast::ASTNodeFunctionCall *>(node)) {
+                        (void)node->evaluate(this);
+                    } else if (dynamic_cast<ast::ASTNodeFunctionDefinition *>(node)) {
+                        this->m_customFunctionDefinitions.push_back(node->evaluate(this));
+                    } else if (auto varDeclNode = dynamic_cast<ast::ASTNodeVariableDecl *>(node)) {
+                        for (auto &pattern : node->createPatterns(this)) {
+                            if (varDeclNode->getPlacementOffset() == nullptr) {
+                                auto type = varDeclNode->getType()->evaluate(this);
+
+                                auto &name = pattern->getVariableName();
+                                this->createVariable(name, type.get(), std::nullopt, varDeclNode->isOutVariable());
+
+                                if (varDeclNode->isInVariable() && this->m_inVariables.contains(name))
+                                    this->setVariable(name, this->m_inVariables[name]);
+
+                                this->dataOffset() = startOffset;
+                            } else {
+                                this->m_patterns.push_back(std::move(pattern));
+                            }
+                        }
+                    } else if (auto arrayVarDeclNode = dynamic_cast<ast::ASTNodeArrayVariableDecl *>(node)) {
+                        for (auto &pattern : node->createPatterns(this)) {
+                            if (arrayVarDeclNode->getPlacementOffset() == nullptr) {
+                                auto type = arrayVarDeclNode->getType()->evaluate(this);
+
+                                auto &name = pattern->getVariableName();
+                                this->createArrayVariable(name, type.get(), dynamic_cast<ptrn::Iteratable*>(pattern.get())->getEntryCount());
+
+                                this->dataOffset() = startOffset;
+                            } else {
+                                this->m_patterns.push_back(std::move(pattern));
+                            }
+                        }
+                    } else {
+                        auto newPatterns = node->createPatterns(this);
+                        std::move(newPatterns.begin(), newPatterns.end(), std::back_inserter(this->m_patterns));
+                    }
+
+                    if (this->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
+                        break;
+                    else
+                        this->setCurrentControlFlowStatement(ControlFlowStatement::None);
+                }
             }
 
             if (this->m_customFunctions.contains("main")) {

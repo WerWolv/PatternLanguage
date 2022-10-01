@@ -29,6 +29,10 @@ namespace pl::core::err {
 
         std::string message;
         u32 line, column;
+
+        [[nodiscard]] const char *what() const noexcept override {
+            return this->message.c_str();
+        }
     };
 
     template<>
