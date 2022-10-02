@@ -166,8 +166,9 @@ namespace pl::core {
                else if (dynamic_cast<const ptrn::PatternSigned*>(pattern))
                    return truncateValue<i128>(pattern->getSize(), i128(value));
                else if (dynamic_cast<const ptrn::PatternFloat*>(pattern)) {
-                   if (pattern->getSize() == sizeof(float))
+                   if (pattern->getSize() == sizeof(float)) {
                        return double(float(value));
+                   }
                    else
                        return double(value);
                } else if (dynamic_cast<const ptrn::PatternBoolean*>(pattern))
@@ -300,6 +301,21 @@ namespace pl::core {
 
                         storage.resize(pattern->getSize());
                         std::memcpy(storage.data(), &adjustedValue, pattern->getSize());
+
+                        if (this->isDebugModeEnabled())
+                            this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
+                    },
+                    [this, &pattern, &storage](const double &value) {
+                        auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
+
+                        storage.resize(pattern->getSize());
+
+                        if (storage.size() == sizeof(float)) {
+                            float floatValue = adjustedValue;
+                            std::memcpy(storage.data(), &floatValue, storage.size());
+                        } else {
+                            std::memcpy(storage.data(), &adjustedValue, storage.size());
+                        }
 
                         if (this->isDebugModeEnabled())
                             this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
