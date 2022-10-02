@@ -43,7 +43,7 @@ namespace pl::core::ast {
 
                 if (auto structPattern = dynamic_cast<ptrn::PatternStruct *>(inheritancePattern.get())) {
                     for (auto &member : structPattern->getMembers()) {
-                        memberPatterns.push_back(std::move(member));
+                        memberPatterns.push_back(member);
                     }
                 }
             }

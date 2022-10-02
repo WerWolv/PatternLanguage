@@ -121,8 +121,6 @@ namespace pl::core::ast {
                 return std::unique_ptr<ASTNode>(new ASTNodeLiteral(std::move(result.value())));
             else
                 return std::unique_ptr<ASTNode>(new ASTNodeMathematicalExpression(nullptr, nullptr, Token::Operator::Plus));
-
-            return nullptr;
         }
 
         FunctionResult execute(Evaluator *evaluator) const override {

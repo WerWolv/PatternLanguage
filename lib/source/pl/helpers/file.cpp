@@ -4,7 +4,7 @@
 #include <pl/helpers/utils.hpp>
 #include <pl/helpers/file.hpp>
 
-#include <stdio.h>
+#include <cstdio>
 
 namespace pl::hlp::fs {
 

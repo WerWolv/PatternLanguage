@@ -66,16 +66,16 @@ namespace pl::core::ast {
             }
 
             Token::Literal literal;
-            if (dynamic_cast<ptrn::PatternUnsigned *>(pattern)) {
+            if (dynamic_cast<ptrn::PatternUnsigned *>(pattern) != nullptr) {
                 u128 value = 0;
                 readVariable(evaluator, value, pattern);
                 literal = value;
-            } else if (dynamic_cast<ptrn::PatternSigned *>(pattern)) {
+            } else if (dynamic_cast<ptrn::PatternSigned *>(pattern) != nullptr) {
                 i128 value = 0;
                 readVariable(evaluator, value, pattern);
                 value   = hlp::signExtend(pattern->getSize() * 8, value);
                 literal = value;
-            } else if (dynamic_cast<ptrn::PatternFloat *>(pattern)) {
+            } else if (dynamic_cast<ptrn::PatternFloat *>(pattern) != nullptr) {
                 if (pattern->getSize() == sizeof(u16)) {
                     u16 value = 0;
                     readVariable(evaluator, value, pattern);
@@ -90,19 +90,19 @@ namespace pl::core::ast {
                     literal = value;
                 } else
                     err::E0001.throwError("Invalid floating point type.");
-            } else if (dynamic_cast<ptrn::PatternCharacter *>(pattern)) {
+            } else if (dynamic_cast<ptrn::PatternCharacter *>(pattern) != nullptr) {
                 char value = 0;
                 readVariable(evaluator, value, pattern);
                 literal = value;
-            } else if (dynamic_cast<ptrn::PatternBoolean *>(pattern)) {
+            } else if (dynamic_cast<ptrn::PatternBoolean *>(pattern) != nullptr) {
                 bool value = false;
                 readVariable(evaluator, value, pattern);
                 literal = value;
-            } else if (dynamic_cast<ptrn::PatternString *>(pattern)) {
+            } else if (dynamic_cast<ptrn::PatternString *>(pattern) != nullptr) {
                 std::string value;
                 readVariable(evaluator, value, pattern);
                 literal = value;
-            } else if (auto bitfieldFieldPattern = dynamic_cast<ptrn::PatternBitfieldField *>(pattern)) {
+            } else if (auto bitfieldFieldPattern = dynamic_cast<ptrn::PatternBitfieldField *>(pattern); bitfieldFieldPattern != nullptr) {
                 u64 value = 0;
                 readVariable(evaluator, value, pattern);
                 literal = u128(hlp::extract(bitfieldFieldPattern->getBitOffset() + (bitfieldFieldPattern->getBitSize() - 1), bitfieldFieldPattern->getBitOffset(), value));
@@ -172,7 +172,7 @@ namespace pl::core::ast {
                         bool found = false;
                         for (auto iter = searchScope.crbegin(); iter != searchScope.crend(); ++iter) {
                             if ((*iter)->getVariableName() == name) {
-                                currPattern = std::move(*iter);
+                                currPattern = *iter;
                                 found       = true;
                                 break;
                             }
@@ -195,24 +195,24 @@ namespace pl::core::ast {
                             [this](ptrn::Pattern *pattern) { err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
                             [&, this](auto &&index) {
                                 auto pattern = currPattern.get();
-                                if (auto dynamicArrayPattern = dynamic_cast<ptrn::PatternArrayDynamic *>(pattern)) {
+                                if (dynamic_cast<ptrn::PatternArrayDynamic *>(pattern) != nullptr) {
                                     if (static_cast<u128>(index) >= searchScope.size() || static_cast<i128>(index) < 0)
                                         err::E0006.throwError(fmt::format("Cannot access out of bounds index '{}'.", index), {}, this);
 
                                     currPattern = std::move(searchScope[index]);
-                                } else if (auto staticArrayPattern = dynamic_cast<ptrn::PatternArrayStatic *>(pattern)) {
+                                } else if (auto staticArrayPattern = dynamic_cast<ptrn::PatternArrayStatic *>(pattern); staticArrayPattern != nullptr) {
                                     if (static_cast<u128>(index) >= staticArrayPattern->getEntryCount() || static_cast<i128>(index) < 0)
                                         err::E0006.throwError(fmt::format("Cannot access out of bounds index '{}'.", index), {}, this);
 
                                     auto newPattern = searchScope.front();
                                     newPattern->setOffset(staticArrayPattern->getOffset() + index * staticArrayPattern->getTemplate()->getSize());
                                     currPattern = std::move(newPattern);
-                                } else if (auto stringPattern = dynamic_cast<ptrn::PatternString *>(pattern)) {
+                                } else if (auto stringPattern = dynamic_cast<ptrn::PatternString *>(pattern); stringPattern != nullptr) {
                                     if (static_cast<u128>(index) >= (stringPattern->getSize() / sizeof(char)) || static_cast<i128>(index) < 0)
                                         err::E0006.throwError(fmt::format("Cannot access out of bounds index '{}'.", index), {}, this);
 
                                     currPattern = std::make_unique<ptrn::PatternCharacter>(evaluator, stringPattern->getOffset() + index * sizeof(char));
-                                } else if (auto wideStringPattern = dynamic_cast<ptrn::PatternWideString *>(pattern)) {
+                                } else if (auto wideStringPattern = dynamic_cast<ptrn::PatternWideString *>(pattern); wideStringPattern != nullptr) {
                                     if (static_cast<u128>(index) >= (wideStringPattern->getSize() / sizeof(char16_t)) || static_cast<i128>(index) < 0)
                                         err::E0006.throwError(fmt::format("Cannot access out of bounds index '{}'.", index), {}, this);
 

@@ -45,4 +45,4 @@ namespace pl {
         virtual void visit(ptrn::PatternWideCharacter& pattern) = 0;
         virtual void visit(ptrn::PatternWideString& pattern) = 0;
     };
-};
+}

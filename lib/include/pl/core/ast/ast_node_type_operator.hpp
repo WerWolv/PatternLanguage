@@ -6,11 +6,8 @@ namespace pl::core::ast {
 
     class ASTNodeTypeOperator : public ASTNode {
     public:
-        ASTNodeTypeOperator(Token::Operator op, std::unique_ptr<ASTNode> &&expression) : m_op(op), m_expression(std::move(expression)) {
-        }
-
-        ASTNodeTypeOperator(Token::Operator op) : m_op(op), m_providerOperation(true) {
-        }
+        ASTNodeTypeOperator(Token::Operator op, std::unique_ptr<ASTNode> &&expression) : m_op(op), m_expression(std::move(expression)) { }
+        explicit ASTNodeTypeOperator(Token::Operator op) : m_op(op), m_providerOperation(true) { }
 
         ASTNodeTypeOperator(const ASTNodeTypeOperator &other) : ASTNode(other) {
             this->m_op = other.m_op;
