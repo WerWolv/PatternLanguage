@@ -393,17 +393,19 @@ namespace pl::core {
                 }
 
                 for (auto node : nodes) {
+                    if (node == nullptr)
+                        continue;
 
                     auto startOffset = this->dataOffset();
 
                     if (dynamic_cast<ast::ASTNodeTypeDecl *>(node)) {
                         ;    // Don't create patterns from type declarations
-                    } else if (dynamic_cast<ast::ASTNodeFunctionCall *>(node)) {
+                    } else if (dynamic_cast<ast::ASTNodeFunctionCall *>(node) != nullptr) {
                         (void)node->evaluate(this);
-                    } else if (dynamic_cast<ast::ASTNodeFunctionDefinition *>(node)) {
+                    } else if (dynamic_cast<ast::ASTNodeFunctionDefinition *>(node) != nullptr) {
                         this->m_customFunctionDefinitions.push_back(node->evaluate(this));
-                    } else if (auto varDeclNode = dynamic_cast<ast::ASTNodeVariableDecl *>(node)) {
-                        for (auto &pattern : node->createPatterns(this)) {
+                    } else if (auto varDeclNode = dynamic_cast<ast::ASTNodeVariableDecl *>(node); varDeclNode != nullptr) {
+                        for (auto &pattern : varDeclNode->createPatterns(this)) {
                             if (varDeclNode->getPlacementOffset() == nullptr) {
                                 auto type = varDeclNode->getType()->evaluate(this);
 
@@ -418,8 +420,8 @@ namespace pl::core {
                                 this->m_patterns.push_back(std::move(pattern));
                             }
                         }
-                    } else if (auto arrayVarDeclNode = dynamic_cast<ast::ASTNodeArrayVariableDecl *>(node)) {
-                        for (auto &pattern : node->createPatterns(this)) {
+                    } else if (auto arrayVarDeclNode = dynamic_cast<ast::ASTNodeArrayVariableDecl *>(node); arrayVarDeclNode != nullptr) {
+                        for (auto &pattern : arrayVarDeclNode->createPatterns(this)) {
                             if (arrayVarDeclNode->getPlacementOffset() == nullptr) {
                                 auto type = arrayVarDeclNode->getType()->evaluate(this);
 

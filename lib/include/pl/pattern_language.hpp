@@ -43,7 +43,7 @@ namespace pl {
 
     class PatternLanguage {
     public:
-        PatternLanguage(bool addLibStd = true);
+        explicit PatternLanguage(bool addLibStd = true);
         ~PatternLanguage();
 
         PatternLanguage(const PatternLanguage&) = delete;

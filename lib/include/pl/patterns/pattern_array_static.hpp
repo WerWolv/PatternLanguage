@@ -116,7 +116,7 @@ namespace pl::ptrn {
             return this->m_template;
         }
 
-        [[nodiscard]] size_t getEntryCount() const {
+        [[nodiscard]] size_t getEntryCount() const override {
             return this->m_entryCount;
         }
 

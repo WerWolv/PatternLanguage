@@ -856,7 +856,7 @@ namespace pl::core {
         }
 
         auto sizeType = parsePointerSizeType();
-        auto arrayType = create(new ast::ASTNodeArrayVariableDecl("", std::move(type), std::move(size)));
+        auto arrayType = create(new ast::ASTNodeArrayVariableDecl("", type, std::move(size)));
 
         if (MATCHES(sequence(tkn::Operator::At)))
             return create(new ast::ASTNodePointerVariableDecl(name, std::move(arrayType), std::move(sizeType), parseMathematicalExpression()));
@@ -1211,7 +1211,7 @@ namespace pl::core {
 
         auto placementOffset = parseMathematicalExpression();
 
-        return create(new ast::ASTNodePointerVariableDecl(name, create(new ast::ASTNodeArrayVariableDecl("", std::move(type), std::move(size))), std::move(sizeType), std::move(placementOffset)));
+        return create(new ast::ASTNodePointerVariableDecl(name, create(new ast::ASTNodeArrayVariableDecl("", type, std::move(size))), std::move(sizeType), std::move(placementOffset)));
     }
 
     std::vector<std::shared_ptr<ast::ASTNode>> Parser::parseNamespace() {
