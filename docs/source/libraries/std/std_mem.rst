@@ -105,8 +105,8 @@ Functions
 
 ------------------------
 
-``std::mem::read_unsigned(u128 address, u128 size) -> u128``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``std::mem::read_unsigned(u128 address, u128 size, Endian endian = Endian::Native) -> u128``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Reads an unsigned value from memory without declaring a variable**
 
@@ -119,13 +119,14 @@ Functions
     =================== ===========================================================================
     ``address``         Address of value to read
     ``size``            Size of value to read. This can be 1, 2, 4, 8 or 16
+    ``endian``          Endianess of the read value :version:`v1.23.0`
     ``return``          Value as the smalest unsigned type that can fit this many bytes
     =================== ===========================================================================
 
 ------------------------
 
-``std::mem::read_signed(u128 address, u128 size) -> s128``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``std::mem::read_signed(u128 address, u128 size, Endian endian = Endian::Native) -> s128``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Reads an signed value from memory without declaring a variable**
 
@@ -138,6 +139,7 @@ Functions
     =================== ===========================================================================
     ``address``         Address of value to read
     ``size``            Size of value to read. This can be 1, 2, 4, 8 or 16
+    ``endian``          Endianess of the read value :version:`v1.23.0`
     ``return``          Value as the smalest signed type that can fit this many bytes
     =================== ===========================================================================
 

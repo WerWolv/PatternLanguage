@@ -23,3 +23,4 @@ Libraries
    std_rustint
    std_string
    std_sys
+   std_time

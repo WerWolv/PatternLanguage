@@ -146,6 +146,23 @@ This type only affects the enum's size.
   :alt: Enums Decoding
 
 
+Enum Ranges :version:`1.23.0`
+-----------------------------
+
+Sometimes a range of values can refer to the same enum value in which case enum ranges can be useful.
+Enum ranges will cause all values inside of the specified range to be visualized as that enum entry.
+When using a range value in a mathematical expression, it will yield the start value of the range.
+
+
+.. code-block:: hexpat
+
+  enum NumberType : u16 {
+    Unsigned      = 0x00 ... 0x7F,
+    Signed        = 0x80,
+    FloatingPoint = 0x90
+  };
+
+
 Arrays
 ^^^^^^
 

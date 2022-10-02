@@ -50,6 +50,8 @@ Adds a comment to the current variable that is displayed when hovering over it i
 Overrides the default display value formatter with a custom function. 
 The function requires a single argument representing the value to be formatted (e.g ``u32`` if this attribute was applied to a variable of type ``u32``) and return a string which will be displayed in place of the default value.
 
+It's also possible to return a pattern or value from this function which will then be default formatted using the default pattern language rules. :version:`v1.22.0`
+
 ``[[format_entries("formatter_function_name")]]`` :version:`1.15.0`
 -------------------------------------------------------------------
 

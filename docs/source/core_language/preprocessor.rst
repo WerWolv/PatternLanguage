@@ -37,6 +37,28 @@ Pragmas are hints to the runtime to tell it how it should treat certain things.
 
 The following pragmas are available:
 
+``#ifdef``, ``#ifndef``, ``#endif`` :version:`1.23.0`
+-----------------------------------------------------
+
+.. code-block:: hexpat
+
+    #ifdef SOME_DEFINE
+        u32 value @ 0x00;
+    #endif
+
+These preprocessor instructions can check if a given define has been defined already.
+``#ifdef`` includes all the content between it and its closing ``#endif`` instruction if the define given to it exists.
+``#ifndef`` works the same as ``#ifdef`` but includes all its content if the given define does not exist.
+
+``#error`` :version:`1.23.0`
+----------------------------
+
+.. code-block:: hexpat
+
+    #error "Something went wrong!"
+
+Throws a error during the preprocessing phase if reached. This is mostly helpful in combination with ``#ifdef`` and ``#ifndef`` to check on certain conditions.
+
 ``endian``
 ^^^^^^^^^^
 
@@ -45,8 +67,8 @@ The following pragmas are available:
 
 This pragma overwrites the default endianess of all variables declared in the file.
 
-``MIME``
-^^^^^^^^
+``MIME`` :extension:`ImHex`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Possible values:** Any MIME Type string
 **Default:** ``Unspecified``
@@ -105,3 +127,13 @@ This is mainly useful to prevent functions, types and variables that are defined
 **Default:** ``right_to_left``
 
 This pragma overrides the default bitfield bit order. It works the same as the ``[[left_to_right]]`` and ``[[right_to_left]]`` attributes but is automatically applied to all created bitfields
+
+``debug`` :version:`1.22.0`
+
+This pragma enables the debug mode in the evaluator. This causes the following things to happen:
+
+- Any scope push and pop will be logged to the console
+- Any memory access will be logged to the console
+- Any creation and assignment of variables will be logged to the console
+- Any function call and their parameters will be logged to the console
+- If an error occures, the patterns that were already placed in memory will not be deleted

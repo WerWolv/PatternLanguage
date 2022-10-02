@@ -52,6 +52,22 @@ Default parameters can be used to set a default value for parameters, if they we
     print_numbers(1, 2);            // Prints 1 2 3 4
     print_numbers(8, 9, 10, 11);    // Prints 8 9 10 11
 
+Reference parameters :version:`1.23.0`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Reference parameters can be used to avoid unnecessarily copying lots of data around and are helpful when needing to pass custom types that do not have a fixed layout to a function.
+Instead of copying the given parameter value onto the function's heap, a reference to the existing pattern is instead used.
+
+.. code-block:: hexpat
+
+    struct MyString {
+        char value[while(std::mem::read_unsigned($, 1) != 0xFF)];
+    };
+
+    fn print_my_string(ref MyString myString) {
+        std::print(myString.value);
+    };
+
 Variables
 ^^^^^^^^^
 

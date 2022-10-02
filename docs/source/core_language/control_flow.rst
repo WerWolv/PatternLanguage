@@ -57,8 +57,8 @@ Conditionals like this can be used in Structs, Unions and Bitfields :version:`1.
   :alt: Conditional Decoding
 
 
-Array control flow :version:`1.13.0`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Pattern control flow :version:`1.13.0`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The most basic form of conditional parsing are array control flow statements, ``break`` and ``continue``. These allow you to stop the parsing of the array or skip elements based on conditions in the currently parsed item instance.
 
@@ -82,6 +82,10 @@ This means, the array keeps all entries that have already been parsed, including
   Test tests[1000] @ 0x00;
 
 
+``break`` can also be used in regular patterns to prematurely stop parsing of the current pattern. :version:`1.24.0`
+If the pattern where ``break`` is being used in is nested inside of another pattern, only evaluation of the current pattern is being stopped and continues in the parent struct after the definition of the current pattern.
+
+
 Continue :version:`1.13.0`
 --------------------------
 
@@ -103,3 +107,13 @@ This can for instance be used in combination with :doc:`in/out variables </core_
   // This array requests 1000 entries but skips all entries where x has the value 0x11223344
   // causing it to have a size less than 1000
   Test tests[1000] @ 0x00;
+
+``continue`` can also be used in regular patterns to discard the pattern entirely. :version:`1.24.0`
+If the pattern where ``continue`` is being used in is nested inside of another pattern, only the current pattern is being discarded and evaluation continues in the parent struct after the definition of the current pattern.
+
+Return statements :version:`1.24.0`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Return statements outside of functions can be used to prematurely terminate execution of the current program.
+
+Evaluation stops at the location the ``return`` statement was executed. All patterns that have been evaluated up until this point will be finished up and placed into memory before the execution will halt.

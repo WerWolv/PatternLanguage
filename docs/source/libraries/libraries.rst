@@ -10,3 +10,5 @@ Libraries
    :maxdepth: 3
 
    std/standard_library
+   type/type_library
+   hex/imhex_library
