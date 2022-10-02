@@ -248,6 +248,7 @@ namespace pl {
 
         this->m_internals.evaluator->getConsole().clear();
         this->m_internals.evaluator->setDefaultEndian(this->m_defaultEndian);
+        this->m_internals.evaluator->setBitfieldOrder(core::BitfieldOrder::RightToLeft);
         this->m_internals.evaluator->setEvaluationDepth(32);
         this->m_internals.evaluator->setArrayLimit(0x10000);
         this->m_internals.evaluator->setPatternLimit(0x20000);
