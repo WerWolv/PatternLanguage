@@ -1,11 +1,11 @@
-``Networking Library`` :version:`1.10.1`
+``Networking Library`` :version:`1.24.0`
 ========================================
 
 .. code-block:: hexpat
 
-    #include <std/http.pat>
+    #include <hex/http.pat>
 
-| This namespace contains networking functions
+| This namespace contains various networking functions.
 |
 
 .. warning::
@@ -17,8 +17,8 @@
 Functions
 ---------
 
-``std::http::get(str url) -> str`` :version:`1.10.1`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``hex::http::get(str url) -> str``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Issues a ``GET`` request to the passed URL and returns the received data as a string**
 

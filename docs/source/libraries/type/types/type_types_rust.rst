@@ -5,7 +5,7 @@
 
     #include <type/types/rust.pat>
 
-| This namespace contains type definitions for the standard built-in types of the Rust programming language
+| This namespace contains type aliases for the standard built-in types of the Rust programming language
 |
 
 ------------------------

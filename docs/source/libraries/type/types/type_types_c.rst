@@ -5,7 +5,7 @@
 
     #include <type/types/c.pat>
 
-| This namespace contains type definitions for the standard built-in types of the C programming language
+| This namespace contains type aliases for the standard built-in types of the C programming language
 |
 
 ------------------------

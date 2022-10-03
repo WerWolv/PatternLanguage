@@ -1,11 +1,11 @@
-``Byte Types`` :version:`1.20.0`
-================================
+``IP Address Types`` :version:`1.20.0`
+======================================
 
 .. code-block:: hexpat
 
     #include <type/ip.pat>
 
-| This file contains a type to visualize RFC 791 IPv4 and RFC 2460 IPv6 addresses
+| This file contains types to visualize RFC 791 IPv4 and RFC 2460 IPv6 addresses
 |
 
 ------------------------
@@ -30,5 +30,3 @@ Types
 .. image:: assets/ip/ipv6.png
   :width: 100%
   :alt: IPv6 address
-
-------------------------

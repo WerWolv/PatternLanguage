@@ -40,5 +40,3 @@ Types
 .. image:: assets/byte/byte.png
   :width: 100%
   :alt: Byte
-
-------------------------

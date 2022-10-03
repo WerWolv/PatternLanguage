@@ -37,5 +37,5 @@ img.align-center {
 }
 
 .extension::after {
-    content: " Extension";
+    content: "\00a0 Extension";
 }

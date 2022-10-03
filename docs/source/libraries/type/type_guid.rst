@@ -1,5 +1,5 @@
-``Byte Types`` :version:`1.20.0`
-================================
+``GUID Type`` :version:`1.20.0`
+===============================
 
 .. code-block:: hexpat
 
@@ -20,5 +20,3 @@ Types
 .. image:: assets/guid.png
   :width: 100%
   :alt: Half Float
-
-------------------------

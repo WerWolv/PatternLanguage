@@ -10,17 +10,16 @@ Libraries
    :maxdepth: 3
 
    std_bit
-   std_cint
+   std_core
    std_ctype
    std_file
    std_fxpt
-   std_http
+   std_hash
    std_io
    std_limits
    std_math
    std_mem
    std_ptr
-   std_rustint
    std_string
    std_sys
    std_time
