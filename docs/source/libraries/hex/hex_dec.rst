@@ -1,5 +1,5 @@
-``Core Library`` :version:`1.24.0`
-==================================
+``Decoding Library`` :version:`1.24.0`
+======================================
 
 .. code-block:: hexpat
 
