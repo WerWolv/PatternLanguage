@@ -26,17 +26,6 @@ expressions that got altered by previous ones.
 This directive allows inclusion of other files into the current program.
 The content of the specified file gets copied directly into the current file.
 
-``#pragma``
------------
-
-.. code-block:: hexpat
-
-    #pragma endian big
-
-Pragmas are hints to the runtime to tell it how it should treat certain things.
-
-The following pragmas are available:
-
 ``#ifdef``, ``#ifndef``, ``#endif`` :version:`1.23.0`
 -----------------------------------------------------
 
@@ -58,6 +47,17 @@ These preprocessor instructions can check if a given define has been defined alr
     #error "Something went wrong!"
 
 Throws a error during the preprocessing phase if reached. This is mostly helpful in combination with ``#ifdef`` and ``#ifndef`` to check on certain conditions.
+
+``#pragma``
+-----------
+
+.. code-block:: hexpat
+
+    #pragma endian big
+
+Pragmas are hints to the runtime to tell it how it should treat certain things.
+
+The following pragmas are available:
 
 ``endian``
 ^^^^^^^^^^
