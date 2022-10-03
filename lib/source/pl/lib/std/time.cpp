@@ -11,17 +11,17 @@
 
 namespace pl::lib::libstd::time {
 
-    static u128 packTMValue(tm *tm) {
+    static u128 packTMValue(std::tm tm) {
         return
-            (u128(tm->tm_sec)   << 0)  |
-            (u128(tm->tm_min)   << 8)  |
-            (u128(tm->tm_hour)  << 16) |
-            (u128(tm->tm_mday)  << 24) |
-            (u128(tm->tm_mon)   << 32) |
-            (u128(tm->tm_year)  << 40) |
-            (u128(tm->tm_wday)  << 56) |
-            (u128(tm->tm_yday)  << 64) |
-            (u128(tm->tm_isdst) << 80);
+            (u128(tm.tm_sec)   << 0)  |
+            (u128(tm.tm_min)   << 8)  |
+            (u128(tm.tm_hour)  << 16) |
+            (u128(tm.tm_mday)  << 24) |
+            (u128(tm.tm_mon)   << 32) |
+            (u128(tm.tm_year)  << 40) |
+            (u128(tm.tm_wday)  << 56) |
+            (u128(tm.tm_yday)  << 64) |
+            (u128(tm.tm_isdst) << 80);
     }
 
     static tm unpackTMValue(u128 value) {
@@ -55,17 +55,28 @@ namespace pl::lib::libstd::time {
             /* to_local(time) */
             runtime.addFunction(nsStdTime, "to_local", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 time_t time = Token::literalToUnsigned(params[0]);
-                auto localTime = std::localtime(&time);
 
-                return {packTMValue(localTime) };
+                try {
+                    auto localTime = fmt::localtime(time);
+
+                    return { packTMValue(localTime) };
+                } catch (const fmt::format_error&) {
+                    return u128(0);
+                }
+
             });
 
             /* to_utc(time) */
             runtime.addFunction(nsStdTime, "to_utc", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 time_t time = Token::literalToUnsigned(params[0]);
-                auto gmTime = std::gmtime(&time);
 
-                return {packTMValue(gmTime) };
+                try {
+                    auto gmTime = fmt::gmtime(time);
+
+                    return { packTMValue(gmTime) };
+                } catch (const fmt::format_error&) {
+                    return u128(0);
+                }
             });
 
             /* to_epoch(structured_time) */
@@ -82,7 +93,18 @@ namespace pl::lib::libstd::time {
                 auto formatString = Token::literalToString(params[0], false);
                 u128 structuredTime = Token::literalToUnsigned(params[1]);
 
-                return { fmt::format(fmt::runtime(fmt::format("{{:{}}}", formatString)), unpackTMValue(structuredTime)) };
+                auto time = unpackTMValue(structuredTime);
+
+                if (time.tm_sec  < 0 || time.tm_sec  > 61 ||
+                    time.tm_min  < 0 || time.tm_min  > 59 ||
+                    time.tm_hour < 0 || time.tm_hour > 23 ||
+                    time.tm_mday < 1 || time.tm_mday > 31 ||
+                    time.tm_mon  < 0 || time.tm_mon  > 11 ||
+                    time.tm_wday < 0 || time.tm_wday > 6  ||
+                    time.tm_yday < 0 || time.tm_yday > 365)
+                    return "Invalid";
+
+                return { fmt::format(fmt::runtime(fmt::format("{{:{}}}", formatString)), time) };
             });
         }
     }
