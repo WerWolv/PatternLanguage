@@ -36,14 +36,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
-            switch (this->getSize()) {
-                case 4:
-                    return "float";
-                case 8:
-                    return "double";
-                default:
-                    return "Floating point data";
-            }
+            return this->getTypeName();
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override { return areCommonPropertiesEqual<decltype(*this)>(other); }

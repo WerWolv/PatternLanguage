@@ -31,6 +31,7 @@ namespace pl::core {
         std::optional<err::PatternLanguageError> m_error;
         TokenIter m_curr;
         TokenIter m_originalPosition, m_partOriginalPosition;
+        std::vector<std::shared_ptr<ast::ASTNodeTypeDecl>> m_currTemplateType;
 
         std::unordered_map<std::string, std::shared_ptr<ast::ASTNodeTypeDecl>> m_types;
         std::vector<TokenIter> m_matchedOptionals;
@@ -120,6 +121,7 @@ namespace pl::core {
         std::unique_ptr<ast::ASTNode> parseConditional();
         std::unique_ptr<ast::ASTNode> parseWhileStatement();
         std::unique_ptr<ast::ASTNodeTypeDecl> parseType(bool disallowSpecialTypes = false);
+        std::vector<std::shared_ptr<ast::ASTNodeTypeDecl>> parseTemplateList();
         std::shared_ptr<ast::ASTNodeTypeDecl> parseUsingDeclaration();
         std::unique_ptr<ast::ASTNode> parsePadding();
         std::unique_ptr<ast::ASTNodeTypeDecl> parsePointerSizeType();

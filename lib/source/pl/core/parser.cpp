@@ -715,12 +715,46 @@ namespace pl::core {
         if (MATCHES(sequence(tkn::Literal::Identifier))) {    // Custom type
             auto baseTypeName = parseNamespaceResolution();
 
-            for (const auto &typeName : getNamespacePrefixedNames(baseTypeName)) {
-                if (this->m_types.contains(typeName))
-                    return create(new ast::ASTNodeTypeDecl({}, this->m_types[typeName], endian, reference));
-            }
+            std::unique_ptr<ast::ASTNodeTypeDecl> foundType = nullptr;
 
-            err::P0003.throwError(fmt::format("Type {} has not been declared yet.", baseTypeName), fmt::format("If this type is being declared further down in the code, consider forward declaring it with 'using {};'.", baseTypeName), 1);
+            if (!this->m_currTemplateType.empty())
+                for (const auto &templateType : this->m_currTemplateType.front()->getTemplateTypes()) {
+                    if (templateType->getName() == baseTypeName)
+                        foundType = create(new ast::ASTNodeTypeDecl({}, templateType, endian, reference));
+                }
+
+            if (foundType == nullptr)
+                for (const auto &typeName : getNamespacePrefixedNames(baseTypeName)) {
+                    if (this->m_types.contains(typeName))
+                        foundType = create(new ast::ASTNodeTypeDecl({}, this->m_types[typeName], endian, reference));
+                }
+
+            if (foundType == nullptr)
+                err::P0003.throwError(fmt::format("Type {} has not been declared yet.", baseTypeName), fmt::format("If this type is being declared further down in the code, consider forward declaring it with 'using {};'.", baseTypeName), 1);
+
+            if (auto actualType = dynamic_cast<ast::ASTNodeTypeDecl*>(foundType->getType().get()); actualType != nullptr)
+                if (const auto &templateTypes = actualType->getTemplateTypes(); !templateTypes.empty()) {
+                    if (!MATCHES(sequence(tkn::Operator::BoolLessThan)))
+                        err::P0002.throwError("Cannot use template type without template parameters.", {}, 1);
+
+                    u32 index = 0;
+                    do {
+                        if (index > templateTypes.size())
+                            err::P0002.throwError(fmt::format("Provided more template parameters than expected. Type only has {} parameters", templateTypes.size()), {}, 1);
+
+                        auto &type = templateTypes[index];
+                        type->setType(parseType(true));
+                        type->setName("");
+                        index++;
+                    } while (MATCHES(sequence(tkn::Separator::Comma)));
+
+                    if (!MATCHES(sequence(tkn::Operator::BoolGreaterThan)))
+                        err::P0002.throwError(fmt::format("Expected '>' to close template list, got {}.", getFormattedToken(0)), {}, 1);
+
+                    return std::unique_ptr<ast::ASTNodeTypeDecl>(static_cast<ast::ASTNodeTypeDecl*>(foundType->clone().release()));
+                }
+
+            return foundType;
         } else if (MATCHES(sequence(tkn::ValueType::Any))) {    // Builtin type
             auto type = getValue<Token::ValueType>(-1);
 
@@ -737,14 +771,45 @@ namespace pl::core {
         }
     }
 
+    // <(parseType), ...>
+    std::vector<std::shared_ptr<ast::ASTNodeTypeDecl>> Parser::parseTemplateList() {
+        std::vector<std::shared_ptr<ast::ASTNodeTypeDecl>> result;
+
+        if (MATCHES(sequence(tkn::Operator::BoolLessThan, tkn::Literal::Identifier))) {
+            do {
+                result.push_back(create(new ast::ASTNodeTypeDecl(getValue<Token::Identifier>(-1).get())));
+            } while (MATCHES(sequence(tkn::Separator::Comma, tkn::Literal::Identifier)));
+
+            if (!MATCHES(sequence(tkn::Operator::BoolGreaterThan)))
+                err::P0002.throwError(fmt::format("Expected '>' after template declaration, got {}.", getFormattedToken(0)), {}, 1);
+        }
+
+        return result;
+    }
+
     // using Identifier = (parseType)
     std::shared_ptr<ast::ASTNodeTypeDecl> Parser::parseUsingDeclaration() {
-        auto name = getValue<Token::Identifier>(-2).get();
+        auto name = getValue<Token::Identifier>(-1).get();
 
-        auto type = parseType();
+        auto templateList = this->parseTemplateList();
 
-        auto endian = type->getEndian();
-        return addType(name, std::move(type), endian);
+        if (!MATCHES(sequence(tkn::Operator::Assign)))
+            err::P0002.throwError(fmt::format("Expected '=' after using declaration type name, got {}.", getFormattedToken(0)), {}, 1);
+
+        auto type = addType(name, nullptr);
+        type->setTemplateTypes(std::move(templateList));
+
+        this->m_currTemplateType.push_back(type);
+        auto replaceType = parseType();
+        this->m_currTemplateType.pop_back();
+
+        auto endian = replaceType->getEndian();
+        type->setType(std::move(replaceType));
+
+        if (endian.has_value())
+            type->setEndian(*endian);
+
+        return type;
     }
 
     // padding[(parseMathematicalExpression)]
@@ -942,6 +1007,8 @@ namespace pl::core {
         auto typeDecl   = addType(typeName, create(new ast::ASTNodeStruct()));
         auto structNode = static_cast<ast::ASTNodeStruct *>(typeDecl->getType().get());
 
+        typeDecl->setTemplateTypes(this->parseTemplateList());
+
         if (MATCHES(sequence(tkn::Operator::Colon, tkn::Literal::Identifier))) {
             // Inheritance
 
@@ -960,30 +1027,42 @@ namespace pl::core {
         if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
             err::P0002.throwError(fmt::format("Expected '{{' after struct declaration, got {}.", getFormattedToken(0)), {}, 1);
 
+        this->m_currTemplateType.push_back(typeDecl);
         while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
             structNode->addMember(parseMember());
         }
+        this->m_currTemplateType.pop_back();
 
         return typeDecl;
     }
 
     // union Identifier { <(parseMember)...> }
     std::shared_ptr<ast::ASTNodeTypeDecl> Parser::parseUnion() {
-        const auto &typeName = getValue<Token::Identifier>(-2).get();
+        const auto &typeName = getValue<Token::Identifier>(-1).get();
 
         auto typeDecl  = addType(typeName, create(new ast::ASTNodeUnion()));
         auto unionNode = static_cast<ast::ASTNodeUnion *>(typeDecl->getType().get());
 
+        typeDecl->setTemplateTypes(this->parseTemplateList());
+
+        if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
+            err::P0002.throwError(fmt::format("Expected '{{' after union declaration, got {}.", getFormattedToken(0)), {}, 1);
+
+        this->m_currTemplateType.push_back(typeDecl);
         while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
             unionNode->addMember(parseMember());
         }
+        this->m_currTemplateType.pop_back();
 
         return typeDecl;
     }
 
     // enum Identifier : (parseType) { <<Identifier|Identifier = (parseMathematicalExpression)[,]>...> }
     std::shared_ptr<ast::ASTNodeTypeDecl> Parser::parseEnum() {
-        auto typeName = getValue<Token::Identifier>(-2).get();
+        auto typeName = getValue<Token::Identifier>(-1).get();
+
+        if (!MATCHES(sequence(tkn::Operator::Colon)))
+            err::P0002.throwError(fmt::format("Expected ':' after enum declaration, got {}.", getFormattedToken(0)), {}, 1);
 
         auto underlyingType = parseType();
         if (underlyingType->getEndian().has_value())
@@ -1266,7 +1345,7 @@ namespace pl::core {
         std::shared_ptr<ast::ASTNode> statement;
         bool requiresSemicolon = true;
 
-        if (MATCHES(sequence(tkn::Keyword::Using, tkn::Literal::Identifier, tkn::Operator::Assign)))
+        if (MATCHES(sequence(tkn::Keyword::Using, tkn::Literal::Identifier)))
             statement = parseUsingDeclaration();
         else if (MATCHES(sequence(tkn::Keyword::Using, tkn::Literal::Identifier)))
             parseForwardDeclaration();
@@ -1287,9 +1366,9 @@ namespace pl::core {
         }
         else if (MATCHES(sequence(tkn::Keyword::Struct, tkn::Literal::Identifier)))
             statement = parseStruct();
-        else if (MATCHES(sequence(tkn::Keyword::Union, tkn::Literal::Identifier, tkn::Separator::LeftBrace)))
+        else if (MATCHES(sequence(tkn::Keyword::Union, tkn::Literal::Identifier)))
             statement = parseUnion();
-        else if (MATCHES(sequence(tkn::Keyword::Enum, tkn::Literal::Identifier, tkn::Operator::Colon)))
+        else if (MATCHES(sequence(tkn::Keyword::Enum, tkn::Literal::Identifier)))
             statement = parseEnum();
         else if (MATCHES(sequence(tkn::Keyword::Bitfield, tkn::Literal::Identifier, tkn::Separator::LeftBrace)))
             statement = parseBitfield();
