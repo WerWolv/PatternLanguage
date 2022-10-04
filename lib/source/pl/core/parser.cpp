@@ -1345,7 +1345,7 @@ namespace pl::core {
         std::shared_ptr<ast::ASTNode> statement;
         bool requiresSemicolon = true;
 
-        if (MATCHES(sequence(tkn::Keyword::Using, tkn::Literal::Identifier)))
+        if (MATCHES(sequence(tkn::Keyword::Using, tkn::Literal::Identifier) && (peek(tkn::Operator::Assign) || peek(tkn::Operator::BoolLessThan))))
             statement = parseUsingDeclaration();
         else if (MATCHES(sequence(tkn::Keyword::Using, tkn::Literal::Identifier)))
             parseForwardDeclaration();
