@@ -95,6 +95,10 @@ namespace pl::core::err {
 
         }
 
+        [[nodiscard]] std::string format(const std::string &description, const std::string &hint = { }, UserData<T> userData = { }) const {
+            return Exception(this->m_prefix, this->m_errorCode, this->m_title, description, hint, userData).what();
+        }
+
         [[noreturn]] void throwError(const std::string &description, const std::string &hint = { }, UserData<T> userData = { }) const {
             throw Exception(this->m_prefix, this->m_errorCode, this->m_title, description, hint, userData);
         }

@@ -292,6 +292,10 @@ namespace pl::core {
             return this->m_currControlFlowStatement;
         }
 
+        void setMainResult(Token::Literal result) {
+            this->m_mainResult = std::move(result);
+        }
+
         [[nodiscard]] const std::optional<Token::Literal> &getMainResult() {
             return this->m_mainResult;
         }

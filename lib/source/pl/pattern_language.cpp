@@ -5,6 +5,8 @@
 #include <pl/core/parser.hpp>
 #include <pl/core/validator.hpp>
 #include <pl/core/evaluator.hpp>
+#include <pl/core/errors/error.hpp>
+
 #include <pl/lib/std/libstd.hpp>
 
 #include <pl/helpers/fs.hpp>
@@ -122,7 +124,7 @@ namespace pl {
             auto returnCode = core::Token::literalToSigned(*mainResult);
 
             if (returnCode != 0) {
-                this->m_currError = core::err::PatternLanguageError(fmt::format("non-success value returned from main: {}", returnCode), 0, 1);
+                this->m_currError = core::err::PatternLanguageError(core::err::E0009.format(fmt::format("Pattern exited with non-zero result: {}", returnCode)), 0, 1);
 
                 return false;
             }

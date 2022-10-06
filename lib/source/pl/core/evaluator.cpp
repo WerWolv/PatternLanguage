@@ -458,16 +458,15 @@ namespace pl::core {
                     }
 
                     if (this->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
-                        break;
+                        goto stop_evaluation;
                     else
                         this->setCurrentControlFlowStatement(ControlFlowStatement::None);
                 }
-
-                if (this->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
-                    break;
             }
 
-            if (this->m_customFunctions.contains("main")) {
+            stop_evaluation:
+
+            if (!this->m_mainResult.has_value() && this->m_customFunctions.contains("main")) {
                 auto mainFunction = this->m_customFunctions["main"];
 
                 if (mainFunction.parameterCount.max > 0)

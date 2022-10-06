@@ -23,10 +23,10 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+            if (auto result = this->execute(evaluator); result.has_value())
+                evaluator->setMainResult(*result);
 
-            this->execute(evaluator);
-
-            return {};
+            return { };
         }
 
         FunctionResult execute(Evaluator *evaluator) const override {

@@ -584,8 +584,10 @@ namespace pl::core {
 
         if (peek(tkn::Separator::Semicolon))
             return create(new ast::ASTNodeControlFlowStatement(type, nullptr));
-        else
+        else if (type == ControlFlowStatement::Return)
             return create(new ast::ASTNodeControlFlowStatement(type, this->parseMathematicalExpression()));
+        else
+            err::P0002.throwError("Return value can only be passed to a 'return' statement.", {}, 1);
     }
 
     std::vector<std::unique_ptr<ast::ASTNode>> Parser::parseStatementBody() {
@@ -978,12 +980,8 @@ namespace pl::core {
             member = parsePadding();
         else if (MATCHES(sequence(tkn::Keyword::If, tkn::Separator::LeftParenthesis)))
             return parseConditional();
-        else if (MATCHES(sequence(tkn::Keyword::Break)))
-            member = create(new ast::ASTNodeControlFlowStatement(ControlFlowStatement::Break, nullptr));
-        else if (MATCHES(sequence(tkn::Keyword::Continue)))
-            member = create(new ast::ASTNodeControlFlowStatement(ControlFlowStatement::Continue, nullptr));
-        else if (MATCHES(sequence(tkn::Keyword::Return)))
-            member = create(new ast::ASTNodeControlFlowStatement(ControlFlowStatement::Return, nullptr));
+        else if (MATCHES(oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue)))
+            member = parseFunctionControlFlowStatement();
         else
             err::P0002.throwError("Invalid struct member definition.", {}, 0);
 
