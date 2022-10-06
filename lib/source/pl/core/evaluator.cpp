@@ -414,7 +414,7 @@ namespace pl::core {
 
                     auto startOffset = this->dataOffset();
 
-                    if (dynamic_cast<ast::ASTNodeTypeDecl *>(node)) {
+                    if (dynamic_cast<ast::ASTNodeTypeDecl *>(node) != nullptr) {
                         ;    // Don't create patterns from type declarations
                     } else if (dynamic_cast<ast::ASTNodeFunctionCall *>(node) != nullptr) {
                         (void)node->evaluate(this);
@@ -435,6 +435,9 @@ namespace pl::core {
                             } else {
                                 this->m_patterns.push_back(std::move(pattern));
                             }
+
+                            if (this->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
+                                break;
                         }
                     } else if (auto arrayVarDeclNode = dynamic_cast<ast::ASTNodeArrayVariableDecl *>(node); arrayVarDeclNode != nullptr) {
                         for (auto &pattern : arrayVarDeclNode->createPatterns(this)) {
@@ -459,6 +462,9 @@ namespace pl::core {
                     else
                         this->setCurrentControlFlowStatement(ControlFlowStatement::None);
                 }
+
+                if (this->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
+                    break;
             }
 
             if (this->m_customFunctions.contains("main")) {
