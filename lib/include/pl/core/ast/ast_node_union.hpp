@@ -41,16 +41,18 @@ namespace pl::core::ast {
                     memberPatterns.push_back(std::move(memberPattern));
                 }
 
-                if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
-                    break;
-                else if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Break) {
-                    evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
-                    break;
-                } else if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Continue) {
-                    evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
-                    memberPatterns.clear();
-                    evaluator->dataOffset() = startOffset;
-                    break;
+                if (!evaluator->getCurrentArrayIndex().has_value()) {
+                    if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
+                        break;
+                    else if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Break) {
+                        evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
+                        break;
+                    } else if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Continue) {
+                        evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
+                        memberPatterns.clear();
+                        evaluator->dataOffset() = startOffset;
+                        break;
+                    }
                 }
             }
 
