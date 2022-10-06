@@ -142,9 +142,12 @@ namespace pl::core::ast {
                     }, literal->getValue());
                 } else if (auto whileStatement = dynamic_cast<ASTNodeWhileStatement *>(sizeNode.get())) {
                     while (whileStatement->evaluateCondition(evaluator)) {
+                        if ((evaluator->dataOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
+                            err::E0004.throwError("Array expanded past end of the data before termination condition was met.", { }, this);
+
+                        evaluator->handleAbort();
                         entryCount++;
                         evaluator->dataOffset() += templatePattern->getSize();
-                        evaluator->handleAbort();
                     }
                 }
 
