@@ -31,11 +31,17 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
-            return this->m_entries[0]->getTypeName() + "[" + std::to_string(this->m_entries.size()) + "]";
+            if (this->m_entries.empty())
+                return "???";
+
+            return this->m_entries.front()->getTypeName() + "[" + std::to_string(this->m_entries.size()) + "]";
         }
 
         [[nodiscard]] std::string getTypeName() const override {
-            return this->m_entries[0]->getTypeName();
+            if (this->m_entries.empty())
+                return "???";
+
+            return this->m_entries.front()->getTypeName();
         }
 
         void setOffset(u64 offset) override {
