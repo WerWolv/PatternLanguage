@@ -24,7 +24,13 @@ namespace pl::core::ast {
             this->m_endian              = other.m_endian;
             this->m_forwardDeclared     = other.m_forwardDeclared;
             this->m_reference           = other.m_reference;
-            this->m_templateParameters  = other.m_templateParameters;
+
+            for (const auto &templateParameter : other.m_templateParameters) {
+                if (dynamic_cast<ASTNodeTypeDecl*>(templateParameter.get()) != nullptr)
+                    this->m_templateParameters.push_back(templateParameter);
+                else
+                    this->m_templateParameters.push_back(templateParameter->clone());
+            }
         }
 
         [[nodiscard]] std::unique_ptr<ASTNode> clone() const override {
@@ -60,11 +66,16 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+            auto parentScope = evaluator->getScope(0);
+            auto variables = *parentScope.scope;
+            evaluator->pushScope(parentScope.parent, variables);
+            PL_ON_SCOPE_EXIT { evaluator->popScope(); };
+
             for (const auto &templateParameter : this->m_templateParameters) {
                 if (auto lvalue = dynamic_cast<ASTNodeLValueAssignment *>(templateParameter.get())) {
                     auto value = lvalue->getRValue()->evaluate(evaluator);
                     if (auto literal = dynamic_cast<ASTNodeLiteral*>(value.get()); literal != nullptr) {
-                        evaluator->createVariable(lvalue->getLValueName(), new ASTNodeBuiltinType(Token::getType(literal->getValue())));
+                        evaluator->createVariable(lvalue->getLValueName(), new ASTNodeBuiltinType(Token::getType(literal->getValue())), {}, false, false, true);
                         evaluator->setVariable(lvalue->getLValueName(), literal->getValue());
                     }
                 }

@@ -81,15 +81,23 @@ namespace pl::core {
         variables.push_back(std::unique_ptr<ptrn::Pattern>(pattern));
     }
 
-    void Evaluator::createVariable(const std::string &name, ast::ASTNode *type, const std::optional<Token::Literal> &value, bool outVariable, bool reference) {
+    void Evaluator::createVariable(const std::string &name, ast::ASTNode *type, const std::optional<Token::Literal> &value, bool outVariable, bool reference, bool templateVariable) {
         // A variable named _ gets treated as "don't care"
         if (name == "_")
             return;
 
-        auto &variables = *this->getScope(0).scope;
-        for (auto &variable : variables) {
+        auto &currScope = this->getScope(0);
+        for (auto &variable : *currScope.scope) {
             if (variable->getVariableName() == name) {
                 err::E0003.throwError(fmt::format("Variable with name '{}' already exists in this scope.", name), {}, type);
+            }
+        }
+
+        if (templateVariable) {
+            for (auto &variable : currScope.templateParameters) {
+                if (variable->getVariableName() == name) {
+                    err::E0003.throwError(fmt::format("Variable with name '{}' already exists in this scope.", name), {}, type);
+                }
             }
         }
 
@@ -144,7 +152,10 @@ namespace pl::core {
         if (this->isDebugModeEnabled())
             this->getConsole().log(LogConsole::Level::Debug, fmt::format("Creating local variable '{} {}' at heap address 0x{:X}.", pattern->getTypeName(), pattern->getVariableName(), pattern->getOffset()));
 
-        variables.push_back(std::move(pattern));
+        if (templateVariable)
+            currScope.templateParameters.push_back(std::move(pattern));
+        else
+            currScope.scope->push_back(std::move(pattern));
     }
 
     template<typename T>
@@ -218,6 +229,17 @@ namespace pl::core {
             // Search for variable in current scope
             {
                 auto &variables = *this->getScope(0).scope;
+                for (auto &variable : variables) {
+                    if (variable->getVariableName() == name) {
+                        variablePattern = &variable;
+                        break;
+                    }
+                }
+            }
+
+            // Search for variable in the template parameter list
+            {
+                auto &variables = this->getScope(0).templateParameters;
                 for (auto &variable : variables) {
                     if (variable->getVariableName() == name) {
                         variablePattern = &variable;
@@ -348,7 +370,9 @@ namespace pl::core {
 
         const auto &heap = this->getHeap();
 
-        this->m_scopes.push_back({ parent, &scope, std::nullopt, { }, heap.size() });
+        const auto &templateParameters = this->m_scopes.empty() ? std::vector<std::shared_ptr<ptrn::Pattern>>{ } : this->m_scopes.back().templateParameters;
+
+        this->m_scopes.push_back({ parent, &scope, std::nullopt, { }, heap.size(), templateParameters });
 
         if (this->isDebugModeEnabled())
             this->getConsole().log(LogConsole::Level::Debug, fmt::format("Entering new scope #{}. Parent: '{}', Heap Size: {}.", this->m_scopes.size(), parent == nullptr ? "None" : parent->getVariableName(), heap.size()));

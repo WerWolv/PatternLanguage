@@ -67,6 +67,7 @@ namespace pl::core {
             std::optional<ParameterPack> parameterPack;
             std::vector<std::shared_ptr<ptrn::Pattern>> savedPatterns;
             size_t heapStartSize;
+            std::vector<std::shared_ptr<ptrn::Pattern>> templateParameters;
         };
 
         void pushScope(const std::shared_ptr<ptrn::Pattern> &parent, std::vector<std::shared_ptr<ptrn::Pattern>> &scope);
@@ -243,7 +244,7 @@ namespace pl::core {
         void createParameterPack(const std::string &name, const std::vector<Token::Literal> &values);
 
         void createArrayVariable(const std::string &name, ast::ASTNode *type, size_t entryCount);
-        void createVariable(const std::string &name, ast::ASTNode *type, const std::optional<Token::Literal> &value = std::nullopt, bool outVariable = false, bool reference = false);
+        void createVariable(const std::string &name, ast::ASTNode *type, const std::optional<Token::Literal> &value = std::nullopt, bool outVariable = false, bool reference = false, bool templateVariable = false);
         void setVariable(const std::string &name, const Token::Literal &value);
         void setVariable(ptrn::Pattern *pattern, const Token::Literal &value);
 

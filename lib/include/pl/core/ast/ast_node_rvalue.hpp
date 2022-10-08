@@ -132,8 +132,9 @@ namespace pl::core::ast {
             }
 
             {
-                auto currScope = evaluator->getScope(0).scope;
-                std::copy(currScope->begin(), currScope->end(), std::back_inserter(searchScope));
+                auto currScope = evaluator->getScope(0);
+                std::copy(currScope.scope->begin(), currScope.scope->end(), std::back_inserter(searchScope));
+                std::copy(currScope.templateParameters.begin(), currScope.templateParameters.end(), std::back_inserter(searchScope));
             }
 
             for (const auto &part : this->getPath()) {
