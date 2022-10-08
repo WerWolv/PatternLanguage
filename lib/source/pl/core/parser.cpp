@@ -182,8 +182,22 @@ namespace pl::core {
             std::unique_ptr<ast::ASTNode> result;
 
             if (MATCHES(oneOf(tkn::Literal::Identifier, tkn::Keyword::Parent, tkn::Keyword::This))) {
-                result = create(new ast::ASTNodeTypeOperator(op, this->parseRValue()));
-            } else if (MATCHES(sequence(tkn::ValueType::Any))) {
+                auto startToken = this->m_curr;
+                if (op == tkn::Operator::SizeOf) {
+                    for (const auto &potentialTypes : getNamespacePrefixedNames(parseNamespaceResolution())) {
+                        if (this->m_types.contains(potentialTypes)) {
+                            this->m_curr = startToken - 1;
+                            result = create(new ast::ASTNodeTypeOperator(op, parseType(true)));
+                            break;
+                        }
+                    }
+                }
+
+                if (result == nullptr) {
+                    this->m_curr = startToken;
+                    result = create(new ast::ASTNodeTypeOperator(op, this->parseRValue()));
+                }
+            } else if (op == tkn::Operator::SizeOf && MATCHES(sequence(tkn::ValueType::Any))) {
                 auto type = getValue<Token::ValueType>(-1);
 
                 result = create(new ast::ASTNodeLiteral(u128(Token::getTypeSize(type))));
