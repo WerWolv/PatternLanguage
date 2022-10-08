@@ -408,3 +408,31 @@ This can be done with the ``using TypeName;`` syntax.
     if (has_a)
       A a;
   };
+
+Templates :version:`1.24.0`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Templates can be used to substitute parts of a custom type's member's types with placeholders which can
+then be defined later on when instantiating this type.
+
+Templates can be used with ``struct``s, ``union``s and ``using`` declarations:
+
+.. code-block:: hexpat
+
+  struct MyTemplateStruct<T> {
+    T member;
+  };
+
+  union MyTemplateStruct<Type1, Type2> {
+    Type1 value1;
+    Type2 value2;
+  };
+
+  using MyTemplateUsing<Type1> = MyTemplateStruct<Type1, u32>;
+
+
+These templates can then be used to create concrete types:
+
+.. code-block:: hexpat
+
+  MyTemplateStruct<u32, u64> myConcreteStruct @ 0x00;
