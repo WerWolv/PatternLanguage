@@ -12,7 +12,9 @@ namespace pl::core::ast {
 
         ASTNodeLValueAssignment(const ASTNodeLValueAssignment &other) : ASTNode(other) {
             this->m_lvalueName = other.m_lvalueName;
-            this->m_rvalue     = other.m_rvalue->clone();
+
+            if (other.m_rvalue != nullptr)
+                this->m_rvalue     = other.m_rvalue->clone();
         }
 
         [[nodiscard]] std::unique_ptr<ASTNode> clone() const override {
@@ -23,8 +25,16 @@ namespace pl::core::ast {
             return this->m_lvalueName;
         }
 
+        void setLValueName(const std::string &lvalueName) {
+            this->m_lvalueName = lvalueName;
+        }
+
         [[nodiscard]] const std::unique_ptr<ASTNode> &getRValue() const {
             return this->m_rvalue;
+        }
+
+        void setRValue(std::unique_ptr<ASTNode> &&rvalue) {
+            this->m_rvalue = std::move(rvalue);
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {

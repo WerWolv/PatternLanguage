@@ -171,6 +171,18 @@ namespace pl::core {
             return static_cast<u32>(type) >> 4;
         }
 
+        [[nodiscard]] constexpr static inline Token::ValueType getType(const Token::Literal &literal) {
+            return std::visit(hlp::overloaded {
+                [](char) { return Token::ValueType::Character; },
+                [](bool) { return Token::ValueType::Boolean; },
+                [](u128) { return Token::ValueType::Unsigned128Bit; },
+                [](i128) { return Token::ValueType::Signed128Bit; },
+                [](double) { return Token::ValueType::Double; },
+                [](const std::string &) { return Token::ValueType::String; },
+                [](const ptrn::Pattern *) { return Token::ValueType::CustomType; }
+            }, literal);
+        }
+
         static ptrn::Pattern* literalToPattern(const core::Token::Literal &literal);
         static u128 literalToUnsigned(const core::Token::Literal &literal);
         static i128 literalToSigned(const core::Token::Literal &literal);

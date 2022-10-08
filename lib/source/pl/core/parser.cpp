@@ -302,8 +302,11 @@ namespace pl::core {
     }
 
     // (parseBinaryOrExpression) < >=|<=|>|< > (parseBinaryOrExpression)
-    std::unique_ptr<ast::ASTNode> Parser::parseRelationExpression() {
+    std::unique_ptr<ast::ASTNode> Parser::parseRelationExpression(bool inTemplate) {
         auto node = this->parseBinaryOrExpression();
+
+        if (inTemplate && peek(tkn::Operator::BoolGreaterThan))
+            return node;
 
         while (MATCHES(sequence(tkn::Operator::BoolGreaterThan) || sequence(tkn::Operator::BoolLessThan) || sequence(tkn::Operator::BoolGreaterThanOrEqual) || sequence(tkn::Operator::BoolLessThanOrEqual))) {
             auto op = getValue<Token::Operator>(-1);
@@ -314,61 +317,61 @@ namespace pl::core {
     }
 
     // (parseRelationExpression) <==|!=> (parseRelationExpression)
-    std::unique_ptr<ast::ASTNode> Parser::parseEqualityExpression() {
-        auto node = this->parseRelationExpression();
+    std::unique_ptr<ast::ASTNode> Parser::parseEqualityExpression(bool inTemplate) {
+        auto node = this->parseRelationExpression(inTemplate);
 
         while (MATCHES(sequence(tkn::Operator::BoolEqual) || sequence(tkn::Operator::BoolNotEqual))) {
             auto op = getValue<Token::Operator>(-1);
-            node    = create(new ast::ASTNodeMathematicalExpression(std::move(node), this->parseRelationExpression(), op));
+            node    = create(new ast::ASTNodeMathematicalExpression(std::move(node), this->parseRelationExpression(inTemplate), op));
         }
 
         return node;
     }
 
     // (parseEqualityExpression) && (parseEqualityExpression)
-    std::unique_ptr<ast::ASTNode> Parser::parseBooleanAnd() {
-        auto node = this->parseEqualityExpression();
+    std::unique_ptr<ast::ASTNode> Parser::parseBooleanAnd(bool inTemplate) {
+        auto node = this->parseEqualityExpression(inTemplate);
 
         while (MATCHES(sequence(tkn::Operator::BoolAnd))) {
-            node = create(new ast::ASTNodeMathematicalExpression(std::move(node), this->parseEqualityExpression(), Token::Operator::BoolAnd));
+            node = create(new ast::ASTNodeMathematicalExpression(std::move(node), this->parseEqualityExpression(inTemplate), Token::Operator::BoolAnd));
         }
 
         return node;
     }
 
     // (parseBooleanAnd) ^^ (parseBooleanAnd)
-    std::unique_ptr<ast::ASTNode> Parser::parseBooleanXor() {
-        auto node = this->parseBooleanAnd();
+    std::unique_ptr<ast::ASTNode> Parser::parseBooleanXor(bool inTemplate) {
+        auto node = this->parseBooleanAnd(inTemplate);
 
         while (MATCHES(sequence(tkn::Operator::BoolXor))) {
-            node = create(new ast::ASTNodeMathematicalExpression(std::move(node), this->parseBooleanAnd(), Token::Operator::BoolXor));
+            node = create(new ast::ASTNodeMathematicalExpression(std::move(node), this->parseBooleanAnd(inTemplate), Token::Operator::BoolXor));
         }
 
         return node;
     }
 
     // (parseBooleanXor) || (parseBooleanXor)
-    std::unique_ptr<ast::ASTNode> Parser::parseBooleanOr() {
-        auto node = this->parseBooleanXor();
+    std::unique_ptr<ast::ASTNode> Parser::parseBooleanOr(bool inTemplate) {
+        auto node = this->parseBooleanXor(inTemplate);
 
         while (MATCHES(sequence(tkn::Operator::BoolOr))) {
-            node = create(new ast::ASTNodeMathematicalExpression(std::move(node), this->parseBooleanXor(), Token::Operator::BoolOr));
+            node = create(new ast::ASTNodeMathematicalExpression(std::move(node), this->parseBooleanXor(inTemplate), Token::Operator::BoolOr));
         }
 
         return node;
     }
 
     // (parseBooleanOr) ? (parseBooleanOr) : (parseBooleanOr)
-    std::unique_ptr<ast::ASTNode> Parser::parseTernaryConditional() {
-        auto node = this->parseBooleanOr();
+    std::unique_ptr<ast::ASTNode> Parser::parseTernaryConditional(bool inTemplate) {
+        auto node = this->parseBooleanOr(inTemplate);
 
         while (MATCHES(sequence(tkn::Operator::TernaryConditional))) {
-            auto second = this->parseBooleanOr();
+            auto second = this->parseBooleanOr(inTemplate);
 
             if (!MATCHES(sequence(tkn::Operator::Colon)))
                 err::P0002.throwError(fmt::format("Expected ':' after ternary condition, got {}", getFormattedToken(0)), {}, 1);
 
-            auto third = this->parseBooleanOr();
+            auto third = this->parseBooleanOr(inTemplate);
             node = create(new ast::ASTNodeTernaryExpression(std::move(node), std::move(second), std::move(third), Token::Operator::TernaryConditional));
         }
 
@@ -376,8 +379,8 @@ namespace pl::core {
     }
 
     // (parseTernaryConditional)
-    std::unique_ptr<ast::ASTNode> Parser::parseMathematicalExpression() {
-        return this->parseTernaryConditional();
+    std::unique_ptr<ast::ASTNode> Parser::parseMathematicalExpression(bool inTemplate) {
+        return this->parseTernaryConditional(inTemplate);
     }
 
     // [[ <Identifier[( (parseStringLiteral) )], ...> ]]
@@ -720,9 +723,10 @@ namespace pl::core {
             std::unique_ptr<ast::ASTNodeTypeDecl> foundType = nullptr;
 
             if (!this->m_currTemplateType.empty())
-                for (const auto &templateType : this->m_currTemplateType.front()->getTemplateTypes()) {
-                    if (templateType->getName() == baseTypeName)
-                        foundType = create(new ast::ASTNodeTypeDecl({}, templateType, endian, reference));
+                for (const auto &templateParameter : this->m_currTemplateType.front()->getTemplateParameters()) {
+                    if (auto templateType = dynamic_cast<ast::ASTNodeTypeDecl*>(templateParameter.get()); templateType != nullptr)
+                        if (templateType->getName() == baseTypeName)
+                            foundType = create(new ast::ASTNodeTypeDecl({}, templateParameter, endian, reference));
                 }
 
             if (foundType == nullptr)
@@ -735,18 +739,24 @@ namespace pl::core {
                 err::P0003.throwError(fmt::format("Type {} has not been declared yet.", baseTypeName), fmt::format("If this type is being declared further down in the code, consider forward declaring it with 'using {};'.", baseTypeName), 1);
 
             if (auto actualType = dynamic_cast<ast::ASTNodeTypeDecl*>(foundType->getType().get()); actualType != nullptr)
-                if (const auto &templateTypes = actualType->getTemplateTypes(); !templateTypes.empty()) {
+                if (const auto &templateTypes = actualType->getTemplateParameters(); !templateTypes.empty()) {
                     if (!MATCHES(sequence(tkn::Operator::BoolLessThan)))
                         err::P0002.throwError("Cannot use template type without template parameters.", {}, 1);
 
                     u32 index = 0;
                     do {
-                        if (index > templateTypes.size())
+                        if (index >= templateTypes.size())
                             err::P0002.throwError(fmt::format("Provided more template parameters than expected. Type only has {} parameters", templateTypes.size()), {}, 1);
 
-                        auto &type = templateTypes[index];
-                        type->setType(parseType(true));
-                        type->setName("");
+                        auto &parameter = templateTypes[index];
+                        if (auto type = dynamic_cast<ast::ASTNodeTypeDecl*>(parameter.get()); type != nullptr) {
+                            type->setType(parseType(true));
+                            type->setName("");
+                        } else if (auto value = dynamic_cast<ast::ASTNodeLValueAssignment*>(parameter.get()); value != nullptr) {
+                            value->setRValue(parseMathematicalExpression(true));
+                        } else
+                            err::P0002.throwError("Invalid template parameter type.", {}, 1);
+
                         index++;
                     } while (MATCHES(sequence(tkn::Separator::Comma)));
 
@@ -774,13 +784,19 @@ namespace pl::core {
     }
 
     // <(parseType), ...>
-    std::vector<std::shared_ptr<ast::ASTNodeTypeDecl>> Parser::parseTemplateList() {
-        std::vector<std::shared_ptr<ast::ASTNodeTypeDecl>> result;
+    std::vector<std::shared_ptr<ast::ASTNode>> Parser::parseTemplateList() {
+        std::vector<std::shared_ptr<ast::ASTNode>> result;
 
-        if (MATCHES(sequence(tkn::Operator::BoolLessThan, tkn::Literal::Identifier))) {
+        if (MATCHES(sequence(tkn::Operator::BoolLessThan))) {
             do {
-                result.push_back(create(new ast::ASTNodeTypeDecl(getValue<Token::Identifier>(-1).get())));
-            } while (MATCHES(sequence(tkn::Separator::Comma, tkn::Literal::Identifier)));
+                if (MATCHES(sequence(tkn::Literal::Identifier)))
+                    result.push_back(create(new ast::ASTNodeTypeDecl(getValue<Token::Identifier>(-1).get())));
+                else if (MATCHES(sequence(tkn::ValueType::Auto, tkn::Literal::Identifier))) {
+                    result.push_back(create(new ast::ASTNodeLValueAssignment(getValue<Token::Identifier>(-1).get(), nullptr)));
+                }
+                else
+                    err::P0002.throwError(fmt::format("Expected identifier for template type, got {}.", getFormattedToken(0)), {}, 1);
+            } while (MATCHES(sequence(tkn::Separator::Comma)));
 
             if (!MATCHES(sequence(tkn::Operator::BoolGreaterThan)))
                 err::P0002.throwError(fmt::format("Expected '>' after template declaration, got {}.", getFormattedToken(0)), {}, 1);
@@ -799,7 +815,7 @@ namespace pl::core {
             err::P0002.throwError(fmt::format("Expected '=' after using declaration type name, got {}.", getFormattedToken(0)), {}, 1);
 
         auto type = addType(name, nullptr);
-        type->setTemplateTypes(std::move(templateList));
+        type->setTemplateParameters(std::move(templateList));
 
         this->m_currTemplateType.push_back(type);
         auto replaceType = parseType();
@@ -1005,7 +1021,7 @@ namespace pl::core {
         auto typeDecl   = addType(typeName, create(new ast::ASTNodeStruct()));
         auto structNode = static_cast<ast::ASTNodeStruct *>(typeDecl->getType().get());
 
-        typeDecl->setTemplateTypes(this->parseTemplateList());
+        typeDecl->setTemplateParameters(this->parseTemplateList());
 
         if (MATCHES(sequence(tkn::Operator::Colon, tkn::Literal::Identifier))) {
             // Inheritance
@@ -1041,7 +1057,7 @@ namespace pl::core {
         auto typeDecl  = addType(typeName, create(new ast::ASTNodeUnion()));
         auto unionNode = static_cast<ast::ASTNodeUnion *>(typeDecl->getType().get());
 
-        typeDecl->setTemplateTypes(this->parseTemplateList());
+        typeDecl->setTemplateParameters(this->parseTemplateList());
 
         if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
             err::P0002.throwError(fmt::format("Expected '{{' after union declaration, got {}.", getFormattedToken(0)), {}, 1);

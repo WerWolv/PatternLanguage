@@ -2,6 +2,8 @@
 
 #include <pl/core/ast/ast_node.hpp>
 #include <pl/core/ast/ast_node_attribute.hpp>
+#include <pl/core/ast/ast_node_lvalue_assignment.hpp>
+#include <pl/core/ast/ast_node_builtin_type.hpp>
 
 namespace pl::core::ast {
 
@@ -14,13 +16,15 @@ namespace pl::core::ast {
             : ASTNode(), m_name(std::move(name)), m_type(std::move(type)), m_endian(endian), m_reference(reference) { }
 
         ASTNodeTypeDecl(const ASTNodeTypeDecl &other) : ASTNode(other), Attributable(other) {
-            this->m_name            = other.m_name;
+            this->m_name                = other.m_name;
+
             if (other.m_type != nullptr)
-                this->m_type        = other.m_type->clone();
-            this->m_endian          = other.m_endian;
-            this->m_forwardDeclared = other.m_forwardDeclared;
-            this->m_reference       = other.m_reference;
-            this->m_templateTypes   = other.m_templateTypes;
+                this->m_type = other.m_type->clone();
+
+            this->m_endian              = other.m_endian;
+            this->m_forwardDeclared     = other.m_forwardDeclared;
+            this->m_reference           = other.m_reference;
+            this->m_templateParameters  = other.m_templateParameters;
         }
 
         [[nodiscard]] std::unique_ptr<ASTNode> clone() const override {
@@ -56,6 +60,16 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+            for (const auto &templateParameter : this->m_templateParameters) {
+                if (auto lvalue = dynamic_cast<ASTNodeLValueAssignment *>(templateParameter.get())) {
+                    auto value = lvalue->getRValue()->evaluate(evaluator);
+                    if (auto literal = dynamic_cast<ASTNodeLiteral*>(value.get()); literal != nullptr) {
+                        evaluator->createVariable(lvalue->getLValueName(), new ASTNodeBuiltinType(Token::getType(literal->getValue())));
+                        evaluator->setVariable(lvalue->getLValueName(), literal->getValue());
+                    }
+                }
+            }
+
             auto patterns = this->getType()->createPatterns(evaluator);
 
             for (auto &pattern : patterns) {
@@ -99,12 +113,12 @@ namespace pl::core::ast {
             this->m_endian = endian;
         }
 
-        [[nodiscard]] const std::vector<std::shared_ptr<ASTNodeTypeDecl>> &getTemplateTypes() const {
-            return this->m_templateTypes;
+        [[nodiscard]] const std::vector<std::shared_ptr<ASTNode>> &getTemplateParameters() const {
+            return this->m_templateParameters;
         }
 
-        void setTemplateTypes(std::vector<std::shared_ptr<ASTNodeTypeDecl>> &&types) {
-            this->m_templateTypes = std::move(types);
+        void setTemplateParameters(std::vector<std::shared_ptr<ASTNode>> &&types) {
+            this->m_templateParameters = std::move(types);
         }
 
     private:
@@ -112,7 +126,7 @@ namespace pl::core::ast {
         std::string m_name;
         std::shared_ptr<ASTNode> m_type;
         std::optional<std::endian> m_endian;
-        std::vector<std::shared_ptr<ASTNodeTypeDecl>> m_templateTypes;
+        std::vector<std::shared_ptr<ASTNode>> m_templateParameters;
         bool m_reference = false;
     };
 

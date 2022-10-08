@@ -98,13 +98,13 @@ namespace pl::core {
         std::unique_ptr<ast::ASTNode> parseBinaryAndExpression();
         std::unique_ptr<ast::ASTNode> parseBinaryXorExpression();
         std::unique_ptr<ast::ASTNode> parseBinaryOrExpression();
-        std::unique_ptr<ast::ASTNode> parseBooleanAnd();
-        std::unique_ptr<ast::ASTNode> parseBooleanXor();
-        std::unique_ptr<ast::ASTNode> parseBooleanOr();
-        std::unique_ptr<ast::ASTNode> parseRelationExpression();
-        std::unique_ptr<ast::ASTNode> parseEqualityExpression();
-        std::unique_ptr<ast::ASTNode> parseTernaryConditional();
-        std::unique_ptr<ast::ASTNode> parseMathematicalExpression();
+        std::unique_ptr<ast::ASTNode> parseBooleanAnd(bool inTemplate);
+        std::unique_ptr<ast::ASTNode> parseBooleanXor(bool inTemplate);
+        std::unique_ptr<ast::ASTNode> parseBooleanOr(bool inTemplate);
+        std::unique_ptr<ast::ASTNode> parseRelationExpression(bool inTemplate);
+        std::unique_ptr<ast::ASTNode> parseEqualityExpression(bool inTemplate);
+        std::unique_ptr<ast::ASTNode> parseTernaryConditional(bool inTemplate);
+        std::unique_ptr<ast::ASTNode> parseMathematicalExpression(bool inTemplate = false);
 
         std::unique_ptr<ast::ASTNode> parseFunctionDefinition();
         std::unique_ptr<ast::ASTNode> parseFunctionVariableDecl();
@@ -121,7 +121,7 @@ namespace pl::core {
         std::unique_ptr<ast::ASTNode> parseConditional();
         std::unique_ptr<ast::ASTNode> parseWhileStatement();
         std::unique_ptr<ast::ASTNodeTypeDecl> parseType(bool disallowSpecialTypes = false);
-        std::vector<std::shared_ptr<ast::ASTNodeTypeDecl>> parseTemplateList();
+        std::vector<std::shared_ptr<ast::ASTNode>> parseTemplateList();
         std::shared_ptr<ast::ASTNodeTypeDecl> parseUsingDeclaration();
         std::unique_ptr<ast::ASTNode> parsePadding();
         std::unique_ptr<ast::ASTNodeTypeDecl> parsePointerSizeType();
