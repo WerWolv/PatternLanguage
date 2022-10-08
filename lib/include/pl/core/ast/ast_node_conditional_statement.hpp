@@ -33,6 +33,11 @@ namespace pl::core::ast {
                 for (auto &pattern : newPatterns) {
                     scope.push_back(std::move(pattern));
                 }
+
+                if (!evaluator->getCurrentArrayIndex().has_value()) {
+                    if (evaluator->getCurrentControlFlowStatement() != ControlFlowStatement::None)
+                        break;
+                }
             }
 
             return {};
