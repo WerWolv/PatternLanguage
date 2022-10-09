@@ -94,11 +94,9 @@ namespace pl::core {
         }
 
         if (templateVariable) {
-            for (auto &variable : currScope.templateParameters) {
-                if (variable->getVariableName() == name) {
-                    err::E0003.throwError(fmt::format("Variable with name '{}' already exists in this scope.", name), {}, type);
-                }
-            }
+            std::erase_if(currScope.templateParameters, [&](const auto &var) {
+                return var->getVariableName() == name;
+            });
         }
 
         auto startOffset = this->dataOffset();
