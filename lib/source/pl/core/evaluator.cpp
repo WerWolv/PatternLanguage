@@ -86,10 +86,12 @@ namespace pl::core {
         if (name == "_")
             return;
 
-        auto &currScope = this->getScope(0);
-        for (auto &variable : *currScope.scope) {
-            if (variable->getVariableName() == name) {
-                err::E0003.throwError(fmt::format("Variable with name '{}' already exists in this scope.", name), {}, type);
+        {
+            auto &currScope = this->getScope(0);
+            for (auto &variable : *currScope.scope) {
+                if (variable->getVariableName() == name) {
+                    err::E0003.throwError(fmt::format("Variable with name '{}' already exists in this scope.", name), {}, type);
+                }
             }
         }
 
@@ -153,7 +155,7 @@ namespace pl::core {
         if (templateVariable)
             this->m_templateParameters.back().push_back(std::move(pattern));
         else
-            currScope.scope->push_back(std::move(pattern));
+            this->getScope(0).scope->push_back(std::move(pattern));
     }
 
     template<typename T>
