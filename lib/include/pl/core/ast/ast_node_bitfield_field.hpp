@@ -25,7 +25,7 @@ namespace pl::core::ast {
         [[nodiscard]] const std::string &getName() const { return this->m_name; }
         [[nodiscard]] const std::unique_ptr<ASTNode> &getSize() const { return this->m_size; }
 
-        [[nodiscard]] bool isPadding() const { return this->getName() == "padding"; }
+        [[nodiscard]] bool isPadding() const { return this->getName() == "$padding$"; }
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             auto literal = this->m_size->evaluate(evaluator);
