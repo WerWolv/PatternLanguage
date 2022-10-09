@@ -98,8 +98,10 @@ namespace pl::core::ast {
         }
 
         void addAttribute(std::unique_ptr<ASTNodeAttribute> &&attribute) override {
-            if (auto attributable = dynamic_cast<Attributable *>(this->getType().get()); attributable != nullptr) {
-                attributable->addAttribute(std::unique_ptr<ASTNodeAttribute>(static_cast<ASTNodeAttribute *>(attribute->clone().release())));
+            if (!this->isForwardDeclared()) {
+                if (auto attributable = dynamic_cast<Attributable *>(this->getType().get()); attributable != nullptr) {
+                    attributable->addAttribute(std::unique_ptr<ASTNodeAttribute>(static_cast<ASTNodeAttribute *>(attribute->clone().release())));
+                }
             }
 
             Attributable::addAttribute(std::move(attribute));
