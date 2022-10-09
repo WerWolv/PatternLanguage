@@ -66,10 +66,8 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
-            auto parentScope = evaluator->getScope(0);
-            auto variables = *parentScope.scope;
-            evaluator->pushScope(parentScope.parent, variables);
-            PL_ON_SCOPE_EXIT { evaluator->popScope(); };
+            evaluator->pushTemplateParameters();
+            PL_ON_SCOPE_EXIT { evaluator->popTemplateParameters(); };
 
             for (const auto &templateParameter : this->m_templateParameters) {
                 if (auto lvalue = dynamic_cast<ASTNodeLValueAssignment *>(templateParameter.get())) {

@@ -67,7 +67,6 @@ namespace pl::core {
             std::optional<ParameterPack> parameterPack;
             std::vector<std::shared_ptr<ptrn::Pattern>> savedPatterns;
             size_t heapStartSize;
-            std::vector<std::shared_ptr<ptrn::Pattern>> templateParameters;
         };
 
         void pushScope(const std::shared_ptr<ptrn::Pattern> &parent, std::vector<std::shared_ptr<ptrn::Pattern>> &scope);
@@ -95,6 +94,18 @@ namespace pl::core {
 
         [[nodiscard]] bool isGlobalScope() {
             return this->m_scopes.size() == 1;
+        }
+
+        void pushTemplateParameters() {
+            this->m_templateParameters.emplace_back();
+        }
+
+        void popTemplateParameters() {
+            this->m_templateParameters.pop_back();
+        }
+
+        [[nodiscard]] const std::vector<std::shared_ptr<ptrn::Pattern>>& getTemplateParameters() {
+            return this->m_templateParameters.back();
         }
 
         void setInVariables(const std::map<std::string, Token::Literal> &inVariables) {
@@ -350,6 +361,7 @@ namespace pl::core {
         std::map<std::string, Token::Literal> m_envVariables;
         std::map<std::string, Token::Literal> m_inVariables;
         std::map<std::string, std::unique_ptr<ptrn::Pattern>> m_outVariables;
+        std::vector<std::vector<std::shared_ptr<ptrn::Pattern>>> m_templateParameters;
 
         std::vector<std::vector<u8>> m_heap;
 

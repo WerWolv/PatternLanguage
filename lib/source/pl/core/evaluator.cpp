@@ -94,7 +94,7 @@ namespace pl::core {
         }
 
         if (templateVariable) {
-            std::erase_if(currScope.templateParameters, [&](const auto &var) {
+            std::erase_if(this->m_templateParameters.back(), [&](const auto &var) {
                 return var->getVariableName() == name;
             });
         }
@@ -151,7 +151,7 @@ namespace pl::core {
             this->getConsole().log(LogConsole::Level::Debug, fmt::format("Creating local variable '{} {}' at heap address 0x{:X}.", pattern->getTypeName(), pattern->getVariableName(), pattern->getOffset()));
 
         if (templateVariable)
-            currScope.templateParameters.push_back(std::move(pattern));
+            this->m_templateParameters.back().push_back(std::move(pattern));
         else
             currScope.scope->push_back(std::move(pattern));
     }
@@ -237,7 +237,7 @@ namespace pl::core {
 
             // Search for variable in the template parameter list
             {
-                auto &variables = this->getScope(0).templateParameters;
+                auto &variables = this->m_templateParameters.back();
                 for (auto &variable : variables) {
                     if (variable->getVariableName() == name) {
                         variablePattern = &variable;
@@ -368,9 +368,7 @@ namespace pl::core {
 
         const auto &heap = this->getHeap();
 
-        const auto &templateParameters = this->m_scopes.empty() ? std::vector<std::shared_ptr<ptrn::Pattern>>{ } : this->m_scopes.back().templateParameters;
-
-        this->m_scopes.push_back({ parent, &scope, std::nullopt, { }, heap.size(), templateParameters });
+        this->m_scopes.push_back({ parent, &scope, std::nullopt, { }, heap.size() });
 
         if (this->isDebugModeEnabled())
             this->getConsole().log(LogConsole::Level::Debug, fmt::format("Entering new scope #{}. Parent: '{}', Heap Size: {}.", this->m_scopes.size(), parent == nullptr ? "None" : parent->getVariableName(), heap.size()));
@@ -397,6 +395,7 @@ namespace pl::core {
         this->m_heap.clear();
         this->m_customFunctions.clear();
         this->m_scopes.clear();
+        this->m_templateParameters.clear();
         this->m_mainResult.reset();
         this->m_aborted = false;
         this->m_colorIndex = 0;
@@ -417,7 +416,8 @@ namespace pl::core {
 
         try {
             this->setCurrentControlFlowStatement(ControlFlowStatement::None);
-            pushScope(nullptr, this->m_patterns);
+            this->pushScope(nullptr, this->m_patterns);
+            this->pushTemplateParameters();
 
             for (auto &topLevelNode : ast) {
 
