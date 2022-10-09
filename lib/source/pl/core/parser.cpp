@@ -181,7 +181,7 @@ namespace pl::core {
 
             std::unique_ptr<ast::ASTNode> result;
 
-            if (MATCHES(oneOf(tkn::Literal::Identifier, tkn::Keyword::Parent, tkn::Keyword::This))) {
+            if (MATCHES(oneOf(tkn::Literal::Identifier))) {
                 auto startToken = this->m_curr;
                 if (op == tkn::Operator::SizeOf) {
                     for (const auto &potentialTypes : getNamespacePrefixedNames(parseNamespaceResolution())) {
@@ -197,6 +197,8 @@ namespace pl::core {
                     this->m_curr = startToken;
                     result = create(new ast::ASTNodeTypeOperator(op, this->parseRValue()));
                 }
+            } else if (MATCHES(oneOf(tkn::Keyword::Parent, tkn::Keyword::This))) {
+                result = create(new ast::ASTNodeTypeOperator(op, this->parseRValue()));
             } else if (op == tkn::Operator::SizeOf && MATCHES(sequence(tkn::ValueType::Any))) {
                 auto type = getValue<Token::ValueType>(-1);
 
@@ -762,7 +764,7 @@ namespace pl::core {
                         if (index >= templateTypes.size())
                             err::P0002.throwError(fmt::format("Provided more template parameters than expected. Type only has {} parameters", templateTypes.size()), {}, 1);
 
-                        auto &parameter = templateTypes[index];
+                        auto parameter = templateTypes[index];
                         if (auto type = dynamic_cast<ast::ASTNodeTypeDecl*>(parameter.get()); type != nullptr) {
                             type->setType(parseType(true));
                             type->setName("");
