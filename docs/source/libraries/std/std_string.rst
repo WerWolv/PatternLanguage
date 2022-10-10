@@ -55,7 +55,7 @@ Functions
 ``std::string::substr(str string, u128 pos, u128 size) -> str``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Gets a substring of ``string`` starting at ``pos```` of size ``size``**
+**Gets a substring of "string" starting at "pos" of size "size"**
 
 .. table::
     :align: left
@@ -74,7 +74,7 @@ Functions
 ``std::string::parse_int(str string, u128 base) -> s128`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Parses ``string`` passed into the function as an integer in base ``base`` and returns it**
+**Parses "string" passed into the function as an integer in base "base" and returns it**
 
 .. table::
     :align: left
@@ -92,7 +92,7 @@ Functions
 ``std::string::parse_float(str string) -> double`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Parses ``string`` passed into the function as a float and returns it**
+**Parses "string" passed into the function as a float and returns it**
 
 .. table::
     :align: left
@@ -126,7 +126,7 @@ Functions
 ``std::string::starts_with(str string, str part) -> bool`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Checks if the string ``string`` starts with the string ``part``**
+**Checks if the string "string" starts with the string "part"**
 
 .. table::
     :align: left
@@ -144,7 +144,7 @@ Functions
 ``std::string::ends_with(str string, str part) -> bool`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Checks if the string ``string`` ends with the string ``part``**
+**Checks if the string "string" ends with the string "part"**
 
 .. table::
     :align: left
@@ -162,7 +162,7 @@ Functions
 ``std::string::contains(str a, str b) -> bool`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Checks if the string ``string`` ends with the string ``part``**
+**Checks if the string "string" ends with the string "part"**
 
 .. table::
     :align: left
@@ -180,7 +180,7 @@ Functions
 ``std::string::reverse(str string) -> str`` :version:`1.12.0`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Reverses the string `string`**
+**Reverses the string "string"**
 
 .. table::
     :align: left

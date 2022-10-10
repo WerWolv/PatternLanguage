@@ -16,7 +16,7 @@ Functions
 ``std::ctype::isdigit(char c) -> bool`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Checks if the character ``c`` is a ASCII digit**
+**Checks if the character parameter "c" is a ASCII digit**
 
 .. table::
     :align: left
@@ -33,7 +33,7 @@ Functions
 ``std::ctype::isxdigit(char c) -> bool`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Checks if the character ``c`` is a hexadecimal ASCII digit**
+**Checks if the character parameter "c" is a hexadecimal ASCII digit**
 
 .. table::
     :align: left
@@ -50,7 +50,7 @@ Functions
 ``std::ctype::isupper(char c) -> bool`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Checks if the character ``c`` is a uppercase ASCII letter**
+**Checks if the character parameter "c" is a uppercase ASCII letter**
 
 .. table::
     :align: left
@@ -67,7 +67,7 @@ Functions
 ``std::ctype::islower(char c) -> bool`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Checks if the character ``c`` is a lowercase ASCII letter**
+**Checks if the character parameter "c" is a lowercase ASCII letter**
 
 .. table::
     :align: left
@@ -84,7 +84,7 @@ Functions
 ``std::ctype::isalpha(char c) -> bool`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Checks if the character ``c`` is a ASCII letter**
+**Checks if the character parameter "c" is a ASCII letter**
 
 .. table::
     :align: left
@@ -101,7 +101,7 @@ Functions
 ``std::ctype::isalnum(char c) -> bool`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Checks if the character ``c`` is a ASCII letter or digit**
+**Checks if the character parameter "c" is a ASCII letter or digit**
 
 .. table::
     :align: left
@@ -118,7 +118,7 @@ Functions
 ``std::ctype::isspace(char c) -> bool`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Checks if the character ``c`` is a ASCII whitespace character**
+**Checks if the character parameter "c" is a ASCII whitespace character**
 
 .. table::
     :align: left
@@ -135,7 +135,7 @@ Functions
 ``std::ctype::isblank(char c) -> bool`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Checks if the character ``c`` is a blank ASCII character**
+**Checks if the character parameter "c" is a blank ASCII character**
 
 .. table::
     :align: left
@@ -152,7 +152,7 @@ Functions
 ``std::ctype::isprint(char c) -> bool`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Checks if the character ``c`` is a printable ASCII character**
+**Checks if the character parameter "c" is a printable ASCII character**
 
 .. table::
     :align: left
@@ -169,7 +169,7 @@ Functions
 ``std::ctype::iscntrl(char c) -> bool`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Checks if the character ``c`` is a ASCII control character**
+**Checks if the character parameter "c" is a ASCII control character**
 
 .. table::
     :align: left
@@ -186,7 +186,7 @@ Functions
 ``std::ctype::isgraph(char c) -> bool`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Checks if the character ``c`` is a ASCII character with a graphical representation**
+**Checks if the character parameter "c" is a ASCII character with a graphical representation**
 
 .. table::
     :align: left
@@ -203,7 +203,7 @@ Functions
 ``std::ctype::ispunct(char c) -> bool`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Checks if the character ``c`` is a ASCII punctuation character**
+**Checks if the character parameter "c" is a ASCII punctuation character**
 
 .. table::
     :align: left

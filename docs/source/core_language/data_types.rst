@@ -436,3 +436,18 @@ These templates can then be used to create concrete types:
 .. code-block:: hexpat
 
   MyTemplateStruct<u32, u64> myConcreteStruct @ 0x00;
+
+Non-Type Template Parameters :version:`1.24.1`
+----------------------------------------------
+
+It's also possible to use templates to pass expressions to types. Examples for this are numbers, strings or variables (including custom types).
+
+To mark a template parameter as a non-type template parameter, use the ``auto`` keyword.
+
+.. code-block:: hexpat
+
+  struct Array<T, auto Size> {
+    T data[Size];
+  };
+
+  Array<u32, 0x100> array @ 0x00;

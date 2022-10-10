@@ -16,7 +16,7 @@ Functions
 ``std::math::min(auto a, auto b) -> auto`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Returns the smaller number between ``a`` and ``b``**
+**Returns the smaller number between "a" and "b"**
 
 .. table::
     :align: left
@@ -34,7 +34,7 @@ Functions
 ``std::math::max(auto a, auto b) -> auto`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Returns the larger number between ``a`` and ``b``**
+**Returns the larger number between "a" and "b"**
 
 .. table::
     :align: left
@@ -52,7 +52,7 @@ Functions
 ``std::math::clamp(auto x, auto min, auto max) -> auto`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Clamps the value ``x`` between ``min`` and ``max``**
+**Clamps the value "x" between "min" and "max"**
 
 .. table::
     :align: left
@@ -71,7 +71,7 @@ Functions
 ``std::math::abs(auto x) -> auto`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Calculates the absolute value of ``x``**
+**Calculates the absolute value of "x"**
 
 .. table::
     :align: left
@@ -105,7 +105,7 @@ Functions
 ``std::math::copy_sign(auto x, auto y) -> auto`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Applies the sign of y and applies it to x**
+**Applies the sign of "y" and applies it to "x"**
 
 .. table::
     :align: left
@@ -123,7 +123,7 @@ Functions
 ``std::math::factorial(auto x) -> auto`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Calculates the factorial of x**
+**Calculates the factorial of "x"**
 
 .. table::
     :align: left
@@ -140,7 +140,7 @@ Functions
 ``std::math::comb(u128 n, u128 k) -> u128`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Calculates the binomial coefficient of k and n. (n-choose-k)**
+**Calculates the binomial coefficient of "k" and ""n". (n-choose-k)**
 
 .. table::
     :align: left
@@ -158,7 +158,7 @@ Functions
 ``std::math::perm(u128 n, u128 k) -> u128`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Calculates the number of ways to choose k items from n items without repetition and with order**
+**Calculates the number of ways to choose "k" items from "n" items without repetition and with order**
 
 .. table::
     :align: left

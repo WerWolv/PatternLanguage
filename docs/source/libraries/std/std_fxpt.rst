@@ -24,7 +24,7 @@ Functions
 ``std::fxpt::to_float(fixed fxt, u32 precision) -> double`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Converts a fixed point number ``fxt`` with a precision of ``precision`` bits into a floating point number**
+**Converts a fixed point number "fxt" with a precision of "precision" bits into a floating point number**
 
 .. table::
     :align: left
@@ -42,7 +42,7 @@ Functions
 ``std::fxpt::to_fixed(double flt, u32 precision) -> fixed`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Converts a floating point number ``flt`` into a fixed point number with a precision of ``precision`` bits**
+**Converts a floating point number "flt" into a fixed point number with a precision of "precision" bits**
 
 .. table::
     :align: left
@@ -60,7 +60,7 @@ Functions
 ``std::fxpt::change_precision(fixed value, u32 start_precision, u32 end_precision) -> fixed`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Converts a fixed point number ``value`` with a precision of ``start_precision`` bits into a fixed point number with a precision of ``end_precision`` bits**
+**Converts a fixed point number "value" with a precision of "start_precision" bits into a fixed point number with a precision of "end_precision" bits**
 
 .. table::
     :align: left
@@ -79,7 +79,7 @@ Functions
 ``std::fxpt::add(fixed a, fixed b, u32 precision) -> fixed`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Performs a fixed point addition of values ``a`` and ``b`` with a precision of ``precision`` bits**
+**Performs a fixed point addition of values "a" and "b" with a precision of "precision" bits**
 
 .. warning::
     
@@ -102,7 +102,7 @@ Functions
 ``std::fxpt::subtract(fixed a, fixed b, u32 precision) -> fixed`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Performs a fixed point subtraction of values ``a`` and ``b`` with a precision of ``precision`` bits**
+**Performs a fixed point subtraction of values "a" and "b" with a precision of "precision" bits**
 
 .. warning::
     
@@ -125,7 +125,7 @@ Functions
 ``std::fxpt::multiply(fixed a, fixed b, u32 precision) -> fixed`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Performs a fixed point multiplication of values ``a`` and ``b`` with a precision of ``precision`` bits**
+**Performs a fixed point multiplication of values "a" and "b" with a precision of "precision" bits**
 
 .. warning::
     
@@ -148,7 +148,7 @@ Functions
 ``std::fxpt::divide(fixed a, fixed b, u32 precision) -> fixed`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Performs a fixed point division of values ``a`` and ``b`` with a precision of ``precision`` bits**
+**Performs a fixed point division of values "a" and "b" with a precision of "precision" bits**
 
 .. warning::
     

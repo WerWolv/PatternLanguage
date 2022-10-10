@@ -16,7 +16,7 @@ Functions
 ``std::limits::u8_min() -> u8`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Returns the smallest value representable by a ``u8``**
+**Returns the smallest value representable by a "u8"**
 
 .. table::
     :align: left
@@ -32,7 +32,7 @@ Functions
 ``std::limits::u8_max() -> u8`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Returns the biggest value representable by a ``u8``**
+**Returns the biggest value representable by a "u8"**
 
 .. table::
     :align: left
@@ -48,7 +48,7 @@ Functions
 ``std::limits::u16_min() -> u16`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Returns the smallest value representable by a ``u16``**
+**Returns the smallest value representable by a "u16"**
 
 .. table::
     :align: left
@@ -64,7 +64,7 @@ Functions
 ``std::limits::u16_max() -> u16`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Returns the biggest value representable by a ``u16``**
+**Returns the biggest value representable by a "u16"**
 
 .. table::
     :align: left
@@ -80,7 +80,7 @@ Functions
 ``std::limits::u32_min() -> u32`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Returns the smallest value representable by a ``u32``**
+**Returns the smallest value representable by a "u32"**
 
 .. table::
     :align: left
@@ -96,7 +96,7 @@ Functions
 ``std::limits::u32_max() -> u32`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Returns the biggest value representable by a ``u32``**
+**Returns the biggest value representable by a "u32"**
 
 .. table::
     :align: left
@@ -112,7 +112,7 @@ Functions
 ``std::limits::u64_min() -> u64`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Returns the smallest value representable by a ``u64``**
+**Returns the smallest value representable by a "u64"**
 
 .. table::
     :align: left
@@ -128,7 +128,7 @@ Functions
 ``std::limits::u64_max() -> u64`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Returns the biggest value representable by a ``u64``**
+**Returns the biggest value representable by a "u64"**
 
 .. table::
     :align: left
@@ -145,7 +145,7 @@ Functions
 ``std::limits::u128_min() -> u128`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Returns the smallest value representable by a ``u128``**
+**Returns the smallest value representable by a "u128"**
 
 .. table::
     :align: left
@@ -161,7 +161,7 @@ Functions
 ``std::limits::u128_max() -> u128`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Returns the biggest value representable by a ``u128``**
+**Returns the biggest value representable by a "u128"**
 
 .. table::
     :align: left
@@ -177,7 +177,7 @@ Functions
 ``std::limits::s8_min() -> s8`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Returns the smallest value representable by a ``s8``**
+**Returns the smallest value representable by a "s8"**
 
 .. table::
     :align: left
@@ -193,7 +193,7 @@ Functions
 ``std::limits::s8_max() -> s8`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Returns the biggest value representable by a ``s8``**
+**Returns the biggest value representable by a "s8"**
 
 .. table::
     :align: left
@@ -209,7 +209,7 @@ Functions
 ``std::limits::s16_min() -> s16`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Returns the smallest value representable by a ``s16``**
+**Returns the smallest value representable by a "s16"**
 
 .. table::
     :align: left
@@ -225,7 +225,7 @@ Functions
 ``std::limits::s16_max() -> s16`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Returns the biggest value representable by a ``s16``**
+**Returns the biggest value representable by a "s16"**
 
 .. table::
     :align: left
@@ -241,7 +241,7 @@ Functions
 ``std::limits::s32_min() -> s32`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Returns the smallest value representable by a ``s32``**
+**Returns the smallest value representable by a "s32"**
 
 .. table::
     :align: left
@@ -257,7 +257,7 @@ Functions
 ``std::limits::s32_max() -> s32`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Returns the biggest value representable by a ``s32``**
+**Returns the biggest value representable by a "s32"**
 
 .. table::
     :align: left
@@ -273,7 +273,7 @@ Functions
 ``std::limits::s64_min() -> s64`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Returns the smallest value representable by a ``s64``**
+**Returns the smallest value representable by a "s64"**
 
 .. table::
     :align: left
@@ -289,7 +289,7 @@ Functions
 ``std::limits::s64_max() -> s64`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Returns the biggest value representable by a ``s64``**
+**Returns the biggest value representable by a "s64"**
 
 .. table::
     :align: left
@@ -306,7 +306,7 @@ Functions
 ``std::limits::s128_min() -> s128`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Returns the smallest value representable by a ``s128``**
+**Returns the smallest value representable by a "s128"**
 
 .. table::
     :align: left
@@ -322,7 +322,7 @@ Functions
 ``std::limits::s128_max() -> s128`` :version:`1.10.1`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Returns the biggest value representable by a ``s128``**
+**Returns the biggest value representable by a "s128"**
 
 .. table::
     :align: left

@@ -68,7 +68,7 @@ Functions
 ``std::mem::find_sequence(u128 occurence_index, u8 bytes...) -> u128``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Searches the data for the ``occurence_index``th occurence of a sequence of ``bytes``**
+**Searches the data for the "occurence_index"th occurence of a sequence of "bytes"**
 
 
 .. table::
@@ -87,7 +87,7 @@ Functions
 ``std::mem::find_sequence_in_range(u128 occurence_index, u128 offsetFrom, u128 offsetTo, u8 bytes...) -> u128`` :version:`1.16.0`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Searches the data for the ``occurence_index``th occurence of a sequence of ``bytes`` in a region spanning from ``offsetFrom`` to ``offsetTo``**
+**Searches the data for the "occurence_index"th occurence of a sequence of "bytes" in a region spanning from "offsetFrom" to "offsetTo"**
 
 
 .. table::
