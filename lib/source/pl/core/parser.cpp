@@ -1199,6 +1199,9 @@ namespace pl::core {
         auto typeDecl     = addType(typeName, create(new ast::ASTNodeBitfield()));
         auto bitfieldNode = static_cast<ast::ASTNodeBitfield *>(typeDecl->getType().get());
 
+        if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
+            err::P0002.throwError(fmt::format("Expected '{{' after bitfield declaration, got {}.", getFormattedToken(0)), {}, 1);
+
         while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
             bitfieldNode->addEntry(this->parseBitfieldEntry());
 
@@ -1404,7 +1407,7 @@ namespace pl::core {
             statement = parseUnion();
         else if (MATCHES(sequence(tkn::Keyword::Enum, tkn::Literal::Identifier)))
             statement = parseEnum();
-        else if (MATCHES(sequence(tkn::Keyword::Bitfield, tkn::Literal::Identifier, tkn::Separator::LeftBrace)))
+        else if (MATCHES(sequence(tkn::Keyword::Bitfield, tkn::Literal::Identifier)))
             statement = parseBitfield();
         else if (MATCHES(sequence(tkn::Keyword::Function, tkn::Literal::Identifier, tkn::Separator::LeftParenthesis)))
             statement = parseFunctionDefinition();
