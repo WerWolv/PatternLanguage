@@ -53,6 +53,7 @@ jobs:
         ctest --output-on-failure
 
     - name: ✉️ Run ImHex-Patterns tests
+      if: ${{ github.repository_owner == 'WerWolv' }}
       uses: mvasigh/dispatch-action@main
       with:
         token: ${{ secrets.DISPATCH_TOKEN }}
@@ -61,11 +62,13 @@ jobs:
         event_type: run_tests
 
     - name: ⚗️ Generate Coverage Report
+      if: ${{ github.repository_owner == 'WerWolv' }}
       run: |
         cd build
         lcov -d ./lib --gcov-tool /usr/bin/gcov-12 -c -o coverage.info
 
     - name: ⬆️ Upload Coverage Report
+      if: ${{ github.repository_owner == 'WerWolv' }}
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
