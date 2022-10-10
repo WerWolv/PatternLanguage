@@ -206,7 +206,10 @@ namespace pl::core {
             } else if (MATCHES(sequence(tkn::Operator::Dollar))) {
                 result = create(new ast::ASTNodeTypeOperator(op));
             } else {
-                err::P0005.throwError("Expected variable identifier or built-in type.", {}, 1);
+                if (op == tkn::Operator::SizeOf)
+                    err::P0005.throwError("Expected rvalue, type or '$' operator.", {}, 1);
+                else if (op == tkn::Operator::AddressOf)
+                    err::P0005.throwError("Expected rvalue or '$' operator.", {}, 1);
             }
 
             if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
