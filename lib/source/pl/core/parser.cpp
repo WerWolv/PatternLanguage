@@ -430,9 +430,12 @@ namespace pl::core {
     /* Functions */
 
     std::unique_ptr<ast::ASTNode> Parser::parseFunctionDefinition() {
-        const auto &functionName = getValue<Token::Identifier>(-2).get();
+        const auto &functionName = getValue<Token::Identifier>(-1).get();
         std::vector<std::pair<std::string, std::unique_ptr<ast::ASTNode>>> params;
         std::optional<std::string> parameterPack;
+
+        if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
+            err::P0002.throwError(fmt::format("Expected '(' after function declaration, got {}.", getFormattedToken(0)), {}, 1);
 
         // Parse parameter list
         bool hasParams        = !peek(tkn::Separator::RightParenthesis);
@@ -531,7 +534,7 @@ namespace pl::core {
             statement = parseFunctionVariableCompoundAssignment("$");
         else if (MATCHES(oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue)))
             statement = parseFunctionControlFlowStatement();
-        else if (MATCHES(sequence(tkn::Keyword::If, tkn::Separator::LeftParenthesis))) {
+        else if (MATCHES(sequence(tkn::Keyword::If))) {
             statement      = parseFunctionConditional();
             needsSemicolon = false;
         } else if (MATCHES(sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis))) {
@@ -624,6 +627,9 @@ namespace pl::core {
     }
 
     std::unique_ptr<ast::ASTNode> Parser::parseFunctionConditional() {
+        if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
+            err::P0002.throwError(fmt::format("Expected '(' after 'if', got {}.", getFormattedToken(0)), {}, 1);
+
         auto condition = parseMathematicalExpression();
         std::vector<std::unique_ptr<ast::ASTNode>> trueBody, falseBody;
 
@@ -684,6 +690,9 @@ namespace pl::core {
 
     // if ((parseMathematicalExpression)) { (parseMember) }
     std::unique_ptr<ast::ASTNode> Parser::parseConditional() {
+        if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
+            err::P0002.throwError(fmt::format("Expected '(' after 'if', got {}.", getFormattedToken(0)), {}, 1);
+
         auto condition = parseMathematicalExpression();
         std::vector<std::unique_ptr<ast::ASTNode>> trueBody, falseBody;
 
@@ -1014,7 +1023,7 @@ namespace pl::core {
             }
         } else if (MATCHES(sequence(tkn::ValueType::Padding, tkn::Separator::LeftBracket)))
             member = parsePadding();
-        else if (MATCHES(sequence(tkn::Keyword::If, tkn::Separator::LeftParenthesis)))
+        else if (MATCHES(sequence(tkn::Keyword::If)))
             return parseConditional();
         else if (MATCHES(oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue)))
             member = parseFunctionControlFlowStatement();
@@ -1160,7 +1169,10 @@ namespace pl::core {
                 parseAttribute(dynamic_cast<ast::Attributable *>(result.get()));
         } else if (MATCHES(sequence(tkn::ValueType::Padding, tkn::Operator::Colon))) {
             result = create(new ast::ASTNodeBitfieldField("$padding$", parseMathematicalExpression()));
-        } else if (MATCHES(sequence(tkn::Keyword::If, tkn::Separator::LeftParenthesis))) {
+        } else if (MATCHES(sequence(tkn::Keyword::If))) {
+            if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
+                err::P0002.throwError(fmt::format("Expected '(' after 'if', got {}.", getFormattedToken(0)), {}, 1);
+
             auto condition = parseMathematicalExpression();
             std::vector<std::unique_ptr<ast::ASTNode>> trueBody, falseBody;
 
@@ -1194,10 +1206,13 @@ namespace pl::core {
 
     // bitfield Identifier { <Identifier : (parseMathematicalExpression)[;]...> }
     std::shared_ptr<ast::ASTNodeTypeDecl> Parser::parseBitfield() {
-        std::string typeName = getValue<Token::Identifier>(-2).get();
+        std::string typeName = getValue<Token::Identifier>(-1).get();
 
         auto typeDecl     = addType(typeName, create(new ast::ASTNodeBitfield()));
         auto bitfieldNode = static_cast<ast::ASTNodeBitfield *>(typeDecl->getType().get());
+
+        if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
+            err::P0002.throwError(fmt::format("Expected '{{' after bitfield declaration, got {}.", getFormattedToken(0)), {}, 1);
 
         while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
             bitfieldNode->addEntry(this->parseBitfieldEntry());
@@ -1404,9 +1419,9 @@ namespace pl::core {
             statement = parseUnion();
         else if (MATCHES(sequence(tkn::Keyword::Enum, tkn::Literal::Identifier)))
             statement = parseEnum();
-        else if (MATCHES(sequence(tkn::Keyword::Bitfield, tkn::Literal::Identifier, tkn::Separator::LeftBrace)))
+        else if (MATCHES(sequence(tkn::Keyword::Bitfield, tkn::Literal::Identifier)))
             statement = parseBitfield();
-        else if (MATCHES(sequence(tkn::Keyword::Function, tkn::Literal::Identifier, tkn::Separator::LeftParenthesis)))
+        else if (MATCHES(sequence(tkn::Keyword::Function, tkn::Literal::Identifier)))
             statement = parseFunctionDefinition();
         else if (MATCHES(sequence(tkn::Keyword::Namespace)))
             return parseNamespace();
