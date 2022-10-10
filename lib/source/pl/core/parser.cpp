@@ -766,7 +766,11 @@ namespace pl::core {
 
                         auto parameter = templateTypes[index];
                         if (auto type = dynamic_cast<ast::ASTNodeTypeDecl*>(parameter.get()); type != nullptr) {
-                            type->setType(parseType(true));
+                            auto newType = parseType(true);
+                            if (newType->isForwardDeclared())
+                                err::P0002.throwError("Cannot use forward declared type as template parameter.", {}, 1);
+
+                            type->setType(std::move(newType), true);
                             type->setName("");
                         } else if (auto value = dynamic_cast<ast::ASTNodeLValueAssignment*>(parameter.get()); value != nullptr) {
                             value->setRValue(parseMathematicalExpression(true));

@@ -10,7 +10,7 @@ namespace pl::core::ast {
     class ASTNodeTypeDecl : public ASTNode,
                             public Attributable {
     public:
-        explicit ASTNodeTypeDecl(std::string name) : m_forwardDeclared(true), m_name(std::move(name)) { }
+        explicit ASTNodeTypeDecl(std::string name) : m_forwardDeclared(true), m_valid(false), m_name(std::move(name)) { }
 
         ASTNodeTypeDecl(std::string name, std::shared_ptr<ASTNode> type, std::optional<std::endian> endian = std::nullopt, bool reference = false)
             : ASTNode(), m_name(std::move(name)), m_type(std::move(type)), m_endian(endian), m_reference(reference) { }
@@ -18,8 +18,12 @@ namespace pl::core::ast {
         ASTNodeTypeDecl(const ASTNodeTypeDecl &other) : ASTNode(other), Attributable(other) {
             this->m_name                = other.m_name;
 
-            if (other.m_type != nullptr)
-                this->m_type = other.m_type->clone();
+            if (other.m_type != nullptr) {
+                if (auto typeDecl = dynamic_cast<ASTNodeTypeDecl*>(other.m_type.get()); typeDecl != nullptr && typeDecl->isForwardDeclared() && !typeDecl->isTemplateType())
+                    this->m_type = other.m_type;
+                else
+                    this->m_type = other.m_type->clone();
+            }
 
             this->m_endian              = other.m_endian;
             this->m_forwardDeclared     = other.m_forwardDeclared;
@@ -39,7 +43,7 @@ namespace pl::core::ast {
         }
         [[nodiscard]] const std::string &getName() const { return this->m_name; }
         [[nodiscard]] const std::shared_ptr<ASTNode> &getType() const {
-            if (this->isForwardDeclared())
+            if (!this->isValid())
                 err::E0004.throwError(fmt::format("Cannot use incomplete type '{}' before it has been defined.", this->m_name), "Try defining this type further up in your code before trying to instantiate it.", this);
 
             return this->m_type;
@@ -95,13 +99,21 @@ namespace pl::core::ast {
         }
 
         void addAttribute(std::unique_ptr<ASTNodeAttribute> &&attribute) override {
-            if (!this->isForwardDeclared()) {
+            if (!this->isValid()) {
                 if (auto attributable = dynamic_cast<Attributable *>(this->getType().get()); attributable != nullptr) {
                     attributable->addAttribute(std::unique_ptr<ASTNodeAttribute>(static_cast<ASTNodeAttribute *>(attribute->clone().release())));
                 }
             }
 
             Attributable::addAttribute(std::move(attribute));
+        }
+
+        [[nodiscard]] bool isValid() const {
+            return this->m_valid;
+        }
+
+        [[nodiscard]] bool isTemplateType() const {
+            return this->m_templateType;
         }
 
         [[nodiscard]] bool isForwardDeclared() const {
@@ -112,8 +124,9 @@ namespace pl::core::ast {
             return this->m_reference;
         }
 
-        void setType(std::shared_ptr<ASTNode> type) {
-            this->m_forwardDeclared = false;
+        void setType(std::shared_ptr<ASTNode> type, bool templateType = false) {
+            this->m_valid = true;
+            this->m_templateType = templateType;
             this->m_type = std::move(type);
         }
 
@@ -131,6 +144,9 @@ namespace pl::core::ast {
 
     private:
         bool m_forwardDeclared = false;
+        bool m_valid = true;
+        bool m_templateType = false;
+
         std::string m_name;
         std::shared_ptr<ASTNode> m_type;
         std::optional<std::endian> m_endian;
