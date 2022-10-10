@@ -430,7 +430,7 @@ namespace pl::core {
     /* Functions */
 
     std::unique_ptr<ast::ASTNode> Parser::parseFunctionDefinition() {
-        const auto &functionName = getValue<Token::Identifier>(-2).get();
+        const auto &functionName = getValue<Token::Identifier>(-1).get();
         std::vector<std::pair<std::string, std::unique_ptr<ast::ASTNode>>> params;
         std::optional<std::string> parameterPack;
 
@@ -1206,7 +1206,7 @@ namespace pl::core {
 
     // bitfield Identifier { <Identifier : (parseMathematicalExpression)[;]...> }
     std::shared_ptr<ast::ASTNodeTypeDecl> Parser::parseBitfield() {
-        std::string typeName = getValue<Token::Identifier>(-2).get();
+        std::string typeName = getValue<Token::Identifier>(-1).get();
 
         auto typeDecl     = addType(typeName, create(new ast::ASTNodeBitfield()));
         auto bitfieldNode = static_cast<ast::ASTNodeBitfield *>(typeDecl->getType().get());
