@@ -26,10 +26,7 @@ namespace pl::core::ast {
             this->m_reference           = other.m_reference;
 
             for (const auto &templateParameter : other.m_templateParameters) {
-                if (dynamic_cast<ASTNodeTypeDecl*>(templateParameter.get()) != nullptr)
-                    this->m_templateParameters.push_back(templateParameter);
-                else
-                    this->m_templateParameters.push_back(templateParameter->clone());
+                this->m_templateParameters.push_back(templateParameter->clone());
             }
         }
 
