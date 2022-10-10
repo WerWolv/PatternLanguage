@@ -434,6 +434,9 @@ namespace pl::core {
         std::vector<std::pair<std::string, std::unique_ptr<ast::ASTNode>>> params;
         std::optional<std::string> parameterPack;
 
+        if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
+            err::P0002.throwError(fmt::format("Expected '(' after function declaration, got {}.", getFormattedToken(0)), {}, 1);
+
         // Parse parameter list
         bool hasParams        = !peek(tkn::Separator::RightParenthesis);
         u32 unnamedParamCount = 0;
@@ -1409,7 +1412,7 @@ namespace pl::core {
             statement = parseEnum();
         else if (MATCHES(sequence(tkn::Keyword::Bitfield, tkn::Literal::Identifier)))
             statement = parseBitfield();
-        else if (MATCHES(sequence(tkn::Keyword::Function, tkn::Literal::Identifier, tkn::Separator::LeftParenthesis)))
+        else if (MATCHES(sequence(tkn::Keyword::Function, tkn::Literal::Identifier)))
             statement = parseFunctionDefinition();
         else if (MATCHES(sequence(tkn::Keyword::Namespace)))
             return parseNamespace();
