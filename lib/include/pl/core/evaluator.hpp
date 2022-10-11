@@ -97,7 +97,10 @@ namespace pl::core {
         }
 
         void pushTemplateParameters() {
-            this->m_templateParameters.emplace_back();
+            if (this->m_templateParameters.empty())
+                this->m_templateParameters.emplace_back();
+            else
+                this->m_templateParameters.push_back(this->m_templateParameters.back());
         }
 
         void popTemplateParameters() {
