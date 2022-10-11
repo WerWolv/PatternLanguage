@@ -49,18 +49,20 @@ namespace pl::core::ast {
 
             auto variables         = *evaluator->getScope(0).scope;
 
+            auto scopeGuard = PL_SCOPE_GUARD {
+                evaluator->popScope();
+            };
+
             if (this->m_newScope) {
                 evaluator->pushScope(nullptr, variables);
+            } else {
+                scopeGuard.release();
             }
 
             for (const auto &statement : this->m_statements) {
                 result = statement->execute(evaluator);
                 if (evaluator->getCurrentControlFlowStatement() != ControlFlowStatement::None)
-                    return result;
-            }
-
-            if (this->m_newScope) {
-                evaluator->popScope();
+                    break;
             }
 
             return result;
