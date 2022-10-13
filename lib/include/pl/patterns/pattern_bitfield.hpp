@@ -86,7 +86,8 @@ namespace pl::ptrn {
     };
 
     class PatternBitfield : public Pattern,
-                            public Inlinable {
+                            public Inlinable,
+                            public Iteratable {
     public:
         PatternBitfield(core::Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
             : Pattern(evaluator, offset, size, color) {
@@ -236,6 +237,19 @@ namespace pl::ptrn {
             }
 
             return this->formatDisplayValue(fmt::format("{{ {} }}", valueString), this);
+        }
+
+        std::shared_ptr<Pattern> getEntry(size_t index) const override {
+            return this->m_fields[index];
+        }
+
+        size_t getEntryCount() const override {
+            return this->m_fields.size();
+        }
+
+        void forEachEntry(u64 start, u64 end, const std::function<void (u64, Pattern *)> &callback) override {
+            for (auto i = start; i < end; i++)
+                callback(i, this->getEntry(i).get());
         }
 
     private:

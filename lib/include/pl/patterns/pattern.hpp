@@ -25,7 +25,7 @@ namespace pl::ptrn {
 
     class Iteratable {
     public:
-        [[nodiscard]] virtual Pattern* getEntry(size_t index) const = 0;
+        [[nodiscard]] virtual std::shared_ptr<Pattern> getEntry(size_t index) const = 0;
         virtual void forEachEntry(u64 start, u64 end, const std::function<void(u64, Pattern*)> &callback) = 0;
         [[nodiscard]] virtual size_t getEntryCount() const = 0;
     };

@@ -21,10 +21,10 @@ namespace pl::ptrn {
             return std::unique_ptr<Pattern>(new PatternArrayStatic(*this));
         }
 
-        [[nodiscard]] Pattern* getEntry(size_t index) const override {
+        [[nodiscard]] std::shared_ptr<Pattern> getEntry(size_t index) const override {
             this->m_highlightTemplate->setOffset(this->getOffset() + index * this->m_highlightTemplate->getSize());
 
-            return this->m_highlightTemplate.get();
+            return this->m_highlightTemplate;
         }
 
         void forEachEntry(u64 start, u64 end, const std::function<void(u64, Pattern*)>& fn) override {
@@ -186,7 +186,7 @@ namespace pl::ptrn {
 
     private:
         std::shared_ptr<Pattern> m_template = nullptr;
-        std::unique_ptr<Pattern> m_highlightTemplate = nullptr;
+        std::shared_ptr<Pattern> m_highlightTemplate = nullptr;
         size_t m_entryCount = 0;
 
         std::map<u64, std::string> m_formatCache;

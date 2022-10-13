@@ -71,6 +71,7 @@ namespace pl::ptrn {
             return this->formatDisplayValue(fmt::format("\"{0}\" {1}", utf8String, size > this->getSize() ? "(truncated)" : ""), utf8String);
         }
 
+    private:
 
     };
 

@@ -76,8 +76,8 @@ namespace pl::ptrn {
             Pattern::setReference(reference);
         }
 
-        [[nodiscard]] Pattern* getEntry(size_t index) const override {
-            return this->m_entries[index].get();
+        [[nodiscard]] std::shared_ptr<Pattern> getEntry(size_t index) const override {
+            return this->m_entries[index];
         }
 
         [[nodiscard]] size_t getEntryCount() const override {

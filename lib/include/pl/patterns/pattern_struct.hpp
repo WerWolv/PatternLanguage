@@ -25,8 +25,8 @@ namespace pl::ptrn {
             return std::unique_ptr<Pattern>(new PatternStruct(*this));
         }
 
-        [[nodiscard]] Pattern* getEntry(size_t index) const override {
-            return this->m_members[index].get();
+        [[nodiscard]] std::shared_ptr<Pattern> getEntry(size_t index) const override {
+            return this->m_members[index];
         }
 
         void forEachEntry(u64 start, u64 end, const std::function<void(u64, Pattern*)>& fn) override {

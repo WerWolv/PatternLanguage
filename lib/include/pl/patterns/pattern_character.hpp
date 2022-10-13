@@ -37,7 +37,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string toString() const override {
             auto value = this->getValue();
-            auto result = fmt::format("{}", char(core::Token::literalToCharacter(value)));
+            auto result = fmt::format("{}", hlp::encodeByteString({ u8(core::Token::literalToCharacter(value)) }));
 
             return this->formatDisplayValue(result, value);
         }
