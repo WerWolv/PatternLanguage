@@ -59,8 +59,28 @@ namespace pl::core::ast {
 
             for (auto &statement : body) {
                 auto result = statement->execute(evaluator);
+
                 if (auto ctrlStatement = evaluator->getCurrentControlFlowStatement(); ctrlStatement != ControlFlowStatement::None) {
-                    return result;
+                    if (!result.has_value())
+                        return std::nullopt;
+
+                    return std::visit(hlp::overloaded {
+                        [](const auto &value) -> FunctionResult {
+                            return value;
+                        },
+                        [evaluator](ptrn::Pattern *pattern) -> FunctionResult {
+                            auto clonedPattern = pattern->clone();
+                            auto result = clonedPattern.get();
+
+                            auto &prevScope = evaluator->getScope(-1);
+                            auto &currScope = evaluator->getScope(0);
+
+                            prevScope.savedPatterns.push_back(std::move(clonedPattern));
+                            prevScope.heapStartSize = currScope.heapStartSize = evaluator->getHeap().size();
+
+                            return result;
+                        }
+                    }, result.value());
                 }
             }
 

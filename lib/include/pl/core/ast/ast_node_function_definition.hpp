@@ -109,7 +109,24 @@ namespace pl::core::ast {
                         }
 
                         ctx->setCurrentControlFlowStatement(ControlFlowStatement::None);
-                        return result;
+
+                        return std::visit(hlp::overloaded {
+                                [](const auto &value) -> FunctionResult {
+                                    return value;
+                                },
+                                [ctx](ptrn::Pattern *pattern) -> FunctionResult {
+                                    auto clonedPattern = pattern->clone();
+                                    auto result = clonedPattern.get();
+
+                                    auto &prevScope = ctx->getScope(-1);
+                                    auto &currScope = ctx->getScope(0);
+
+                                    prevScope.savedPatterns.push_back(std::move(clonedPattern));
+                                    prevScope.heapStartSize = currScope.heapStartSize = ctx->getHeap().size();
+
+                                    return result;
+                                }
+                        }, result.value());
                     }
                 }
 

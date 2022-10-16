@@ -158,7 +158,7 @@ namespace pl::core {
                     std::memcpy(buffer, storage.data() + storageAddress, size);
                 }
                 else
-                    err::E0011.throwError(fmt::format("Tried accessing out of bounds heap cell at address {}. This is a bug.", address));
+                    err::E0011.throwError(fmt::format("Tried accessing out of bounds heap cell {}. This is a bug.", heapAddress));
             } else {
                 if (address < this->m_dataBaseAddress + this->m_dataSize)
                     this->m_readerFunction(address, reinterpret_cast<u8*>(buffer), size);
