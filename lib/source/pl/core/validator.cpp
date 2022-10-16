@@ -40,19 +40,19 @@ namespace pl::core {
                     if (!identifiers.insert(variableDeclNode->getName()).second)
                         err::V0002.throwError(fmt::format("Redefinition of identifier '{0}'", variableDeclNode->getName()));
 
-                    if (!this->validate(sourceCode, hlp::moveToVector<std::shared_ptr<ast::ASTNode>>(variableDeclNode->getType()->clone())))
+                    if (!this->validate(sourceCode, { variableDeclNode->getType() }))
                         return false;
                 } else if (auto arrayVariableDeclNode = dynamic_cast<ast::ASTNodeArrayVariableDecl *>(node.get()); arrayVariableDeclNode != nullptr) {
                     if (!identifiers.insert(arrayVariableDeclNode->getName()).second)
                         err::V0002.throwError(fmt::format("Redefinition of identifier '{0}'", arrayVariableDeclNode->getName()));
 
-                    if (!this->validate(sourceCode, hlp::moveToVector<std::shared_ptr<ast::ASTNode>>(arrayVariableDeclNode->getType()->clone())))
+                    if (!this->validate(sourceCode, { arrayVariableDeclNode->getType() }))
                         return false;
                 } else if (auto pointerVariableDecl = dynamic_cast<ast::ASTNodePointerVariableDecl *>(node.get()); pointerVariableDecl != nullptr) {
                     if (!identifiers.insert(pointerVariableDecl->getName()).second)
                         err::V0002.throwError(fmt::format("Redefinition of identifier '{0}'", pointerVariableDecl->getName()));
 
-                    if (!this->validate(sourceCode, hlp::moveToVector<std::shared_ptr<ast::ASTNode>>(pointerVariableDecl->getType()->clone())))
+                    if (!this->validate(sourceCode, { pointerVariableDecl->getType() }))
                         return false;
                 } else if (auto bitfieldFieldDecl = dynamic_cast<ast::ASTNodeBitfieldField *>(node.get()); bitfieldFieldDecl != nullptr) {
                     if (!identifiers.insert(bitfieldFieldDecl->getName()).second)
@@ -62,7 +62,7 @@ namespace pl::core {
                         return false;
                 } else if (auto typeDeclNode = dynamic_cast<ast::ASTNodeTypeDecl *>(node.get()); typeDeclNode != nullptr) {
                     if (!typeDeclNode->isForwardDeclared())
-                        if (!this->validate(sourceCode, hlp::moveToVector<std::shared_ptr<ast::ASTNode>>(typeDeclNode->getType()->clone())))
+                        if (!this->validate(sourceCode, { typeDeclNode->getType() }))
                             return false;
                 } else if (auto structNode = dynamic_cast<ast::ASTNodeStruct *>(node.get()); structNode != nullptr) {
                     if (!this->validate(sourceCode, structNode->getMembers()))
