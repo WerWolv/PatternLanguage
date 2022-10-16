@@ -132,9 +132,11 @@ namespace pl::ptrn {
                 entryCount++;
             }
 
-            // Remove trailing ", "
-            result.pop_back();
-            result.pop_back();
+            if (entryCount > 0) {
+                // Remove trailing ", "
+                result.pop_back();
+                result.pop_back();
+            }
 
             result += " ]";
 

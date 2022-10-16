@@ -175,9 +175,11 @@ namespace pl::ptrn {
                 result += fmt::format("{}, ", entry->toString());
             }
 
-            // Remove trailing ", "
-            result.pop_back();
-            result.pop_back();
+            if (this->m_entryCount > 0) {
+                // Remove trailing ", "
+                result.pop_back();
+                result.pop_back();
+            }
 
             result += " ]";
 
