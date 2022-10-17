@@ -110,7 +110,10 @@ namespace pl::core::ast {
 
                         ctx->setCurrentControlFlowStatement(ControlFlowStatement::None);
 
-                        return std::visit(hlp::overloaded {
+                        if (!result.has_value())
+                            return std::nullopt;
+                        else
+                            return std::visit(hlp::overloaded {
                                 [](const auto &value) -> FunctionResult {
                                     return value;
                                 },
@@ -126,7 +129,7 @@ namespace pl::core::ast {
 
                                     return result;
                                 }
-                        }, result.value());
+                            }, result.value());
                     }
                 }
 
