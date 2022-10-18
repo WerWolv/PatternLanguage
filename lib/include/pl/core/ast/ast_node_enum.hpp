@@ -33,12 +33,16 @@ namespace pl::core::ast {
                 const auto minNode = min->evaluate(evaluator);
                 const auto maxNode = max->evaluate(evaluator);
 
-                auto minLiteral = dynamic_cast<ASTNodeLiteral *>(minNode.get());
-                auto maxLiteral = dynamic_cast<ASTNodeLiteral *>(maxNode.get());
+                auto minLiteral = dynamic_cast<ASTNodeLiteral *>(minNode.get())->getValue();
+                auto maxLiteral = dynamic_cast<ASTNodeLiteral *>(maxNode.get())->getValue();
+
+                // Check that the enum values can be converted to integers
+                (void)Token::literalToUnsigned(minLiteral);
+                (void)Token::literalToUnsigned(maxLiteral);
 
                 enumEntries.push_back(ptrn::PatternEnum::EnumValue{
-                    minLiteral->getValue(),
-                    maxLiteral->getValue(),
+                    minLiteral,
+                    maxLiteral,
                     name
                 });
             }

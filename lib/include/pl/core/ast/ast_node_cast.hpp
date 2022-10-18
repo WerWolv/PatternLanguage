@@ -50,7 +50,18 @@ namespace pl::core::ast {
 
             return std::unique_ptr<ASTNode>(std::visit(hlp::overloaded {
                 [&, this](ptrn::Pattern *value) -> ASTNode * { err::E0004.throwError(fmt::format("Cannot cast value of type '{}' to type '{}'.", value->getTypeName(), Token::getTypeName(type)), {}, this); },
-                [&, this](std::string &) -> ASTNode * { err::E0004.throwError(fmt::format("Cannot cast value of type 'str' to type '{}'.", Token::getTypeName(type)), {}, this); },
+                [&, this](std::string &value) -> ASTNode * {
+                    if (Token::isUnsigned(type)) {
+                        if (value.size() > sizeof(u128))
+                            err::E0004.throwError(fmt::format("Cannot cast value of type 'str' of size {} to type '{}' of size {}.", value.size(), Token::getTypeName(type), Token::getTypeSize(type)), {}, this);
+                        u128 result = 0;
+                        std::memcpy(&result, value.data(), value.size());
+
+                        auto endianAdjustedValue = hlp::changeEndianess(result & hlp::bitmask(Token::getTypeSize(type) * 8), value.size(), typePattern->getEndian());
+                        return new ASTNodeLiteral(endianAdjustedValue);
+                    } else
+                        err::E0004.throwError(fmt::format("Cannot cast value of type 'str' to type '{}'.", Token::getTypeName(type)), {}, this);
+                },
                 [&, this](auto &&value) -> ASTNode * {
                    auto endianAdjustedValue = hlp::changeEndianess(value, typePattern->getSize(), typePattern->getEndian());
                    switch (type) {
