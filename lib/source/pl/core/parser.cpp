@@ -1469,9 +1469,11 @@ namespace pl::core {
 
     // <(parseNamespace)...> EndOfProgram
     std::optional<std::vector<std::shared_ptr<ast::ASTNode>>> Parser::parse(const std::string &sourceCode, const std::vector<Token> &tokens) {
-        this->m_curr = tokens.begin();
+        this->m_curr = this->m_originalPosition = this->m_partOriginalPosition = tokens.begin();
 
         this->m_types.clear();
+        this->m_currTemplateType.clear();
+        this->m_matchedOptionals.clear();
 
         this->m_currNamespace.clear();
         this->m_currNamespace.emplace_back();

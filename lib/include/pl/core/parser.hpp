@@ -31,9 +31,10 @@ namespace pl::core {
         std::optional<err::PatternLanguageError> m_error;
         TokenIter m_curr;
         TokenIter m_originalPosition, m_partOriginalPosition;
-        std::vector<std::shared_ptr<ast::ASTNodeTypeDecl>> m_currTemplateType;
 
+        std::vector<std::shared_ptr<ast::ASTNodeTypeDecl>> m_currTemplateType;
         std::unordered_map<std::string, std::shared_ptr<ast::ASTNodeTypeDecl>> m_types;
+
         std::vector<TokenIter> m_matchedOptionals;
         std::vector<std::vector<std::string>> m_currNamespace;
 
