@@ -114,17 +114,17 @@ namespace pl::core {
                 err::E0003.throwError("Cannot determine type of 'auto' variable.", "Try initializing it directly with a literal.", type);
 
             if (std::get_if<u128>(&value.value()) != nullptr)
-                pattern = std::unique_ptr<ptrn::Pattern>(new ptrn::PatternUnsigned(this, 0, sizeof(u128)));
+                pattern = std::make_shared<ptrn::PatternUnsigned>(this, 0, sizeof(u128));
             else if (std::get_if<i128>(&value.value()) != nullptr)
-                pattern = std::unique_ptr<ptrn::Pattern>(new ptrn::PatternSigned(this, 0, sizeof(i128)));
+                pattern = std::make_shared<ptrn::PatternSigned>(this, 0, sizeof(i128));
             else if (std::get_if<double>(&value.value()) != nullptr)
-                pattern = std::unique_ptr<ptrn::Pattern>(new ptrn::PatternFloat(this, 0, sizeof(double)));
+                pattern = std::make_shared<ptrn::PatternFloat>(this, 0, sizeof(double));
             else if (std::get_if<bool>(&value.value()) != nullptr)
-                pattern = std::unique_ptr<ptrn::Pattern>(new ptrn::PatternBoolean(this, 0));
+                pattern = std::make_shared<ptrn::PatternBoolean>(this, 0);
             else if (std::get_if<char>(&value.value()) != nullptr)
-                pattern = std::unique_ptr<ptrn::Pattern>(new ptrn::PatternCharacter(this, 0));
+                pattern = std::make_shared<ptrn::PatternCharacter>(this, 0);
             else if (std::get_if<std::string>(&value.value()) != nullptr)
-                pattern = std::unique_ptr<ptrn::Pattern>(new ptrn::PatternString(this, 0, 1));
+                pattern = std::make_shared<ptrn::PatternString>(this, 0, 1);
             else if (auto patternValue = std::get_if<ptrn::Pattern *>(&value.value()); patternValue != nullptr)
                 pattern       = (*patternValue)->clone();
             else
