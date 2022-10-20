@@ -19,7 +19,7 @@ namespace pl::core::ast {
             this->m_name                = other.m_name;
 
             if (other.m_type != nullptr) {
-                if (auto typeDecl = dynamic_cast<ASTNodeTypeDecl*>(other.m_type.get()); typeDecl != nullptr && typeDecl->isForwardDeclared() && !typeDecl->isTemplateType())
+                if (auto typeDecl = dynamic_cast<ASTNodeTypeDecl*>(other.m_type.get()); (typeDecl != nullptr && typeDecl->isForwardDeclared() && !typeDecl->isTemplateType()) || other.m_completed)
                     this->m_type = other.m_type;
                 else
                     this->m_type = other.m_type->clone();
@@ -28,6 +28,8 @@ namespace pl::core::ast {
             this->m_endian              = other.m_endian;
             this->m_forwardDeclared     = other.m_forwardDeclared;
             this->m_reference           = other.m_reference;
+            this->m_completed           = other.m_completed;
+            this->m_valid               = other.m_valid;
 
             for (const auto &templateParameter : other.m_templateParameters) {
                 this->m_templateParameters.push_back(templateParameter->clone());
@@ -124,6 +126,10 @@ namespace pl::core::ast {
             return this->m_reference;
         }
 
+        void setCompleted() {
+            this->m_completed = true;
+        }
+
         void setType(std::shared_ptr<ASTNode> type, bool templateType = false) {
             this->m_valid = true;
             this->m_templateType = templateType;
@@ -146,6 +152,7 @@ namespace pl::core::ast {
         bool m_forwardDeclared = false;
         bool m_valid = true;
         bool m_templateType = false;
+        bool m_completed = false;
 
         std::string m_name;
         std::shared_ptr<ASTNode> m_type;

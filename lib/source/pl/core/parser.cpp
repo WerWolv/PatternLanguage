@@ -1482,6 +1482,9 @@ namespace pl::core {
             if (this->m_curr != tokens.end())
                 err::P0002.throwError("Failed to parse entire input.", "Parsing stopped due to an invalid sequence before the entire input could be parsed. This is most likely a bug.", 1);
 
+            for (auto &type : this->m_types)
+                type.second->setCompleted();
+
             return program;
         } catch (err::ParserError::Exception &e) {
             this->m_curr -= e.getUserData();
