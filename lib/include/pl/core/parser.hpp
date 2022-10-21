@@ -25,7 +25,9 @@ namespace pl::core {
         ~Parser() = default;
 
         std::optional<std::vector<std::shared_ptr<ast::ASTNode>>> parse(const std::string &sourceCode, const std::vector<Token> &tokens);
+
         const std::optional<err::PatternLanguageError> &getError() { return this->m_error; }
+        const auto &getTypes() { return this->m_types; }
 
     private:
         std::optional<err::PatternLanguageError> m_error;
@@ -33,7 +35,7 @@ namespace pl::core {
         TokenIter m_originalPosition, m_partOriginalPosition;
 
         std::vector<std::shared_ptr<ast::ASTNodeTypeDecl>> m_currTemplateType;
-        std::unordered_map<std::string, std::shared_ptr<ast::ASTNodeTypeDecl>> m_types;
+        std::map<std::string, std::shared_ptr<ast::ASTNodeTypeDecl>> m_types;
 
         std::vector<TokenIter> m_matchedOptionals;
         std::vector<std::vector<std::string>> m_currNamespace;
