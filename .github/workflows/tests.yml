@@ -10,6 +10,9 @@ jobs:
   tests:
     name: 🧪 Unit Tests
     runs-on: ubuntu-22.04
+    env:
+      DISPATCH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     permissions:
       actions: read
       contents: read
@@ -53,7 +56,7 @@ jobs:
         ctest --output-on-failure
 
     - name: ✉️ Run ImHex-Patterns tests
-      if: ${{ github.repository_owner == 'WerWolv' }}
+      if: ${{ env.DISPATCH_TOKEN != '' }}
       uses: mvasigh/dispatch-action@main
       with:
         token: ${{ secrets.DISPATCH_TOKEN }}
@@ -62,13 +65,13 @@ jobs:
         event_type: run_tests
 
     - name: ⚗️ Generate Coverage Report
-      if: ${{ github.repository_owner == 'WerWolv' }}
+      if: ${{ env.DISPATCH_TOKEN != '' }}
       run: |
         cd build
         lcov -d ./lib --gcov-tool /usr/bin/gcov-12 -c -o coverage.info
 
     - name: ⬆️ Upload Coverage Report
-      if: ${{ github.repository_owner == 'WerWolv' }}
+      if: ${{ env.GITHUB_TOKEN != '' }}
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
