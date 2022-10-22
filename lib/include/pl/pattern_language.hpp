@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <bit>
+#include <chrono>
 #include <map>
 #include <optional>
 #include <string>
@@ -63,6 +64,7 @@ namespace pl {
         [[nodiscard]] std::pair<bool, std::optional<core::Token::Literal>> executeFunction(const std::string &code);
         [[nodiscard]] const std::vector<std::shared_ptr<core::ast::ASTNode>> &getCurrentAST() const;
 
+
         void abort();
 
         void setDataSource(std::function<void(u64, u8*, size_t)> readFunction, u64 baseAddress, u64 size) const;
@@ -90,7 +92,7 @@ namespace pl {
 
         void reset();
         [[nodiscard]] bool isRunning() const { return this->m_running; }
-
+        [[nodiscard]] const std::chrono::duration<double> & getLastRunningTime() const { return this->m_runningTime; }
 
         void addFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) const;
         void addDangerousFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) const;
@@ -116,6 +118,7 @@ namespace pl {
 
         std::optional<u64> m_startAddress;
         std::endian m_defaultEndian = std::endian::little;
+        std::chrono::duration<double> m_runningTime = std::chrono::duration<double>::zero();
     };
 
 }

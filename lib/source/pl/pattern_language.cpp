@@ -79,6 +79,12 @@ namespace pl {
     }
 
     bool PatternLanguage::executeString(std::string code, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
+        auto startTime = std::chrono::high_resolution_clock::now();
+        PL_ON_SCOPE_EXIT {
+            auto endTime = std::chrono::high_resolution_clock::now();
+            this->m_runningTime = std::chrono::duration_cast<std::chrono::duration<double>>(endTime - startTime);
+        };
+
         code = hlp::replaceAll(code, "\r\n", "\n");
         code = hlp::replaceAll(code, "\t", "    ");
 
@@ -120,14 +126,13 @@ namespace pl {
             return false;
         }
 
-        if (auto mainResult = evaluator->getMainResult(); checkResult && mainResult.has_value()) {
-            auto returnCode = core::Token::literalToSigned(*mainResult);
+        auto returnCode = core::Token::literalToSigned(evaluator->getMainResult().value_or(0));
+        evaluator->getConsole().log(core::LogConsole::Level::Info, fmt::format("Pattern exited with code: {}", returnCode));
 
-            if (returnCode != 0) {
-                this->m_currError = core::err::PatternLanguageError(core::err::E0009.format(fmt::format("Pattern exited with non-zero result: {}", returnCode)), 0, 1);
+        if (checkResult && returnCode != 0) {
+            this->m_currError = core::err::PatternLanguageError(core::err::E0009.format(fmt::format("Pattern exited with non-zero result: {}", returnCode)), 0, 1);
 
-                return false;
-            }
+            return false;
         }
 
         this->m_patterns = evaluator->getPatterns();
