@@ -166,7 +166,8 @@ namespace pl::core {
                     std::memset(buffer, 0x00, size);
             }
 
-            this->m_console.log(LogConsole::Level::Debug, fmt::format("Reading {} bytes from {} address 0x{:02X}", address, local ? "local" : "data", size));
+            if (this->isDebugModeEnabled())
+                this->m_console.log(LogConsole::Level::Debug, fmt::format("Reading {} bytes from {} address 0x{:02X}", address, local ? "local" : "data", size));
         }
 
         void setDefaultEndian(std::endian endian) {
