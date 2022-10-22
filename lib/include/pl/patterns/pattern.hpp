@@ -237,7 +237,9 @@ namespace pl::ptrn {
                 auto startOffset = currOffset;
                 currOffset = this->getOffset();
 
+                auto savedScope = this->getEvaluator()->getScope(0);
                 this->m_cachedDisplayValue = calcDisplayValue(value, literal);
+                this->getEvaluator()->getScope(0) = savedScope;
 
                 currOffset = startOffset;
             }

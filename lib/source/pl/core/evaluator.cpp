@@ -486,6 +486,8 @@ namespace pl::core {
                     else
                         this->setCurrentControlFlowStatement(ControlFlowStatement::None);
                 }
+
+                this->getScope(0).savedPatterns.clear();
             }
 
             stop_evaluation:
