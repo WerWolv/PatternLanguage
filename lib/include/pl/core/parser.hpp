@@ -48,10 +48,18 @@ namespace pl::core {
             return this->m_curr[index].column;
         }
 
-        template<typename T>
-        std::unique_ptr<T> create(T *node) {
-            node->setSourceLocation(this->getLine(-1), this->getColumn(-1));
-            return std::unique_ptr<T>(node);
+        template<typename T, typename...Ts>
+        std::unique_ptr<T> create(Ts&&... ts) {
+            auto temp = std::make_unique<T>(std::forward<Ts>(ts)...);
+            temp->setSourceLocation(this->getLine(-1), this->getColumn(-1));
+            return temp;
+        }
+
+        template<typename T, typename...Ts>
+        std::shared_ptr<T> createShared(Ts&&... ts) {
+            auto temp = std::make_shared<T>(std::forward<Ts>(ts)...);
+            temp->setSourceLocation(this->getLine(-1), this->getColumn(-1));
+            return temp;
         }
 
         template<typename T>
