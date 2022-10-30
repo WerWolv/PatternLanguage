@@ -52,9 +52,9 @@ namespace pl::gen::fmt {
         void formatArray(T *pattern) {
             addLine(pattern->getVariableName());
             pushIndent();
-            pattern->forEachArrayEntry(pattern->getEntryCount(), [&](u64, auto &member) {
+            pattern->forEachEntry(0, pattern->getEntryCount(), [&](u64, auto member) {
                 this->m_inArray = true;
-                member.accept(*this);
+                member->accept(*this);
             });
             popIndent();
         }
@@ -77,8 +77,8 @@ namespace pl::gen::fmt {
                 for (const auto &[name, value] : this->getMetaInformation(pattern))
                     addLine(name, ::fmt::format("\"{}\"", value));
 
-                pattern->forEachMember([&](auto &member) {
-                    member.accept(*this);
+                pattern->forEachEntry(0, pattern->getEntryCount(), [&](u64, auto member) {
+                    member->accept(*this);
                 });
                 popIndent();
             }
@@ -107,8 +107,6 @@ namespace pl::gen::fmt {
         bool m_inArray = false;
         std::string m_result;
         u32 m_indent = 0;
-
-        bool m_metaInformation = false;
     };
 
     class FormatterYaml : public Formatter {
