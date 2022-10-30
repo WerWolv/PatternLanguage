@@ -197,7 +197,7 @@ namespace pl::ptrn {
             result += " { ";
 
             for (const auto &field : this->m_fields)
-                result += fmt::format("{}, ", field->toString());
+                result += fmt::format("{} = {}, ", field->getVariableName(), field->toString());
 
             // Remove trailing ", "
             result.pop_back();

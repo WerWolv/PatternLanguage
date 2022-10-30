@@ -111,7 +111,7 @@ namespace pl::ptrn {
             result += " { ";
 
             for (const auto &member : this->m_members)
-                result += fmt::format("{}, ", member->toString());
+                result += fmt::format("{} = {}, ", member->getVariableName(), member->toString());
 
             if (!this->m_members.empty()) {
                 // Remove trailing ", "
