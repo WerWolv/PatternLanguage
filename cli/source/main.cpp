@@ -23,7 +23,11 @@ int main(int argc, char** argv) {
         fmt::print("{}", app.help());
         return EXIT_FAILURE;
     } else if (argc == 2) {
-        auto subcommand = argv[1];
+        std::string subcommand = argv[1];
+        if (subcommand == "-h" || subcommand == "--help") {
+            fmt::print("{}", app.help());
+            return EXIT_FAILURE;
+        }
 
         try {
             fmt::print("{}\n", app.get_subcommand(subcommand)->help());
