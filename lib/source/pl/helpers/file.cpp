@@ -8,6 +8,12 @@
 
 namespace pl::hlp::fs {
 
+#if defined(OS_MACOS)
+    #define fopen64 fopen
+    #define fseeko64 fseeko
+    #define ftello64 ftello
+#endif
+
     File::File(const std::fs::path &path, Mode mode) noexcept : m_path(path) {
         #if defined(OS_WINDOWS)
             if (mode == File::Mode::Read)
@@ -19,12 +25,12 @@ namespace pl::hlp::fs {
                 this->m_file = _wfopen(path.c_str(), L"w+b");
         #else
             if (mode == File::Mode::Read)
-                    this->m_file = fopen64(path.string().c_str(), "rb");
-                else if (mode == File::Mode::Write)
-                    this->m_file = fopen64(path.string().c_str(), "r+b");
+                this->m_file = fopen64(path.string().c_str(), "rb");
+            else if (mode == File::Mode::Write)
+                this->m_file = fopen64(path.string().c_str(), "r+b");
 
-                if (mode == File::Mode::Create || (mode == File::Mode::Write && this->m_file == nullptr))
-                    this->m_file = fopen64(path.string().c_str(), "w+b");
+            if (mode == File::Mode::Create || (mode == File::Mode::Write && this->m_file == nullptr))
+                this->m_file = fopen64(path.string().c_str(), "w+b");
         #endif
     }
 
