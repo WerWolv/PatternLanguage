@@ -69,7 +69,6 @@ jobs:
         run: |
           brew install cmake
           brew install gcc@12
-          brew install llvm
 
       - name: 🛠️ Build
         run: |
@@ -80,8 +79,6 @@ jobs:
           cmake                                     \
             -DCMAKE_BUILD_TYPE=Debug                \
             -DCMAKE_INSTALL_PREFIX="$PWD/install"   \
-            -DCMAKE_C_FLAGS="-fuse-ld=lld"          \
-            -DCMAKE_CXX_FLAGS="-fuse-ld=lld"        \
             -DLIBPL_ENABLE_TESTS=OFF                \
             -DLIBPL_ENABLE_CLI=ON                   \
             ..

@@ -12,6 +12,7 @@ namespace pl::hlp::fs {
     #define fopen64 fopen
     #define fseeko64 fseeko
     #define ftello64 ftello
+    #define ftruncate64 ftruncate
 #endif
 
     File::File(const std::fs::path &path, Mode mode) noexcept : m_path(path) {
