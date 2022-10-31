@@ -10,8 +10,6 @@ namespace pl::hlp::fs {
 
 #if defined(OS_MACOS)
     #define fopen64 fopen
-    #define fseeko64 fseeko
-    #define ftello64 ftello
     #define ftruncate64 ftruncate
 #endif
 
