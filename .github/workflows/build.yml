@@ -1,0 +1,141 @@
+name: "Build"
+
+on:
+  push:
+    branches: [ '*' ]
+  pull_request:
+    branches: [ '*' ]
+
+jobs:
+  win:
+    name: 🪟 Windows
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - name: 🧰 Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: 🟦 Install msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: mingw64
+          pacboy: >-
+            gcc:p
+            lld:p
+            cmake:p
+            make:p
+
+      - name: 🛠️ Build
+        run: |
+          mkdir -p build
+          cd build
+          cmake -G "MinGW Makefiles"                \
+            -DCMAKE_BUILD_TYPE=Release              \
+            -DCMAKE_INSTALL_PREFIX="$PWD/install"   \
+            -DCMAKE_C_FLAGS="-fuse-ld=lld"          \
+            -DCMAKE_CXX_FLAGS="-fuse-ld=lld"        \
+            -DLIBPL_ENABLE_TESTS=OFF                \
+            -DLIBPL_ENABLE_CLI=ON                   \
+            ..
+          mingw32-make -j4 install DESTDIR=install
+
+      - name: ⬆️ Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: Linux
+          path: |
+            build/install/*
+
+  macos:
+    name: 🍎 macOS
+    runs-on: macos-11
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+      - name: 🧰 Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: ⬇️ Install dependencies
+        run: |
+          brew install cmake
+          brew install gcc@12
+          brew install llvm
+
+      - name: 🛠️ Build
+        run: |
+          mkdir -p build
+          cd build
+          CC=$(brew --prefix gcc@12)/bin/gcc-12     \
+          CXX=$(brew --prefix gcc@12)/bin/g++-12    \
+          cmake                                     \
+            -DCMAKE_BUILD_TYPE=Debug                \
+            -DCMAKE_INSTALL_PREFIX="$PWD/install"   \
+            -DCMAKE_C_FLAGS="-fuse-ld=lld"          \
+            -DCMAKE_CXX_FLAGS="-fuse-ld=lld"        \
+            -DLIBPL_ENABLE_TESTS=OFF                \
+            -DLIBPL_ENABLE_CLI=ON                   \
+            ..
+          make -j4 install DESTDIR=install
+
+      - name: ⬆️ Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: Windows
+          path: |
+            build/install/*
+
+  linux:
+    name: 🐧 Linux
+    runs-on: ubuntu-22.04
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+    - name: 🧰 Checkout
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: ⬇️ Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y       \
+            build-essential       \
+            gcc-12                \
+            g++-12                \
+            lld                   \
+            cmake                 \
+            make                  \
+
+    - name: 🛠️ Build
+      run: |
+        mkdir -p build
+        cd build
+        CC=gcc-12 CXX=g++-12 cmake                \
+          -DCMAKE_BUILD_TYPE=Debug                \
+          -DCMAKE_INSTALL_PREFIX="/usr"           \
+          -DCMAKE_C_FLAGS="-fuse-ld=lld"          \
+          -DCMAKE_CXX_FLAGS="-fuse-ld=lld"        \
+          -DLIBPL_ENABLE_TESTS=OFF                \
+          -DLIBPL_ENABLE_CLI=ON                   \
+          ..
+        make -j4 install DESTDIR=install
+
+    - name: ⬆️ Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: Windows
+        path: |
+          build/install/*

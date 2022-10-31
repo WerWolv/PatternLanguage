@@ -39,3 +39,7 @@ target_link_libraries(libpl PUBLIC fmt::fmt intervaltree)
 set_property(TARGET libpl PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 set_target_properties(libpl PROPERTIES PREFIX "")
+
+if (LIBPL_SHARED_LIBRARY)
+    install(TARGETS libpl DESTINATION lib)
+endif ()

@@ -31,7 +31,7 @@ if (LIBPL_ENABLE_TESTS)
 endif ()
 
 if (LIBPL_ENABLE_CLI)
-    add_subdirectory(cli EXCLUDE_FROM_ALL)
+    add_subdirectory(cli)
 endif ()
 
 add_library(pl::libpl ALIAS libpl)
