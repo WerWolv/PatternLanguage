@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: 🧰 Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: recursive
 
@@ -47,7 +47,7 @@ jobs:
       - name: ⬆️ Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: Linux
+          name: plcli Windows
           path: |
             build/install/*
 
@@ -61,14 +61,9 @@ jobs:
 
     steps:
       - name: 🧰 Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: recursive
-
-      - name: ⬇️ Install dependencies
-        run: |
-          brew install cmake
-          brew install gcc@12
 
       - name: 🛠️ Build
         run: |
@@ -87,21 +82,17 @@ jobs:
       - name: ⬆️ Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: Windows
+          name: plcli macOS
           path: |
             build/install/*
 
   linux:
     name: 🐧 Linux
     runs-on: ubuntu-22.04
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
 
     steps:
     - name: 🧰 Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         submodules: recursive
 
@@ -133,6 +124,6 @@ jobs:
     - name: ⬆️ Upload Artifact
       uses: actions/upload-artifact@v3
       with:
-        name: Windows
+        name: plcli Linux
         path: |
           build/install/*
