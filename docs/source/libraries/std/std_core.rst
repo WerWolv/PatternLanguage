@@ -17,6 +17,7 @@ Types
 ^^^^^^^^^^^^^^^^^
 
 **Bitfield order**
+
 - ``LeftToRight``: Left to right bitfield field ordering
 - ``RightToLeft``: Right to left bitfield field ordering
 
