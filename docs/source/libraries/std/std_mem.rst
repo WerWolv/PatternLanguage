@@ -10,6 +10,20 @@
 
 ------------------------
 
+Types
+-----
+
+``Endian``
+^^^^^^^^^^^^^^^^^
+
+**Endianess**
+
+- ``Native``: Native endianess of the current system
+- ``Big``: Big endianess
+- ``Little``: Little endianess
+
+------------------------
+
 Functions
 ---------
 
