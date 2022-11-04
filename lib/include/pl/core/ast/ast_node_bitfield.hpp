@@ -63,6 +63,7 @@ namespace pl::core::ast {
                             bitfieldField->setSize((bitOffset + 7) / 8);
                         }
                     }
+                    bitfieldPattern->setSize((bitOffset + 7) / 8);
                 }
 
                 if (!evaluator->getCurrentArrayIndex().has_value()) {
@@ -88,7 +89,6 @@ namespace pl::core::ast {
                 }
             }
 
-            bitfieldPattern->setSize((bitOffset + 7) / 8);
             bitfieldPattern->setFields(std::move(fields));
 
             evaluator->dataOffset() += bitfieldPattern->getSize();

@@ -39,6 +39,7 @@ namespace pl::core::ast {
                 for (auto &memberPattern : member->createPatterns(evaluator)) {
                     size = std::max(memberPattern->getSize(), size);
                     memberPatterns.push_back(std::move(memberPattern));
+                    pattern->setSize(size);
                 }
 
                 if (!evaluator->getCurrentArrayIndex().has_value()) {
@@ -58,7 +59,6 @@ namespace pl::core::ast {
 
             evaluator->dataOffset() = startOffset + size;
             pattern->setMembers(std::move(memberPatterns));
-            pattern->setSize(size);
 
             applyTypeAttributes(evaluator, this, pattern.get());
 

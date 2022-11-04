@@ -44,6 +44,7 @@ namespace pl::core::ast {
                 if (auto structPattern = dynamic_cast<ptrn::PatternStruct *>(inheritancePattern.get())) {
                     for (auto &member : structPattern->getMembers()) {
                         memberPatterns.push_back(member);
+                        pattern->setSize(evaluator->dataOffset() - startOffset);
                     }
                 }
             }
@@ -51,6 +52,7 @@ namespace pl::core::ast {
             for (auto &member : this->m_members) {
                 for (auto &memberPattern : member->createPatterns(evaluator)) {
                     memberPatterns.push_back(std::move(memberPattern));
+                    pattern->setSize(evaluator->dataOffset() - startOffset);
                 }
 
                 if (!evaluator->getCurrentArrayIndex().has_value()) {
@@ -69,7 +71,6 @@ namespace pl::core::ast {
             }
 
             pattern->setMembers(std::move(memberPatterns));
-            pattern->setSize(evaluator->dataOffset() - startOffset);
 
             applyTypeAttributes(evaluator, this, pattern.get());
 
