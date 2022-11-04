@@ -44,16 +44,16 @@ namespace pl::core::ast {
                 if (auto structPattern = dynamic_cast<ptrn::PatternStruct *>(inheritancePattern.get())) {
                     for (auto &member : structPattern->getMembers()) {
                         memberPatterns.push_back(member);
-                        pattern->setSize(evaluator->dataOffset() - startOffset);
                     }
+                    pattern->setSize(evaluator->dataOffset() - startOffset);
                 }
             }
 
             for (auto &member : this->m_members) {
                 for (auto &memberPattern : member->createPatterns(evaluator)) {
                     memberPatterns.push_back(std::move(memberPattern));
-                    pattern->setSize(evaluator->dataOffset() - startOffset);
                 }
+                pattern->setSize(evaluator->dataOffset() - startOffset);
 
                 if (!evaluator->getCurrentArrayIndex().has_value()) {
                     if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Return)

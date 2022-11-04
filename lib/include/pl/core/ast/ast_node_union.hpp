@@ -39,8 +39,8 @@ namespace pl::core::ast {
                 for (auto &memberPattern : member->createPatterns(evaluator)) {
                     size = std::max(memberPattern->getSize(), size);
                     memberPatterns.push_back(std::move(memberPattern));
-                    pattern->setSize(size);
                 }
+                pattern->setSize(size);
 
                 if (!evaluator->getCurrentArrayIndex().has_value()) {
                     if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
