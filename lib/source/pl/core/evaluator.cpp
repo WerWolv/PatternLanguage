@@ -297,7 +297,8 @@ namespace pl::core {
     }
 
     void Evaluator::setVariable(ptrn::Pattern *pattern, const Token::Literal &value) {
-        if (!pattern->isLocal()) return;
+        if (!pattern->isLocal())
+            err::E0003.throwError(fmt::format("Cannot assign value to non-local pattern '{}'.", pattern->getVariableName()), {});
 
         if (pattern->getSize() > 0xFFFF'FFFF)
             err::E0003.throwError(fmt::format("Value is too large to place into local variable '{}'.", pattern->getVariableName()));
