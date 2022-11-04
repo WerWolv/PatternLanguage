@@ -5,6 +5,7 @@
 #include <pl/core/ast/ast_node_type_decl.hpp>
 #include <pl/core/ast/ast_node_variable_decl.hpp>
 #include <pl/core/ast/ast_node_array_variable_decl.hpp>
+#include <pl/core/ast/ast_node_pointer_variable_decl.hpp>
 #include <pl/core/ast/ast_node_function_call.hpp>
 #include <pl/core/ast/ast_node_function_definition.hpp>
 #include <pl/core/ast/ast_node_compound_statement.hpp>
@@ -393,6 +394,22 @@ namespace pl::core {
         this->m_scopes.pop_back();
     }
 
+    std::vector<ast::ASTNode*> unpackCompoundStatements(const std::vector<std::unique_ptr<ast::ASTNode>> &nodes) {
+        std::vector<ast::ASTNode*> result;
+
+        for (const auto &node : nodes) {
+            if (auto compoundStatement = dynamic_cast<ast::ASTNodeCompoundStatement*>(node.get()); compoundStatement != nullptr) {
+                auto unpacked = unpackCompoundStatements(compoundStatement->getStatements());
+
+                std::move(unpacked.begin(), unpacked.end(), std::back_inserter(result));
+            } else {
+                result.push_back(node.get());
+            }
+        }
+
+        return result;
+    }
+
     bool Evaluator::evaluate(const std::string &sourceCode, const std::vector<std::shared_ptr<ast::ASTNode>> &ast) {
         this->m_heap.clear();
         this->m_customFunctions.clear();
@@ -422,15 +439,11 @@ namespace pl::core {
             this->pushTemplateParameters();
 
             for (auto &topLevelNode : ast) {
-
                 std::vector<ast::ASTNode*> nodes;
-
-                if (auto compoundNode = dynamic_cast<ast::ASTNodeCompoundStatement*>(topLevelNode.get())) {
-                    for (const auto &statement : compoundNode->getStatements())
-                        nodes.push_back(statement.get());
-                } else {
+                if (auto compoundNode = dynamic_cast<ast::ASTNodeCompoundStatement*>(topLevelNode.get()))
+                    nodes = unpackCompoundStatements(compoundNode->getStatements());
+                else
                     nodes.push_back(topLevelNode.get());
-                }
 
                 for (auto node : nodes) {
                     if (node == nullptr)
@@ -440,17 +453,13 @@ namespace pl::core {
 
                     if (dynamic_cast<ast::ASTNodeTypeDecl *>(node) != nullptr) {
                         ;    // Don't create patterns from type declarations
-                    } else if (dynamic_cast<ast::ASTNodeFunctionCall *>(node) != nullptr) {
-                        (void)node->evaluate(this);
                     } else if (dynamic_cast<ast::ASTNodeFunctionDefinition *>(node) != nullptr) {
                         this->m_customFunctionDefinitions.push_back(node->evaluate(this));
                     } else if (auto varDeclNode = dynamic_cast<ast::ASTNodeVariableDecl *>(node); varDeclNode != nullptr) {
                         for (auto &pattern : varDeclNode->createPatterns(this)) {
                             if (varDeclNode->getPlacementOffset() == nullptr) {
-                                auto type = varDeclNode->getType()->evaluate(this);
-
                                 auto &name = pattern->getVariableName();
-                                this->createVariable(name, type.get(), std::nullopt, varDeclNode->isOutVariable());
+                                hlp::unused(varDeclNode->execute(this));
 
                                 if (varDeclNode->isInVariable() && this->m_inVariables.contains(name))
                                     this->setVariable(name, this->m_inVariables[name]);
@@ -466,19 +475,23 @@ namespace pl::core {
                     } else if (auto arrayVarDeclNode = dynamic_cast<ast::ASTNodeArrayVariableDecl *>(node); arrayVarDeclNode != nullptr) {
                         for (auto &pattern : arrayVarDeclNode->createPatterns(this)) {
                             if (arrayVarDeclNode->getPlacementOffset() == nullptr) {
-                                auto type = arrayVarDeclNode->getType()->evaluate(this);
-
-                                auto &name = pattern->getVariableName();
-                                this->createArrayVariable(name, type.get(), dynamic_cast<ptrn::Iteratable*>(pattern.get())->getEntryCount());
+                                hlp::unused(arrayVarDeclNode->execute(this));
 
                                 this->dataOffset() = startOffset;
                             } else {
                                 this->m_patterns.push_back(std::move(pattern));
                             }
                         }
+                    } else if (auto pointerVarDecl = dynamic_cast<ast::ASTNodePointerVariableDecl *>(node); pointerVarDecl != nullptr) {
+                        for (auto &pattern : pointerVarDecl->createPatterns(this)) {
+                            if (pointerVarDecl->getPlacementOffset() == nullptr) {
+                                err::E0003.throwError("Pointers cannot be used as local variables.");
+                            } else {
+                                this->m_patterns.push_back(std::move(pattern));
+                            }
+                        }
                     } else {
-                        auto newPatterns = node->createPatterns(this);
-                        std::move(newPatterns.begin(), newPatterns.end(), std::back_inserter(this->m_patterns));
+                        hlp::unused(node->execute(this));
                     }
 
                     if (this->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
