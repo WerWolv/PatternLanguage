@@ -3,17 +3,18 @@
 #include <pl/core/validator.hpp>
 #include <pl/core/evaluator.hpp>
 
-const long unsigned int LIMITMAX = std::numeric_limits<long unsigned int>::max() - 1;
+using namespace pl;
 
-bool parse_limit(const std::string &value, long unsigned int *limit) {
-    char* s = (char*)value.c_str();
-    char** endptr = &s;
-    auto tlimit = strtol(s, endptr, 0);
+constexpr static auto MaxLimit = std::numeric_limits<u64>::max();
 
-    if (endptr != nullptr && **endptr != 0) {
+bool parseLimit(const std::string &value, u64 *limit) {
+    std::size_t pos {};
+    auto tlimit = std::stoll(value, &pos);
+
+    if (pos == 0) {
         return false;
     } else if (tlimit == 0) {
-        *limit = LIMITMAX;
+        *limit = MaxLimit;
     } else {
         *limit = tlimit;
     }
@@ -37,10 +38,10 @@ namespace pl::lib::libstd {
         });
 
         runtime.addPragma("eval_depth", [](pl::PatternLanguage &runtime, const std::string &value) {
-            long unsigned int limit = 0;
-            bool parsed = parse_limit(value, &limit);
+            u64 limit = 0;
+            bool parsed = parseLimit(value, &limit);
 
-            if (!parsed || limit == LIMITMAX)
+            if (!parsed || limit == MaxLimit)
                 return false;
 
             runtime.getInternals().evaluator->setEvaluationDepth(limit);
@@ -49,8 +50,8 @@ namespace pl::lib::libstd {
         });
 
         runtime.addPragma("array_limit", [](pl::PatternLanguage &runtime, const std::string &value) {
-            long unsigned int limit = 0;
-            bool parsed = parse_limit(value, &limit);
+            u64 limit = 0;
+            bool parsed = parseLimit(value, &limit);
 
             if (!parsed)
                 return false;
@@ -60,8 +61,8 @@ namespace pl::lib::libstd {
         });
 
         runtime.addPragma("pattern_limit", [](pl::PatternLanguage &runtime, const std::string &value) {
-            long unsigned int limit = 0;
-            bool parsed = parse_limit(value, &limit);
+            u64 limit = 0;
+            bool parsed = parseLimit(value, &limit);
 
             if (!parsed)
                 return false;
@@ -71,8 +72,8 @@ namespace pl::lib::libstd {
         });
 
         runtime.addPragma("loop_limit", [](pl::PatternLanguage &runtime, const std::string &value) {
-            long unsigned int limit = 0;
-            if (!parse_limit(value, &limit) || limit == LIMITMAX)
+            u64 limit = 0;
+            if (!parseLimit(value, &limit) || limit == MaxLimit)
                 return false;
 
             runtime.getInternals().evaluator->setLoopLimit(limit);
