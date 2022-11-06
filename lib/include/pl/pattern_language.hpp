@@ -88,6 +88,7 @@ namespace pl {
         [[nodiscard]] u32 getMaximumPatternCount() const;
 
         [[nodiscard]] const std::vector<u8>& getSection(u64 id);
+        [[nodiscard]] const std::map<u64, api::Section>& getSections() const;
 
         [[nodiscard]] const std::vector<std::shared_ptr<ptrn::Pattern>> &getAllPatterns() const;
         [[nodiscard]] std::vector<ptrn::Pattern *> getPatternsAtAddress(u64 address, u64 section = 0x00) const;

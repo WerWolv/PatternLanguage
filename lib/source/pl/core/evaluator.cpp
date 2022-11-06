@@ -442,11 +442,11 @@ namespace pl::core {
             else
                 std::memset(buffer, 0x00, size);
         } else {
-            if ((sectionId - 1) < this->m_sections.size()) {
-                auto &section = this->m_sections[sectionId - 1];
+            if (this->m_sections.contains(sectionId)) {
+                auto &section = this->m_sections[sectionId];
 
-                if ((address + size) <= section.size())
-                    std::memcpy(buffer, section.data() + address, size);
+                if ((address + size) <= section.data.size())
+                    std::memcpy(buffer, section.data.data() + address, size);
                 else
                     std::memset(buffer, 0x00, size);
             } else
@@ -472,13 +472,16 @@ namespace pl::core {
         return this->m_sectionIdStack.back();
     }
 
-    u64 Evaluator::createSection() {
-        this->m_sections.emplace_back();
-        return this->m_sections.size();
+    u64 Evaluator::createSection(const std::string &name) {
+        auto id = this->m_sectionId;
+        this->m_sectionId++;
+
+        this->m_sections.insert({ id, { name, { } } });
+        return id;
     }
 
     void Evaluator::removeSection(u64 id) {
-        this->m_sections[id - 1].clear();
+        this->m_sections.erase(id);
     }
 
     std::vector<u8>& Evaluator::getSection(u64 id) {
@@ -486,10 +489,14 @@ namespace pl::core {
             err::E0011.throwError("Cannot access main section.");
         else if (id == ptrn::Pattern::HeapSectionId)
             return this->m_heap.back();
-        else if ((id - 1) < this->m_sections.size())
-            return this->m_sections[id - 1];
+        else if (this->m_sections.contains(id))
+            return this->m_sections[id].data;
         else
             err::E0011.throwError(fmt::format("Tried accessing a non-existing section with id {}.", id));
+    }
+
+    const std::map<u64, api::Section> &Evaluator::getSections() const {
+        return this->m_sections;
     }
 
     u64 Evaluator::getSectionCount() const {
@@ -499,6 +506,7 @@ namespace pl::core {
     bool Evaluator::evaluate(const std::string &sourceCode, const std::vector<std::shared_ptr<ast::ASTNode>> &ast) {
         this->m_sections.clear();
         this->m_sectionIdStack.clear();
+        this->m_sectionId = 1;
 
         this->m_scopes.clear();
         this->m_heap.clear();

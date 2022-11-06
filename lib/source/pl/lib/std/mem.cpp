@@ -114,11 +114,11 @@ namespace pl::lib::libstd::mem {
             });
 
 
-            /* create_section() -> id */
-            runtime.addFunction(nsStdMem, "create_section", FunctionParameterCount::none(), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                hlp::unused(params);
+            /* create_section(name) -> id */
+            runtime.addFunction(nsStdMem, "create_section", FunctionParameterCount::exactly(1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
+                auto name = Token::literalToString(params[0], false);
 
-                return u128(ctx->createSection());
+                return u128(ctx->createSection(name));
             });
 
             /* delete_section(id) */

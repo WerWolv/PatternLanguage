@@ -21,6 +21,10 @@ namespace pl::api {
 
     using PragmaHandler = std::function<bool(PatternLanguage&, const std::string &)>;
 
+    struct Section {
+        std::string name;
+        std::vector<u8> data;
+    };
 
     struct FunctionParameterCount {
         FunctionParameterCount() = default;
