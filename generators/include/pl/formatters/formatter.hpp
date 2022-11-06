@@ -42,8 +42,8 @@ namespace pl::gen::fmt {
             result.emplace_back("__size", ::fmt::format("{}", pattern->getSize()));
             result.emplace_back("__color", ::fmt::format("#{:08X}", pattern->getColor()));
             result.emplace_back("__endian", ::fmt::format("{}", pattern->getEndian() == std::endian::little ? "little" : "big"));
-            if (const auto &comment = pattern->getComment(); comment != nullptr)
-                result.emplace_back("__comment", ::fmt::format("{}", *comment));
+            if (const auto &comment = pattern->getComment(); !comment.empty())
+                result.emplace_back("__comment", comment);
 
             return result;
         }
