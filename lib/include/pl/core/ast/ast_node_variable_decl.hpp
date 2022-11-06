@@ -68,7 +68,7 @@ namespace pl::core::ast {
         }
 
         FunctionResult execute(Evaluator *evaluator) const override {
-            evaluator->createVariable(this->getName(), this->getType().get());
+            evaluator->createVariable(this->getName(), this->getType().get(), { }, this->m_outVariable);
 
             return std::nullopt;
         }
