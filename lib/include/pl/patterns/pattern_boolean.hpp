@@ -15,7 +15,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] core::Token::Literal getValue() const override {
             bool boolean = false;
-            this->getEvaluator()->readData(this->getOffset(), &boolean, 1, this->isLocal());
+            this->getEvaluator()->readData(this->getOffset(), &boolean, 1, this->getSection());
 
             return boolean;
         }

@@ -22,7 +22,7 @@ namespace pl::ptrn {
 
         std::string getValue(size_t size) const {
             std::u16string buffer(this->getSize() / sizeof(char16_t), 0x00);
-            this->getEvaluator()->readData(this->getOffset(), buffer.data(), size, this->isLocal());
+            this->getEvaluator()->readData(this->getOffset(), buffer.data(), size, this->getSection());
 
             for (auto &c : buffer)
                 c = hlp::changeEndianess(c, 2, this->getEndian());
@@ -40,7 +40,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string toString() const override {
             std::u16string buffer(this->getSize() / sizeof(char16_t), 0x00);
-            this->getEvaluator()->readData(this->getOffset(), buffer.data(), this->getSize(), this->isLocal());
+            this->getEvaluator()->readData(this->getOffset(), buffer.data(), this->getSize(), this->getSection());
 
             for (auto &c : buffer)
                 c = hlp::changeEndianess(c, 2, this->getEndian());

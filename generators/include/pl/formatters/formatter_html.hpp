@@ -35,7 +35,7 @@ namespace pl::gen::fmt {
             auto patterns = runtime.getPatternsAtAddress(address);
 
             u8 byte = 0;
-            runtime.getInternals().evaluator->readData(address, &byte, sizeof(byte), false);
+            runtime.getInternals().evaluator->readData(address, &byte, sizeof(byte), ptrn::Pattern::MainSectionId);
 
             return ::fmt::format(R"html(<div class="pattern_language_cell" style="background-color: #{}">{:02X}{}</div>)html",
                                  patterns.empty() ? "transparent" : ::fmt::format("{:08X}", hlp::changeEndianess(patterns.front()->getColor(), std::endian::big)),

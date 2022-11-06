@@ -25,7 +25,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] core::Token::Literal getValue() const override {
             u128 value = 0;
-            this->getEvaluator()->readData(this->getOffset(), &value, this->getSize(), this->isLocal());
+            this->getEvaluator()->readData(this->getOffset(), &value, this->getSize(), this->getSection());
 
             return hlp::changeEndianess(value, this->getSize(), this->getEndian());
         }

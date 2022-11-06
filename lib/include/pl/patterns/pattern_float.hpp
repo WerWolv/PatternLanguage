@@ -16,7 +16,7 @@ namespace pl::ptrn {
         [[nodiscard]] core::Token::Literal getValue() const override {
             if (this->getSize() == 4) {
                 u32 data = 0;
-                this->getEvaluator()->readData(this->getOffset(), &data, 4, this->isLocal());
+                this->getEvaluator()->readData(this->getOffset(), &data, 4, this->getSection());
                 data = hlp::changeEndianess(data, 4, this->getEndian());
 
                 float result = 0;
@@ -24,7 +24,7 @@ namespace pl::ptrn {
                 return double(result);
             } else if (this->getSize() == 8) {
                 u64 data = 0;
-                this->getEvaluator()->readData(this->getOffset(), &data, 8, this->isLocal());
+                this->getEvaluator()->readData(this->getOffset(), &data, 8, this->getSection());
                 data = hlp::changeEndianess(data, 8, this->getEndian());
 
                 double result = 0;

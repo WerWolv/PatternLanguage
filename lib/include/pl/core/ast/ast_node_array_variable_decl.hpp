@@ -19,8 +19,8 @@ namespace pl::core::ast {
     class ASTNodeArrayVariableDecl : public ASTNode,
                                      public Attributable {
     public:
-        ASTNodeArrayVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeDecl> type, std::unique_ptr<ASTNode> &&size, std::unique_ptr<ASTNode> &&placementOffset = {})
-            : ASTNode(), m_name(std::move(name)), m_type(std::move(type)), m_size(std::move(size)), m_placementOffset(std::move(placementOffset)) { }
+        ASTNodeArrayVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeDecl> type, std::unique_ptr<ASTNode> &&size, std::unique_ptr<ASTNode> &&placementOffset = {}, std::unique_ptr<ASTNode> &&placementSection = {})
+            : ASTNode(), m_name(std::move(name)), m_type(std::move(type)), m_size(std::move(size)), m_placementOffset(std::move(placementOffset)), m_placementSection(std::move(placementSection)) { }
 
         ASTNodeArrayVariableDecl(const ASTNodeArrayVariableDecl &other) : ASTNode(other), Attributable(other) {
             this->m_name = other.m_name;
@@ -31,13 +31,12 @@ namespace pl::core::ast {
 
             if (other.m_size != nullptr)
                 this->m_size = other.m_size->clone();
-            else
-                this->m_size = nullptr;
 
             if (other.m_placementOffset != nullptr)
                 this->m_placementOffset = other.m_placementOffset->clone();
-            else
-                this->m_placementOffset = nullptr;
+
+            if (other.m_placementSection != nullptr)
+                this->m_placementSection = other.m_placementSection->clone();
         }
 
         [[nodiscard]] std::unique_ptr<ASTNode> clone() const override {
@@ -46,6 +45,19 @@ namespace pl::core::ast {
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             auto startOffset = evaluator->dataOffset();
+
+            auto scopeGuard = PL_SCOPE_GUARD {
+                evaluator->popSectionId();
+            };
+
+            if (this->m_placementSection != nullptr) {
+                const auto node = this->m_placementSection->evaluate(evaluator);
+                const auto id = dynamic_cast<ASTNodeLiteral *>(node.get());
+
+                evaluator->pushSectionId(Token::literalToUnsigned(id->getValue()));
+            } else {
+                scopeGuard.release();
+            }
 
             if (this->m_placementOffset != nullptr) {
                 auto evaluatedPlacement = this->m_placementOffset->evaluate(evaluator);
@@ -74,6 +86,7 @@ namespace pl::core::ast {
                 err::E0001.throwError("Invalid type used in array variable declaration.", { }, this);
             }
 
+            pattern->setSection(evaluator->getSectionId());
             applyVariableAttributes(evaluator, this, pattern.get());
 
             if (this->m_placementOffset != nullptr && !evaluator->isGlobalScope()) {
@@ -123,13 +136,15 @@ namespace pl::core::ast {
         std::string m_name;
         std::shared_ptr<ASTNodeTypeDecl> m_type;
         std::unique_ptr<ASTNode> m_size;
-        std::unique_ptr<ASTNode> m_placementOffset;
+        std::unique_ptr<ASTNode> m_placementOffset, m_placementSection;
 
         std::unique_ptr<ptrn::Pattern> createStaticArray(Evaluator *evaluator) const {
             u64 startOffset = evaluator->dataOffset();
 
             auto templatePatterns = this->m_type->createPatterns(evaluator);
             auto &templatePattern = templatePatterns.front();
+
+            templatePattern->setSection(evaluator->getSectionId());
 
             evaluator->dataOffset() = startOffset;
 
@@ -163,7 +178,7 @@ namespace pl::core::ast {
                     if ((evaluator->dataOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
                         err::E0004.throwError("Array expanded past end of the data before a null-entry was found.", "Try using a while-sized array instead to limit the size of the array.", this);
 
-                    evaluator->readData(evaluator->dataOffset(), buffer.data(), buffer.size(), false);
+                    evaluator->readData(evaluator->dataOffset(), buffer.data(), buffer.size(), templatePattern->getSection());
                     evaluator->dataOffset() += buffer.size();
 
                     entryCount++;
@@ -190,6 +205,7 @@ namespace pl::core::ast {
                 outputPattern = std::unique_ptr<ptrn::Pattern>(new ptrn::PatternWideString(evaluator, startOffset, 0));
             } else {
                 auto arrayPattern = std::make_unique<ptrn::PatternArrayStatic>(evaluator, startOffset, 0);
+                arrayPattern->setSection(templatePattern->getSection());
                 arrayPattern->setEntries(templatePattern->clone(), entryCount);
                 outputPattern = std::move(arrayPattern);
             }
@@ -198,6 +214,7 @@ namespace pl::core::ast {
             outputPattern->setEndian(templatePattern->getEndian());
             outputPattern->setTypeName(templatePattern->getTypeName());
             outputPattern->setSize(templatePattern->getSize() * entryCount);
+            outputPattern->setSection(templatePattern->getSection());
 
             evaluator->dataOffset() = startOffset + outputPattern->getSize();
 
@@ -219,6 +236,7 @@ namespace pl::core::ast {
 
             auto arrayPattern = std::make_unique<ptrn::PatternArrayDynamic>(evaluator, evaluator->dataOffset(), 0);
             arrayPattern->setVariableName(this->m_name);
+            arrayPattern->setSection(evaluator->getSectionId());
 
             std::vector<std::shared_ptr<ptrn::Pattern>> entries;
 
@@ -229,6 +247,7 @@ namespace pl::core::ast {
                 for (auto &pattern : patterns) {
                     pattern->setVariableName(fmt::format("[{}]", entryIndex));
                     pattern->setEndian(arrayPattern->getEndian());
+                    pattern->setSection(arrayPattern->getSection());
 
                     size += pattern->getSize();
                     entryIndex++;
@@ -334,7 +353,7 @@ namespace pl::core::ast {
                             err::E0004.throwError("Array expanded past end of the data before a null-entry was found.", "Try using a while-sized array instead to limit the size of the array.", this);
 
                         const auto patternSize = pattern->getSize();
-                        evaluator->readData(evaluator->dataOffset() - patternSize, buffer.data(), buffer.size(), pattern->isLocal());
+                        evaluator->readData(evaluator->dataOffset() - patternSize, buffer.data(), buffer.size(), pattern->getSection());
 
                         addEntries(hlp::moveToVector(std::move(pattern)));
 

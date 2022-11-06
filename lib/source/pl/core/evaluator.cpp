@@ -11,7 +11,6 @@
 #include <pl/core/ast/ast_node_compound_statement.hpp>
 
 #include <pl/patterns/pattern_unsigned.hpp>
-#include <pl/patterns/pattern_array_static.hpp>
 #include <pl/patterns/pattern_struct.hpp>
 #include <pl/patterns/pattern_union.hpp>
 #include <pl/patterns/pattern_float.hpp>
@@ -185,9 +184,7 @@ namespace pl::core {
                        return double(value);
                } else if (dynamic_cast<const ptrn::PatternBoolean*>(pattern))
                    return value == 0 ? u128(0) : u128(1);
-               else if (dynamic_cast<const ptrn::PatternCharacter*>(pattern))
-                   return truncateValue(pattern->getSize(), u128(value));
-               else if (dynamic_cast<const ptrn::PatternWideCharacter*>(pattern))
+               else if (dynamic_cast<const ptrn::PatternCharacter*>(pattern) || dynamic_cast<const ptrn::PatternWideCharacter*>(pattern))
                    return truncateValue(pattern->getSize(), u128(value));
                else if (dynamic_cast<const ptrn::PatternString*>(pattern))
                    return Token::literalToString(value, false);
@@ -308,54 +305,62 @@ namespace pl::core {
 
         // Write value into variable storage
         {
-            auto &storage = this->getHeap()[pattern->getHeapAddress()];
+            bool heapSection = pattern->getSection() == ptrn::Pattern::HeapSectionId;
+            auto &storage = [&, this]() -> auto& {
+                if (heapSection)
+                    return this->getHeap()[pattern->getHeapAddress()];
+                else
+                    return this->getSection(pattern->getSection());
+            }();
+
+            auto copyToStorage = [&](const auto &value) {
+                if (heapSection) {
+                    storage.resize(pattern->getSize());
+                    std::memcpy(storage.data(), &value, pattern->getSize());
+                }
+                else if (storage.size() < pattern->getOffset() + pattern->getSize()) {
+                    storage.resize(pattern->getOffset() + pattern->getSize());
+                    std::memcpy(storage.data() + pattern->getOffset(), &value, pattern->getSize());
+                }
+
+                if (this->isDebugModeEnabled())
+                    this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
+            };
+
             std::visit(hlp::overloaded {
-                    [this, &pattern, &storage](const auto &value) {
+                    [&](const auto &value) {
                         auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
-
-                        storage.resize(pattern->getSize());
-                        std::memcpy(storage.data(), &adjustedValue, pattern->getSize());
-
-                        if (this->isDebugModeEnabled())
-                            this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
+                        copyToStorage(adjustedValue);
                     },
-                    [this, &pattern, &storage](const i128 &value) {
+                    [&](const i128 &value) {
                         auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
                         adjustedValue = hlp::signExtend(pattern->getSize() * 8, adjustedValue);
-
-                        storage.resize(pattern->getSize());
-                        std::memcpy(storage.data(), &adjustedValue, pattern->getSize());
-
-                        if (this->isDebugModeEnabled())
-                            this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
+                        copyToStorage(adjustedValue);
                     },
-                    [this, &pattern, &storage](const double &value) {
+                    [&](const double &value) {
                         auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
 
                         storage.resize(pattern->getSize());
 
                         if (storage.size() == sizeof(float)) {
-                            float floatValue = adjustedValue;
-                            std::memcpy(storage.data(), &floatValue, storage.size());
+                            copyToStorage(float(adjustedValue));
                         } else {
-                            std::memcpy(storage.data(), &adjustedValue, storage.size());
+                            copyToStorage(adjustedValue);
+                        }
+                    },
+                    [&](const std::string &value) {
+                        pattern->setSize(value.size());
+                        copyToStorage(value[0]);
+                    },
+                    [&, this](ptrn::Pattern * const value) {
+                        if (heapSection) {
+                            storage.resize(pattern->getSize());
+                            this->readData(value->getOffset(), storage.data(), value->getSize(), value->getSection());
+                        } else if (storage.size() < pattern->getOffset() + pattern->getSize()) {
+                            storage.resize(pattern->getOffset() + pattern->getSize());
+                            this->readData(value->getOffset(), storage.data() + pattern->getOffset(), value->getSize(), value->getSection());
                         }
 
-                        if (this->isDebugModeEnabled())
-                            this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
-                    },
-                    [this, &pattern, &storage](const std::string &value) {
-                        pattern->setSize(value.size());
-                        storage.resize(value.size());
-                        std::memcpy(storage.data(), value.data(), pattern->getSize());
-
-                        if (this->isDebugModeEnabled())
-                            this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
-                    },
-                    [this, &pattern, &storage](ptrn::Pattern * const value) {
-                        storage.resize(value->getSize());
-
-                        this->readData(value->getOffset(), storage.data(), value->getSize(), value->isLocal());
 
                         if (this->isDebugModeEnabled())
                             this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {:02X}.", pattern->getVariableName(), fmt::join(storage, " ")));
@@ -411,15 +416,100 @@ namespace pl::core {
         return result;
     }
 
+    void Evaluator::readData(u64 address, void *buffer, size_t size, u64 sectionId) {
+        if (size == 0 || buffer == nullptr)
+            return;
+
+        if (sectionId == ptrn::Pattern::HeapSectionId) {
+            auto &heap = this->getHeap();
+
+            auto heapAddress = (address >> 32);
+            auto storageAddress = address & 0xFFFF'FFFF;
+            if (heapAddress < heap.size()) {
+                auto &storage = heap[heapAddress];
+
+                if (storageAddress + size > storage.size()) {
+                    storage.resize(storageAddress + size);
+                }
+
+                std::memcpy(buffer, storage.data() + storageAddress, size);
+            }
+            else
+                err::E0011.throwError(fmt::format("Tried accessing out of bounds heap cell {}. This is a bug.", heapAddress));
+        } else if (sectionId == ptrn::Pattern::MainSectionId) {
+            if (address < this->m_dataBaseAddress + this->m_dataSize)
+                this->m_readerFunction(address, reinterpret_cast<u8*>(buffer), size);
+            else
+                std::memset(buffer, 0x00, size);
+        } else {
+            if ((sectionId - 1) < this->m_sections.size()) {
+                auto &section = this->m_sections[sectionId - 1];
+
+                if ((address + size) <= section.size())
+                    std::memcpy(buffer, section.data() + address, size);
+                else
+                    std::memset(buffer, 0x00, size);
+            } else
+                err::E0012.throwError(fmt::format("Tried accessing a non-existing section with id {}.", sectionId));
+        }
+
+        if (this->isDebugModeEnabled())
+            this->m_console.log(LogConsole::Level::Debug, fmt::format("Reading {} bytes from address 0x{:02X} in section {:02X}", size, address, sectionId));
+    }
+
+    void Evaluator::pushSectionId(u64 id) {
+        this->m_sectionIdStack.push_back(id);
+    }
+
+    void Evaluator::popSectionId() {
+        this->m_sectionIdStack.pop_back();
+    }
+
+    [[nodiscard]] u64 Evaluator::getSectionId() const {
+        if (this->m_sectionIdStack.empty())
+            return 0;
+
+        return this->m_sectionIdStack.back();
+    }
+
+    u64 Evaluator::createSection() {
+        this->m_sections.emplace_back();
+        return this->m_sections.size();
+    }
+
+    void Evaluator::removeSection(u64 id) {
+        this->m_sections[id - 1].clear();
+    }
+
+    std::vector<u8>& Evaluator::getSection(u64 id) {
+        if (id == ptrn::Pattern::MainSectionId)
+            err::E0011.throwError("Cannot access main section.");
+        else if (id == ptrn::Pattern::HeapSectionId)
+            return this->m_heap.back();
+        else if ((id - 1) < this->m_sections.size())
+            return this->m_sections[id - 1];
+        else
+            err::E0011.throwError(fmt::format("Tried accessing a non-existing section with id {}.", id));
+    }
+
+    u64 Evaluator::getSectionCount() const {
+        return this->m_sections.size();
+    }
+
     bool Evaluator::evaluate(const std::string &sourceCode, const std::vector<std::shared_ptr<ast::ASTNode>> &ast) {
-        this->m_heap.clear();
-        this->m_customFunctions.clear();
+        this->m_sections.clear();
+        this->m_sectionIdStack.clear();
+
         this->m_scopes.clear();
+        this->m_heap.clear();
         this->m_templateParameters.clear();
-        this->m_mainResult.reset();
-        this->m_aborted = false;
-        this->m_colorIndex = 0;
+
+        this->m_customFunctions.clear();
         this->m_patterns.clear();
+
+        this->m_mainResult.reset();
+        this->m_colorIndex = 0;
+        this->m_aborted = false;
         this->m_evaluated = false;
 
         if (this->m_allowDangerousFunctions == DangerousFunctionPermission::Deny)
@@ -453,7 +543,7 @@ namespace pl::core {
                     auto startOffset = this->dataOffset();
 
                     if (dynamic_cast<ast::ASTNodeTypeDecl *>(node) != nullptr) {
-                        ;    // Don't create patterns from type declarations
+                        // Don't create patterns from type declarations
                     } else if (dynamic_cast<ast::ASTNodeFunctionDefinition *>(node) != nullptr) {
                         this->m_customFunctionDefinitions.push_back(node->evaluate(this));
                     } else if (auto varDeclNode = dynamic_cast<ast::ASTNodeVariableDecl *>(node); varDeclNode != nullptr) {

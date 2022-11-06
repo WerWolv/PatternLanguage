@@ -22,7 +22,7 @@ namespace pl::ptrn {
                 return "";
 
             std::string buffer(size, '\x00');
-            this->getEvaluator()->readData(this->getOffset(), buffer.data(), size, this->isLocal());
+            this->getEvaluator()->readData(this->getOffset(), buffer.data(), size, this->getSection());
 
             return buffer;
         }
@@ -51,7 +51,7 @@ namespace pl::ptrn {
                 return "\"\"";
 
             std::vector<u8> buffer(size, 0x00);
-            this->getEvaluator()->readData(this->getOffset(), buffer.data(), size, this->isLocal());
+            this->getEvaluator()->readData(this->getOffset(), buffer.data(), size, this->getSection());
             auto displayString = hlp::encodeByteString(buffer);
 
             return this->formatDisplayValue(fmt::format("\"{0}\" {1}", displayString, size > this->getSize() ? "(truncated)" : ""), displayString);

@@ -18,7 +18,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] core::Token::Literal getValue() const override {
             char16_t character = '\u0000';
-            this->getEvaluator()->readData(this->getOffset(), &character, 2, this->isLocal());
+            this->getEvaluator()->readData(this->getOffset(), &character, 2, this->getSection());
             return u128(hlp::changeEndianess(character, this->getEndian()));
         }
 

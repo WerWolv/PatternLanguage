@@ -239,6 +239,18 @@ namespace pl {
         return this->m_internals.evaluator->getPatternLimit();
     }
 
+    const std::vector<u8>& PatternLanguage::getSection(u64 id) {
+        static std::vector<u8> empty;
+        if (id > this->m_internals.evaluator->getSectionCount())
+            return empty;
+        else if (id == ptrn::Pattern::MainSectionId)
+            return empty;
+        else if (id == ptrn::Pattern::HeapSectionId)
+            return empty;
+        else
+            return this->m_internals.evaluator->getSection(id);
+    }
+
     [[nodiscard]] const std::vector<std::shared_ptr<ptrn::Pattern>> &PatternLanguage::getAllPatterns() const {
         return this->m_patterns;
     }
@@ -285,8 +297,8 @@ namespace pl {
     }
 
     void PatternLanguage::flattenPatterns() {
-        using Interval = decltype(this->m_flattenedPatterns)::interval;
-        std::vector<Interval> intervals;
+        using Interval = interval_tree::Interval<u64, ptrn::Pattern*>;
+        std::map<u64, std::vector<Interval>> sections;
 
         for (const auto &pattern : this->getAllPatterns()) {
             auto children = pattern->getChildren();
@@ -298,18 +310,19 @@ namespace pl {
                 if (child->getSize() == 0)
                     continue;
 
-                intervals.emplace_back(address, address + child->getSize() - 1, child);
+                sections[child->getSection()].emplace_back(address, address + child->getSize() - 1, child);
             }
         }
 
-        this->m_flattenedPatterns = std::move(intervals);
+        for (auto &[section, intervals] : sections)
+            this->m_flattenedPatterns[section] = std::move(intervals);
     }
 
-    std::vector<ptrn::Pattern *> PatternLanguage::getPatternsAtAddress(u64 address) const {
-        if (this->m_flattenedPatterns.empty())
+    std::vector<ptrn::Pattern *> PatternLanguage::getPatternsAtAddress(u64 address, u64 section) const {
+        if (this->m_flattenedPatterns.empty() || !this->m_flattenedPatterns.contains(section))
             return { };
 
-        auto intervals = this->m_flattenedPatterns.findOverlapping(address, address);
+        auto intervals = this->m_flattenedPatterns.at(section).findOverlapping(address, address);
 
         std::vector<ptrn::Pattern*> results;
         std::transform(intervals.begin(), intervals.end(), std::back_inserter(results), [](const auto &interval) {

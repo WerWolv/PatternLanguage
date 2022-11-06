@@ -87,8 +87,10 @@ namespace pl {
         [[nodiscard]] u32 getCreatedPatternCount() const;
         [[nodiscard]] u32 getMaximumPatternCount() const;
 
+        [[nodiscard]] const std::vector<u8>& getSection(u64 id);
+
         [[nodiscard]] const std::vector<std::shared_ptr<ptrn::Pattern>> &getAllPatterns() const;
-        [[nodiscard]] std::vector<ptrn::Pattern *> getPatternsAtAddress(u64 address) const;
+        [[nodiscard]] std::vector<ptrn::Pattern *> getPatternsAtAddress(u64 address, u64 section = 0x00) const;
 
         void reset();
         [[nodiscard]] bool isRunning() const { return this->m_running; }
@@ -111,7 +113,7 @@ namespace pl {
 
         std::vector<std::shared_ptr<core::ast::ASTNode>> m_currAST;
         std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;
-        interval_tree::IntervalTree<u64, ptrn::Pattern*> m_flattenedPatterns;
+        std::map<u64, interval_tree::IntervalTree<u64, ptrn::Pattern*>> m_flattenedPatterns;
 
         bool m_running = false;
         std::atomic<bool> m_aborted = false;

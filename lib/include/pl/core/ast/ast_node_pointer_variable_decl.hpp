@@ -10,8 +10,8 @@ namespace pl::core::ast {
     class ASTNodePointerVariableDecl : public ASTNode,
                                        public Attributable {
     public:
-        ASTNodePointerVariableDecl(std::string name, std::shared_ptr<ASTNode> type, std::shared_ptr<ASTNodeTypeDecl> sizeType, std::unique_ptr<ASTNode> &&placementOffset = nullptr)
-            : ASTNode(), m_name(std::move(name)), m_type(std::move(type)), m_sizeType(std::move(sizeType)), m_placementOffset(std::move(placementOffset)) { }
+        ASTNodePointerVariableDecl(std::string name, std::shared_ptr<ASTNode> type, std::shared_ptr<ASTNodeTypeDecl> sizeType, std::unique_ptr<ASTNode> &&placementOffset = nullptr, std::unique_ptr<ASTNode> &&placementSection = nullptr)
+            : ASTNode(), m_name(std::move(name)), m_type(std::move(type)), m_sizeType(std::move(sizeType)), m_placementOffset(std::move(placementOffset)), m_placementSection(std::move(placementSection)) { }
 
         ASTNodePointerVariableDecl(const ASTNodePointerVariableDecl &other) : ASTNode(other), Attributable(other) {
             this->m_name     = other.m_name;
@@ -20,8 +20,8 @@ namespace pl::core::ast {
 
             if (other.m_placementOffset != nullptr)
                 this->m_placementOffset = other.m_placementOffset->clone();
-            else
-                this->m_placementOffset = nullptr;
+            if (other.m_placementSection != nullptr)
+                this->m_placementSection = other.m_placementSection->clone();
         }
 
         [[nodiscard]] std::unique_ptr<ASTNode> clone() const override {
@@ -35,6 +35,19 @@ namespace pl::core::ast {
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             auto startOffset = evaluator->dataOffset();
+
+            auto scopeGuard = PL_SCOPE_GUARD {
+                evaluator->popSectionId();
+            };
+
+            if (this->m_placementSection != nullptr) {
+                const auto node = this->m_placementSection->evaluate(evaluator);
+                const auto id = dynamic_cast<ASTNodeLiteral *>(node.get());
+
+                evaluator->pushSectionId(Token::literalToUnsigned(id->getValue()));
+            } else {
+                scopeGuard.release();
+            }
 
             if (this->m_placementOffset != nullptr) {
                 const auto node   = this->m_placementOffset->evaluate(evaluator);
@@ -55,6 +68,7 @@ namespace pl::core::ast {
             auto pattern = std::make_unique<ptrn::PatternPointer>(evaluator, pointerStartOffset, sizePattern->getSize());
             pattern->setVariableName(this->m_name);
             pattern->setPointerTypePattern(std::move(sizePattern));
+            pattern->setSection(evaluator->getSectionId());
 
             auto pointerEndOffset = evaluator->dataOffset();
 
@@ -70,6 +84,7 @@ namespace pl::core::ast {
 
                 auto pointedAtPatterns = this->m_type->createPatterns(evaluator);
                 auto &pointedAtPattern = pointedAtPatterns.front();
+                pattern->setSection(evaluator->getSectionId());
 
                 pattern->setPointedAtPattern(std::move(pointedAtPattern));
             }
@@ -87,7 +102,7 @@ namespace pl::core::ast {
         std::string m_name;
         std::shared_ptr<ASTNode> m_type;
         std::shared_ptr<ASTNodeTypeDecl> m_sizeType;
-        std::unique_ptr<ASTNode> m_placementOffset;
+        std::unique_ptr<ASTNode> m_placementOffset, m_placementSection;
     };
 
 }

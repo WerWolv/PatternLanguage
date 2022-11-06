@@ -135,8 +135,8 @@ namespace pl::core::ast {
                 [&, this](ptrn::Pattern *const &left, ptrn::Pattern *const &right) -> ASTNode * {
                     std::vector<u8> leftBytes(left->getSize()), rightBytes(right->getSize());
 
-                    evaluator->readData(left->getOffset(), leftBytes.data(), leftBytes.size(), left->isLocal());
-                    evaluator->readData(right->getOffset(), rightBytes.data(), rightBytes.size(), right->isLocal());
+                    evaluator->readData(left->getOffset(), leftBytes.data(), leftBytes.size(), left->getSection());
+                    evaluator->readData(right->getOffset(), rightBytes.data(), rightBytes.size(), right->getSection());
                     switch (this->getOperator()) {
                         case Token::Operator::BoolEqual:
                             return new ASTNodeLiteral(leftBytes == rightBytes);

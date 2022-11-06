@@ -16,7 +16,6 @@
 #include <pl/core/ast/ast_node_lvalue_assignment.hpp>
 #include <pl/core/ast/ast_node_mathematical_expression.hpp>
 #include <pl/core/ast/ast_node_multi_variable_decl.hpp>
-#include <pl/core/ast/ast_node_parameter_pack.hpp>
 #include <pl/core/ast/ast_node_pointer_variable_decl.hpp>
 #include <pl/core/ast/ast_node_rvalue.hpp>
 #include <pl/core/ast/ast_node_rvalue_assignment.hpp>
@@ -125,14 +124,14 @@ namespace pl::core {
     // <Identifier[.]...>
     std::unique_ptr<ast::ASTNode> Parser::parseRValue(ast::ASTNodeRValue::Path &path) {
         if (peek(tkn::Literal::Identifier, -1))
-            path.push_back(getValue<Token::Identifier>(-1).get());
+            path.emplace_back(getValue<Token::Identifier>(-1).get());
         else if (peek(tkn::Keyword::Parent, -1))
             path.emplace_back("parent");
         else if (peek(tkn::Keyword::This, -1))
             path.emplace_back("this");
 
         if (MATCHES(sequence(tkn::Separator::LeftBracket) && !peek(tkn::Separator::LeftBracket))) {
-            path.push_back(parseMathematicalExpression());
+            path.emplace_back(parseMathematicalExpression());
             if (!MATCHES(sequence(tkn::Separator::RightBracket)))
                 err::P0002.throwError(fmt::format("Expected ']' at end of array indexing, got {}.", getFormattedToken(0)), {}, 1);
         }
@@ -1245,9 +1244,12 @@ namespace pl::core {
 
         auto name = getValue<Token::Identifier>(-1).get();
 
-        std::unique_ptr<ast::ASTNode> placementOffset;
+        std::unique_ptr<ast::ASTNode> placementOffset, placementSection;
         if (MATCHES(sequence(tkn::Operator::At))) {
             placementOffset = parseMathematicalExpression();
+
+            if (MATCHES(sequence(tkn::Keyword::In)))
+                placementSection = parseMathematicalExpression();
         } else if (MATCHES(sequence(tkn::Keyword::In))) {
             inVariable = true;
         } else if (MATCHES(sequence(tkn::Keyword::Out))) {
@@ -1255,7 +1257,7 @@ namespace pl::core {
         } else if (MATCHES(sequence(tkn::Operator::Assign))) {
             std::vector<std::unique_ptr<ast::ASTNode>> compounds;
 
-            compounds.push_back(create<ast::ASTNodeVariableDecl>(name, type, std::move(placementOffset), inVariable, outVariable));
+            compounds.push_back(create<ast::ASTNodeVariableDecl>(name, type, std::move(placementOffset), nullptr, inVariable, outVariable));
             compounds.push_back(create<ast::ASTNodeLValueAssignment>(name, parseMathematicalExpression()));
 
             return create<ast::ASTNodeCompoundStatement>(std::move(compounds));
@@ -1275,7 +1277,7 @@ namespace pl::core {
                 err::P0010.throwError("Invalid in/out parameter type.", "Allowed types are: 'char', 'bool', floating point types or integral types.", 1);
         }
 
-        return create<ast::ASTNodeVariableDecl>(name, type, std::move(placementOffset), inVariable, outVariable);
+        return create<ast::ASTNodeVariableDecl>(name, type, std::move(placementOffset), std::move(placementSection), inVariable, outVariable);
     }
 
     // (parseType) Identifier[[(parseMathematicalExpression)]] @ Integer
@@ -1294,11 +1296,15 @@ namespace pl::core {
                 err::P0002.throwError(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)), {}, 1);
         }
 
-        std::unique_ptr<ast::ASTNode> placementOffset;
-        if (MATCHES(sequence(tkn::Operator::At)))
+        std::unique_ptr<ast::ASTNode> placementOffset, placementSection;
+        if (MATCHES(sequence(tkn::Operator::At))) {
             placementOffset = parseMathematicalExpression();
 
-        return create<ast::ASTNodeArrayVariableDecl>(name, type, std::move(size), std::move(placementOffset));
+            if (MATCHES(sequence(tkn::Keyword::In)))
+                placementSection = parseMathematicalExpression();
+        }
+
+        return create<ast::ASTNodeArrayVariableDecl>(name, type, std::move(size), std::move(placementOffset), std::move(placementSection));
     }
 
     // (parseType) *Identifier : (parseType) @ Integer
@@ -1312,7 +1318,11 @@ namespace pl::core {
 
         auto placementOffset = parseMathematicalExpression();
 
-        return create<ast::ASTNodePointerVariableDecl>(name, type, std::move(sizeType), std::move(placementOffset));
+        std::unique_ptr<ast::ASTNode> placementSection;
+        if (MATCHES(sequence(tkn::Keyword::In)))
+            placementSection = parseMathematicalExpression();
+
+        return create<ast::ASTNodePointerVariableDecl>(name, type, std::move(sizeType), std::move(placementOffset), std::move(placementSection));
     }
 
     // (parseType) *Identifier[[(parseMathematicalExpression)]] : (parseType) @ Integer
@@ -1342,7 +1352,11 @@ namespace pl::core {
 
         auto placementOffset = parseMathematicalExpression();
 
-        return create<ast::ASTNodePointerVariableDecl>(name, createShared<ast::ASTNodeArrayVariableDecl>("", type, std::move(size)), std::move(sizeType), std::move(placementOffset));
+        std::unique_ptr<ast::ASTNode> placementSection;
+        if (MATCHES(sequence(tkn::Keyword::In)))
+            placementSection = parseMathematicalExpression();
+
+        return create<ast::ASTNodePointerVariableDecl>(name, createShared<ast::ASTNodeArrayVariableDecl>("", type, std::move(size)), std::move(sizeType), std::move(placementOffset), std::move(placementSection));
     }
 
     std::vector<std::shared_ptr<ast::ASTNode>> Parser::parseNamespace() {

@@ -15,7 +15,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] core::Token::Literal getValue() const override {
             char character = '\x00';
-            this->getEvaluator()->readData(this->getOffset(), &character, 1, this->isLocal());
+            this->getEvaluator()->readData(this->getOffset(), &character, 1, this->getSection());
 
             return character;
         }

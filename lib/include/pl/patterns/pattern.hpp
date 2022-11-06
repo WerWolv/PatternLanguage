@@ -57,6 +57,9 @@ namespace pl::ptrn {
     class Pattern : public PatternCreationLimiter,
                     public Cloneable<Pattern> {
     public:
+        constexpr static u64 MainSectionId = 0x0000'0000'0000'0000;
+        constexpr static u64 HeapSectionId = 0xFFFF'FFFF'FFFF'FFFF;
+
         Pattern(core::Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
             : PatternCreationLimiter(evaluator), m_offset(offset), m_size(size), m_color(color) {
 
@@ -72,20 +75,14 @@ namespace pl::ptrn {
         Pattern(const Pattern &other) : PatternCreationLimiter(other) {
             this->m_offset = other.m_offset;
             this->m_endian = other.m_endian;
-            this->m_local = other.m_local;
             this->m_variableName = other.m_variableName;
             this->m_size = other.m_size;
             this->m_color = other.m_color;
             this->m_cachedDisplayValue = other.m_cachedDisplayValue;
-            this->m_hidden = other.m_hidden;
             this->m_typeName = other.m_typeName;
             this->m_manualColor = other.m_manualColor;
-            this->m_sealed = other.m_sealed;
+            this->m_section = other.m_section;
 
-            if (other.m_comment != nullptr)
-                this->m_comment = std::make_unique<std::string>(*other.m_comment);
-            if (other.m_displayName != nullptr)
-                this->m_displayName = std::make_unique<std::string>(*other.m_displayName);
             if (other.m_attributes != nullptr)
                 this->m_attributes = std::make_unique<std::map<std::string, std::string>>(*other.m_attributes);
 
@@ -109,8 +106,8 @@ namespace pl::ptrn {
         [[nodiscard]] const std::string &getVariableName() const { return this->m_variableName; }
         void setVariableName(std::string name) { this->m_variableName = std::move(name); }
 
-        [[nodiscard]] const auto& getComment() const { return this->m_comment; }
-        void setComment(std::string comment) { this->m_comment = std::make_unique<std::string>(std::move(comment)); }
+        [[nodiscard]] auto getComment() const { return this->getAttributeValue("comment").value_or(""); }
+        void setComment(const std::string &comment) { this->addAttribute("comment", comment); }
 
         [[nodiscard]] virtual std::string getTypeName() const { return this->m_typeName; }
         void setTypeName(std::string name) { this->m_typeName = std::move(name); }
@@ -135,8 +132,8 @@ namespace pl::ptrn {
         virtual void setEndian(std::endian endian) { this->m_endian = endian; }
         [[nodiscard]] bool hasOverriddenEndian() const { return this->m_endian.has_value(); }
 
-        [[nodiscard]] std::string getDisplayName() const { return this->m_displayName == nullptr ? this->m_variableName : *this->m_displayName; }
-        void setDisplayName(const std::string &name) { this->m_displayName = std::make_unique<std::string>(name); }
+        [[nodiscard]] std::string getDisplayName() const { return !this->hasAttribute("name") ? this->m_variableName : *this->getAttributeValue("name"); }
+        void setDisplayName(const std::string &name) { this->addAttribute("name", name); }
 
         [[nodiscard]] const auto &getTransformFunction() const { return this->m_transformFunction; }
         void setTransformFunction(const api::Function &function) { this->m_transformFunction = std::make_unique<api::Function>(function); }
@@ -161,27 +158,33 @@ namespace pl::ptrn {
         }
 
         void setHidden(bool hidden) {
-            this->m_hidden = hidden;
+            if (hidden)
+                this->addAttribute("hidden");
+            else
+                this->removeAttribute("hidden");
         }
 
         [[nodiscard]] bool isHidden() const {
-            return this->m_hidden;
+            return this->hasAttribute("hidden");
         }
 
         void setSealed(bool sealed) {
-            this->m_sealed = sealed;
+            if (sealed)
+                this->addAttribute("sealed");
+            else
+                this->removeAttribute("sealed");
         }
 
         [[nodiscard]] bool isSealed() const {
-            return this->m_sealed;
+            return this->hasAttribute("sealed");
         }
 
         virtual void setLocal(bool local) {
-            this->m_local = local;
+            this->m_section = local ? HeapSectionId : MainSectionId;
         }
 
         [[nodiscard]] bool isLocal() const {
-            return this->m_local;
+            return this->m_section != MainSectionId;
         }
 
         virtual void setReference(bool reference) {
@@ -190,6 +193,14 @@ namespace pl::ptrn {
 
         [[nodiscard]] bool isReference() const {
             return this->m_reference;
+        }
+
+        void setSection(u64 id) {
+            this->m_section = id;
+        }
+
+        [[nodiscard]] u64 getSection() const {
+            return this->m_section;
         }
 
         virtual void sort(const std::function<bool(const Pattern *left, const Pattern *right)> &comparator) {
@@ -204,12 +215,11 @@ namespace pl::ptrn {
             return typeid(other) == typeid(std::remove_cvref_t<T>) &&
                    this->m_offset == other.m_offset &&
                    this->m_size == other.m_size &&
-                   this->m_hidden == other.m_hidden &&
+                   (this->m_attributes == nullptr || other.m_attributes == nullptr || *this->m_attributes == *other.m_attributes) &&
                    (this->m_endian == other.m_endian || (!this->m_endian.has_value() && other.m_endian == std::endian::native) || (!other.m_endian.has_value() && this->m_endian == std::endian::native)) &&
                    this->m_variableName == other.m_variableName &&
                    this->m_typeName == other.m_typeName &&
-                   this->m_comment == other.m_comment &&
-                   this->m_local == other.m_local;
+                   this->m_section == other.m_section;
         }
 
         [[nodiscard]] std::string calcDisplayValue(const std::string &value, const core::Token::Literal &literal) const {
@@ -253,15 +263,34 @@ namespace pl::ptrn {
 
         virtual void accept(PatternVisitor &v) = 0;
 
-        void addAttribute(const std::string &attribute, const std::string &value) {
+        void addAttribute(const std::string &attribute, const std::string &value = "") {
             if (this->m_attributes == nullptr)
                 this->m_attributes = std::make_unique<std::map<std::string, std::string>>();
 
-            this->m_attributes->emplace(attribute, value);
+            (*this->m_attributes)[attribute] = value;
         }
 
-        const auto &getAttributes() const {
+        void removeAttribute(const std::string &attribute) {
+            if (this->m_attributes != nullptr)
+                this->m_attributes->erase(attribute);
+        }
+
+        [[nodiscard]] bool hasAttribute(const std::string &attribute) const {
+            if (this->m_attributes == nullptr)
+                return false;
+
+            return this->m_attributes->contains(attribute);
+        }
+
+        [[nodiscard]] const auto &getAttributes() const {
             return this->m_attributes;
+        }
+
+        [[nodiscard]] std::optional<std::string> getAttributeValue(const std::string &name) const {
+            if (!this->hasAttribute(name))
+                return std::nullopt;
+            else
+                return this->m_attributes->at(name);
         }
 
         void setFormatValue(const std::string &value) {
@@ -270,27 +299,23 @@ namespace pl::ptrn {
 
     protected:
         std::optional<std::endian> m_endian;
-        bool m_hidden = false;
-        bool m_sealed = false;
 
     private:
         friend pl::core::Evaluator;
 
         u64 m_offset  = 0x00;
         size_t m_size = 0x00;
+        u64 m_section = 0x00;
 
         u32 m_color = 0x00;
-        std::unique_ptr<std::string> m_displayName;
         mutable std::optional<std::string> m_cachedDisplayValue;
         std::string m_variableName;
-        std::unique_ptr<std::string> m_comment;
         std::string m_typeName;
         std::unique_ptr<std::map<std::string, std::string>> m_attributes;
 
         std::unique_ptr<api::Function> m_formatterFunction;
         std::unique_ptr<api::Function> m_transformFunction;
 
-        bool m_local = false;
         bool m_reference = false;
 
         bool m_manualColor = false;

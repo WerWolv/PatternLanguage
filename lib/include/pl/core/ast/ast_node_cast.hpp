@@ -38,7 +38,7 @@ namespace pl::core::ast {
                 [&](ptrn::Pattern *value) -> Token::Literal {
                     if (Token::isInteger(type) && value->getSize() <= Token::getTypeSize(type)) {
                         u128 result = 0;
-                        evaluator->readData(value->getOffset(), &result, value->getSize(), value->isLocal());
+                        evaluator->readData(value->getOffset(), &result, value->getSize(), value->getSection());
 
                         return result;
                     } else {

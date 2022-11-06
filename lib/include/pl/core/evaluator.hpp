@@ -111,6 +111,14 @@ namespace pl::core {
             return this->m_templateParameters.back();
         }
 
+        void pushSectionId(u64 id);
+        void popSectionId();
+        [[nodiscard]] u64 getSectionId() const;
+        [[nodiscard]] u64 createSection();
+        void removeSection(u64 id);
+        [[nodiscard]] std::vector<u8>& getSection(u64 id);
+        [[nodiscard]] u64 getSectionCount() const;
+
         void setInVariables(const std::map<std::string, Token::Literal> &inVariables) {
             this->m_inVariables = inVariables;
         }
@@ -139,36 +147,7 @@ namespace pl::core {
             return this->m_dataSize;
         }
 
-        void readData(u64 address, void *buffer, size_t size, bool local) {
-            if (size == 0 || buffer == nullptr)
-                return;
-
-            if (local) {
-                auto &heap = this->getHeap();
-
-                auto heapAddress = (address >> 32);
-                auto storageAddress = address & 0xFFFF'FFFF;
-                if (heapAddress < heap.size()) {
-                    auto &storage = heap[heapAddress];
-
-                    if (storageAddress + size > storage.size()) {
-                        storage.resize(storageAddress + size);
-                    }
-
-                    std::memcpy(buffer, storage.data() + storageAddress, size);
-                }
-                else
-                    err::E0011.throwError(fmt::format("Tried accessing out of bounds heap cell {}. This is a bug.", heapAddress));
-            } else {
-                if (address < this->m_dataBaseAddress + this->m_dataSize)
-                    this->m_readerFunction(address, reinterpret_cast<u8*>(buffer), size);
-                else
-                    std::memset(buffer, 0x00, size);
-            }
-
-            if (this->isDebugModeEnabled())
-                this->m_console.log(LogConsole::Level::Debug, fmt::format("Reading {} bytes from {} address 0x{:02X}", address, local ? "local" : "data", size));
-        }
+        void readData(u64 address, void *buffer, size_t size, u64 sectionId);
 
         void setDefaultEndian(std::endian endian) {
             this->m_defaultEndian = endian;
@@ -354,6 +333,9 @@ namespace pl::core {
         u64 m_currPatternCount = 0;
 
         std::atomic<bool> m_aborted;
+
+        std::vector<u64> m_sectionIdStack;
+        std::vector<std::vector<u8>> m_sections;
 
         std::vector<Scope> m_scopes;
         std::unordered_map <std::string, api::Function> m_customFunctions;

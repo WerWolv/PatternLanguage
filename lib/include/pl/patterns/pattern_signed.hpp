@@ -15,7 +15,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] core::Token::Literal getValue() const override {
             i128 data = 0;
-            this->getEvaluator()->readData(this->getOffset(), &data, this->getSize(), this->isLocal());
+            this->getEvaluator()->readData(this->getOffset(), &data, this->getSize(), this->getSection());
             data = hlp::changeEndianess(data, this->getSize(), this->getEndian());
 
             return hlp::signExtend(this->getSize() * 8, data);

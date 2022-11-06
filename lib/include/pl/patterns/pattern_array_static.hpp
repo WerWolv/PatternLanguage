@@ -129,7 +129,7 @@ namespace pl::ptrn {
             this->m_highlightTemplate = this->m_template->clone();
             this->m_entryCount        = count;
 
-            this->m_template->setLocal(this->isLocal());
+            this->m_template->setSection(this->getSection());
 
             this->m_template->setBaseColor(this->getColor());
             this->m_highlightTemplate->setBaseColor(this->getColor());
