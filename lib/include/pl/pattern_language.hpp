@@ -90,7 +90,7 @@ namespace pl {
         [[nodiscard]] const std::vector<u8>& getSection(u64 id);
         [[nodiscard]] const std::map<u64, api::Section>& getSections() const;
 
-        [[nodiscard]] const std::vector<std::shared_ptr<ptrn::Pattern>> &getAllPatterns() const;
+        [[nodiscard]] const std::vector<std::shared_ptr<ptrn::Pattern>> &getAllPatterns(u64 section = 0x00) const;
         [[nodiscard]] std::vector<ptrn::Pattern *> getPatternsAtAddress(u64 address, u64 section = 0x00) const;
 
         void reset();
@@ -113,7 +113,7 @@ namespace pl {
         std::optional<core::err::PatternLanguageError> m_currError;
 
         std::vector<std::shared_ptr<core::ast::ASTNode>> m_currAST;
-        std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;
+        std::map<u64, std::vector<std::shared_ptr<ptrn::Pattern>>> m_patterns;
         std::map<u64, interval_tree::IntervalTree<u64, ptrn::Pattern*>> m_flattenedPatterns;
 
         bool m_running = false;

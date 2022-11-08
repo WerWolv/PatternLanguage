@@ -135,12 +135,9 @@ namespace pl {
             return false;
         }
 
-        this->m_patterns = evaluator->getPatterns();
-
-        // Remove global local variables
-        std::erase_if(this->m_patterns, [](const std::shared_ptr<ptrn::Pattern> &pattern) {
-            return pattern->getSection() == ptrn::Pattern::HeapSectionId;
-        });
+        for (const auto &pattern : evaluator->getPatterns())
+            this->m_patterns[pattern->getSection()].push_back(pattern);
+        this->m_patterns.erase(ptrn::Pattern::HeapSectionId);
 
         this->flattenPatterns();
 
@@ -255,8 +252,12 @@ namespace pl {
         return this->m_internals.evaluator->getSections();
     }
 
-    [[nodiscard]] const std::vector<std::shared_ptr<ptrn::Pattern>> &PatternLanguage::getAllPatterns() const {
-        return this->m_patterns;
+    [[nodiscard]] const std::vector<std::shared_ptr<ptrn::Pattern>> &PatternLanguage::getAllPatterns(u64 section) const {
+        static const std::vector<std::shared_ptr<pl::ptrn::Pattern>> empty;
+        if (this->m_patterns.contains(section))
+            return this->m_patterns.at(section);
+        else
+            return empty;
     }
 
 
