@@ -31,6 +31,7 @@ add_library(libpl ${LIBRARY_TYPE}
         source/pl/lib/std/file.cpp
         source/pl/lib/std/time.cpp
         source/pl/lib/std/core.cpp
+        source/pl/lib/std/hash.cpp
 )
 
 target_compile_options(libpl PRIVATE -Wall -Wextra -Werror -Wno-unknown-pragmas)
