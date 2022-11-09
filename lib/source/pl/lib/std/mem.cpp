@@ -69,7 +69,7 @@ namespace pl::lib::libstd::mem {
                 return i128(-1);
             });
 
-            /* read_unsigned(address, size) */
+            /* read_unsigned(address, size, endian) */
             runtime.addFunction(nsStdMem, "read_unsigned", FunctionParameterCount::exactly(3), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 auto address            = Token::literalToUnsigned(params[0]);
                 auto size               = Token::literalToSigned(params[1]);
@@ -85,7 +85,7 @@ namespace pl::lib::libstd::mem {
                 return result;
             });
 
-            /* read_signed(address, size) */
+            /* read_signed(address, size, endian) */
             runtime.addFunction(nsStdMem, "read_signed", FunctionParameterCount::exactly(3), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 auto address            = Token::literalToUnsigned(params[0]);
                 auto size               = Token::literalToSigned(params[1]);
@@ -102,7 +102,7 @@ namespace pl::lib::libstd::mem {
                 return hlp::signExtend(size * 8, value);
             });
 
-            /* read_string(address, size) */
+            /* read_string(address, size, endian) */
             runtime.addFunction(nsStdMem, "read_string", FunctionParameterCount::exactly(2), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 auto address = Token::literalToUnsigned(params[0]);
                 auto size    = Token::literalToUnsigned(params[1]);

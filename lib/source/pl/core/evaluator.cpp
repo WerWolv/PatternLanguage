@@ -294,6 +294,9 @@ namespace pl::core {
     }
 
     void Evaluator::setVariable(ptrn::Pattern *pattern, const Token::Literal &value) {
+        if (pattern->isReference())
+            return;
+
         if (!pattern->isLocal())
             err::E0003.throwError(fmt::format("Cannot assign value to non-local pattern '{}'.", pattern->getVariableName()), {});
 
