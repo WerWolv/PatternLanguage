@@ -11,6 +11,7 @@
 #include <pl/patterns/pattern_bitfield.hpp>
 #include <pl/patterns/pattern_array_static.hpp>
 #include <pl/patterns/pattern_array_dynamic.hpp>
+#include <pl/patterns/pattern_enum.hpp>
 
 #include <vector>
 #include <string>
@@ -174,6 +175,24 @@ namespace pl::lib::libstd::core {
                 auto pattern = Token::literalToPattern(params[0]);
 
                 return pattern->getFormattedValue();
+            });
+
+            /* is_valid_enum(pattern) -> bool */
+            runtime.addFunction(nsStdCore, "is_valid_enum", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
+                auto pattern = Token::literalToPattern(params[0]);
+
+                if (auto enumPattern = dynamic_cast<ptrn::PatternEnum*>(pattern); enumPattern != nullptr) {
+                    auto value = Token::literalToUnsigned(enumPattern->getValue());
+                    for (auto &entry : enumPattern->getEnumValues()) {
+                        auto min = Token::literalToUnsigned(entry.min);
+                        auto max = Token::literalToUnsigned(entry.max);
+
+                        if (value >= min && value <= max)
+                            return true;
+                    }
+                }
+
+                return false;
             });
         }
     }
