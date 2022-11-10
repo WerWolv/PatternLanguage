@@ -3,8 +3,23 @@
 #include <pl/core/validator.hpp>
 #include <pl/core/evaluator.hpp>
 
-namespace pl::lib::libstd {
+using namespace pl;
 
+constexpr static auto MaxLimit = std::numeric_limits<u64>::max();
+
+std::optional<u64> parseLimit(const std::string &value) {
+    std::size_t pos {};
+    auto tlimit = std::stoll(value, &pos);
+
+    if (pos == 0) {
+        return std::nullopt;
+    } else if (tlimit == 0) {
+        tlimit = MaxLimit;
+    }
+    return std::optional<u64>{tlimit};
+}
+
+namespace pl::lib::libstd {
     void registerPragmas(pl::PatternLanguage &runtime) {
         runtime.addPragma("endian", [](pl::PatternLanguage &runtime, const std::string &value) {
             if (value == "big") {
@@ -21,10 +36,10 @@ namespace pl::lib::libstd {
         });
 
         runtime.addPragma("eval_depth", [](pl::PatternLanguage &runtime, const std::string &value) {
-            auto limit = strtol(value.c_str(), nullptr, 0);
-
-            if (limit <= 0)
+            auto tlimit = parseLimit(value);
+            if (!tlimit.has_value() || tlimit == std::optional{MaxLimit})
                 return false;
+            auto limit = tlimit.value();
 
             runtime.getInternals().evaluator->setEvaluationDepth(limit);
             runtime.getInternals().validator->setRecursionDepth(limit);
@@ -32,30 +47,30 @@ namespace pl::lib::libstd {
         });
 
         runtime.addPragma("array_limit", [](pl::PatternLanguage &runtime, const std::string &value) {
-            auto limit = strtol(value.c_str(), nullptr, 0);
-
-            if (limit <= 0)
+            auto tlimit = parseLimit(value);
+            if (!tlimit.has_value())
                 return false;
+            auto limit = tlimit.value();
 
             runtime.getInternals().evaluator->setArrayLimit(limit);
             return true;
         });
 
         runtime.addPragma("pattern_limit", [](pl::PatternLanguage &runtime, const std::string &value) {
-            auto limit = strtol(value.c_str(), nullptr, 0);
-
-            if (limit <= 0)
+            auto tlimit = parseLimit(value);
+            if (!tlimit.has_value())
                 return false;
+            auto limit = tlimit.value();
 
             runtime.getInternals().evaluator->setPatternLimit(limit);
             return true;
         });
 
         runtime.addPragma("loop_limit", [](pl::PatternLanguage &runtime, const std::string &value) {
-            auto limit = strtol(value.c_str(), nullptr, 0);
-
-            if (limit <= 0)
+            auto tlimit = parseLimit(value);
+            if (!tlimit.has_value() || tlimit == std::optional{MaxLimit})
                 return false;
+            auto limit = tlimit.value();
 
             runtime.getInternals().evaluator->setLoopLimit(limit);
             return true;
