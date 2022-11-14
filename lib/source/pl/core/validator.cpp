@@ -31,7 +31,9 @@ namespace pl::core {
                 this->m_lastNode = node.get();
 
                 // Variables named "$padding$" are paddings and can appear multiple times per type definition
+                // Variables that don't have a name are anonymous and can appear multiple times per type definition
                 identifiers.erase("$padding$");
+                identifiers.erase("");
 
                 if (this->m_recursionDepth > this->m_maxRecursionDepth)
                     err::V0003.throwError(fmt::format("Type recursion depth exceeded set limit of '{}'.", this->m_maxRecursionDepth), "If this is intended, try increasing the limit using '#pragma eval_depth <new_limit>'.");

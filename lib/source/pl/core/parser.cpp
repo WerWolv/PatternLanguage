@@ -503,7 +503,7 @@ namespace pl::core {
             if (MATCHES(sequence(tkn::Separator::LeftBracket) && !peek(tkn::Separator::LeftBracket))) {
                 statement = parseMemberArrayVariable(std::move(type), false);
             } else {
-                statement = parseMemberVariable(std::move(type), false);
+                statement = parseMemberVariable(std::move(type), false, identifier);
 
                 if (MATCHES(sequence(tkn::Operator::Assign))) {
                     auto expression = parseMathematicalExpression();
@@ -876,14 +876,17 @@ namespace pl::core {
     }
 
     // (parseType) Identifier
-    std::unique_ptr<ast::ASTNode> Parser::parseMemberVariable(const std::shared_ptr<ast::ASTNodeTypeDecl> &type, bool allowPlacement) {
+    std::unique_ptr<ast::ASTNode> Parser::parseMemberVariable(const std::shared_ptr<ast::ASTNodeTypeDecl> &type, bool allowPlacement, const std::string &identifier) {
         if (peek(tkn::Separator::Comma)) {
 
             std::vector<std::shared_ptr<ast::ASTNode>> variables;
 
+            std::string variableName = identifier;
             do {
-                variables.push_back(createShared<ast::ASTNodeVariableDecl>(getValue<Token::Identifier>(-1).get(), type));
-            } while (MATCHES(sequence(tkn::Separator::Comma, tkn::Literal::Identifier)));
+                if (MATCHES(sequence(tkn::Literal::Identifier)) && peek(tkn::Separator::Comma))
+                    variableName = getValue<Token::Identifier>(-1).get();
+                variables.push_back(createShared<ast::ASTNodeVariableDecl>(variableName, type));
+            } while (MATCHES(sequence(tkn::Separator::Comma)));
 
             return create<ast::ASTNodeMultiVariableDecl>(std::move(variables));
         } else if (MATCHES(sequence(tkn::Operator::At))) {
@@ -894,7 +897,7 @@ namespace pl::core {
             return create<ast::ASTNodeVariableDecl>(variableName, type, parseMathematicalExpression());
         }
         else
-            return create<ast::ASTNodeVariableDecl>(getValue<Token::Identifier>(-1).get(), type);
+            return create<ast::ASTNodeVariableDecl>(identifier, type);
     }
 
     // (parseType) Identifier[(parseMathematicalExpression)]
@@ -952,7 +955,6 @@ namespace pl::core {
     // (parseType) *Identifier[[(parseMathematicalExpression)]]  : (parseType)
     std::unique_ptr<ast::ASTNode> Parser::parseMemberPointerArrayVariable(const std::shared_ptr<ast::ASTNodeTypeDecl> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
-
         std::unique_ptr<ast::ASTNode> size;
 
         if (!MATCHES(sequence(tkn::Separator::RightBracket))) {
@@ -1014,14 +1016,14 @@ namespace pl::core {
 
                 if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Separator::LeftBracket) && sequence<Not>(tkn::Separator::LeftBracket)))
                     member = parseMemberArrayVariable(std::move(type), true);
-                else if (MATCHES(sequence(tkn::Literal::Identifier)))
-                    member = parseMemberVariable(std::move(type), true);
                 else if (MATCHES(sequence(tkn::Operator::Star, tkn::Literal::Identifier, tkn::Operator::Colon)))
                     member = parseMemberPointerVariable(std::move(type));
                 else if (MATCHES(sequence(tkn::Operator::Star, tkn::Literal::Identifier, tkn::Separator::LeftBracket)))
                     member = parseMemberPointerArrayVariable(std::move(type));
+                else if (MATCHES(sequence(tkn::Literal::Identifier)))
+                    member = parseMemberVariable(std::move(type), true, getValue<Token::Identifier>(-1).get());
                 else
-                    err::P0002.throwError("Invalid variable declaration.", {}, 1);
+                    member = parseMemberVariable(std::move(type), true, "");
             }
         } else if (MATCHES(sequence(tkn::ValueType::Padding, tkn::Separator::LeftBracket)))
             member = parsePadding();

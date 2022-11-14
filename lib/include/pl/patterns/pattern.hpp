@@ -104,7 +104,11 @@ namespace pl::ptrn {
         void setSize(size_t size) { this->m_size = size; }
 
         [[nodiscard]] const std::string &getVariableName() const { return this->m_variableName; }
-        void setVariableName(std::string name) { this->m_variableName = std::move(name); }
+        void setVariableName(std::string name) {
+            if (name.empty())
+                this->setDisplayName(fmt::format("{} @ 0x{:02X}", this->getTypeName(), this->getOffset()));
+            this->m_variableName = std::move(name);
+        }
 
         [[nodiscard]] auto getComment() const { return this->getAttributeValue("comment").value_or(""); }
         void setComment(const std::string &comment) { this->addAttribute("comment", comment); }
