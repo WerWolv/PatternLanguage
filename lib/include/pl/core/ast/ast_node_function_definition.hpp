@@ -93,6 +93,7 @@ namespace pl::core::ast {
 
                     ctx->createVariable(name, type.get(), params[paramIndex], false, reference);
                     ctx->setVariable(name, params[paramIndex]);
+                    ctx->setCurrentControlFlowStatement(ControlFlowStatement::None);
                 }
 
                 for (auto &statement : this->m_body) {
