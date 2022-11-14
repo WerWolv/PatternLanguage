@@ -560,7 +560,7 @@ namespace pl::core {
                     } else if (auto varDeclNode = dynamic_cast<ast::ASTNodeVariableDecl *>(node); varDeclNode != nullptr) {
                         for (auto &pattern : varDeclNode->createPatterns(this)) {
                             if (varDeclNode->getPlacementOffset() == nullptr) {
-                                auto &name = pattern->getVariableName();
+                                auto name = pattern->getVariableName();
                                 hlp::unused(varDeclNode->execute(this));
 
                                 if (varDeclNode->isInVariable() && this->m_inVariables.contains(name))

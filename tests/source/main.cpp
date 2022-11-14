@@ -98,7 +98,7 @@ int runTests(int argc, char **argv) {
         auto &controlPattern   = *controlPatterns[i];
 
         if (evaluatedPattern != controlPattern) {
-            fmt::print("Pattern with name {}:{} didn't match template\n", evaluatedPattern.getTypeName(), evaluatedPattern.getVariableName());
+            fmt::print("Pattern with name {} didn't match template\n", evaluatedPattern.getVariableName());
             return EXIT_FAILURE;
         }
     }

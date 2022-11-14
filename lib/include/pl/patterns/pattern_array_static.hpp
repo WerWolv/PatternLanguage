@@ -109,7 +109,10 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::string getTypeName() const override {
-            return this->m_template->getTypeName();
+            if (this->m_template == nullptr)
+                return Pattern::getTypeName();
+            else
+                return this->m_template->getTypeName();
         }
 
         [[nodiscard]] const std::shared_ptr<Pattern> &getTemplate() const {

@@ -883,7 +883,7 @@ namespace pl::core {
 
             std::string variableName = identifier;
             do {
-                if (MATCHES(sequence(tkn::Literal::Identifier)) && peek(tkn::Separator::Comma))
+                if (MATCHES(sequence(tkn::Literal::Identifier)))
                     variableName = getValue<Token::Identifier>(-1).get();
                 variables.push_back(createShared<ast::ASTNodeVariableDecl>(variableName, type));
             } while (MATCHES(sequence(tkn::Separator::Comma)));

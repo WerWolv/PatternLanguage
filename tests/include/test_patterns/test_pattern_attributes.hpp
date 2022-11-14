@@ -54,7 +54,7 @@ namespace pl::test {
 
         [[nodiscard]] bool runChecks(const std::vector<std::shared_ptr<ptrn::Pattern>> &patterns) const override {
             for (const auto &pattern : patterns) {
-                auto &varName = pattern->getVariableName();
+                auto varName = pattern->getVariableName();
 
                 if (varName == "formatTransformTest") {
                     if (pattern->getFormattedValue() != "Hello World")

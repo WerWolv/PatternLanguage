@@ -80,7 +80,8 @@ namespace pl::ptrn {
 
         void setPointerTypePattern(std::shared_ptr<Pattern> &&pattern) {
             Pattern::setSize(pattern->getSize());
-            Pattern::setEndian(pattern->getEndian());
+            if (pattern->hasOverriddenEndian())
+                Pattern::setEndian(pattern->getEndian());
             this->m_pointerType = std::move(pattern);
             this->m_signed = dynamic_cast<const PatternSigned *>(this->m_pointerType.get()) != nullptr;
         }

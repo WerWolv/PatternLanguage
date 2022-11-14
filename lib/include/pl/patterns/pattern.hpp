@@ -103,10 +103,13 @@ namespace pl::ptrn {
         [[nodiscard]] size_t getSize() const { return this->m_size; }
         void setSize(size_t size) { this->m_size = size; }
 
-        [[nodiscard]] const std::string &getVariableName() const { return this->m_variableName; }
+        [[nodiscard]] std::string getVariableName() const {
+            if (this->m_variableName.empty())
+                return fmt::format("{} @ 0x{:02X}", this->getTypeName(), this->getOffset());
+            else
+                return this->m_variableName;
+        }
         void setVariableName(std::string name) {
-            if (name.empty())
-                this->setDisplayName(fmt::format("{} @ 0x{:02X}", this->getTypeName(), this->getOffset()));
             this->m_variableName = std::move(name);
         }
 

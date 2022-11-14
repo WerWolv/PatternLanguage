@@ -213,7 +213,8 @@ namespace pl::core::ast {
             }
 
             outputPattern->setVariableName(this->m_name);
-            outputPattern->setEndian(templatePattern->getEndian());
+            if (templatePattern->hasOverriddenEndian())
+                outputPattern->setEndian(templatePattern->getEndian());
             outputPattern->setTypeName(templatePattern->getTypeName());
             outputPattern->setSize(templatePattern->getSize() * entryCount);
             outputPattern->setSection(templatePattern->getSection());
