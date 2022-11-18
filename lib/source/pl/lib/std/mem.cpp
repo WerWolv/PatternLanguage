@@ -12,6 +12,27 @@
 
 namespace pl::lib::libstd::mem {
 
+    static std::optional<u128> findSequence(core::Evaluator *ctx, u64 occurrenceIndex, u64 offsetFrom, u64 offsetTo, const std::vector<u8> &sequence) {
+        std::vector<u8> bytes(sequence.size(), 0x00);
+        u32 occurrences      = 0;
+        const u64 bufferSize = ctx->getDataSize();
+        const u64 endOffset  = offsetTo <= offsetFrom ? bufferSize : std::min(bufferSize, u64(offsetTo));
+        for (u64 offset = offsetFrom; offset < endOffset - sequence.size(); offset++) {
+            ctx->readData(offset, bytes.data(), bytes.size(), ptrn::Pattern::MainSectionId);
+
+            if (bytes == sequence) {
+                if (occurrences < occurrenceIndex) {
+                    occurrences++;
+                    continue;
+                }
+
+                return u128(offset);
+            }
+        }
+
+        return std::nullopt;
+    };
+
     void registerFunctions(pl::PatternLanguage &runtime) {
         using FunctionParameterCount = pl::api::FunctionParameterCount;
         using namespace pl::core;
@@ -49,24 +70,17 @@ namespace pl::lib::libstd::mem {
                     sequence.push_back(u8(byte & 0xFF));
                 }
 
-                std::vector<u8> bytes(sequence.size(), 0x00);
-                u32 occurrences      = 0;
-                const u64 bufferSize = ctx->getDataSize();
-                const u64 endOffset  = offsetTo <= offsetFrom ? bufferSize : std::min(bufferSize, u64(offsetTo));
-                for (u64 offset = offsetFrom; offset < endOffset - sequence.size(); offset++) {
-                    ctx->readData(offset, bytes.data(), bytes.size(), ptrn::Pattern::MainSectionId);
+                return findSequence(ctx, occurrenceIndex, offsetFrom, offsetTo, sequence).value_or(-1);
+            });
 
-                    if (bytes == sequence) {
-                        if (occurrences < occurrenceIndex) {
-                            occurrences++;
-                            continue;
-                        }
+            /* find_string_in_range(occurrence_index, start_offset, end_offset, string) */
+            runtime.addFunction(nsStdMem, "find_string_in_range", FunctionParameterCount::exactly(4), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
+                auto occurrenceIndex = Token::literalToUnsigned(params[0]);
+                auto offsetFrom      = Token::literalToUnsigned(params[1]);
+                auto offsetTo        = Token::literalToUnsigned(params[2]);
+                auto string          = Token::literalToString(params[3], false);
 
-                        return u128(offset);
-                    }
-                }
-
-                return i128(-1);
+                return findSequence(ctx, occurrenceIndex, offsetFrom, offsetTo, std::vector<u8>(string.data(), string.data() + string.size())).value_or(-1);
             });
 
             /* read_unsigned(address, size, endian) */
