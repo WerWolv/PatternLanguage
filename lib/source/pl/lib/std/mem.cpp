@@ -162,7 +162,6 @@ namespace pl::lib::libstd::mem {
 
             /* copy_value_to_section(value, section_id, to_address) */
             runtime.addFunction(nsStdMem, "copy_value_to_section", FunctionParameterCount::exactly(3), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto value      = Token::literalToPattern(params[0]);
                 auto toId       = Token::literalToUnsigned(params[1]);
                 auto toAddr     = Token::literalToUnsigned(params[2]);
 
@@ -171,19 +170,38 @@ namespace pl::lib::libstd::mem {
                 else if (toId == ptrn::Pattern::HeapSectionId)
                     err::E0012.throwError("Invalid section id.");
 
-                auto size = value->getSize();
                 auto& section = ctx->getSection(toId);
-                if (section.size() < toAddr + size)
-                    section.resize(toAddr + size);
 
-                if (auto iterable = dynamic_cast<ptrn::Iteratable*>(value)) {
-                    iterable->forEachEntry(0, iterable->getEntryCount(), [&](u64, ptrn::Pattern *entry) {
-                        auto entrySize = entry->getSize();
-                        ctx->readData(entry->getOffset(), section.data() + toAddr, entrySize, entry->getSection());
-                        toAddr += entrySize;
-                    });
-                } else {
-                    ctx->readData(value->getOffset(), section.data() + toAddr, size, value->getSection());
+                switch (Token::getLiteralType(params[0])) {
+                    using enum Token::LiteralType;
+                    case String: {
+                        auto string = Token::literalToString(params[0], false);
+
+                        if (section.size() < toAddr + string.size())
+                            section.resize(toAddr + string.size());
+
+                        std::copy(string.begin(), string.end(), section.begin() + toAddr);
+                        break;
+                    }
+                    case Pattern: {
+                        auto pattern = Token::literalToPattern(params[0]);
+
+                        if (section.size() < toAddr + pattern->getSize())
+                            section.resize(toAddr + pattern->getSize());
+
+                        if (auto iterable = dynamic_cast<ptrn::Iteratable*>(pattern)) {
+                            iterable->forEachEntry(0, iterable->getEntryCount(), [&](u64, ptrn::Pattern *entry) {
+                                auto entrySize = entry->getSize();
+                                ctx->readData(entry->getOffset(), section.data() + toAddr, entrySize, entry->getSection());
+                                toAddr += entrySize;
+                            });
+                        } else {
+                            ctx->readData(pattern->getOffset(), section.data() + toAddr, pattern->getSize(), pattern->getSection());
+                        }
+                        break;
+                    }
+                    default:
+                        err::E0012.throwError("Invalid value type.", "Only strings and patterns are allowed.");
                 }
 
                 return std::nullopt;
