@@ -123,8 +123,8 @@ namespace pl::core {
                 pattern = std::make_shared<ptrn::PatternBoolean>(this, 0);
             else if (std::get_if<char>(&value.value()) != nullptr)
                 pattern = std::make_shared<ptrn::PatternCharacter>(this, 0);
-            else if (std::get_if<std::string>(&value.value()) != nullptr)
-                pattern = std::make_shared<ptrn::PatternString>(this, 0, 1);
+            else if (auto string = std::get_if<std::string>(&value.value()); string != nullptr)
+                pattern = std::make_shared<ptrn::PatternString>(this, 0, string->size());
             else if (auto patternValue = std::get_if<ptrn::Pattern *>(&value.value()); patternValue != nullptr)
                 pattern       = (*patternValue)->clone();
             else
@@ -268,6 +268,7 @@ namespace pl::core {
             std::visit(hlp::overloaded {
                 [&](ptrn::Pattern * const value) {
                     auto offset = variablePattern->get()->getOffset();
+                    auto section = variablePattern->get()->getSection();
                     bool reference = variablePattern->get()->isReference();
 
                     *variablePattern = value->clone();
@@ -279,7 +280,12 @@ namespace pl::core {
                     if (!reference) {
                         pattern->setLocal(true);
                         pattern->setOffset(offset);
+                        pattern->setSection(section);
                     }
+                },
+                [&](const std::string &value) {
+                    auto pattern = variablePattern->get();
+                    pattern->setSize(value.size());
                 },
                 [](const auto &) {}
             }, value);
@@ -294,8 +300,16 @@ namespace pl::core {
     }
 
     void Evaluator::setVariable(ptrn::Pattern *pattern, const Token::Literal &value) {
-        if (pattern->isReference())
-            return;
+        if (pattern->isReference()) {
+            if (Token::getLiteralType(value) == Token::LiteralType::Pattern)
+                return;
+            else {
+                pattern->setReference(false);
+                pattern->setLocal(true);
+                pattern->setOffset(u64(this->getHeap().size()) << 32);
+                this->getHeap().emplace_back().resize(pattern->getSize());
+            }
+        }
 
         if (!pattern->isLocal())
             err::E0003.throwError(fmt::format("Cannot assign value to non-local pattern '{}'.", pattern->getVariableName()), {});

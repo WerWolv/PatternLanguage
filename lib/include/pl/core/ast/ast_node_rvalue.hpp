@@ -267,7 +267,6 @@ namespace pl::core::ast {
             if constexpr (isString) {
                 value.resize(variablePattern->getSize());
                 evaluator->readData(variablePattern->getOffset(), value.data(), value.size(), variablePattern->getSection());
-                value.erase(std::find(value.begin(), value.end(), '\0'), value.end());
             } else {
                 evaluator->readData(variablePattern->getOffset(), &value, variablePattern->getSize(), variablePattern->getSection());
             }

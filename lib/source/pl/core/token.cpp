@@ -67,6 +67,18 @@ namespace pl::core {
                           }, literal);
     }
 
+    Token::LiteralType Token::getLiteralType(const core::Token::Literal &literal) {
+        return std::visit(hlp::overloaded {
+                              [](const std::string &) -> LiteralType { return LiteralType::String; },
+                              [](ptrn::Pattern *) -> LiteralType { return LiteralType::Pattern; },
+                              [](u128) -> LiteralType { return LiteralType::Unsigned; },
+                              [](i128) -> LiteralType { return LiteralType::Signed; },
+                              [](double) -> LiteralType { return LiteralType::FloatingPoint; },
+                              [](char) -> LiteralType { return LiteralType::Character; },
+                              [](bool) -> LiteralType { return LiteralType::Boolean; }
+                          }, literal);
+    }
+
     [[nodiscard]] std::string Token::getFormattedType() const {
         switch (this->type) {
             using enum Token::Type;

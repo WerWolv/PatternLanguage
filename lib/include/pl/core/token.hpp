@@ -191,6 +191,18 @@ namespace pl::core {
         static bool literalToBoolean(const core::Token::Literal &literal);
         static std::string literalToString(const core::Token::Literal &literal, bool cast);
 
+        enum class LiteralType {
+            Character,
+            Boolean,
+            Unsigned,
+            Signed,
+            FloatingPoint,
+            String,
+            Pattern
+        };
+
+        static LiteralType getLiteralType(const core::Token::Literal &literal);
+
         [[nodiscard]] static const char* getTypeName(core::Token::ValueType type);
 
         [[nodiscard]] std::string getFormattedType() const;
