@@ -23,7 +23,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] core::Token::Literal getValue() const override {
             std::vector<u8> value(this->m_bitField->getSize(), 0);
-            this->getEvaluator()->readData(this->m_bitField->getOffset(), &value[0], value.size(), this->getSection());
+            this->getEvaluator()->readData(this->m_bitField->getOffset(), &value[0], value.size(), this->m_bitField->getSection());
 
             if (this->m_bitField->getEndian() != std::endian::native)
                 std::reverse(value.begin(), value.end());
