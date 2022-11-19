@@ -572,8 +572,13 @@ namespace pl::core {
                     } else if (dynamic_cast<ast::ASTNodeFunctionDefinition *>(node) != nullptr) {
                         this->m_customFunctionDefinitions.push_back(node->evaluate(this));
                     } else if (auto varDeclNode = dynamic_cast<ast::ASTNodeVariableDecl *>(node); varDeclNode != nullptr) {
+                        bool localVariable = varDeclNode->getPlacementOffset() == nullptr;
+
+                        if (localVariable)
+                            this->pushSectionId(ptrn::Pattern::HeapSectionId);
+
                         for (auto &pattern : varDeclNode->createPatterns(this)) {
-                            if (varDeclNode->getPlacementOffset() == nullptr) {
+                            if (localVariable) {
                                 auto name = pattern->getVariableName();
                                 hlp::unused(varDeclNode->execute(this));
 
@@ -588,9 +593,17 @@ namespace pl::core {
                             if (this->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
                                 break;
                         }
+
+                        if (localVariable)
+                            this->popSectionId();
                     } else if (auto arrayVarDeclNode = dynamic_cast<ast::ASTNodeArrayVariableDecl *>(node); arrayVarDeclNode != nullptr) {
+                        bool localVariable = arrayVarDeclNode->getPlacementOffset() == nullptr;
+
+                        if (localVariable)
+                            this->pushSectionId(ptrn::Pattern::HeapSectionId);
+
                         for (auto &pattern : arrayVarDeclNode->createPatterns(this)) {
-                            if (arrayVarDeclNode->getPlacementOffset() == nullptr) {
+                            if (localVariable) {
                                 hlp::unused(arrayVarDeclNode->execute(this));
 
                                 this->dataOffset() = startOffset;
@@ -598,6 +611,9 @@ namespace pl::core {
                                 this->m_patterns.push_back(std::move(pattern));
                             }
                         }
+
+                        if (localVariable)
+                            this->popSectionId();
                     } else if (auto pointerVarDecl = dynamic_cast<ast::ASTNodePointerVariableDecl *>(node); pointerVarDecl != nullptr) {
                         for (auto &pattern : pointerVarDecl->createPatterns(this)) {
                             if (pointerVarDecl->getPlacementOffset() == nullptr) {
@@ -607,7 +623,9 @@ namespace pl::core {
                             }
                         }
                     } else {
+                        this->pushSectionId(ptrn::Pattern::HeapSectionId);
                         hlp::unused(node->execute(this));
+                        this->popSectionId();
                     }
 
                     if (this->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
