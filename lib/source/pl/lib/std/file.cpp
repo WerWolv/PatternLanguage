@@ -72,8 +72,10 @@ namespace pl::lib::libstd::file {
 
                 if (!openFiles.contains(file))
                     throwInvalidFileError();
+                
+                auto buffer = openFiles[file].readBytes(size);
 
-                return openFiles[file].readString(size);
+                return std::string(buffer.begin(), buffer.end());
             });
 
             /* write(file, data) */
