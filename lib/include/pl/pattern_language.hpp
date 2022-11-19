@@ -104,6 +104,10 @@ namespace pl {
             return this->m_internals;
         }
 
+        void addCleanupCallback(const std::function<void(PatternLanguage&)> &callback) {
+            this->m_cleanupCallbacks.push_back(callback);
+        }
+
     private:
         void flattenPatterns();
 
@@ -115,6 +119,7 @@ namespace pl {
         std::vector<std::shared_ptr<core::ast::ASTNode>> m_currAST;
         std::map<u64, std::vector<std::shared_ptr<ptrn::Pattern>>> m_patterns;
         std::map<u64, interval_tree::IntervalTree<u64, ptrn::Pattern*>> m_flattenedPatterns;
+        std::vector<std::function<void(PatternLanguage&)>> m_cleanupCallbacks;
 
         bool m_running = false;
         std::atomic<bool> m_aborted = false;

@@ -100,6 +100,9 @@ namespace pl {
 
                 evaluator->getConsole().log(core::LogConsole::Level::Error, error.message);
             }
+
+            for (const auto &cleanupCallback : this->m_cleanupCallbacks)
+                cleanupCallback(*this);
         };
 
         this->reset();

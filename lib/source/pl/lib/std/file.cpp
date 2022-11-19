@@ -22,6 +22,14 @@ namespace pl::lib::libstd::file {
             static u32 fileCounter = 0;
             static std::map<u32, hlp::fs::File> openFiles;
 
+            runtime.addCleanupCallback([](pl::PatternLanguage&) {
+                for (auto &[id, file] : openFiles)
+                    file.close();
+
+                openFiles.clear();
+                fileCounter = 0;
+            });
+
             /* open(path, mode) */
             runtime.addDangerousFunction(nsStdFile, "open", FunctionParameterCount::exactly(2), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 const auto path     = Token::literalToString(params[0], false);
