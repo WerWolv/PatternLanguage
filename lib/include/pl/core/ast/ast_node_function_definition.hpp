@@ -71,9 +71,11 @@ namespace pl::core::ast {
 
                 auto startOffset = ctx->dataOffset();
                 ctx->pushScope(nullptr, variables);
+                ctx->pushSectionId(ptrn::Pattern::HeapSectionId);
                 PL_ON_SCOPE_EXIT {
                     ctx->popScope();
                     ctx->dataOffset() = startOffset;
+                    ctx->popSectionId();
                 };
 
                 if (this->m_parameterPack.has_value()) {

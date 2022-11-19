@@ -331,14 +331,10 @@ namespace pl::core {
             }();
 
             auto copyToStorage = [&](const auto &value) {
-                if (heapSection) {
-                    storage.resize(pattern->getSize());
-                    std::memcpy(storage.data(), &value, pattern->getSize());
-                }
-                else if (storage.size() < pattern->getOffset() + pattern->getSize()) {
-                    storage.resize(pattern->getOffset() + pattern->getSize());
-                    std::memcpy(storage.data() + pattern->getOffset(), &value, pattern->getSize());
-                }
+                u64 offset = heapSection ? pattern->getOffset() & 0xFFFF'FFFF : pattern->getOffset();
+
+                storage.resize(offset + pattern->getSize());
+                std::memcpy(storage.data() + offset, &value, pattern->getSize());
 
                 if (this->isDebugModeEnabled())
                     this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));

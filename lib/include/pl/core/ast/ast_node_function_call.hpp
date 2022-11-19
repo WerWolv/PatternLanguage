@@ -41,8 +41,13 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override {
+            evaluator->pushSectionId(ptrn::Pattern::HeapSectionId);
+
             auto startOffset = evaluator->dataOffset();
-            PL_ON_SCOPE_EXIT { evaluator->dataOffset() = startOffset; };
+            PL_ON_SCOPE_EXIT {
+                evaluator->dataOffset() = startOffset;
+                evaluator->popSectionId();
+            };
 
             std::vector<Token::Literal> evaluatedParams;
             for (auto &param : this->m_params) {
