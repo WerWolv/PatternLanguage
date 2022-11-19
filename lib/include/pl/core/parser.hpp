@@ -131,7 +131,7 @@ namespace pl::core {
         void parseAttribute(ast::Attributable *currNode);
         std::unique_ptr<ast::ASTNode> parseConditional();
         std::unique_ptr<ast::ASTNode> parseWhileStatement();
-        std::unique_ptr<ast::ASTNodeTypeDecl> parseType(bool disallowSpecialTypes = false);
+        std::unique_ptr<ast::ASTNodeTypeDecl> parseType();
         std::vector<std::shared_ptr<ast::ASTNode>> parseTemplateList();
         std::shared_ptr<ast::ASTNodeTypeDecl> parseUsingDeclaration();
         std::unique_ptr<ast::ASTNode> parsePadding();

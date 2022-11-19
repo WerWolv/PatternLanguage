@@ -186,7 +186,7 @@ namespace pl::core {
                     for (const auto &potentialTypes : getNamespacePrefixedNames(parseNamespaceResolution())) {
                         if (this->m_types.contains(potentialTypes)) {
                             this->m_curr = startToken - 1;
-                            result = create<ast::ASTNodeTypeOperator>(op, parseType(true));
+                            result = create<ast::ASTNodeTypeOperator>(op, parseType());
                             break;
                         }
                     }
@@ -731,13 +731,10 @@ namespace pl::core {
     /* Type declarations */
 
     // [be|le] <Identifier|u8|u16|u24|u32|u48|u64|u96|u128|s8|s16|s24|s32|s48|s64|s96|s128|float|double|str>
-    std::unique_ptr<ast::ASTNodeTypeDecl> Parser::parseType(bool disallowSpecialTypes) {
+    std::unique_ptr<ast::ASTNodeTypeDecl> Parser::parseType() {
         std::optional<std::endian> endian;
 
         bool reference = MATCHES(sequence(tkn::Keyword::Reference));
-
-        if (disallowSpecialTypes && reference)
-            err::P0002.throwError("Cannot use reference type in this context.", {}, 1);
 
         if (MATCHES(sequence(tkn::Keyword::LittleEndian)))
             endian = std::endian::little;
@@ -777,7 +774,7 @@ namespace pl::core {
 
                         auto parameter = templateTypes[index];
                         if (auto type = dynamic_cast<ast::ASTNodeTypeDecl*>(parameter.get()); type != nullptr) {
-                            auto newType = parseType(true);
+                            auto newType = parseType();
                             if (newType->isForwardDeclared())
                                 err::P0002.throwError("Cannot use forward declared type as template parameter.", {}, 1);
 
@@ -800,13 +797,6 @@ namespace pl::core {
             return foundType;
         } else if (MATCHES(sequence(tkn::ValueType::Any))) {    // Builtin type
             auto type = getValue<Token::ValueType>(-1);
-
-            if (disallowSpecialTypes) {
-                if (type == Token::ValueType::Auto)
-                    err::P0002.throwError("Invalid type. 'auto' cannot be used in this context.", {}, 1);
-                else if (type == Token::ValueType::String)
-                    err::P0002.throwError("Invalid type. 'str' cannot be used in this context.", "Consider using a char[] instead.", 1);
-            }
 
             return create<ast::ASTNodeTypeDecl>("", create<ast::ASTNodeBuiltinType>(type), endian, reference);
         } else {
@@ -1392,7 +1382,7 @@ namespace pl::core {
     }
 
     std::unique_ptr<ast::ASTNode> Parser::parsePlacement() {
-        auto type = parseType(true);
+        auto type = parseType();
 
         if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Separator::LeftBracket)))
             return parseArrayVariablePlacement(std::move(type));
