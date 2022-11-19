@@ -103,7 +103,7 @@ namespace pl::core {
 
         auto startOffset = this->dataOffset();
 
-        auto heapAddress = u64(this->getHeap().size()) << 32;
+        auto heapAddress = u64(this->getHeap().size());
         if (!reference)
             this->getHeap().emplace_back();
 
@@ -141,7 +141,7 @@ namespace pl::core {
 
         if (!reference) {
             pattern->setLocal(true);
-            pattern->setOffset(heapAddress);
+            pattern->setOffset(heapAddress << 32);
             this->getHeap()[heapAddress].resize(pattern->getSize());
         }
         pattern->setReference(reference);
