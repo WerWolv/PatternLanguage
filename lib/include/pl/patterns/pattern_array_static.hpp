@@ -61,21 +61,25 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::vector<std::pair<u64, Pattern*>> getChildren() override {
-            std::vector<std::pair<u64, Pattern*>> result;
+            if (this->isSealed())
+                return { { this->getOffset(), this } };
+            else {
+                std::vector<std::pair<u64, Pattern*>> result;
 
-            this->m_highlightTemplate->setVariableName(this->getVariableName());
-            this->m_highlightTemplate->setOffset(this->getOffset());
-            auto children = this->m_highlightTemplate->getChildren();
+                this->m_highlightTemplate->setVariableName(this->getVariableName());
+                this->m_highlightTemplate->setOffset(this->getOffset());
+                auto children = this->m_highlightTemplate->getChildren();
 
-            result.reserve(this->getEntryCount() * children.size());
+                result.reserve(this->getEntryCount() * children.size());
 
-            for (size_t i = 0; i < this->getEntryCount(); i++) {
-                for (const auto &[offset, child] : children) {
-                    result.emplace_back(offset + i * this->m_template->getSize(), child);
+                for (size_t i = 0; i < this->getEntryCount(); i++) {
+                    for (const auto &[offset, child] : children) {
+                        result.emplace_back(offset + i * this->m_template->getSize(), child);
+                    }
                 }
-            }
 
-            return result;
+                return result;
+            }
         }
 
         void setLocal(bool local) override {
