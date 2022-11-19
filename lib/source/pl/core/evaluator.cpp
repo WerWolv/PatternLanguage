@@ -103,6 +103,10 @@ namespace pl::core {
 
         auto startOffset = this->dataOffset();
 
+        auto heapAddress = u64(this->getHeap().size()) << 32;
+        if (!reference)
+            this->getHeap().emplace_back();
+
         std::shared_ptr<ptrn::Pattern> pattern;
         auto typePattern = type->createPatterns(this);
 
@@ -137,8 +141,8 @@ namespace pl::core {
 
         if (!reference) {
             pattern->setLocal(true);
-            pattern->setOffset(u64(this->getHeap().size()) << 32);
-            this->getHeap().emplace_back().resize(pattern->getSize());
+            pattern->setOffset(heapAddress);
+            this->getHeap()[heapAddress].resize(pattern->getSize());
         }
         pattern->setReference(reference);
 
