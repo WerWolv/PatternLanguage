@@ -207,8 +207,8 @@ namespace pl::core::ast {
                 outputPattern = std::unique_ptr<ptrn::Pattern>(new ptrn::PatternWideString(evaluator, startOffset, 0));
             } else {
                 auto arrayPattern = std::make_unique<ptrn::PatternArrayStatic>(evaluator, startOffset, 0);
-                arrayPattern->setSection(templatePattern->getSection());
                 arrayPattern->setEntries(templatePattern->clone(), entryCount);
+                arrayPattern->setSection(templatePattern->getSection());
                 outputPattern = std::move(arrayPattern);
             }
 

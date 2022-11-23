@@ -68,7 +68,6 @@ namespace pl::core::ast {
             auto pattern = std::make_unique<ptrn::PatternPointer>(evaluator, pointerStartOffset, sizePattern->getSize());
             pattern->setVariableName(this->m_name);
             pattern->setPointerTypePattern(std::move(sizePattern));
-            pattern->setSection(evaluator->getSectionId());
 
             auto pointerEndOffset = evaluator->dataOffset();
 
@@ -84,9 +83,9 @@ namespace pl::core::ast {
 
                 auto pointedAtPatterns = this->m_type->createPatterns(evaluator);
                 auto &pointedAtPattern = pointedAtPatterns.front();
-                pattern->setSection(evaluator->getSectionId());
 
                 pattern->setPointedAtPattern(std::move(pointedAtPattern));
+                pattern->setSection(evaluator->getSectionId());
             }
 
             if (this->m_placementOffset != nullptr && !evaluator->isGlobalScope()) {
