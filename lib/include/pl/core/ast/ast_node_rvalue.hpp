@@ -110,7 +110,7 @@ namespace pl::core::ast {
                 literal = pattern;
             }
 
-            if (auto& transformFunc = pattern->getTransformFunction(); transformFunc != nullptr) {
+            if (auto transformFunc = evaluator->findFunction(pattern->getTransformFunction()); transformFunc.has_value()) {
                 auto result = transformFunc->func(evaluator, { std::move(literal) });
 
                 if (!result.has_value())

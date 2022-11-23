@@ -549,6 +549,9 @@ namespace pl::core {
 
         this->m_customFunctionDefinitions.clear();
 
+        if (this->isDebugModeEnabled())
+            this->m_console.log(LogConsole::Level::Debug, fmt::format("Base Pattern size: 0x{:02X} bytes", sizeof(ptrn::Pattern)));
+
         try {
             this->setCurrentControlFlowStatement(ControlFlowStatement::None);
             this->pushScope(nullptr, this->m_patterns);

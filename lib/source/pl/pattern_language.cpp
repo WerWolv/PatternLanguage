@@ -306,24 +306,25 @@ namespace pl {
 
     void PatternLanguage::flattenPatterns() {
         using Interval = interval_tree::Interval<u64, ptrn::Pattern*>;
-        std::map<u64, std::vector<Interval>> sections;
 
-        for (const auto &pattern : this->getAllPatterns()) {
-            auto children = pattern->getChildren();
+        for (const auto &[section, patterns] : this->m_patterns) {
+            std::vector<Interval> intervals;
+            for (const auto &pattern : patterns) {
+                auto children = pattern->getChildren();
 
-            for (const auto &[address, child]: children) {
-                if (this->m_aborted)
-                    return;
+                for (const auto &[address, child]: children) {
+                    if (this->m_aborted)
+                        return;
 
-                if (child->getSize() == 0)
-                    continue;
+                    if (child->getSize() == 0)
+                        continue;
 
-                sections[child->getSection()].emplace_back(address, address + child->getSize() - 1, child);
+                    intervals.emplace_back(address, address + child->getSize() - 1, child);
+                }
             }
-        }
 
-        for (auto &[section, intervals] : sections)
             this->m_flattenedPatterns[section] = std::move(intervals);
+        }
     }
 
     std::vector<ptrn::Pattern *> PatternLanguage::getPatternsAtAddress(u64 address, u64 section) const {

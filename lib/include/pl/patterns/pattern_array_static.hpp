@@ -60,6 +60,13 @@ namespace pl::ptrn {
             Pattern::setOffset(offset);
         }
 
+        void setSection(u64 id) override {
+            this->m_template->setSection(id);
+            this->m_highlightTemplate->setSection(id);
+
+            Pattern::setSection(id);
+        }
+
         [[nodiscard]] std::vector<std::pair<u64, Pattern*>> getChildren() override {
             if (this->isSealed())
                 return { { this->getOffset(), this } };

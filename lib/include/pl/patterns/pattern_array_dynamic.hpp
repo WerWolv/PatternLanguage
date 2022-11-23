@@ -51,6 +51,13 @@ namespace pl::ptrn {
             Pattern::setOffset(offset);
         }
 
+        void setSection(u64 id) override {
+            for (auto &entry : this->m_entries)
+                entry->setSection(id);
+
+            Pattern::setSection(id);
+        }
+
         [[nodiscard]] std::vector<std::pair<u64, Pattern*>> getChildren() override {
             std::vector<std::pair<u64, Pattern*>> result;
 

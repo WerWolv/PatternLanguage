@@ -106,24 +106,22 @@ namespace pl::core::ast {
         }
 
         if (auto value = attributable->getAttributeValue("format"); value) {
-            auto functions = evaluator->getCustomFunctions();
-            if (!functions.contains(*value))
+            auto function = evaluator->findFunction(*value);
+            if (!function.has_value())
                 err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", *value), {}, node);
 
-            const auto &function = functions[*value];
-            if (function.parameterCount != api::FunctionParameterCount::exactly(1))
+            if (function->parameterCount != api::FunctionParameterCount::exactly(1))
                 err::E0009.throwError(fmt::format("Formatter function '{}' needs to take exactly one parameter.", *value), fmt::format("Try 'fn {}({} value)' instead", *value, pattern->getTypeName()), node);
 
-            pattern->setFormatterFunction(function);
+            pattern->setFormatterFunction(*value);
         }
 
         if (auto value = attributable->getAttributeValue("format_entries"); value) {
-            auto functions = evaluator->getCustomFunctions();
-            if (!functions.contains(*value))
+            auto function = evaluator->findFunction(*value);
+            if (!function.has_value())
                 err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", *value), {}, node);
 
-            const auto &function = functions[*value];
-            if (function.parameterCount != api::FunctionParameterCount::exactly(1))
+            if (function->parameterCount != api::FunctionParameterCount::exactly(1))
                 err::E0009.throwError(fmt::format("Formatter function '{}' needs to take exactly one parameter.", *value), fmt::format("Try 'fn {}({} value)' instead", *value, pattern->getTypeName()), node);
 
             auto array = dynamic_cast<ptrn::PatternArrayDynamic *>(pattern);
@@ -131,36 +129,34 @@ namespace pl::core::ast {
                 err::E0009.throwError("The [[inline_array]] attribute can only be applied to dynamic array types.", {}, node);
 
             for (const auto &entry : array->getEntries()) {
-                entry->setFormatterFunction(function);
+                entry->setFormatterFunction(*value);
             }
         }
 
         if (auto value = attributable->getAttributeValue("transform"); value) {
-            auto functions = evaluator->getCustomFunctions();
-            if (!functions.contains(*value))
-                err::E0009.throwError(fmt::format("Transform function '{}' does not exist.", *value), {}, node);
+            auto function = evaluator->findFunction(*value);
+            if (!function.has_value())
+                err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", *value), {}, node);
 
-            const auto &function = functions[*value];
-            if (function.parameterCount != api::FunctionParameterCount::exactly(1))
+            if (function->parameterCount != api::FunctionParameterCount::exactly(1))
                 err::E0009.throwError(fmt::format("Transform function '{}' needs to take exactly one parameter.", *value), fmt::format("Try 'fn {}({} value)' instead", *value, pattern->getTypeName()), node);
 
-            pattern->setTransformFunction(function);
+            pattern->setTransformFunction(*value);
         }
 
         if (auto value = attributable->getAttributeValue("pointer_base"); value) {
-            auto functions = evaluator->getCustomFunctions();
-            if (!functions.contains(*value))
+            auto function = evaluator->findFunction(*value);
+            if (!function.has_value())
                 err::E0009.throwError(fmt::format("Pointer base function '{}' does not exist.", *value), {}, node);
 
 
             if (auto pointerPattern = dynamic_cast<ptrn::PatternPointer *>(pattern)) {
                 i128 pointerValue = pointerPattern->getPointedAtAddress();
 
-                const auto &function = functions[*value];
-                if (function.parameterCount != api::FunctionParameterCount::exactly(1))
+                if (function->parameterCount != api::FunctionParameterCount::exactly(1))
                     err::E0009.throwError(fmt::format("Transform function '{}' needs to take exactly one parameter.", *value), fmt::format("Try 'fn {}({} value)' instead", *value, pointerPattern->getPointerType()->getTypeName()), node);
 
-                auto result = function.func(evaluator, { pointerValue });
+                auto result = function->func(evaluator, { pointerValue });
 
                 if (!result.has_value())
                     err::E0009.throwError(fmt::format("Pointer base function '{}' did not return a value.", *value), "Try adding a 'return <value>;' statement in all code paths.", node);

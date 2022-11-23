@@ -57,6 +57,12 @@ namespace pl::ptrn {
             return children;
         }
 
+        void setSection(u64 id) override {
+            this->m_pointedAt->setSection(id);
+
+            Pattern::setSection(id);
+        }
+
         void setLocal(bool local) override {
             this->m_pointedAt->setLocal(local);
 

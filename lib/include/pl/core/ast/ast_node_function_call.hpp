@@ -62,16 +62,9 @@ namespace pl::core::ast {
                 }
             }
 
-            const auto &customFunctions     = evaluator->getCustomFunctions();
-            const auto &builtinFunctions    = evaluator->getBuiltinFunctions();
+            auto function = evaluator->findFunction(this->m_functionName);
 
-            const api::Function *function = nullptr;
-
-            if (auto customFunction = customFunctions.find(this->m_functionName); customFunction != customFunctions.end())
-                function = &customFunction->second;
-            else if (auto builtinFunction = builtinFunctions.find(this->m_functionName); builtinFunction != builtinFunctions.end())
-                function = &builtinFunction->second;
-            else {
+            if (!function.has_value()) {
                 if (this->m_functionName.starts_with("std::")) {
                     evaluator->getConsole().log(LogConsole::Level::Warning, "This function might be part of the standard library.\nYou can install the standard library though\nthe Content Store found under Help -> Content Store and then\ninclude the correct file.");
                 }

@@ -30,38 +30,13 @@ namespace pl::ptrn {
         [[nodiscard]] virtual size_t getEntryCount() const = 0;
     };
 
-    class PatternCreationLimiter {
-    public:
-        explicit PatternCreationLimiter(core::Evaluator *evaluator) : m_evaluator(evaluator) {
-            if (getEvaluator() == nullptr) return;
-
-            getEvaluator()->patternCreated();
-        }
-
-        PatternCreationLimiter(const PatternCreationLimiter &other) : PatternCreationLimiter(other.m_evaluator) { }
-
-        virtual ~PatternCreationLimiter() {
-            if (getEvaluator() == nullptr) return;
-
-            getEvaluator()->patternDestroyed();
-        }
-
-        [[nodiscard]] core::Evaluator *getEvaluator() const {
-            return this->m_evaluator;
-        }
-
-    private:
-        core::Evaluator *m_evaluator = nullptr;
-    };
-
-    class Pattern : public PatternCreationLimiter,
-                    public Cloneable<Pattern> {
+    class Pattern {
     public:
         constexpr static u64 MainSectionId = 0x0000'0000'0000'0000;
         constexpr static u64 HeapSectionId = 0xFFFF'FFFF'FFFF'FFFF;
 
         Pattern(core::Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
-            : PatternCreationLimiter(evaluator), m_offset(offset), m_size(size), m_color(color) {
+            : m_evaluator(evaluator), m_offset(offset), m_size(size), m_color(color) {
 
             if (color != 0)
                 return;
@@ -69,30 +44,34 @@ namespace pl::ptrn {
             if (evaluator != nullptr) {
                 this->m_color       = evaluator->getNextPatternColor();
                 this->m_manualColor = false;
+                evaluator->patternCreated();
             }
         }
 
-        Pattern(const Pattern &other) : PatternCreationLimiter(other) {
+        Pattern(const Pattern &other) {
+            this->m_evaluator = other.m_evaluator;
             this->m_offset = other.m_offset;
             this->m_endian = other.m_endian;
-            this->m_variableName = other.m_variableName;
             this->m_size = other.m_size;
             this->m_color = other.m_color;
-            this->m_cachedDisplayValue = other.m_cachedDisplayValue;
-            this->m_typeName = other.m_typeName;
             this->m_manualColor = other.m_manualColor;
             this->m_section = other.m_section;
 
+            if (other.m_variableName != nullptr)
+                this->m_variableName = std::make_unique<std::string>(*other.m_variableName);
+            if (other.m_typeName != nullptr)
+                this->m_typeName = std::make_unique<std::string>(*other.m_typeName);
+            if (other.m_cachedDisplayValue != nullptr)
+                this->m_cachedDisplayValue = std::make_unique<std::string>(*other.m_cachedDisplayValue);
             if (other.m_attributes != nullptr)
                 this->m_attributes = std::make_unique<std::map<std::string, std::string>>(*other.m_attributes);
-
-            if (other.m_formatterFunction != nullptr)
-                this->m_formatterFunction = std::make_unique<api::Function>(*other.m_formatterFunction);
-            if (other.m_transformFunction != nullptr)
-                this->m_transformFunction = std::make_unique<api::Function>(*other.m_transformFunction);
         }
 
-        ~Pattern() override = default;
+        virtual ~Pattern() {
+            this->m_evaluator->patternDestroyed();
+        }
+
+        virtual std::unique_ptr<Pattern> clone() const = 0;
 
         [[nodiscard]] u64 getOffset() const { return this->m_offset; }
         [[nodiscard]] u32 getHeapAddress() const { return this->getOffset() >> 32; }
@@ -104,20 +83,20 @@ namespace pl::ptrn {
         void setSize(size_t size) { this->m_size = size; }
 
         [[nodiscard]] std::string getVariableName() const {
-            if (this->m_variableName.empty())
+            if (this->m_variableName == nullptr)
                 return fmt::format("{} @ 0x{:02X}", this->getTypeName(), this->getOffset());
             else
-                return this->m_variableName;
+                return *this->m_variableName;
         }
         void setVariableName(std::string name) {
-            this->m_variableName = std::move(name);
+            this->m_variableName = std::make_unique<std::string>(std::move(name));
         }
 
         [[nodiscard]] auto getComment() const { return this->getAttributeValue("comment").value_or(""); }
         void setComment(const std::string &comment) { this->addAttribute("comment", comment); }
 
-        [[nodiscard]] virtual std::string getTypeName() const { return this->m_typeName; }
-        void setTypeName(std::string name) { this->m_typeName = std::move(name); }
+        [[nodiscard]] virtual std::string getTypeName() const { return this->m_typeName == nullptr ? "" : *this->m_typeName; }
+        void setTypeName(std::string name) { this->m_typeName = std::make_unique<std::string>(std::move(name)); }
 
         [[nodiscard]] u32 getColor() const { return this->m_color; }
         virtual void setColor(u32 color) {
@@ -133,19 +112,19 @@ namespace pl::ptrn {
         [[nodiscard]] bool hasOverriddenColor() const { return this->m_manualColor; }
 
         [[nodiscard]] std::endian getEndian() const {
-            if (this->getEvaluator() == nullptr) return std::endian::native;
-            else return this->m_endian.value_or(this->getEvaluator()->getDefaultEndian());
+            if (this->m_evaluator == nullptr) return std::endian::native;
+            else return this->m_endian.value_or(this->m_evaluator->getDefaultEndian());
         }
         virtual void setEndian(std::endian endian) { this->m_endian = endian; }
         [[nodiscard]] bool hasOverriddenEndian() const { return this->m_endian.has_value(); }
 
-        [[nodiscard]] std::string getDisplayName() const { return !this->hasAttribute("name") ? this->m_variableName : *this->getAttributeValue("name"); }
+        [[nodiscard]] std::string getDisplayName() const { return this->getAttributeValue("name").value_or(this->getVariableName()); }
         void setDisplayName(const std::string &name) { this->addAttribute("name", name); }
 
-        [[nodiscard]] const auto &getTransformFunction() const { return this->m_transformFunction; }
-        void setTransformFunction(const api::Function &function) { this->m_transformFunction = std::make_unique<api::Function>(function); }
-        [[nodiscard]] const auto &getFormatterFunction() const { return this->m_formatterFunction; }
-        void setFormatterFunction(const api::Function &function) { this->m_formatterFunction = std::make_unique<api::Function>(function); }
+        [[nodiscard]] auto getTransformFunction() const { return this->getAttributeValue("transform").value_or(""); }
+        void setTransformFunction(const std::string &functionName) { this->addAttribute("transform", functionName); }
+        [[nodiscard]] auto getFormatterFunction() const { return this->getAttributeValue("format").value_or(""); }
+        void setFormatterFunction(const std::string &functionName) { this->addAttribute("format", functionName); }
 
         [[nodiscard]] virtual std::string getFormattedName() const = 0;
         [[nodiscard]] virtual std::string getFormattedValue() = 0;
@@ -202,7 +181,7 @@ namespace pl::ptrn {
             return this->m_reference;
         }
 
-        void setSection(u64 id) {
+        virtual void setSection(u64 id) {
             this->m_section = id;
         }
 
@@ -230,18 +209,24 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::string calcDisplayValue(const std::string &value, const core::Token::Literal &literal) const {
-            const auto &formatterFunction = this->getFormatterFunction();
-            if (formatterFunction == nullptr)
+            const auto &formatterFunctionName = this->getFormatterFunction();
+            if (formatterFunctionName.empty())
                 return value;
             else {
                 try {
-                    auto result = formatterFunction->func(this->getEvaluator(), { literal });
+                    const auto function = this->m_evaluator->findFunction(formatterFunctionName);
+                    if (function.has_value()) {
+                        auto result = function->func(this->m_evaluator, { literal });
 
-                    if (result.has_value()) {
-                        return core::Token::literalToString(*result, true);
+                        if (result.has_value()) {
+                            return core::Token::literalToString(*result, true);
+                        } else {
+                            return "";
+                        }
                     } else {
                         return "";
                     }
+
                 } catch (core::err::EvaluatorError::Exception &error) {
                     return error.what();
                 }
@@ -249,19 +234,19 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::string formatDisplayValue(const std::string &value, const core::Token::Literal &literal) const {
-            if (!this->m_cachedDisplayValue.has_value()) {
-                auto &currOffset = this->getEvaluator()->dataOffset();
+            if (this->m_cachedDisplayValue == nullptr) {
+                auto &currOffset = this->m_evaluator->dataOffset();
                 auto startOffset = currOffset;
                 currOffset = this->getOffset();
 
-                auto savedScope = this->getEvaluator()->getScope(0);
-                this->m_cachedDisplayValue = calcDisplayValue(value, literal);
-                this->getEvaluator()->getScope(0) = savedScope;
+                auto savedScope = this->m_evaluator->getScope(0);
+                this->m_cachedDisplayValue = std::make_unique<std::string>(calcDisplayValue(value, literal));
+                this->m_evaluator->getScope(0) = savedScope;
 
                 currOffset = startOffset;
             }
 
-            return this->m_cachedDisplayValue.value();
+            return *this->m_cachedDisplayValue;
         }
 
         void clearFormatCache() {
@@ -301,7 +286,11 @@ namespace pl::ptrn {
         }
 
         void setFormatValue(const std::string &value) {
-            this->m_cachedDisplayValue = value;
+            this->m_cachedDisplayValue = std::make_unique<std::string>(value);
+        }
+
+        [[nodiscard]] auto getEvaluator() const {
+            return this->m_evaluator;
         }
 
     protected:
@@ -310,18 +299,19 @@ namespace pl::ptrn {
     private:
         friend pl::core::Evaluator;
 
+        core::Evaluator *m_evaluator;
+
+        std::unique_ptr<std::map<std::string, std::string>> m_attributes;
+        mutable std::unique_ptr<std::string> m_cachedDisplayValue;
+
+        std::unique_ptr<std::string> m_variableName;
+        std::unique_ptr<std::string> m_typeName;
+
         u64 m_offset  = 0x00;
         size_t m_size = 0x00;
         u64 m_section = 0x00;
 
         u32 m_color = 0x00;
-        mutable std::optional<std::string> m_cachedDisplayValue;
-        std::string m_variableName;
-        std::string m_typeName;
-        std::unique_ptr<std::map<std::string, std::string>> m_attributes;
-
-        std::unique_ptr<api::Function> m_formatterFunction;
-        std::unique_ptr<api::Function> m_transformFunction;
 
         bool m_reference = false;
 

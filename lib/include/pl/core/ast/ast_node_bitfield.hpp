@@ -59,6 +59,7 @@ namespace pl::core::ast {
                     if (auto bitfieldField = dynamic_cast<ptrn::PatternBitfieldField*>(pattern.get()); bitfieldField != nullptr) {
                         if (bitfieldField->getSize() == 0) {
                             bitfieldField->setBitOffset(bitOffset);
+                            bitfieldField->setSection(evaluator->getSectionId());
                             bitOffset += bitfieldField->getBitSize();
                             bitfieldField->setSize((bitOffset + 7) / 8);
                         }

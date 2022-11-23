@@ -23,7 +23,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] core::Token::Literal getValue() const override {
             std::vector<u8> value(this->m_bitField->getSize(), 0);
-            this->getEvaluator()->readData(this->m_bitField->getOffset(), &value[0], value.size(), this->m_bitField->getSection());
+            this->getEvaluator()->readData(this->m_bitField->getOffset(), &value[0], value.size(), this->getSection());
 
             if (this->m_bitField->getEndian() != std::endian::native)
                 std::reverse(value.begin(), value.end());
@@ -115,6 +115,13 @@ namespace pl::ptrn {
                 field->setOffset(field->getOffset() - this->getOffset() + offset);
 
             Pattern::setOffset(offset);
+        }
+
+        void setSection(u64 id) override {
+            for (auto &field : this->m_fields)
+                field->setSection(id);
+
+            Pattern::setSection(id);
         }
 
         [[nodiscard]] std::vector<std::pair<u64, Pattern*>> getChildren() override {
