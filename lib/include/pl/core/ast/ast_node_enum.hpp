@@ -33,16 +33,19 @@ namespace pl::core::ast {
                 const auto minNode = min->evaluate(evaluator);
                 const auto maxNode = max->evaluate(evaluator);
 
-                auto minLiteral = dynamic_cast<ASTNodeLiteral *>(minNode.get())->getValue();
-                auto maxLiteral = dynamic_cast<ASTNodeLiteral *>(maxNode.get())->getValue();
+                const auto minLiteral = dynamic_cast<ASTNodeLiteral *>(minNode.get());
+                const auto maxLiteral = dynamic_cast<ASTNodeLiteral *>(maxNode.get());
+
+                if (minLiteral == nullptr || maxLiteral == nullptr)
+                    err::E0010.throwError("Cannot use void expression as enum value.", {}, this);
 
                 // Check that the enum values can be converted to integers
-                (void)Token::literalToUnsigned(minLiteral);
-                (void)Token::literalToUnsigned(maxLiteral);
+                (void)Token::literalToUnsigned(minLiteral->getValue());
+                (void)Token::literalToUnsigned(maxLiteral->getValue());
 
                 enumEntries.push_back(ptrn::PatternEnum::EnumValue{
-                    minLiteral,
-                    maxLiteral,
+                    minLiteral->getValue(),
+                    maxLiteral->getValue(),
                     name
                 });
             }
@@ -50,6 +53,8 @@ namespace pl::core::ast {
             pattern->setEnumValues(enumEntries);
 
             const auto nodes = this->m_underlyingType->createPatterns(evaluator);
+            if (nodes.empty())
+                err::E0005.throwError("'auto' can only be used with parameters.", { }, this);
             auto &underlying = nodes.front();
 
             pattern->setSize(underlying->getSize());

@@ -27,9 +27,15 @@ namespace pl::core::ast {
             auto evaluatedType  = this->m_type->evaluate(evaluator);
 
             auto literal = dynamic_cast<ASTNodeLiteral *>(evaluatedValue.get());
+            if (literal == nullptr)
+                err::E0010.throwError("Cannot use void expression in a cast.", {}, this);
+
             auto type    = dynamic_cast<ASTNodeBuiltinType *>(evaluatedType.get())->getType();
 
             auto typePatterns = this->m_type->createPatterns(evaluator);
+            if (typePatterns.empty())
+                err::E0005.throwError("'auto' can only be used with parameters.", { }, this);
+
             auto &typePattern = typePatterns.front();
 
             auto value = literal->getValue();

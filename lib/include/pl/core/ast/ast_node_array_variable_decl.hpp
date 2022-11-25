@@ -53,6 +53,8 @@ namespace pl::core::ast {
             if (this->m_placementSection != nullptr) {
                 const auto node = this->m_placementSection->evaluate(evaluator);
                 const auto id = dynamic_cast<ASTNodeLiteral *>(node.get());
+                if (id == nullptr)
+                    err::E0010.throwError("Cannot use void expression as section identifier.", {}, this);
 
                 evaluator->pushSectionId(Token::literalToUnsigned(id->getValue()));
             } else {
@@ -62,6 +64,8 @@ namespace pl::core::ast {
             if (this->m_placementOffset != nullptr) {
                 auto evaluatedPlacement = this->m_placementOffset->evaluate(evaluator);
                 auto offset             = dynamic_cast<ASTNodeLiteral *>(evaluatedPlacement.get());
+                if (offset == nullptr)
+                    err::E0010.throwError("Cannot use void expression as placement offset.", {}, this);
 
                 evaluator->dataOffset() = std::visit(hlp::overloaded {
                     [this](const std::string &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
@@ -142,6 +146,9 @@ namespace pl::core::ast {
             u64 startOffset = evaluator->dataOffset();
 
             auto templatePatterns = this->m_type->createPatterns(evaluator);
+            if (templatePatterns.empty())
+                err::E0005.throwError("'auto' can only be used with parameters.", { }, this);
+
             auto &templatePattern = templatePatterns.front();
 
             templatePattern->setSection(evaluator->getSectionId());
@@ -153,7 +160,7 @@ namespace pl::core::ast {
             if (this->m_size != nullptr) {
                 auto sizeNode = this->m_size->evaluate(evaluator);
 
-                if (auto literal = dynamic_cast<ASTNodeLiteral *>(sizeNode.get())) {
+                if (auto literal = dynamic_cast<ASTNodeLiteral *>(sizeNode.get()); literal != nullptr) {
                     entryCount = std::visit(hlp::overloaded {
                         [this](const std::string &) -> i128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
                         [this](ptrn::Pattern *pattern) -> i128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
@@ -271,7 +278,7 @@ namespace pl::core::ast {
             if (this->m_size != nullptr) {
                 auto sizeNode = this->m_size->evaluate(evaluator);
 
-                if (auto literal = dynamic_cast<ASTNodeLiteral *>(sizeNode.get())) {
+                if (auto literal = dynamic_cast<ASTNodeLiteral *>(sizeNode.get()); literal != nullptr) {
                     auto entryCount = std::visit(hlp::overloaded {
                         [this](const std::string &) -> u128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
                         [this](ptrn::Pattern *pattern) -> u128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },

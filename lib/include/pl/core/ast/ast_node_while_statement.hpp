@@ -83,6 +83,8 @@ namespace pl::core::ast {
         [[nodiscard]] bool evaluateCondition(Evaluator *evaluator) const {
             const auto node    = this->m_condition->evaluate(evaluator);
             const auto literal = dynamic_cast<ASTNodeLiteral *>(node.get());
+            if (literal == nullptr)
+                err::E0010.throwError("Cannot use void expression as condition.", {}, this);
 
             return std::visit(hlp::overloaded {
                 [](const std::string &value) -> bool { return !value.empty(); },

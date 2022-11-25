@@ -53,7 +53,7 @@ namespace pl::core::ast {
             for (auto &param : this->m_params) {
                 const auto expression = param->evaluate(evaluator)->evaluate(evaluator);
 
-                if (auto literal = dynamic_cast<ASTNodeLiteral *>(expression.get())) {
+                if (auto literal = dynamic_cast<ASTNodeLiteral *>(expression.get()); literal != nullptr) {
                     evaluatedParams.push_back(literal->getValue());
                 } else if (auto parameterPack = dynamic_cast<ASTNodeParameterPack *>(expression.get())) {
                     for (auto &value : parameterPack->getValues()) {

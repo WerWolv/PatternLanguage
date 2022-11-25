@@ -48,6 +48,8 @@ namespace pl::core::ast {
             if (this->m_placementSection != nullptr) {
                 const auto node = this->m_placementSection->evaluate(evaluator);
                 const auto id = dynamic_cast<ASTNodeLiteral *>(node.get());
+                if (id == nullptr)
+                    err::E0010.throwError("Cannot use void expression as section identifier.", {}, this);
 
                 evaluator->pushSectionId(Token::literalToUnsigned(id->getValue()));
             } else {
@@ -72,7 +74,7 @@ namespace pl::core::ast {
 
             auto patterns = this->m_type->createPatterns(evaluator);
             if (patterns.empty())
-                err::E0005.throwError(fmt::format("'auto' can only be used with parameters.", this->m_name), { }, this);
+                err::E0005.throwError("'auto' can only be used with parameters.", { }, this);
 
             auto &pattern = patterns.front();
             if (this->m_placementOffset != nullptr && dynamic_cast<ptrn::PatternString*>(pattern.get()) != nullptr)

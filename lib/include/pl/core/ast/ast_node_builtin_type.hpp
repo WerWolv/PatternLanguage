@@ -48,7 +48,7 @@ namespace pl::core::ast {
             else if (this->m_type == Token::ValueType::String)
                 pattern = std::unique_ptr<ptrn::Pattern>(new ptrn::PatternString(evaluator, offset, 1));
             else if (this->m_type == Token::ValueType::Auto)
-                return {};
+                return { };
             else
                 err::E0001.throwError("Invalid builtin type.", {}, this);
 

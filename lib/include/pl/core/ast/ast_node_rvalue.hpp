@@ -194,6 +194,8 @@ namespace pl::core::ast {
                     // Array indexing
                     auto node  = std::get<std::unique_ptr<ASTNode>>(part)->evaluate(evaluator);
                     auto index = dynamic_cast<ASTNodeLiteral *>(node.get());
+                    if (index == nullptr)
+                        err::E0010.throwError("Cannot use void expression as array index.", {}, this);
 
                     std::visit(hlp::overloaded {
                             [this](const std::string &) { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },

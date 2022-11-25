@@ -42,6 +42,8 @@ namespace pl::core::ast {
 
             auto &pattern = lhs.front();
             const auto literal = dynamic_cast<ASTNodeLiteral *>(rhs.get());
+            if (literal == nullptr)
+                err::E0010.throwError("Cannot assign void expression to variable.", {}, this);
 
             evaluator->setVariable(pattern.get(), literal->getValue());
 

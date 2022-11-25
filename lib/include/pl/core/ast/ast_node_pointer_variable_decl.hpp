@@ -43,6 +43,8 @@ namespace pl::core::ast {
             if (this->m_placementSection != nullptr) {
                 const auto node = this->m_placementSection->evaluate(evaluator);
                 const auto id = dynamic_cast<ASTNodeLiteral *>(node.get());
+                if (id == nullptr)
+                    err::E0010.throwError("Cannot use void expression as section identifier.", {}, this);
 
                 evaluator->pushSectionId(Token::literalToUnsigned(id->getValue()));
             } else {
@@ -52,6 +54,8 @@ namespace pl::core::ast {
             if (this->m_placementOffset != nullptr) {
                 const auto node   = this->m_placementOffset->evaluate(evaluator);
                 const auto offset = dynamic_cast<ASTNodeLiteral *>(node.get());
+                if (offset == nullptr)
+                    err::E0010.throwError("Cannot use void expression as placement offset.", {}, this);
 
                 evaluator->dataOffset() = std::visit(hlp::overloaded {
                     [this](const std::string &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
@@ -63,6 +67,9 @@ namespace pl::core::ast {
             auto pointerStartOffset = evaluator->dataOffset();
 
             auto sizePatterns = this->m_sizeType->createPatterns(evaluator);
+            if (sizePatterns.empty())
+                err::E0005.throwError("'auto' can only be used with parameters.", { }, this);
+
             auto &sizePattern = sizePatterns.front();
 
             auto pattern = std::make_unique<ptrn::PatternPointer>(evaluator, pointerStartOffset, sizePattern->getSize());
@@ -82,6 +89,9 @@ namespace pl::core::ast {
                 evaluator->dataOffset() = pattern->getPointedAtAddress();
 
                 auto pointedAtPatterns = this->m_type->createPatterns(evaluator);
+                if (pointedAtPatterns.empty())
+                    err::E0005.throwError("'auto' can only be used with parameters.", { }, this);
+
                 auto &pointedAtPattern = pointedAtPatterns.front();
 
                 pattern->setPointedAtPattern(std::move(pointedAtPattern));

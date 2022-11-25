@@ -44,6 +44,9 @@ namespace pl::core::ast {
                 }
             } else {
                 auto patterns = this->m_expression->createPatterns(evaluator);
+                if (patterns.empty())
+                    err::E0005.throwError("'auto' can only be used with parameters.", { }, this);
+
                 auto &pattern = patterns.front();
 
                 switch (this->getOperator()) {

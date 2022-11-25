@@ -32,6 +32,9 @@ namespace pl::core::ast {
             auto *second = dynamic_cast<ASTNodeLiteral *>(secondNode.get());
             auto *third  = dynamic_cast<ASTNodeLiteral *>(thirdNode.get());
 
+            if (first == nullptr || second == nullptr || third == nullptr)
+                err::E0010.throwError("Cannot use void expression in ternary expression.", {}, this);
+
             auto condition = std::visit(hlp::overloaded {
                 [](const std::string &value) -> bool { return !value.empty(); },
                 [this](const std::shared_ptr<ptrn::Pattern> &pattern) -> bool { err::E0002.throwError(fmt::format("Cannot cast {} to bool.", pattern->getTypeName()), {}, this); },

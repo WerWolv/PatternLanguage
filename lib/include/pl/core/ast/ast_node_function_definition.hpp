@@ -59,7 +59,7 @@ namespace pl::core::ast {
             for (const auto &param : this->m_defaultParameters) {
                 const auto expression = param->evaluate(evaluator)->evaluate(evaluator);
 
-                if (auto literal = dynamic_cast<ASTNodeLiteral *>(expression.get())) {
+                if (auto literal = dynamic_cast<ASTNodeLiteral *>(expression.get()); literal != nullptr) {
                     evaluatedDefaultParams.push_back(literal->getValue());
                 } else {
                     err::E0009.throwError("Default value must be a literal.", {}, this);
