@@ -46,7 +46,7 @@ namespace pl::core::ast {
         FunctionResult execute(Evaluator *evaluator) const override {
             const auto node    = this->getRValue()->evaluate(evaluator);
             const auto literal = dynamic_cast<ASTNodeLiteral *>(node.get());
-            if (literal != nullptr)
+            if (literal == nullptr)
                 err::E0010.throwError("Cannot assign void expression to variable.", {}, this);
 
 

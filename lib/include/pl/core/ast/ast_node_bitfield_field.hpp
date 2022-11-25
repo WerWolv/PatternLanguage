@@ -30,9 +30,8 @@ namespace pl::core::ast {
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             auto node = this->m_size->evaluate(evaluator);
             auto literal = dynamic_cast<ASTNodeLiteral *>(node.get());
-            if (literal != nullptr)
+            if (literal == nullptr)
                 err::E0010.throwError("Cannot use void expression as bitfield field size.", {}, this);
-
 
             u8 bitSize = std::visit(hlp::overloaded {
                     [this](const std::string &) -> u8 { err::E0005.throwError("Cannot use string as bitfield field size.", "Try using a integral value instead.", this); },
