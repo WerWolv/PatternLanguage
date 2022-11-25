@@ -66,7 +66,8 @@ namespace pl::core {
             return value;
         };
 
-        auto getDirective = [&](const std::string &directive) {
+        auto getDirective = [&](std::string directive) {
+            directive += " ";
             if (code.substr(offset, directive.length()) == directive) {
                 offset += directive.length();
                 return true;
@@ -218,7 +219,7 @@ namespace pl::core {
 
                             auto pragmaValue = getDirectiveValue(true);
 
-                            this->m_pragmas[*pragmaKey] = { pragmaValue.value_or(""), lineNumber - 1 };
+                            this->m_pragmas[*pragmaKey] = { pragmaValue.value_or(""), lineNumber };
                         } else if (getDirective("error")) {
                             auto error = getDirectiveValue(true);
 
