@@ -97,12 +97,11 @@ namespace pl::hlp {
         if (search.empty())
             return string;
 
-        std::string output = string;
-        std::size_t pos;
+        std::size_t pos = 0;
         while ((pos = string.find(search, pos + 1)) != std::string::npos)
-            output.replace(pos, search.size(), replace);
+            string.replace(pos, search.size(), replace);
 
-        return output;
+        return string;
     }
 
     std::vector<std::string> splitString(const std::string &string, const std::string &delimiter) {
