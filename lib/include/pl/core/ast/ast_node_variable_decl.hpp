@@ -57,6 +57,8 @@ namespace pl::core::ast {
             if (this->m_placementOffset != nullptr) {
                 const auto node   = this->m_placementOffset->evaluate(evaluator);
                 const auto offset = dynamic_cast<ASTNodeLiteral *>(node.get());
+                if (offset == nullptr)
+                    err::E0002.throwError("Void expression used in placement expression.", { }, this);
 
                 evaluator->dataOffset() = std::visit(hlp::overloaded {
                     [this](const std::string &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
