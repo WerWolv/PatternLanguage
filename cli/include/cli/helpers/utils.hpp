@@ -3,6 +3,8 @@
 #include <pl/pattern_language.hpp>
 #include <pl/helpers/file.hpp>
 
+#include <vector>
+
 namespace pl::cli {
 
     void executePattern(
@@ -12,5 +14,4 @@ namespace pl::cli {
             const std::vector<std::fs::path> &includePaths,
             bool allowDangerousFunctions,
             u64 baseAddress);
-
 }
