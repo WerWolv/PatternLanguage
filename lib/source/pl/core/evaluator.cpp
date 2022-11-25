@@ -108,7 +108,10 @@ namespace pl::core {
             this->getHeap().emplace_back();
 
         std::shared_ptr<ptrn::Pattern> pattern;
+
+        this->pushSectionId(ptrn::Pattern::MainSectionId);
         auto typePattern = type->createPatterns(this);
+        this->popSectionId();
 
         this->dataOffset() = startOffset;
 
