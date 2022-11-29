@@ -129,6 +129,8 @@ namespace pl::core {
             path.emplace_back("parent");
         else if (peek(tkn::Keyword::This, -1))
             path.emplace_back("this");
+        else if (peek(tkn::Operator::Dollar, -1))
+            path.emplace_back("$");
 
         if (MATCHES(sequence(tkn::Separator::LeftBracket) && !peek(tkn::Separator::LeftBracket))) {
             path.emplace_back(parseMathematicalExpression());
@@ -171,10 +173,8 @@ namespace pl::core {
             } else {
                 return this->parseRValue();
             }
-        } else if (MATCHES(oneOf(tkn::Keyword::Parent, tkn::Keyword::This))) {
+        } else if (MATCHES(oneOf(tkn::Keyword::Parent, tkn::Keyword::This, tkn::Operator::Dollar))) {
             return this->parseRValue();
-        } else if (MATCHES(sequence(tkn::Operator::Dollar))) {
-            return create<ast::ASTNodeRValue>(hlp::moveToVector<ast::ASTNodeRValue::PathSegment>("$"));
         } else if (MATCHES(oneOf(tkn::Operator::AddressOf, tkn::Operator::SizeOf) && sequence(tkn::Separator::LeftParenthesis))) {
             auto op = getValue<Token::Operator>(-2);
 

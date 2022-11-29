@@ -55,6 +55,22 @@ namespace pl::core::ast {
                     if (parameterPack && *name == parameterPack->name)
                         return std::unique_ptr<ASTNode>(new ASTNodeParameterPack(std::move(parameterPack->values)));
                 }
+            } else if (this->getPath().size() == 2) {
+                if (auto name = std::get_if<std::string>(&this->getPath()[0]); name != nullptr) {
+                    if (*name == "$") {
+                        if (auto arraySegment = std::get_if<std::unique_ptr<ASTNode>>(&this->getPath()[1]); arraySegment != nullptr) {
+                            auto offsetNode = (*arraySegment)->evaluate(evaluator);
+                            auto offsetLiteral = dynamic_cast<ASTNodeLiteral*>(offsetNode.get());
+                            if (offsetLiteral != nullptr) {
+                                auto offset = Token::literalToUnsigned(offsetLiteral->getValue());
+
+                                u8 byte = 0x00;
+                                evaluator->readData(offset, &byte, 1, ptrn::Pattern::MainSectionId);
+                                return std::unique_ptr<ASTNode>(new ASTNodeLiteral(u128(byte)));
+                            }
+                        }
+                    }
+                }
             }
 
             ptrn::Pattern *pattern = nullptr;
