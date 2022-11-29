@@ -117,6 +117,26 @@ namespace pl::core::ast {
 
             evaluator->createArrayVariable(this->m_name, this->m_type.get(), entryCount);
 
+            if (this->m_placementOffset != nullptr) {
+                const auto placementNode = this->m_placementOffset->evaluate(evaluator);
+                const auto offsetLiteral = dynamic_cast<ASTNodeLiteral *>(placementNode.get());
+                if (offsetLiteral == nullptr)
+                    err::E0002.throwError("Void expression used in placement expression.", { }, this);
+
+
+                u64 section = 0;
+                if (this->m_placementSection != nullptr) {
+                    const auto sectionNode = this->m_placementSection->evaluate(evaluator);
+                    const auto sectionLiteral = dynamic_cast<ASTNodeLiteral *>(placementNode.get());
+                    if (sectionLiteral == nullptr)
+                        err::E0002.throwError("Cannot use void expression as section identifier.", {}, this);
+
+                    section = Token::literalToUnsigned(sectionLiteral->getValue());
+                }
+
+                evaluator->setVariableAddress(this->getName(), Token::literalToUnsigned(offsetLiteral->getValue()), section);
+            }
+
             return std::nullopt;
         }
 

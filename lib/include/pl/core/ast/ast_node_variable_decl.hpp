@@ -49,7 +49,7 @@ namespace pl::core::ast {
                 const auto node = this->m_placementSection->evaluate(evaluator);
                 const auto id = dynamic_cast<ASTNodeLiteral *>(node.get());
                 if (id == nullptr)
-                    err::E0010.throwError("Cannot use void expression as section identifier.", {}, this);
+                    err::E0002.throwError("Cannot use void expression as section identifier.", {}, this);
 
                 evaluator->pushSectionId(Token::literalToUnsigned(id->getValue()));
             } else {
@@ -94,6 +94,27 @@ namespace pl::core::ast {
 
         FunctionResult execute(Evaluator *evaluator) const override {
             evaluator->createVariable(this->getName(), this->getType().get(), { }, this->m_outVariable);
+
+
+            if (this->m_placementOffset != nullptr) {
+                const auto placementNode = this->m_placementOffset->evaluate(evaluator);
+                const auto offsetLiteral = dynamic_cast<ASTNodeLiteral *>(placementNode.get());
+                if (offsetLiteral == nullptr)
+                    err::E0002.throwError("Void expression used in placement expression.", { }, this);
+
+
+                u64 section = 0;
+                if (this->m_placementSection != nullptr) {
+                    const auto sectionNode = this->m_placementSection->evaluate(evaluator);
+                    const auto sectionLiteral = dynamic_cast<ASTNodeLiteral *>(sectionNode.get());
+                    if (sectionLiteral == nullptr)
+                        err::E0002.throwError("Cannot use void expression as section identifier.", {}, this);
+
+                    section = Token::literalToUnsigned(sectionLiteral->getValue());
+                }
+
+                evaluator->setVariableAddress(this->getName(), Token::literalToUnsigned(offsetLiteral->getValue()), section);
+            }
 
             return std::nullopt;
         }

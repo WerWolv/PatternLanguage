@@ -223,84 +223,79 @@ namespace pl::core {
         }, literal);
     }
 
+    std::shared_ptr<ptrn::Pattern> Evaluator::getVariableByName(const std::string &name) {
+        // Search for variable in current scope
+        {
+            auto &variables = *this->getScope(0).scope;
+            for (auto &variable : variables) {
+                if (variable->getVariableName() == name) {
+                    return variable;
+                }
+            }
+        }
+
+        // Search for variable in the template parameter list
+        {
+            auto &variables = this->m_templateParameters.back();
+            for (auto &variable : variables) {
+                if (variable->getVariableName() == name) {
+                    return variable;
+                }
+            }
+        }
+
+        // If there's no variable with that name in the current scope, search the global scope
+        auto &variables = *this->getGlobalScope().scope;
+        for (auto &variable : variables) {
+            if (variable->getVariableName() == name) {
+                return variable;
+            }
+        }
+
+        return nullptr;
+    }
+
     void Evaluator::setVariable(const std::string &name, const Token::Literal &value) {
         // A variable named _ gets treated as "don't care"
         if (name == "_")
             return;
 
         auto pattern = [&]() -> ptrn::Pattern * {
-            std::shared_ptr<ptrn::Pattern> *variablePattern = nullptr;
-
-            // Search for variable in current scope
-            {
-                auto &variables = *this->getScope(0).scope;
-                for (auto &variable : variables) {
-                    if (variable->getVariableName() == name) {
-                        variablePattern = &variable;
-                        break;
-                    }
-                }
-            }
-
-            // Search for variable in the template parameter list
-            {
-                auto &variables = this->m_templateParameters.back();
-                for (auto &variable : variables) {
-                    if (variable->getVariableName() == name) {
-                        variablePattern = &variable;
-                        break;
-                    }
-                }
-            }
-
-            // If there's no variable with that name in the current scope, search the global scope
-            if (variablePattern == nullptr) {
-                auto &variables = *this->getGlobalScope().scope;
-                for (auto &variable : variables) {
-                    if (variable->getVariableName() == name) {
-                        if (!variable->isLocal())
-                            err::E0011.throwError(fmt::format("Cannot modify global variable '{}' as it has been placed in memory.", name));
-
-                        variablePattern = &variable;
-                        break;
-                    }
-                }
-            }
-
-            // If the global scope also doesn't have a variable with this name, it doesn't exist. Bail out
+            std::shared_ptr<ptrn::Pattern> variablePattern = this->getVariableByName(name);
             if (variablePattern == nullptr)
                 return nullptr;
+
+            if (!variablePattern->isLocal() && !variablePattern->isReference())
+                err::E0011.throwError(fmt::format("Cannot modify global variable '{}' as it has been placed in memory.", name));
 
             // If the variable is being set to a pattern, adjust its layout to the real layout as it potentially contains dynamically sized members
             std::visit(hlp::overloaded {
                 [&](ptrn::Pattern * const value) {
-                    auto offset = variablePattern->get()->getOffset();
-                    auto section = variablePattern->get()->getSection();
-                    bool reference = variablePattern->get()->isReference();
+                    auto offset = variablePattern->getOffset();
+                    auto section = variablePattern->getSection();
+                    bool reference = variablePattern->isReference();
 
-                    *variablePattern = value->clone();
+                    variablePattern = value->clone();
 
-                    auto pattern = variablePattern->get();
-                    pattern->setVariableName(name);
-                    pattern->setReference(reference);
+                    variablePattern->setVariableName(name);
+                    variablePattern->setReference(reference);
 
                     if (!reference) {
-                        pattern->setLocal(true);
-                        pattern->setOffset(offset);
-                        pattern->setSection(section);
+                        variablePattern->setLocal(true);
+                        variablePattern->setOffset(offset);
+                        variablePattern->setSection(section);
                     }
                 },
                 [&](const std::string &value) {
-                    auto pattern = variablePattern->get();
-                    if (dynamic_cast<ptrn::PatternString*>(pattern) != nullptr)
-                        pattern->setSize(value.size());
+                    if (dynamic_cast<ptrn::PatternString*>(variablePattern.get()) != nullptr)
+                        variablePattern->setSize(value.size());
                     else
-                        err::E0004.throwError(fmt::format("Cannot assign value of type 'string' to variable of type '{}'.", pattern->getTypeName()));
+                        err::E0004.throwError(fmt::format("Cannot assign value of type 'string' to variable of type '{}'.", variablePattern->getTypeName()));
                 },
                 [](const auto &) {}
             }, value);
 
-            return variablePattern->get();
+            return variablePattern.get();
         }();
 
         if (pattern == nullptr)
@@ -390,6 +385,18 @@ namespace pl::core {
                     }
             }, castedValue);
         }
+    }
+
+    void Evaluator::setVariableAddress(const std::string &variableName, u64 address, u64 section) {
+        if (section == ptrn::Pattern::HeapSectionId)
+            err::E0005.throwError(fmt::format("Cannot place variable '{}' in heap.", variableName));
+
+        auto variable = this->getVariableByName(variableName);
+        if (variable == nullptr)
+            err::E0003.throwError(fmt::format("Cannot find variable '{}' in this scope.", variableName));
+
+        variable->setOffset(address);
+        variable->setSection(section);
     }
 
     void Evaluator::pushScope(const std::shared_ptr<ptrn::Pattern> &parent, std::vector<std::shared_ptr<ptrn::Pattern>> &scope) {
