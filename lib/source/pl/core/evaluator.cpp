@@ -260,7 +260,7 @@ namespace pl::core {
         if (name == "_")
             return;
 
-        auto pattern = [&]() -> ptrn::Pattern * {
+        auto pattern = [&]() -> std::shared_ptr<ptrn::Pattern> {
             std::shared_ptr<ptrn::Pattern> variablePattern = this->getVariableByName(name);
             if (variablePattern == nullptr)
                 return nullptr;
@@ -295,13 +295,13 @@ namespace pl::core {
                 [](const auto &) {}
             }, value);
 
-            return variablePattern.get();
+            return variablePattern;
         }();
 
         if (pattern == nullptr)
             err::E0003.throwError(fmt::format("Cannot find variable '{}' in this scope.", name));
 
-        this->setVariable(pattern, value);
+        this->setVariable(pattern.get(), value);
     }
 
     void Evaluator::setVariable(ptrn::Pattern *pattern, const Token::Literal &value) {
