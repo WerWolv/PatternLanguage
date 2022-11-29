@@ -65,6 +65,10 @@ namespace pl::ptrn {
                 this->m_cachedDisplayValue = std::make_unique<std::string>(*other.m_cachedDisplayValue);
             if (other.m_attributes != nullptr)
                 this->m_attributes = std::make_unique<std::map<std::string, std::string>>(*other.m_attributes);
+
+            if (this->m_evaluator != nullptr) {
+                this->m_evaluator->patternCreated();
+            }
         }
 
         virtual ~Pattern() {
