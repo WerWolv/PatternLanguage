@@ -98,7 +98,7 @@ namespace pl::hlp {
             return string;
 
         std::size_t pos = 0;
-        while ((pos = string.find(search, pos + 1)) != std::string::npos)
+        while ((pos = string.find(search, pos + replace.length())) != std::string::npos)
             string.replace(pos, search.size(), replace);
 
         return string;
