@@ -292,7 +292,10 @@ namespace pl::core {
                 },
                 [&](const std::string &value) {
                     auto pattern = variablePattern->get();
-                    pattern->setSize(value.size());
+                    if (dynamic_cast<ptrn::PatternString*>(pattern) != nullptr)
+                        pattern->setSize(value.size());
+                    else
+                        err::E0004.throwError(fmt::format("Cannot assign value of type 'string' to variable of type '{}'.", pattern->getTypeName()));
                 },
                 [](const auto &) {}
             }, value);
