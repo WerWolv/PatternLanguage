@@ -6,10 +6,10 @@ namespace pl::core::ast {
 
     class ASTNodeScopeResolution : public ASTNode {
     public:
-        explicit ASTNodeScopeResolution(std::unique_ptr<ASTNode> &&type, std::string name) : ASTNode(), m_type(std::move(type)), m_name(std::move(name)) { }
+        explicit ASTNodeScopeResolution(std::shared_ptr<ASTNode> &&type, std::string name) : ASTNode(), m_type(std::move(type)), m_name(std::move(name)) { }
 
         ASTNodeScopeResolution(const ASTNodeScopeResolution &other) : ASTNode(other) {
-            this->m_type = other.m_type->clone();
+            this->m_type = other.m_type;
             this->m_name = other.m_name;
         }
 
@@ -33,7 +33,7 @@ namespace pl::core::ast {
         }
 
     private:
-        std::unique_ptr<ASTNode> m_type;
+        std::shared_ptr<ASTNode> m_type;
         std::string m_name;
     };
 

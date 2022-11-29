@@ -98,11 +98,11 @@ namespace pl::core {
                     continue;
                 } else {
                     if (this->m_types.contains(typeName))
-                        return create<ast::ASTNodeScopeResolution>(this->m_types[typeName]->clone(), getValue<Token::Identifier>(-1).get());
+                        return create<ast::ASTNodeScopeResolution>(this->m_types[typeName], getValue<Token::Identifier>(-1).get());
                     else {
                         for (auto &potentialName : getNamespacePrefixedNames(typeName)) {
                             if (this->m_types.contains(potentialName)) {
-                                return create<ast::ASTNodeScopeResolution>(this->m_types[potentialName]->clone(), getValue<Token::Identifier>(-1).get());
+                                return create<ast::ASTNodeScopeResolution>(this->m_types[potentialName], getValue<Token::Identifier>(-1).get());
                             }
                         }
 
