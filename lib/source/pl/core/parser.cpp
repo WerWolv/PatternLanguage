@@ -162,9 +162,9 @@ namespace pl::core {
         } else if (MATCHES(sequence(tkn::Literal::Identifier))) {
             auto originalPos = this->m_curr;
             parseNamespaceResolution();
+
             bool isFunction = peek(tkn::Separator::LeftParenthesis);
             this->m_curr    = originalPos;
-
 
             if (isFunction) {
                 return this->parseFunctionCall();

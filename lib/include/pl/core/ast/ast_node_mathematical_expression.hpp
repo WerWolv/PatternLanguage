@@ -86,15 +86,21 @@ namespace pl::core::ast {
             if (this->getLeftOperand() == nullptr || this->getRightOperand() == nullptr)
                 err::E0002.throwError("Void expression used in ternary expression.", "If you used a function for one of the operands, make sure it returned a value.", this);
 
-            auto leftNode  = this->getLeftOperand()->evaluate(evaluator);
-            auto rightNode = this->getRightOperand()->evaluate(evaluator);
-
-            auto leftValue  = static_cast<ASTNodeLiteral *>(leftNode.get())->getValue();
-            auto rightValue = static_cast<ASTNodeLiteral *>(rightNode.get())->getValue();
-
             const auto throwInvalidOperandError = [this] [[noreturn]]{
                 err::E0002.throwError("Invalid operand used in mathematical expression.", { }, this);
             };
+
+            auto leftNode  = this->getLeftOperand()->evaluate(evaluator);
+            auto rightNode = this->getRightOperand()->evaluate(evaluator);
+
+            auto leftLiteral  = dynamic_cast<ASTNodeLiteral *>(leftNode.get());
+            auto rightLiteral = dynamic_cast<ASTNodeLiteral *>(rightNode.get());
+
+            if (leftLiteral == nullptr || rightLiteral == nullptr)
+                throwInvalidOperandError();
+
+            auto leftValue = leftLiteral->getValue();
+            auto rightValue = rightLiteral->getValue();
 
             auto handlePatternOperations = [&, this](auto left, auto right) {
                 switch (this->getOperator()) {

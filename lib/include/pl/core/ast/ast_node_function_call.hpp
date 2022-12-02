@@ -25,7 +25,7 @@ namespace pl::core::ast {
             return std::unique_ptr<ASTNode>(new ASTNodeFunctionCall(*this));
         }
 
-        [[nodiscard]] const std::string &getFunctionName() {
+        [[nodiscard]] const std::string &getFunctionName() const {
             return this->m_functionName;
         }
 
@@ -50,7 +50,7 @@ namespace pl::core::ast {
             };
 
             std::vector<Token::Literal> evaluatedParams;
-            for (auto &param : this->m_params) {
+            for (auto &param : this->getParams()) {
                 const auto expression = param->evaluate(evaluator)->evaluate(evaluator);
 
                 if (auto literal = dynamic_cast<ASTNodeLiteral *>(expression.get()); literal != nullptr) {
@@ -62,14 +62,15 @@ namespace pl::core::ast {
                 }
             }
 
-            auto function = evaluator->findFunction(this->m_functionName);
+            const auto &functionName = this->getFunctionName();
+            auto function = evaluator->findFunction(functionName);
 
             if (!function.has_value()) {
-                if (this->m_functionName.starts_with("std::")) {
+                if (functionName.starts_with("std::")) {
                     evaluator->getConsole().log(LogConsole::Level::Warning, "This function might be part of the standard library.\nYou can install the standard library though\nthe Content Store found under Help -> Content Store and then\ninclude the correct file.");
                 }
 
-                err::E0003.throwError(fmt::format("Cannot call unknown function '{}'.", this->m_functionName), fmt::format("Try defining it first using 'fn {}() {{ }}'", this->m_functionName), this);
+                err::E0003.throwError(fmt::format("Cannot call unknown function '{}'.", functionName), fmt::format("Try defining it first using 'fn {}() {{ }}'", functionName), this);
             }
 
             const auto &[min, max] = function->parameterCount;
@@ -89,20 +90,20 @@ namespace pl::core::ast {
             }
 
             if (evaluatedParams.size() < min)
-                err::E0009.throwError(fmt::format("Too few parameters passed to function '{0}'. Expected at least {1} but got {2}.", this->m_functionName, min, evaluatedParams.size()), { }, this);
+                err::E0009.throwError(fmt::format("Too few parameters passed to function '{0}'. Expected at least {1} but got {2}.", functionName, min, evaluatedParams.size()), { }, this);
             else if (evaluatedParams.size() > max)
-                err::E0009.throwError(fmt::format("Too many parameters passed to function '{0}'. Expected {1} but got {2}.", this->m_functionName, max, evaluatedParams.size()), { }, this);
+                err::E0009.throwError(fmt::format("Too many parameters passed to function '{0}'. Expected {1} but got {2}.", functionName, max, evaluatedParams.size()), { }, this);
 
             if (function->dangerous && evaluator->getDangerousFunctionPermission() != DangerousFunctionPermission::Allow) {
                 evaluator->dangerousFunctionCalled();
 
                 if (evaluator->getDangerousFunctionPermission() == DangerousFunctionPermission::Deny) {
-                    err::E0009.throwError(fmt::format("Call to dangerous function '{}' has been denied.", this->m_functionName), { }, this);
+                    err::E0009.throwError(fmt::format("Call to dangerous function '{}' has been denied.", functionName), { }, this);
                 }
             }
 
             if (evaluator->isDebugModeEnabled())
-                evaluator->getConsole().log(LogConsole::Level::Debug, fmt::format("Calling function {}({}).", this->m_functionName, [&]{
+                evaluator->getConsole().log(LogConsole::Level::Debug, fmt::format("Calling function {}({}).", functionName, [&]{
                     std::string parameters;
                     for (const auto &param : evaluatedParams)
                         parameters += fmt::format("{}, ", Token::literalToString(param, true));

@@ -32,9 +32,9 @@ namespace pl::core::ast {
         ASTNodeRValue(const ASTNodeRValue &other) : ASTNode(other) {
             for (auto &part : other.m_path) {
                 if (auto stringPart = std::get_if<std::string>(&part); stringPart != nullptr)
-                    this->m_path.push_back(*stringPart);
+                    this->m_path.emplace_back(*stringPart);
                 else if (auto nodePart = std::get_if<std::unique_ptr<ASTNode>>(&part); nodePart != nullptr)
-                    this->m_path.push_back((*nodePart)->clone());
+                    this->m_path.emplace_back((*nodePart)->clone());
             }
         }
 
@@ -202,9 +202,8 @@ namespace pl::core::ast {
                         if (name == "$")
                             err::E0003.throwError("Invalid use of '$' operator in rvalue.", {}, this);
 
-                        if (!found) {
+                        if (!found)
                             err::E0003.throwError(fmt::format("No variable named '{}' found.", name), {}, this);
-                        }
                     }
                 } else {
                     // Array indexing

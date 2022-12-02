@@ -26,11 +26,11 @@ namespace pl::core::ast {
             return std::unique_ptr<ASTNode>(new ASTNodeWhileStatement(*this));
         }
 
-        [[nodiscard]] const std::unique_ptr<ASTNode> &getCondition() {
+        [[nodiscard]] const std::unique_ptr<ASTNode> &getCondition() const {
             return this->m_condition;
         }
 
-        [[nodiscard]] const std::vector<std::unique_ptr<ASTNode>> &getBody() {
+        [[nodiscard]] const std::vector<std::unique_ptr<ASTNode>> &getBody() const {
             return this->m_body;
         }
 
@@ -50,7 +50,7 @@ namespace pl::core::ast {
                 };
 
                 auto ctrlFlow = ControlFlowStatement::None;
-                for (auto &statement : this->m_body) {
+                for (auto &statement : this->getBody()) {
                     auto result = statement->execute(evaluator);
 
                     ctrlFlow = evaluator->getCurrentControlFlowStatement();
@@ -81,7 +81,7 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] bool evaluateCondition(Evaluator *evaluator) const {
-            const auto node    = this->m_condition->evaluate(evaluator);
+            const auto node    = this->getCondition()->evaluate(evaluator);
             const auto literal = dynamic_cast<ASTNodeLiteral *>(node.get());
             if (literal == nullptr)
                 err::E0010.throwError("Cannot use void expression as condition.", {}, this);

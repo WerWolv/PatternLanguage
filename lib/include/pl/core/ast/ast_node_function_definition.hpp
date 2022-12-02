@@ -98,7 +98,7 @@ namespace pl::core::ast {
                     ctx->setCurrentControlFlowStatement(ControlFlowStatement::None);
                 }
 
-                for (auto &statement : this->m_body) {
+                for (auto &statement : this->getBody()) {
                     auto result = statement->execute(ctx);
 
                     if (ctx->getCurrentControlFlowStatement() != ControlFlowStatement::None) {
