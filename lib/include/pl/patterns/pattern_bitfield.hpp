@@ -246,6 +246,12 @@ namespace pl::ptrn {
             return this->formatDisplayValue(fmt::format("{{ {} }}", valueString), this);
         }
 
+        void setEndian(std::endian endian) override {
+            Pattern::setEndian(endian);
+            for (auto &field : this->m_fields)
+                field->setEndian(endian);
+        }
+
         std::shared_ptr<Pattern> getEntry(size_t index) const override {
             return this->m_fields[index];
         }
