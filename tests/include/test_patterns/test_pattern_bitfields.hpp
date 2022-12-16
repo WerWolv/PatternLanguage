@@ -10,7 +10,6 @@ namespace pl::test {
     public:
         TestPatternBitfields() : TestPattern("Bitfields") {
             auto testBitfield = create<PatternBitfield>("TestBitfield", "testBitfield", 0x12, (4 * 4) / 8);
-            testBitfield->setEndian(std::endian::big);
 
             std::vector<std::shared_ptr<Pattern>> bitfieldFields;
             {
@@ -21,6 +20,7 @@ namespace pl::test {
             }
 
             testBitfield->setFields(std::move(bitfieldFields));
+            testBitfield->setEndian(std::endian::big);
 
             addPattern(std::move(testBitfield));
         }
