@@ -190,8 +190,8 @@ namespace pl {
         this->m_internals.preprocessor->addDefine(name, value);
     }
 
-    void PatternLanguage::setDataSource(std::function<void(u64, u8*, size_t)> readFunction, u64 baseAddress, u64 size) const {
-        this->m_internals.evaluator->setDataSource(std::move(readFunction), baseAddress, size);
+    void PatternLanguage::setDataSource(u64 baseAddress, u64 size, std::function<void(u64, u8*, size_t)> readFunction, std::optional<std::function<void(u64, const u8*, size_t)>> writeFunction) const {
+        this->m_internals.evaluator->setDataSource(baseAddress, size, std::move(readFunction), std::move(writeFunction));
     }
 
     void PatternLanguage::setDataBaseAddress(u64 baseAddress) const {

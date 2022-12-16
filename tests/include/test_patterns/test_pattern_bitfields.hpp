@@ -37,10 +37,10 @@ namespace pl::test {
 
                 be TestBitfield testBitfield @ 0x12;
 
-                std::assert(testBitfield.a == 0x0A, "Field A invalid");
-                std::assert(testBitfield.b == 0x00, "Field B invalid");
-                std::assert(testBitfield.c == 0x04, "Field C invalid");
-                std::assert(testBitfield.d == 0x03, "Field D invalid");
+                std::assert(testBitfield.a == 0x04, "Field A invalid");
+                std::assert(testBitfield.b == 0x03, "Field B invalid");
+                std::assert(testBitfield.c == 0x0A, "Field C invalid");
+                std::assert(testBitfield.d == 0x00, "Field D invalid");
             )";
         }
     };

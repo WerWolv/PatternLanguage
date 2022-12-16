@@ -19,6 +19,19 @@ namespace pl::ptrn {
             return hlp::changeEndianess(data, this->getSize(), this->getEndian());
         }
 
+        std::vector<u8> getBytesOf(const core::Token::Literal &value) const override {
+            auto unsignedValue = core::Token::literalToUnsigned(value);
+            std::vector<u8> result;
+
+            result.resize(this->getSize());
+            std::memcpy(result.data(), &unsignedValue, result.size());
+
+            if (this->getEndian() != std::endian::native)
+                std::reverse(result.begin(), result.end());
+
+            return result;
+        }
+
         [[nodiscard]] std::string getFormattedName() const override {
             return this->getTypeName();
         }
@@ -31,7 +44,7 @@ namespace pl::ptrn {
 
         std::string getFormattedValue() override {
             auto data = core::Token::literalToUnsigned(this->getValue());
-            return this->formatDisplayValue(fmt::format("{:d} (0x{:0{}X})", data, data, this->getSize() * 2), this->getValue());
+            return this->formatDisplayValue(fmt::format("{:d}", data), this->getValue());
         }
 
         [[nodiscard]] std::string toString() const override {

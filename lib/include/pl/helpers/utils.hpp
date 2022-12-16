@@ -30,6 +30,12 @@ namespace pl::hlp {
     std::string to_string(u128 value);
     std::string to_string(i128 value);
 
+    std::vector<u8> toBytes(const auto &value) {
+        std::vector<u8> bytes(sizeof(value));
+        std::memcpy(bytes.data(), &value, sizeof(value));
+        return bytes;
+    }
+
     std::string encodeByteString(const std::vector<u8> &bytes);
 
     [[nodiscard]] constexpr inline u64 extract(u8 from, u8 to, const pl::unsigned_integral auto &value) {

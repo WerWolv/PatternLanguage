@@ -86,6 +86,15 @@ namespace pl::core::ast {
                 return std::nullopt;
         }
 
+        [[nodiscard]] std::optional<std::string> getFirstAttributeValue(const std::vector<std::string> &keys) const {
+            for (const auto &key : keys) {
+                if (auto value = this->getAttributeValue(key); value.has_value())
+                    return value;
+            }
+
+            return std::nullopt;
+        }
+
     private:
         std::vector<std::unique_ptr<ASTNodeAttribute>> m_attributes;
     };
@@ -105,7 +114,7 @@ namespace pl::core::ast {
                 inlinable->setInlined(true);
         }
 
-        if (auto value = attributable->getAttributeValue("format"); value) {
+        if (auto value = attributable->getFirstAttributeValue({ "format", "format_read" }); value) {
             auto function = evaluator->findFunction(*value);
             if (!function.has_value())
                 err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", *value), {}, node);
@@ -113,7 +122,18 @@ namespace pl::core::ast {
             if (function->parameterCount != api::FunctionParameterCount::exactly(1))
                 err::E0009.throwError(fmt::format("Formatter function '{}' needs to take exactly one parameter.", *value), fmt::format("Try 'fn {}({} value)' instead", *value, pattern->getTypeName()), node);
 
-            pattern->setFormatterFunction(*value);
+            pattern->setReadFormatterFunction(*value);
+        }
+
+        if (auto value = attributable->getAttributeValue("format_write"); value) {
+            auto function = evaluator->findFunction(*value);
+            if (!function.has_value())
+                err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", *value), {}, node);
+
+            if (function->parameterCount != api::FunctionParameterCount::exactly(1))
+                err::E0009.throwError(fmt::format("Formatter function '{}' needs to take exactly one parameter.", *value), fmt::format("Try 'fn {}({} value)' instead", *value, pattern->getTypeName()), node);
+
+            pattern->setWriteFormatterFunction(*value);
         }
 
         if (auto value = attributable->getAttributeValue("format_entries"); value) {
@@ -129,7 +149,7 @@ namespace pl::core::ast {
                 err::E0009.throwError("The [[inline_array]] attribute can only be applied to dynamic array types.", {}, node);
 
             for (const auto &entry : array->getEntries()) {
-                entry->setFormatterFunction(*value);
+                entry->setReadFormatterFunction(*value);
             }
         }
 

@@ -21,6 +21,19 @@ namespace pl::ptrn {
             return hlp::signExtend(this->getSize() * 8, data);
         }
 
+        std::vector<u8> getBytesOf(const core::Token::Literal &value) const override {
+            auto signedValue = core::Token::literalToSigned(value);
+            std::vector<u8> result;
+
+            result.resize(this->getSize());
+            std::memcpy(result.data(), &signedValue, result.size());
+
+            if (this->getEndian() != std::endian::native)
+                std::reverse(result.begin(), result.end());
+
+            return result;
+        }
+
         [[nodiscard]] std::string getFormattedName() const override {
             return this->getTypeName();
         }
@@ -33,8 +46,7 @@ namespace pl::ptrn {
 
         std::string getFormattedValue() override {
             auto data = core::Token::literalToSigned(this->getValue());
-            auto size = this->getSize();
-            return this->formatDisplayValue(fmt::format("{:d} (0x{:0{}X})", data, u128(data) & hlp::bitmask(8 * size), size * 2), this->getValue());
+            return this->formatDisplayValue(fmt::format("{:d}", data), this->getValue());
         }
 
         [[nodiscard]] std::string toString() const override {

@@ -127,10 +127,12 @@ namespace pl::core {
 
         [[nodiscard]] std::map<std::string, Token::Literal> getOutVariables() const;
 
-        void setDataSource(std::function<void(u64, u8*, size_t)> readerFunction, u64 baseAddress, size_t dataSize) {
-            this->m_readerFunction = std::move(readerFunction);
+        void setDataSource(u64 baseAddress, size_t dataSize, std::function<void(u64, u8*, size_t)> readerFunction, std::optional<std::function<void(u64, const u8*, size_t)>> writerFunction = std::nullopt) {
             this->m_dataBaseAddress = baseAddress;
             this->m_dataSize = dataSize;
+
+            this->m_readerFunction = std::move(readerFunction);
+            if (writerFunction.has_value()) this->m_writerFunction = std::move(writerFunction.value());
         }
 
         void setDataBaseAddress(u64 baseAddress) {
@@ -149,7 +151,13 @@ namespace pl::core {
             return this->m_dataSize;
         }
 
-        void readData(u64 address, void *buffer, size_t size, u64 sectionId);
+        void accessData(u64 address, void *buffer, size_t size, u64 sectionId, bool write);
+        void readData(u64 address, void *buffer, size_t size, u64 sectionId) {
+            this->accessData(address, buffer, size, sectionId, false);
+        }
+        void writeData(u64 address, void *buffer, size_t size, u64 sectionId) {
+            this->accessData(address, buffer, size, sectionId, true);
+        }
 
         void setDefaultEndian(std::endian endian) {
             this->m_defaultEndian = endian;
@@ -378,6 +386,9 @@ namespace pl::core {
         u64 m_dataBaseAddress = 0x00;
         u64 m_dataSize = 0x00;
         std::function<void(u64, u8*, size_t)> m_readerFunction = [](u64, u8*, size_t){
+            err::E0011.throwError("No memory has been attached. Reading is disabled.");
+        };
+        std::function<void(u64, u8*, size_t)> m_writerFunction = [](u64, u8*, size_t){
             err::E0011.throwError("No memory has been attached. Reading is disabled.");
         };
 

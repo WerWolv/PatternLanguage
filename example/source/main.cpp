@@ -21,9 +21,9 @@ int main() {
     }();
 
     // Tell the runtime where and how to read data
-    patternLanguage.setDataSource([](pl::u64 address, pl::u8 *buffer, size_t size){
+    patternLanguage.setDataSource(0x00, Data.size(), [](pl::u64 address, pl::u8 *buffer, size_t size){
         std::memcpy(buffer, &Data[address], size);
-    }, 0x00, Data.size());
+    });
 
     // Tell the runtime how to handle dangerous functions being called
     patternLanguage.setDangerousFunctionCallHandler([]{

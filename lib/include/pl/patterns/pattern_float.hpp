@@ -35,6 +35,25 @@ namespace pl::ptrn {
             }
         }
 
+        std::vector<u8> getBytesOf(const core::Token::Literal &value) const override {
+            auto doubleValue = core::Token::literalToFloatingPoint(value);
+            std::vector<u8> result;
+
+            result.resize(this->getSize());
+
+            if (this->getSize() == 4) {
+                auto floatValue = static_cast<float>(doubleValue);
+                std::memcpy(result.data(), &floatValue, result.size());
+            } else if (this->getSize() == 8) {
+                std::memcpy(result.data(), &doubleValue, result.size());
+            }
+
+            if (this->getEndian() != std::endian::native)
+                std::reverse(result.begin(), result.end());
+
+            return result;
+        }
+
         [[nodiscard]] std::string getFormattedName() const override {
             return this->getTypeName();
         }

@@ -22,10 +22,10 @@ namespace pl::cli {
 
         runtime.setIncludePaths(includePaths);
 
-        runtime.setDataSource([&](u64 address, void *buffer, size_t size) {
+        runtime.setDataSource(baseAddress, inputFile.getSize(), [&](u64 address, void *buffer, size_t size) {
             inputFile.seek(address - baseAddress);
             inputFile.readBuffer(static_cast<u8*>(buffer), size);
-        }, baseAddress, inputFile.getSize());
+        });
 
         // Execute pattern file
         if (!runtime.executeString(patternFile.readString())) {

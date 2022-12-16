@@ -40,12 +40,12 @@ namespace pl::cli::sub {
             runtime.setIncludePaths(includePaths);
 
             auto data = hlp::fs::File(inputFilePath, hlp::fs::File::Mode::Read).readBytes();
-            runtime.setDataSource([&](u64 address, void *buffer, size_t size) {
+            runtime.setDataSource(baseAddress, data.size(), [&](u64 address, void *buffer, size_t size) {
                 if (address + size > data.size())
                     std::memset(buffer, 0x00, size);
                 else
                     std::memcpy(buffer, data.data() + address, size);
-            }, baseAddress, data.size());
+            });
 
             // Execute pattern file
             if (!runtime.executeFile(patternFilePath)) {

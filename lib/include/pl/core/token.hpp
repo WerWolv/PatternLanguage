@@ -190,6 +190,7 @@ namespace pl::core {
         static char literalToCharacter(const core::Token::Literal &literal);
         static bool literalToBoolean(const core::Token::Literal &literal);
         static std::string literalToString(const core::Token::Literal &literal, bool cast);
+        static std::vector<u8> literalToBytes(const core::Token::Literal &literal);
 
         enum class LiteralType {
             Character,

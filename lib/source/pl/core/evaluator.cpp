@@ -446,7 +446,7 @@ namespace pl::core {
         return result;
     }
 
-    void Evaluator::readData(u64 address, void *buffer, size_t size, u64 sectionId) {
+    void Evaluator::accessData(u64 address, void *buffer, size_t size, u64 sectionId, bool write) {
         if (size == 0 || buffer == nullptr)
             return;
 
@@ -462,29 +462,42 @@ namespace pl::core {
                     storage.resize(storageAddress + size);
                 }
 
-                std::memcpy(buffer, storage.data() + storageAddress, size);
+                if (!write)
+                    std::memcpy(buffer, storage.data() + storageAddress, size);
+                else
+                    std::memcpy(storage.data() + storageAddress, buffer, size);
             }
             else
                 err::E0011.throwError(fmt::format("Tried accessing out of bounds heap cell {}. This is a bug.", heapAddress));
         } else if (sectionId == ptrn::Pattern::MainSectionId) {
-            if (address < this->m_dataBaseAddress + this->m_dataSize)
-                this->m_readerFunction(address, reinterpret_cast<u8*>(buffer), size);
-            else
-                std::memset(buffer, 0x00, size);
+            if (!write) {
+                if (address < this->m_dataBaseAddress + this->m_dataSize)
+                    this->m_readerFunction(address, reinterpret_cast<u8*>(buffer), size);
+                else
+                    std::memset(buffer, 0x00, size);
+            } else {
+                if (address < this->m_dataBaseAddress + this->m_dataSize)
+                    this->m_writerFunction(address, reinterpret_cast<u8*>(buffer), size);
+            }
         } else {
             if (this->m_sections.contains(sectionId)) {
                 auto &section = this->m_sections[sectionId];
 
-                if ((address + size) <= section.data.size())
-                    std::memcpy(buffer, section.data.data() + address, size);
-                else
-                    std::memset(buffer, 0x00, size);
+                if (!write) {
+                    if ((address + size) <= section.data.size())
+                        std::memcpy(buffer, section.data.data() + address, size);
+                    else
+                        std::memset(buffer, 0x00, size);
+                } else {
+                    if ((address + size) <= section.data.size())
+                        std::memcpy(section.data.data() + address, buffer, size);
+                }
             } else
                 err::E0012.throwError(fmt::format("Tried accessing a non-existing section with id {}.", sectionId));
         }
 
         if (this->isDebugModeEnabled())
-            this->m_console.log(LogConsole::Level::Debug, fmt::format("Reading {} bytes from address 0x{:02X} in section {:02X}", size, address, sectionId));
+            this->m_console.log(LogConsole::Level::Debug, fmt::format("{} {} bytes from address 0x{:02X} in section {:02X}", write ? "Writing" : "Reading", size, address, sectionId));
     }
 
     void Evaluator::pushSectionId(u64 id) {

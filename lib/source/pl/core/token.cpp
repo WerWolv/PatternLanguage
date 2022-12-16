@@ -57,14 +57,22 @@ namespace pl::core {
             err::E0004.throwError("Expected value of type 'string'.");
 
         return std::visit(hlp::overloaded {
-                              [](std::string result) -> std::string { return result; },
-                              [](u128 result) -> std::string { return hlp::to_string(result); },
-                              [](i128 result) -> std::string { return hlp::to_string(result); },
-                              [](bool result) -> std::string { return result ? "true" : "false"; },
-                              [](char result) -> std::string { return { 1, result }; },
+                              [](const std::string &result) -> std::string { return result; },
+                              [](const u128 &result) -> std::string { return hlp::to_string(result); },
+                              [](const i128 &result) -> std::string { return hlp::to_string(result); },
+                              [](const bool &result) -> std::string { return result ? "true" : "false"; },
+                              [](const char &result) -> std::string { return { 1, result }; },
                               [](ptrn::Pattern *result) -> std::string { return result->toString(); },
                               [](auto &&result) -> std::string { return std::to_string(result); }
                           }, literal);
+    }
+
+    std::vector<u8> Token::literalToBytes(const core::Token::Literal &literal) {
+        return std::visit(hlp::overloaded {
+                [](const std::string &result) -> std::vector<u8> { return { result.begin(), result.end() }; },
+                [](ptrn::Pattern *result) -> std::vector<u8> { return result->getBytes(); },
+                [](auto &&result) -> std::vector<u8> { return hlp::toBytes(result); }
+        }, literal);
     }
 
     Token::LiteralType Token::getLiteralType(const core::Token::Literal &literal) {

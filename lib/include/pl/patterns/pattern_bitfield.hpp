@@ -36,7 +36,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
-            return "bits";
+            return this->m_bitSize == 1 ? "bit" : "bits";
         }
 
         [[nodiscard]] u8 getBitOffset() const {
@@ -166,6 +166,7 @@ namespace pl::ptrn {
             for (auto &field : this->m_fields) {
                 field->setSize(this->getSize());
                 field->setColor(this->getColor());
+                field->setEndian(this->getEndian());
             }
 
             if (!this->m_fields.empty())

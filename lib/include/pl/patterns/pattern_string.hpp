@@ -27,6 +27,13 @@ namespace pl::ptrn {
             return buffer;
         }
 
+        std::vector<u8> getBytesOf(const core::Token::Literal &value) const override {
+            if (auto stringValue = std::get_if<std::string>(&value); stringValue != nullptr)
+                return { stringValue->begin(), stringValue->end() };
+            else
+                return { };
+        }
+
         [[nodiscard]] std::string getFormattedName() const override {
             return "String";
         }

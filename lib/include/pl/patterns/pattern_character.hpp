@@ -20,6 +20,13 @@ namespace pl::ptrn {
             return character;
         }
 
+        std::vector<u8> getBytesOf(const core::Token::Literal &value) const override {
+            if (auto charValue = std::get_if<char>(&value); charValue != nullptr)
+                return hlp::toBytes(*charValue);
+            else
+                return { };
+        }
+
         [[nodiscard]] std::string getFormattedName() const override {
             return "char";
         }

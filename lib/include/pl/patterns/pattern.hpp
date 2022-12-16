@@ -128,8 +128,10 @@ namespace pl::ptrn {
 
         [[nodiscard]] auto getTransformFunction() const { return this->getAttributeValue("transform").value_or(""); }
         void setTransformFunction(const std::string &functionName) { this->addAttribute("transform", functionName); }
-        [[nodiscard]] auto getFormatterFunction() const { return this->getAttributeValue("format").value_or(""); }
-        void setFormatterFunction(const std::string &functionName) { this->addAttribute("format", functionName); }
+        [[nodiscard]] auto getReadFormatterFunction() const { return this->getAttributeValue("format_read").value_or(""); }
+        void setReadFormatterFunction(const std::string &functionName) { this->addAttribute("format_read", functionName); }
+        [[nodiscard]] auto getWriteFormatterFunction() const { return this->getAttributeValue("format_write").value_or(""); }
+        void setWriteFormatterFunction(const std::string &functionName) { this->addAttribute("format_write", functionName); }
 
         [[nodiscard]] virtual std::string getFormattedName() const = 0;
         [[nodiscard]] virtual std::string getFormattedValue() = 0;
@@ -214,7 +216,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::string calcDisplayValue(const std::string &value, const core::Token::Literal &literal) const {
-            const auto &formatterFunctionName = this->getFormatterFunction();
+            const auto &formatterFunctionName = this->getReadFormatterFunction();
             if (formatterFunctionName.empty())
                 return value;
             else {
@@ -252,6 +254,41 @@ namespace pl::ptrn {
             }
 
             return *this->m_cachedDisplayValue;
+        }
+
+        std::vector<u8> getBytes() const {
+            std::vector<u8> result;
+            result.resize(this->getSize());
+            this->getEvaluator()->readData(this->getOffset(), result.data(), this->getSize(), this->getSection());
+
+            return result;
+        }
+
+        virtual std::vector<u8> getBytesOf(const core::Token::Literal &value) const { hlp::unused(value); return { }; }
+
+        void setValue(const core::Token::Literal &value) {
+            std::vector<u8> result;
+
+            const auto &formatterFunctionName = this->getWriteFormatterFunction();
+            if (formatterFunctionName.empty()) {
+                result = this->getBytesOf(value);
+            } else {
+                try {
+                    const auto function = this->m_evaluator->findFunction(formatterFunctionName);
+                    if (function.has_value()) {
+                        auto formatterResult = function->func(this->m_evaluator, { value });
+
+                        if (formatterResult.has_value()) {
+                            result =this->getBytesOf(*formatterResult);
+                        }
+                    }
+                } catch (core::err::EvaluatorError::Exception &error) {
+                    hlp::unused(error);
+                }
+            }
+
+            if (!result.empty())
+                this->getEvaluator()->writeData(this->getOffset(), result.data(), result.size(), this->getSection());
         }
 
         void clearFormatCache() {
@@ -294,7 +331,7 @@ namespace pl::ptrn {
             this->m_cachedDisplayValue = std::make_unique<std::string>(value);
         }
 
-        [[nodiscard]] auto getEvaluator() const {
+        [[nodiscard]] core::Evaluator* getEvaluator() const {
             return this->m_evaluator;
         }
 

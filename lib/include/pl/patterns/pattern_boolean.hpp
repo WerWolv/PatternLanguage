@@ -20,6 +20,13 @@ namespace pl::ptrn {
             return boolean;
         }
 
+        std::vector<u8> getBytesOf(const core::Token::Literal &value) const override {
+            if (auto boolValue = std::get_if<bool>(&value); boolValue != nullptr)
+                return hlp::toBytes(*boolValue);
+            else
+                return { };
+        }
+
         [[nodiscard]] std::string getFormattedName() const override {
             return "bool";
         }

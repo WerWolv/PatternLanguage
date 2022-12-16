@@ -67,7 +67,7 @@ namespace pl {
 
         void abort();
 
-        void setDataSource(std::function<void(u64, u8*, size_t)> readFunction, u64 baseAddress, u64 size) const;
+        void setDataSource(u64 baseAddress, u64 size, std::function<void(u64, u8*, size_t)> readFunction, std::optional<std::function<void(u64, const u8*, size_t)>> writerFunction = std::nullopt) const;
         void setDataBaseAddress(u64 baseAddress) const;
         void setDataSize(u64 size) const;
         void setDefaultEndian(std::endian endian);

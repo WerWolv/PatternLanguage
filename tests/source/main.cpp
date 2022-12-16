@@ -38,10 +38,10 @@ int runTests(int argc, char **argv) {
 
     hlp::fs::File testData("test_data", hlp::fs::File::Mode::Read);
     pl::PatternLanguage runtime;
-    runtime.setDataSource([&testData](u64 offset, u8 *buffer, u64 size) {
+    runtime.setDataSource(0x00, testData.getSize(), [&testData](u64 offset, u8 *buffer, u64 size) {
         testData.seek(offset);
         testData.readBuffer(buffer, size);
-    }, 0x00, testData.getSize());
+    });
 
 
     runtime.addFunction({ "std" }, "assert", api::FunctionParameterCount::exactly(2), [](core::Evaluator *ctx, auto params) -> std::optional<core::Token::Literal> {
