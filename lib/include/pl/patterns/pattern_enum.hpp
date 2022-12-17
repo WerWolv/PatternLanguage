@@ -30,19 +30,6 @@ namespace pl::ptrn {
             return hlp::changeEndianess(value, this->getSize(), this->getEndian());
         }
 
-        std::vector<u8> getBytesOf(const core::Token::Literal &value) const override {
-            auto enumValue = core::Token::literalToUnsigned(value);
-            std::vector<u8> result;
-
-            result.resize(this->getSize());
-            std::memcpy(result.data(), &enumValue, result.size());
-
-            if (this->getEndian() != std::endian::native)
-                std::reverse(result.begin(), result.end());
-
-            return result;
-        }
-
         [[nodiscard]] std::string getFormattedName() const override {
             return "enum " + Pattern::getTypeName();
         }
@@ -82,7 +69,7 @@ namespace pl::ptrn {
         std::string getFormattedValue() override {
             auto value = core::Token::literalToUnsigned(this->getValue());
 
-            return this->formatDisplayValue(fmt::format("{} (0x{:0{}X})", this->toString().c_str(), value, this->getSize() * 2), this);
+            return fmt::format("{} (0x{:0{}X})", this->toString(), value, this->getSize() * 2);
         }
 
         [[nodiscard]] std::string toString() const override {

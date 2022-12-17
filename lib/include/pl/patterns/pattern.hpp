@@ -264,7 +264,14 @@ namespace pl::ptrn {
             return result;
         }
 
-        virtual std::vector<u8> getBytesOf(const core::Token::Literal &value) const { hlp::unused(value); return { }; }
+        virtual std::vector<u8> getBytesOf(const core::Token::Literal &value) const {
+            auto bytes = core::Token::literalToBytes(value);
+            if (this->getEndian() == std::endian::big)
+                std::reverse(bytes.begin(), bytes.end());
+            bytes.resize(this->getSize());
+
+            return bytes;
+        }
 
         void setValue(const core::Token::Literal &value) {
             std::vector<u8> result;
@@ -279,7 +286,7 @@ namespace pl::ptrn {
                         auto formatterResult = function->func(this->m_evaluator, { value });
 
                         if (formatterResult.has_value()) {
-                            result =this->getBytesOf(*formatterResult);
+                            result = this->getBytesOf(*formatterResult);
                         }
                     }
                 } catch (core::err::EvaluatorError::Exception &error) {
@@ -287,8 +294,10 @@ namespace pl::ptrn {
                 }
             }
 
-            if (!result.empty())
+            if (!result.empty()) {
                 this->getEvaluator()->writeData(this->getOffset(), result.data(), result.size(), this->getSection());
+                this->clearFormatCache();
+            }
         }
 
         void clearFormatCache() {
