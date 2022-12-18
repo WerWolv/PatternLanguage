@@ -31,12 +31,12 @@ namespace pl::ptrn {
 
         std::string getFormattedValue() override {
             auto data = core::Token::literalToUnsigned(this->getValue());
-            return this->formatDisplayValue(fmt::format("{:d}", data), this->getValue());
+            return this->formatDisplayValue(fmt::format("{:d} (0x{:0{}X})", data, data, this->getSize() * 2), this->getValue());
         }
 
         [[nodiscard]] std::string toString() const override {
             auto value = this->getValue();
-            auto result = fmt::format("{}", core::Token::literalToUnsigned(value));
+            auto result = fmt::format("{:d}", core::Token::literalToUnsigned(value));
 
             return this->formatDisplayValue(result, value);
         }

@@ -102,14 +102,6 @@ namespace pl::ptrn {
             return std::unique_ptr<Pattern>(new PatternBitfield(*this));
         }
 
-        void forEachMember(const std::function<void(Pattern&)>& fn) {
-            if (this->isSealed())
-                return;
-
-            for (auto &field : this->m_fields)
-                fn(*field);
-        }
-
         void setOffset(u64 offset) override {
             for (auto &field : this->m_fields)
                 field->setOffset(field->getOffset() - this->getOffset() + offset);
@@ -262,6 +254,9 @@ namespace pl::ptrn {
         }
 
         void forEachEntry(u64 start, u64 end, const std::function<void (u64, Pattern *)> &callback) override {
+            if (this->isSealed())
+                return;
+
             for (auto i = start; i < end; i++)
                 callback(i, this->getEntry(i).get());
         }

@@ -33,12 +33,14 @@ namespace pl::ptrn {
 
         std::string getFormattedValue() override {
             auto data = core::Token::literalToSigned(this->getValue());
-            return this->formatDisplayValue(fmt::format("{:d}", data), this->getValue());
+            auto size = this->getSize();
+
+            return this->formatDisplayValue(fmt::format("{:d} (0x{:0{}X})", data, u128(data) & hlp::bitmask(8 * size), size * 2), this->getValue());
         }
 
         [[nodiscard]] std::string toString() const override {
             auto value = this->getValue();
-            auto result = fmt::format("{}", core::Token::literalToSigned(value));
+            auto result = fmt::format("{:d}", core::Token::literalToSigned(value));
 
             return this->formatDisplayValue(result, value);
         }

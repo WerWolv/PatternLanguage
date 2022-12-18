@@ -67,9 +67,15 @@ namespace pl::ptrn {
         std::string getFormattedValue() override {
             auto value = core::Token::literalToFloatingPoint(this->getValue());
             if (this->getSize() == 4) {
-                return this->formatDisplayValue(fmt::format("{:g}", float(value)), float(value));
+                auto f32 = static_cast<float>(value);
+                u32 integerResult = 0;
+                std::memcpy(&integerResult, &f32, sizeof(float));
+                return this->formatDisplayValue(fmt::format("{:g} (0x{:0{}X})", f32, integerResult, this->getSize() * 2), f32);
             } else if (this->getSize() == 8) {
-                return this->formatDisplayValue(fmt::format("{:g}", double(value)), double(value));
+                auto f64 = static_cast<double>(value);
+                u64 integerResult = 0;
+                std::memcpy(&integerResult, &f64, sizeof(double));
+                return this->formatDisplayValue(fmt::format("{:g} (0x{:0{}X})", f64, integerResult, this->getSize() * 2), f64);
             } else {
                 return "Floating Point Data";
             }
