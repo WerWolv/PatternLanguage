@@ -132,22 +132,15 @@ namespace pl::hlp {
         return result;
     }
 
-    inline void trimLeft(std::string &s) {
+    inline std::string trim(std::string s) {
         s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
             return !std::isspace(ch) && ch >= 0x20;
         }));
-    }
-
-    inline void trimRight(std::string &s) {
         s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
-                    return !std::isspace(ch) && ch >= 0x20;
-                }).base(),
-                s.end());
-    }
+            return !std::isspace(ch) && ch >= 0x20;
+        }).base(), s.end());
 
-    inline void trim(std::string &s) {
-        trimLeft(s);
-        trimRight(s);
+        return s;
     }
 
     float float16ToFloat32(u16 float16);

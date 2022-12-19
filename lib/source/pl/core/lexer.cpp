@@ -360,6 +360,49 @@ namespace pl::core {
                 } else if (code.substr(offset, 2) == "^^") {
                     addToken(tkn::Operator::BoolXor);
                     offset += 2;
+                } else if (code.substr(offset, 2) == "/*") {
+                    offset += 2;
+
+                    bool global;
+                    if (code[offset] == '*')
+                        global = false;
+                    else if (code[offset] == '!')
+                        global = true;
+                    else
+                        err::L0004.throwError(fmt::format("Invalid documentation comment. Expected '/**' or '/*!', got '/*{}'", code[offset]));
+
+                    offset += 1;
+
+                    auto commentStart = offset;
+                    while (code.substr(offset, 2) != "*/") {
+                        if (code[offset] == '\n') {
+                            line++;
+                            lineStartOffset = offset + 1;
+                        }
+
+                        offset += 1;
+
+                        if (offset >= code.length())
+                            err::L0004.throwError("Reached end of input while parsing documentation comment");
+                    }
+
+                    addToken(tkn::Literal::DocComment(global, std::string(code.substr(commentStart, offset - commentStart))));
+
+                    offset += 2;
+                } else if (code.substr(offset, 3) == "///") {
+                    offset += 3;
+
+                    auto commentStart = offset;
+                    while (code[offset] != '\n') {
+                        offset += 1;
+
+                        if (offset >= code.length())
+                            err::L0004.throwError("Reached end of input while parsing documentation comment");
+                    }
+
+                    addToken(tkn::Literal::DocComment(false, std::string(code.substr(commentStart, offset - commentStart))));
+
+                    offset += 2;
                 } else if (c == '=') {
                     addToken(tkn::Operator::Assign);
                     offset += 1;

@@ -87,7 +87,7 @@ namespace pl::core {
                     if (code.length() == offset)
                         break;
 
-                } else if (code.substr(offset, 2) == "/*") {
+                } else if ((code.substr(offset, 2) == "/*" && code.substr(offset, 3) != "/**" && code.substr(offset, 3) != "/*!") || (!initialRun && code.substr(offset, 3) == "/*!")) {
                     auto commentStartLine = lineNumber;
                     while (offset < code.length() && code.substr(offset, 2) != "*/") {
                         if (code[offset] == '\n') {
@@ -178,7 +178,7 @@ namespace pl::core {
 
                             Preprocessor preprocessor(*this);
 
-                            auto preprocessedInclude = preprocessor.preprocess(runtime, file.readString(), /*initialRun =*/false);
+                            auto preprocessedInclude = preprocessor.preprocess(runtime, file.readString(), false);
 
                             if (!preprocessedInclude.has_value()) {
                                 throw err::PatternLanguageError(*preprocessor.m_error);
@@ -202,7 +202,7 @@ namespace pl::core {
                                 std::replace(content.begin(), content.end(), '\n', ' ');
                                 std::replace(content.begin(), content.end(), '\r', ' ');
 
-                                output += content;
+                                output += "/*! DOCS IGNORE ON **/ " + content + " /*! DOCS IGNORE OFF **/";
                             }
                         } else if (getDirective("define")) {
                             auto defineName = getDirectiveValue();

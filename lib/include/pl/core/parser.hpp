@@ -29,10 +29,14 @@ namespace pl::core {
         const std::optional<err::PatternLanguageError> &getError() { return this->m_error; }
         const auto &getTypes() { return this->m_types; }
 
+        [[nodiscard]] const std::vector<std::string>& getGlobalDocComments() const {
+            return this->m_globalDocComments;
+        }
+
     private:
         std::optional<err::PatternLanguageError> m_error;
         TokenIter m_curr;
-        TokenIter m_originalPosition, m_partOriginalPosition;
+        TokenIter m_startToken, m_originalPosition, m_partOriginalPosition;
 
         std::vector<std::shared_ptr<ast::ASTNodeTypeDecl>> m_currTemplateType;
         std::map<std::string, std::shared_ptr<ast::ASTNodeTypeDecl>> m_types;
@@ -40,11 +44,18 @@ namespace pl::core {
         std::vector<TokenIter> m_matchedOptionals;
         std::vector<std::vector<std::string>> m_currNamespace;
 
-        u32 getLine(i32 index) const {
+        std::vector<std::string> m_globalDocComments;
+        bool m_ignoreDocs = false;
+
+        void addGlobalDocComment(const std::string &comment) {
+            this->m_globalDocComments.push_back(comment);
+        }
+
+        [[nodiscard]] u32 getLine(i32 index) const {
             return this->m_curr[index].line;
         }
 
-        u32 getColumn(i32 index) const {
+        [[nodiscard]] u32 getColumn(i32 index) const {
             return this->m_curr[index].column;
         }
 
@@ -308,7 +319,43 @@ namespace pl::core {
         }
 
         bool peek(const Token &token, i32 index = 0) {
+            if (index >= 0) {
+                while (this->m_curr[0].type == Token::Type::DocComment)
+                    this->m_curr++;
+            } else {
+                while (this->m_curr[0].type == Token::Type::DocComment)
+                    this->m_curr--;
+            }
+
             return this->m_curr[index].type == token.type && this->m_curr[index] == token.value;
+        }
+
+        std::optional<Token::DocComment> getDocComment() {
+            auto token = this->m_curr;
+
+            while (token >= this->m_startToken) {
+                if (token[0].type == Token::Type::DocComment) {
+                    auto content = std::get<Token::DocComment>(token[0].value);
+
+                    auto trimmed = hlp::trim(content.comment);
+                    if (trimmed.starts_with("DOCS IGNORE ON")) {
+                        this->m_ignoreDocs = true;
+                        return std::nullopt;
+                    } else if (trimmed.starts_with("DOCS IGNORE OFF")) {
+                        this->m_ignoreDocs = false;
+                        return std::nullopt;
+                    }
+
+                    if (this->m_ignoreDocs)
+                        return std::nullopt;
+                    else
+                        return content;
+                }
+
+                token--;
+            }
+
+            return std::nullopt;
         }
     };
 

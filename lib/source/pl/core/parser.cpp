@@ -1418,6 +1418,11 @@ namespace pl::core {
         std::shared_ptr<ast::ASTNode> statement;
         bool requiresSemicolon = true;
 
+        if (auto docComment = getDocComment(); docComment.has_value()) {
+            if (docComment->global)
+                this->addGlobalDocComment(docComment->comment);
+        }
+
         if (MATCHES(sequence(tkn::Keyword::Using, tkn::Literal::Identifier) && (peek(tkn::Operator::Assign) || peek(tkn::Operator::BoolLessThan))))
             statement = parseUsingDeclaration();
         else if (MATCHES(sequence(tkn::Keyword::Using, tkn::Literal::Identifier)))
@@ -1467,6 +1472,12 @@ namespace pl::core {
         if (!statement)
             return { };
 
+        if (auto docComment = getDocComment(); docComment.has_value()) {
+            if (!docComment->global)
+                statement->setDocComment(docComment->comment);
+        }
+        statement->setShouldDocument(!this->m_ignoreDocs);
+
         return hlp::moveToVector(std::move(statement));
     }
 
@@ -1490,7 +1501,7 @@ namespace pl::core {
 
     // <(parseNamespace)...> EndOfProgram
     std::optional<std::vector<std::shared_ptr<ast::ASTNode>>> Parser::parse(const std::string &sourceCode, const std::vector<Token> &tokens) {
-        this->m_curr = this->m_originalPosition = this->m_partOriginalPosition = tokens.begin();
+        this->m_curr = this->m_startToken = this->m_originalPosition = this->m_partOriginalPosition = tokens.begin();
 
         this->m_types.clear();
         this->m_currTemplateType.clear();

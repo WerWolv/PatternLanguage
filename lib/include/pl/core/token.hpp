@@ -29,7 +29,8 @@ namespace pl::core {
             Integer,
             String,
             Identifier,
-            Separator
+            Separator,
+            DocComment
         };
 
         enum class Keyword {
@@ -146,8 +147,15 @@ namespace pl::core {
             std::string m_identifier;
         };
 
+        struct DocComment {
+            bool global;
+            std::string comment;
+
+            constexpr bool operator==(const DocComment &) const = default;
+        };
+
         using Literal    = std::variant<char, bool, u128, i128, double, std::string, ptrn::Pattern *>;
-        using ValueTypes = std::variant<Keyword, Identifier, Operator, Literal, ValueType, Separator>;
+        using ValueTypes = std::variant<Keyword, Identifier, Operator, Literal, ValueType, Separator, DocComment>;
 
         constexpr Token(Type type, auto value, u32 line, u32 column) : type(type), value(std::move(value)), line(line), column(column) {}
 
@@ -251,9 +259,10 @@ namespace pl::core {
 
         namespace Literal {
 
-            constexpr auto IdentifierValue   = [](const std::string &name = { }) -> Token     { return createToken(core::Token::Type::Identifier, Token::Identifier(name)); };
-            constexpr auto NumericValue      = [](const Token::Literal &value = { }) -> Token { return createToken(core::Token::Type::Integer, value); };
-            constexpr auto StringValue       = [](const std::string &value = { }) -> Token    { return createToken(core::Token::Type::String, Token::Literal(value)); };
+            constexpr auto IdentifierValue   = [](const std::string &name = { }) -> Token           { return createToken(core::Token::Type::Identifier, Token::Identifier(name)); };
+            constexpr auto NumericValue      = [](const Token::Literal &value = { }) -> Token       { return createToken(core::Token::Type::Integer, value); };
+            constexpr auto StringValue       = [](const std::string &value = { }) -> Token          { return createToken(core::Token::Type::String, Token::Literal(value)); };
+            constexpr auto DocComment        = [](bool global, const std::string &value) -> Token   { return { core::Token::Type::DocComment, Token::DocComment { global, value }, 1, 1 }; };
 
             constexpr auto Identifier = createToken(core::Token::Type::Identifier, { });
             constexpr auto Numeric = createToken(core::Token::Type::Integer, { });

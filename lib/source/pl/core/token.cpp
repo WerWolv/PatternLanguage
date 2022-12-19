@@ -98,6 +98,7 @@ namespace pl::core {
             case String: return "String";
             case Identifier: return "Identifier";
             case Separator: return "Separator";
+            case DocComment: return "Doc Comment";
         }
 
         return "Unknown";
@@ -250,12 +251,18 @@ namespace pl::core {
                               },
                               [](Token::ValueType valueType) -> std::string  {
                                   return getTypeName(valueType);
+                              },
+                              [](const Token::DocComment &docComment) -> std::string {
+                                  if (docComment.global)
+                                      return fmt::format("/*! {} */", docComment.comment);
+                                  else
+                                      return fmt::format("/** {} */", docComment.comment);
                               }
                           }, this->value);
     }
 
     bool Token::operator==(const ValueTypes &other) const {
-        if (this->type == Type::Integer || this->type == Type::Identifier || this->type == Type::String)
+        if (this->type == Type::Integer || this->type == Type::Identifier || this->type == Type::String || this->type == Type::DocComment)
             return true;
         else if (this->type == Type::ValueType) {
             auto otherValueType = std::get_if<ValueType>(&other);

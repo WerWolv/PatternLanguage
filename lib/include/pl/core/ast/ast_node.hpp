@@ -48,9 +48,28 @@ namespace pl::core::ast {
             err::E0001.throwError("Cannot execute non-functional statement.", "This is a evaluator bug!", this);
         }
 
+        void setDocComment(const std::string &comment) {
+            this->m_docComment = comment;
+        }
+
+        [[nodiscard]] const std::string &getDocComment() const {
+            return this->m_docComment;
+        }
+
+        void setShouldDocument(bool shouldDocument) {
+            this->m_document = shouldDocument;
+        }
+
+        [[nodiscard]] bool shouldDocument() const {
+            return this->m_document;
+        }
+
     private:
         u32 m_line = 1;
         u32 m_column = 1;
+
+        std::string m_docComment;
+        bool m_document = false;
     };
 
 }
