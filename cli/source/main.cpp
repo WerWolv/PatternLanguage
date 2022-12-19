@@ -9,6 +9,7 @@ namespace pl::cli::sub {
 
     void addFormatSubcommand(CLI::App *app);
     void addRunSubcommand(CLI::App *app);
+    void addDocsSubcommand(CLI::App *app);
 
 }
 
@@ -19,6 +20,7 @@ int main(int argc, char** argv) {
     // Add subcommands
     pl::cli::sub::addFormatSubcommand(&app);
     pl::cli::sub::addRunSubcommand(&app);
+    pl::cli::sub::addDocsSubcommand(&app);
 
     // Print help message if not enough arguments were provided
     if (argc == 1) {
