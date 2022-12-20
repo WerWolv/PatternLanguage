@@ -274,8 +274,7 @@ namespace pl::core {
                 if (this->m_pragmaHandlers.contains(type)) {
                     if (!this->m_pragmaHandlers[type](runtime, value))
                         err::M0006.throwError(fmt::format("Value '{}' cannot be used with the '{}' pragma directive.", value, type), { }, line);
-                } else
-                    err::M0006.throwError(fmt::format("Pragma instruction '{}' does not exist.", type), { }, line);
+                }
             }
         } catch (err::PreprocessorError::Exception &e) {
             auto line = e.getUserData() == 0 ? lineNumber : e.getUserData();

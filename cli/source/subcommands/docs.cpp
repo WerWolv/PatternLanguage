@@ -121,8 +121,6 @@ namespace pl::cli::sub {
                 return false;
             });
 
-            runtime.addPragma("MIME", [](auto&, const auto&){ return true; });
-
             runtime.setIncludePaths(includePaths);
 
             // Execute pattern file

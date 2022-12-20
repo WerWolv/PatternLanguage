@@ -4,8 +4,6 @@
 
 namespace pl::cli {
 
-    static bool ignorePragma(PatternLanguage&, const std::string &) { return true; }
-
     void executePattern(
             PatternLanguage &runtime,
             pl::hlp::fs::File &inputFile,
@@ -17,8 +15,6 @@ namespace pl::cli {
         runtime.setDangerousFunctionCallHandler([&]() {
             return allowDangerousFunctions;
         });
-
-        runtime.addPragma("MIME", ignorePragma);
 
         runtime.setIncludePaths(includePaths);
 

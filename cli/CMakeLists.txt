@@ -11,6 +11,7 @@ add_executable(plcli
         source/subcommands/format.cpp
         source/subcommands/run.cpp
         source/subcommands/docs.cpp
+        source/subcommands/info.cpp
 )
 
 add_subdirectory(../external/cli11 ../external/cli11)
