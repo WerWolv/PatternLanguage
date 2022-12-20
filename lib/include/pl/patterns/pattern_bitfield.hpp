@@ -238,7 +238,10 @@ namespace pl::ptrn {
         }
 
         void setEndian(std::endian endian) override {
+            if (this->isLocal()) return;
+
             Pattern::setEndian(endian);
+
             for (auto &field : this->m_fields)
                 field->setEndian(endian);
         }

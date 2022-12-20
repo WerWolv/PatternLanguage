@@ -157,9 +157,11 @@ namespace pl::ptrn {
         }
 
         void setEndian(std::endian endian) override {
-            this->m_template->setEndian(endian);
+            if (this->isLocal()) return;
 
             Pattern::setEndian(endian);
+
+            this->m_template->setEndian(endian);
         }
 
         void accept(PatternVisitor &v) override {

@@ -166,11 +166,14 @@ namespace pl::ptrn {
         }
 
         void setEndian(std::endian endian) override {
+            if (this->isLocal()) return;
+
+            Pattern::setEndian(endian);
+
             for (auto &entry : this->m_entries) {
                 entry->setEndian(endian);
             }
 
-            Pattern::setEndian(endian);
         }
 
         void accept(PatternVisitor &v) override {

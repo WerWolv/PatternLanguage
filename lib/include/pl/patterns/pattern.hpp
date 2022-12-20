@@ -130,7 +130,11 @@ namespace pl::ptrn {
             if (this->m_evaluator == nullptr) return std::endian::native;
             else return this->m_endian.value_or(this->m_evaluator->getDefaultEndian());
         }
-        virtual void setEndian(std::endian endian) { this->m_endian = endian; }
+        virtual void setEndian(std::endian endian) {
+            if (this->isLocal()) return;
+
+            this->m_endian = endian;
+        }
         [[nodiscard]] bool hasOverriddenEndian() const { return this->m_endian.has_value(); }
 
         [[nodiscard]] std::string getDisplayName() const { return this->getAttributeValue("name").value_or(this->getVariableName()); }
@@ -183,7 +187,12 @@ namespace pl::ptrn {
         }
 
         virtual void setLocal(bool local) {
-            this->m_section = local ? HeapSectionId : MainSectionId;
+            if (local) {
+                this->setEndian(std::endian::native);
+                this->m_section = HeapSectionId;
+            } else {
+                this->m_section = MainSectionId;
+            }
         }
 
         [[nodiscard]] bool isLocal() const {

@@ -142,11 +142,13 @@ namespace pl::ptrn {
         }
 
         void setEndian(std::endian endian) override {
+            if (this->isLocal()) return;
+
+            Pattern::setEndian(endian);
+
             if (this->m_pointedAt != nullptr) {
                 this->m_pointedAt->setEndian(endian);
             }
-
-            Pattern::setEndian(endian);
         }
 
         void accept(PatternVisitor &v) override {
