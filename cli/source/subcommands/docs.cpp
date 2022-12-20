@@ -30,24 +30,69 @@ namespace pl::cli::sub {
             }
         }
 
+        std::string generateAttributes(const core::ast::Attributable *attributable) {
+            const auto &attributes = attributable->getAttributes();
+            if (attributes.empty())
+                return "";
+
+            std::string result = " [[";
+            for (const auto &attribute : attributes) {
+                result += attribute->getAttribute();
+
+                if (const auto &value = attribute->getValue(); value.has_value())
+                    result += fmt::format("(\"{}\")", value.value());
+
+                result += ", ";
+            }
+
+            result.pop_back();
+            result.pop_back();
+
+            return result + "]]";
+        }
+
+        std::string generateTemplateParams(const core::ast::ASTNodeTypeDecl *type) {
+            const auto &templateParams = type->getTemplateParameters();
+            if (templateParams.empty())
+                return "";
+
+            std::string result = "<";
+            for (const auto &templateParam : templateParams) {
+                if (auto typeDecl = dynamic_cast<const core::ast::ASTNodeTypeDecl*>(templateParam.get()); typeDecl != nullptr)
+                    result += typeDecl->getName();
+                else if (auto lvalue = dynamic_cast<const core::ast::ASTNodeLValueAssignment*>(templateParam.get()); lvalue != nullptr)
+                    result += fmt::format("auto {}", lvalue->getLValueName());
+                else
+                    continue;
+
+                result += ", ";
+            }
+
+            result.pop_back();
+            result.pop_back();
+
+            return result + ">";
+        }
+
         std::string generateTypeDocumentation(const std::string &name, const core::ast::ASTNodeTypeDecl *type) {
             if (auto typeDecl = dynamic_cast<core::ast::ASTNodeTypeDecl*>(type->getType().get())) {
-                return fmt::format("```pat\nusing {} = {};\n```", name, getTypeName(typeDecl));
+                return fmt::format("```pat\nusing {}{} = {}{};\n```", name, generateTemplateParams(type), getTypeName(typeDecl), generateAttributes(typeDecl));
             } else if (dynamic_cast<core::ast::ASTNodeStruct*>(type->getType().get())) {
-                return fmt::format("```pat\nstruct {} {{ ... }};\n```", name);
+                return fmt::format("```pat\nstruct {}{} {{ ... }}{};\n```", name, generateTemplateParams(type), generateAttributes(type));
             } else if (dynamic_cast<core::ast::ASTNodeUnion*>(type->getType().get())) {
-                return fmt::format("```pat\nunion {} {{ ... }};\n```", name);
+                return fmt::format("```pat\nunion {}{} {{ ... }}{};\n```", name, generateTemplateParams(type), generateAttributes(type));
             } else if (dynamic_cast<core::ast::ASTNodeBitfield*>(type->getType().get())) {
-                return fmt::format("```pat\nbitfield {} {{ ... }};\n```", name);
+                return fmt::format("```pat\nbitfield {}{} {{ ... }}{};\n```", name, generateTemplateParams(type), generateAttributes(type));
             } else if (auto enumDecl = dynamic_cast<core::ast::ASTNodeEnum*>(type->getType().get())) {
-                auto result = fmt::format("```pat\nenum {} : {} {{\n", name, getTypeName(enumDecl->getUnderlyingType().get()));
+                auto result = fmt::format("```pat\nenum {}{} : {} {{\n", name, generateTemplateParams(type), getTypeName(enumDecl->getUnderlyingType().get()));
                 for (auto &[enumValueName, enumValues] : enumDecl->getEntries()) {
                     result += fmt::format("    {},\n", enumValueName);
                 }
 
                 result.pop_back();
+                result.pop_back();
 
-                return result + "\n};\n```";
+                return result + fmt::format("\n}}{};\n```", generateAttributes(type));
             } else {
                 return "";
             }
@@ -111,7 +156,7 @@ namespace pl::cli::sub {
                             continue;
 
                         sectionContent += fmt::format("### **{}**\n", name);
-                        sectionContent += generateTypeDocumentation(name, type.get()) + "\n";
+                        sectionContent += generateTypeDocumentation(hlp::splitString(name, "::").back(), type.get()) + "\n";
                     }
 
                     if (!sectionContent.empty()) {
@@ -165,13 +210,17 @@ namespace pl::cli::sub {
                             }
 
                             sectionContent += "\n```pat\n";
-                            sectionContent += fmt::format("fn {}(", functionDecl->getName());
+                            sectionContent += fmt::format("fn {}(", hlp::splitString(functionDecl->getName(), "::").back());
 
                             const auto &params = functionDecl->getParams();
                             for (const auto &[paramName, paramType] : params) {
                                 std::string typeName = getTypeName(paramType.get());
 
                                 sectionContent += fmt::format("{} {}, ", typeName, paramName);
+                            }
+
+                            if (auto paramPack = functionDecl->getParameterPack(); paramPack.has_value()) {
+                                sectionContent += fmt::format("auto ... {}, ", paramPack.value());
                             }
 
                             if (!params.empty()) {
@@ -190,7 +239,7 @@ namespace pl::cli::sub {
                 }
             }
 
-            hlp::fs::File outputFile(patternFilePath.parent_path() / (patternFilePath.stem().string() + ".md"), hlp::fs::File::Mode::Write);
+            hlp::fs::File outputFile(patternFilePath.parent_path() / (patternFilePath.stem().string() + ".md"), hlp::fs::File::Mode::Create);
             outputFile.write(documentation);
         });
     }

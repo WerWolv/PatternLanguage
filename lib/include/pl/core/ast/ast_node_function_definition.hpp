@@ -142,6 +142,14 @@ namespace pl::core::ast {
             return nullptr;
         }
 
+        [[nodiscard]] const auto &getParameterPack() const {
+            return this->m_parameterPack;
+        }
+
+        [[nodiscard]] const auto &getDefaultParameters() const {
+            return this->m_defaultParameters;
+        }
+
 
     private:
         std::string m_name;
