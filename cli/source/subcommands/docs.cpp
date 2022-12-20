@@ -154,7 +154,36 @@ namespace pl::cli::sub {
                             continue;
 
                         sectionContent += fmt::format("### **{}**\n", name);
+
+                        for (auto line : hlp::splitString(type->getDocComment(), "\n")) {
+                            line = hlp::trim(line);
+                            if (line.starts_with('*'))
+                                line = line.substr(1);
+                            line = hlp::trim(line);
+
+                            if (line.starts_with('@')) {
+                                line = line.substr(1);
+
+                                if (line.starts_with("tparam ")) {
+                                    line = line.substr(5);
+                                    line = hlp::trim(line);
+
+                                    if (line.empty())
+                                        continue;
+
+                                    auto paramName = hlp::splitString(line, " ")[0];
+                                    sectionContent += fmt::format("- `<{}>`: {}\n", paramName, hlp::trim(line.substr(paramName.size())));
+                                } else if (line.starts_with("internal ")) {
+                                    goto skip_type;
+                                }
+                            } else {
+                                sectionContent += line + "\n";
+                            }
+                        }
+
                         sectionContent += generateTypeDocumentation(hlp::splitString(name, "::").back(), type.get()) + "\n";
+
+                        skip_type:;
                     }
 
                     if (!sectionContent.empty()) {
@@ -187,7 +216,7 @@ namespace pl::cli::sub {
                                 if (line.starts_with('@')) {
                                     line = line.substr(1);
 
-                                    if (line.starts_with("param")) {
+                                    if (line.starts_with("param ")) {
                                         line = line.substr(5);
                                         line = hlp::trim(line);
 
@@ -196,11 +225,13 @@ namespace pl::cli::sub {
 
                                         auto paramName = hlp::splitString(line, " ")[0];
                                         sectionContent += fmt::format("- `{}`: {}\n", paramName, hlp::trim(line.substr(paramName.size())));
-                                    } else if (line.starts_with("return")) {
+                                    } else if (line.starts_with("return ")) {
                                         line = line.substr(6);
                                         line = hlp::trim(line);
 
                                         sectionContent += fmt::format("- `return`: {}\n", line);
+                                    } else if (line.starts_with("internal ")) {
+                                        goto skip_function;
                                     }
                                 } else {
                                     sectionContent += line + "\n";
@@ -228,6 +259,8 @@ namespace pl::cli::sub {
 
                             sectionContent += ");\n```\n";
                         }
+
+                        skip_function:;
                     }
 
                     if (!sectionContent.empty()) {
