@@ -6,8 +6,8 @@ namespace pl::ptrn {
 
     class PatternString : public Pattern, public Iteratable {
     public:
-        PatternString(core::Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
-            : Pattern(evaluator, offset, size, color) { }
+        PatternString(core::Evaluator *evaluator, u64 offset, size_t size)
+            : Pattern(evaluator, offset, size) { }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
             return std::unique_ptr<Pattern>(new PatternString(*this));
@@ -65,7 +65,7 @@ namespace pl::ptrn {
         }
 
         std::shared_ptr<Pattern> getEntry(size_t index) const override {
-            return std::make_shared<PatternCharacter>(this->getEvaluator(), this->getOffset() + index, this->getColor());
+            return std::make_shared<PatternCharacter>(this->getEvaluator(), this->getOffset() + index);
         }
 
         size_t getEntryCount() const override {

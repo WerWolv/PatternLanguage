@@ -6,9 +6,8 @@ namespace pl::ptrn {
 
     class PatternBitfieldField : public Pattern {
     public:
-        PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, Pattern *bitfieldPattern = nullptr, u32 color = 0)
-            : Pattern(evaluator, offset, 0, color), m_bitOffset(bitOffset), m_bitSize(bitSize), m_bitField(bitfieldPattern) {
-        }
+        PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, Pattern *bitfieldPattern = nullptr)
+            : Pattern(evaluator, offset, 0), m_bitOffset(bitOffset), m_bitSize(bitSize), m_bitField(bitfieldPattern) { }
 
         PatternBitfieldField(const PatternBitfieldField &other) : Pattern(other) {
             this->m_padding = other.m_padding;
@@ -89,9 +88,8 @@ namespace pl::ptrn {
                             public Inlinable,
                             public Iteratable {
     public:
-        PatternBitfield(core::Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
-            : Pattern(evaluator, offset, size, color) {
-        }
+        PatternBitfield(core::Evaluator *evaluator, u64 offset, size_t size)
+            : Pattern(evaluator, offset, size) { }
 
         PatternBitfield(const PatternBitfield &other) : Pattern(other) {
             for (auto &field : other.m_fields)

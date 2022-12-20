@@ -8,8 +8,8 @@ namespace pl::ptrn {
     class PatternPointer : public Pattern,
                            public Inlinable {
     public:
-        PatternPointer(core::Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
-            : Pattern(evaluator, offset, size, color), m_pointedAt(nullptr), m_pointerType(nullptr) {
+        PatternPointer(core::Evaluator *evaluator, u64 offset, size_t size)
+            : Pattern(evaluator, offset, size), m_pointedAt(nullptr), m_pointerType(nullptr) {
         }
 
         PatternPointer(const PatternPointer &other) : Pattern(other) {

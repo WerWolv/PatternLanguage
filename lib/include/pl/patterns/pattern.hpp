@@ -35,11 +35,8 @@ namespace pl::ptrn {
         constexpr static u64 MainSectionId = 0x0000'0000'0000'0000;
         constexpr static u64 HeapSectionId = 0xFFFF'FFFF'FFFF'FFFF;
 
-        Pattern(core::Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
-            : m_evaluator(evaluator), m_offset(offset), m_size(size), m_color(color) {
-
-            if (color != 0)
-                return;
+        Pattern(core::Evaluator *evaluator, u64 offset, size_t size)
+            : m_evaluator(evaluator), m_offset(offset), m_size(size) {
 
             if (evaluator != nullptr) {
                 this->m_color       = evaluator->getNextPatternColor();
@@ -93,15 +90,28 @@ namespace pl::ptrn {
             else
                 return *this->m_variableName;
         }
-        void setVariableName(std::string name) {
-            this->m_variableName = std::make_unique<std::string>(std::move(name));
+        void setVariableName(const std::string &name) {
+            if (!name.empty())
+                this->m_variableName = std::make_unique<std::string>(name);
         }
 
-        [[nodiscard]] auto getComment() const { return this->getAttributeValue("comment").value_or(""); }
-        void setComment(const std::string &comment) { this->addAttribute("comment", comment); }
+        [[nodiscard]] auto getComment() const {
+            return this->getAttributeValue("comment").value_or("");
+        }
 
-        [[nodiscard]] virtual std::string getTypeName() const { return this->m_typeName == nullptr ? "" : *this->m_typeName; }
-        void setTypeName(std::string name) { this->m_typeName = std::make_unique<std::string>(std::move(name)); }
+        void setComment(const std::string &comment) {
+            if (!comment.empty())
+                this->addAttribute("comment", comment);
+        }
+
+        [[nodiscard]] virtual std::string getTypeName() const {
+            return this->m_typeName == nullptr ? "" : *this->m_typeName;
+        }
+
+        void setTypeName(const std::string &name) {
+            if (!name.empty())
+                this->m_typeName = std::make_unique<std::string>(name);
+        }
 
         [[nodiscard]] u32 getColor() const { return this->m_color; }
         virtual void setColor(u32 color) {

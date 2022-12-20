@@ -8,9 +8,8 @@ namespace pl::ptrn {
                          public Inlinable,
                          public Iteratable {
     public:
-        PatternUnion(core::Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
-            : Pattern(evaluator, offset, size, color) {
-        }
+        PatternUnion(core::Evaluator *evaluator, u64 offset, size_t size)
+            : Pattern(evaluator, offset, size) { }
 
         PatternUnion(const PatternUnion &other) : Pattern(other) {
             for (const auto &member : other.m_members) {

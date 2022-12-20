@@ -6,8 +6,8 @@ namespace pl::ptrn {
 
     class PatternUnsigned : public Pattern {
     public:
-        PatternUnsigned(core::Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
-            : Pattern(evaluator, offset, size, color) { }
+        PatternUnsigned(core::Evaluator *evaluator, u64 offset, size_t size)
+            : Pattern(evaluator, offset, size) { }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
             return std::unique_ptr<Pattern>(new PatternUnsigned(*this));

@@ -9,8 +9,8 @@ namespace pl::ptrn {
 
     class PatternWideCharacter : public Pattern, public Iteratable {
     public:
-        explicit PatternWideCharacter(core::Evaluator *evaluator, u64 offset, u32 color = 0)
-            : Pattern(evaluator, offset, 2, color) { }
+        explicit PatternWideCharacter(core::Evaluator *evaluator, u64 offset)
+            : Pattern(evaluator, offset, 2) { }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
             return std::unique_ptr<Pattern>(new PatternWideCharacter(*this));
@@ -47,7 +47,7 @@ namespace pl::ptrn {
         }
 
         std::shared_ptr<Pattern> getEntry(size_t index) const override {
-            return std::make_shared<PatternWideCharacter>(this->getEvaluator(), this->getOffset() + index * sizeof(char16_t), this->getColor());
+            return std::make_shared<PatternWideCharacter>(this->getEvaluator(), this->getOffset() + index * sizeof(char16_t));
         }
 
         size_t getEntryCount() const override {

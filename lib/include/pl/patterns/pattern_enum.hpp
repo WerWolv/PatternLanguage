@@ -15,9 +15,8 @@ namespace pl::ptrn {
         };
 
     public:
-        PatternEnum(core::Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
-            : Pattern(evaluator, offset, size, color) {
-        }
+        PatternEnum(core::Evaluator *evaluator, u64 offset, size_t size)
+            : Pattern(evaluator, offset, size) { }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
             return std::unique_ptr<Pattern>(new PatternEnum(*this));

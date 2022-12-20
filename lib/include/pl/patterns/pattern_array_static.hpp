@@ -8,9 +8,8 @@ namespace pl::ptrn {
                                public Inlinable,
                                public Iteratable {
     public:
-        PatternArrayStatic(core::Evaluator *evaluator, u64 offset, size_t size, u32 color = 0)
-            : Pattern(evaluator, offset, size, color) {
-        }
+        PatternArrayStatic(core::Evaluator *evaluator, u64 offset, size_t size)
+            : Pattern(evaluator, offset, size) { }
 
         PatternArrayStatic(const PatternArrayStatic &other) : Pattern(other) {
             this->setEntries(other.getTemplate()->clone(), other.getEntryCount());
