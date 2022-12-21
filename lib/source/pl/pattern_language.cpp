@@ -312,6 +312,7 @@ namespace pl {
             for (const auto &pattern : patterns) {
                 auto children = pattern->getChildren();
 
+                intervals.reserve(children.size());
                 for (const auto &[address, child]: children) {
                     if (this->m_aborted)
                         return;

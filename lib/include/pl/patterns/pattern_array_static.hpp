@@ -78,9 +78,10 @@ namespace pl::ptrn {
 
                 result.reserve(this->getEntryCount() * children.size());
 
+                auto templateSize = this->m_template->getSize();
                 for (size_t i = 0; i < this->getEntryCount(); i++) {
                     for (const auto &[offset, child] : children) {
-                        result.emplace_back(offset + i * this->m_template->getSize(), child);
+                        result.emplace_back(offset + i * templateSize, child);
                     }
                 }
 
