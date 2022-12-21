@@ -63,7 +63,7 @@ namespace pl::hlp {
     }
 
     constexpr inline i128 signExtend(size_t numBits, i128 value) {
-        i128 mask = 1U << (numBits - 1);
+        i128 mask = 1ULL << u128(numBits - 1);
         return (value ^ mask) - mask;
     }
 
