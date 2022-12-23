@@ -410,16 +410,12 @@ namespace pl::core {
             if (!MATCHES(sequence(tkn::Literal::Identifier)))
                 err::P0002.throwError(fmt::format("Expected attribute instruction name, got {}", getFormattedToken(0)), {}, 1);
 
-            auto attribute = getValue<Token::Identifier>(-1).get();
+            auto attribute = parseNamespaceResolution();
 
-            if (MATCHES(sequence(tkn::Separator::LeftParenthesis, tkn::Literal::String, tkn::Separator::RightParenthesis))) {
-                auto value  = getValue<Token::Literal>(-2);
-                auto string = std::get_if<std::string>(&value);
-
-                if (string == nullptr)
-                    err::P0002.throwError(fmt::format("Expected attribute value string, got {}", getFormattedToken(0)), {}, 1);
-
-                currNode->addAttribute(create<ast::ASTNodeAttribute>(attribute, *string));
+            if (MATCHES(sequence(tkn::Separator::LeftParenthesis))) {
+                currNode->addAttribute(create<ast::ASTNodeAttribute>(attribute, parseMathematicalExpression()));
+                if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
+                    err::P0002.throwError(fmt::format("Expected ')', got {}", getFormattedToken(0)), {}, 1);
             } else
                 currNode->addAttribute(create<ast::ASTNodeAttribute>(attribute));
 
@@ -791,7 +787,7 @@ namespace pl::core {
                     if (!MATCHES(sequence(tkn::Operator::BoolGreaterThan)))
                         err::P0002.throwError(fmt::format("Expected '>' to close template list, got {}.", getFormattedToken(0)), {}, 1);
 
-                    return std::unique_ptr<ast::ASTNodeTypeDecl>(static_cast<ast::ASTNodeTypeDecl*>(foundType->clone().release()));
+                    return foundType;
                 }
 
             return foundType;
