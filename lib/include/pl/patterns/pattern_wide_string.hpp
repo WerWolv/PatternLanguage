@@ -7,7 +7,7 @@
 
 namespace pl::ptrn {
 
-    class PatternWideString : public Pattern {
+    class PatternWideString : public Pattern, public Iteratable {
     public:
         PatternWideString(core::Evaluator *evaluator, u64 offset, size_t size)
             : Pattern(evaluator, offset, size) { }
@@ -71,8 +71,22 @@ namespace pl::ptrn {
             return this->formatDisplayValue(fmt::format("\"{0}\" {1}", utf8String, size > this->getSize() ? "(truncated)" : ""), utf8String);
         }
 
-    private:
+        [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getEntries() override {
+            return { };
+        }
 
+        std::shared_ptr<Pattern> getEntry(size_t index) const override {
+            return std::make_shared<PatternWideCharacter>(this->getEvaluator(), this->getOffset() + index);
+        }
+
+        size_t getEntryCount() const override {
+            return this->getSize() / sizeof(char16_t);
+        }
+
+        void forEachEntry(u64 start, u64 end, const std::function<void (u64, Pattern *)> &callback) override {
+            for (auto i = start; i < end; i++)
+                callback(i, this->getEntry(i).get());
+        }
     };
 
 }

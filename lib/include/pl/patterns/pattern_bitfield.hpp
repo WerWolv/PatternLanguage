@@ -146,11 +146,11 @@ namespace pl::ptrn {
             return "bitfield " + Pattern::getTypeName();
         }
 
-        [[nodiscard]] const auto &getFields() const {
+        [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getEntries() override {
             return this->m_fields;
         }
 
-        void setFields(std::vector<std::shared_ptr<Pattern>> &&fields) {
+        void setFields(std::vector<std::shared_ptr<Pattern>> fields) {
             this->m_fields = std::move(fields);
 
             for (auto &field : this->m_fields) {

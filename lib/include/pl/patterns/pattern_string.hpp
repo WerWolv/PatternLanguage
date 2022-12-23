@@ -17,6 +17,10 @@ namespace pl::ptrn {
             return this->getValue(this->getSize());
         }
 
+        [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getEntries() override {
+            return { };
+        }
+
         std::string getValue(size_t size) const {
             if (size == 0)
                 return "";

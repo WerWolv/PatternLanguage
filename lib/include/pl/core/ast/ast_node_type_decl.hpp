@@ -94,7 +94,15 @@ namespace pl::core::ast {
                 if (this->m_endian.has_value())
                     pattern->setEndian(this->m_endian.value());
 
-                applyTypeAttributes(evaluator, this, pattern.get());
+                if (auto iteratable = dynamic_cast<ptrn::Iteratable *>(pattern.get()); iteratable != nullptr) {
+                    auto scope = iteratable->getEntries();
+                    evaluator->pushScope(pattern, scope);
+                    applyTypeAttributes(evaluator, this, pattern.get());
+                    evaluator->popScope();
+                } else {
+                    applyTypeAttributes(evaluator, this, pattern.get());
+                }
+
             }
 
             return patterns;

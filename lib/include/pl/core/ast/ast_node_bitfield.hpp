@@ -90,7 +90,7 @@ namespace pl::core::ast {
                 }
             }
 
-            bitfieldPattern->setFields(std::move(fields));
+            bitfieldPattern->setFields(fields);
 
             evaluator->dataOffset() += bitfieldPattern->getSize();
 

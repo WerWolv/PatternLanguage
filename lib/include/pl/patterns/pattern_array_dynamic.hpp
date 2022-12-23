@@ -90,7 +90,7 @@ namespace pl::ptrn {
             return this->m_entries.size();
         }
 
-        [[nodiscard]] const auto &getEntries() {
+        [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getEntries() override {
             return this->m_entries;
         }
 

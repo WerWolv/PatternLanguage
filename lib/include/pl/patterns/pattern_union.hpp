@@ -28,6 +28,10 @@ namespace pl::ptrn {
             return this->m_members[index];
         }
 
+        [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getEntries() override {
+            return this->m_members;
+        }
+
         void forEachEntry(u64 start, u64 end, const std::function<void(u64, Pattern*)>& fn) override {
             if (this->isSealed())
                 return;
@@ -95,11 +99,7 @@ namespace pl::ptrn {
             return "union " + Pattern::getTypeName();
         }
 
-        [[nodiscard]] const auto &getMembers() const {
-            return this->m_members;
-        }
-
-        void setMembers(std::vector<std::shared_ptr<Pattern>> &&members) {
+        void setMembers(std::vector<std::shared_ptr<Pattern>> members) {
             this->m_members.clear();
             for (auto &member : members) {
                 if (member == nullptr) continue;

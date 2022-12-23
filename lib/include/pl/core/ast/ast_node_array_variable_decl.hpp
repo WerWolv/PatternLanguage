@@ -419,8 +419,8 @@ namespace pl::core::ast {
             }
 
 
-            if (auto &arrayEntries = arrayPattern->getEntries(); !arrayEntries.empty())
-                arrayPattern->setTypeName(arrayEntries.front()->getTypeName());
+            if (arrayPattern->getEntryCount() > 0)
+                arrayPattern->setTypeName(arrayPattern->getEntry(0)->getTypeName());
 
             arrayPattern->setEntries(std::move(entries));
             arrayPattern->setSize(size);

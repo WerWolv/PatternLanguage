@@ -58,7 +58,7 @@ namespace pl::core::ast {
             }
 
             evaluator->dataOffset() = startOffset + size;
-            pattern->setMembers(std::move(memberPatterns));
+            pattern->setMembers(memberPatterns);
 
             applyTypeAttributes(evaluator, this, pattern.get());
 

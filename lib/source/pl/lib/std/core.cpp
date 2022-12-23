@@ -134,16 +134,8 @@ namespace pl::lib::libstd::core {
             runtime.addFunction(nsStdCore, "member_count", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 auto pattern = Token::literalToPattern(params[0]);
 
-                if (auto structPattern = dynamic_cast<ptrn::PatternStruct*>(pattern))
-                    return u128(structPattern->getMembers().size());
-                else if (auto unionPattern = dynamic_cast<ptrn::PatternUnion*>(pattern))
-                    return u128(unionPattern->getMembers().size());
-                else if (auto bitfieldPattern = dynamic_cast<ptrn::PatternBitfield*>(pattern))
-                    return u128(bitfieldPattern->getFields().size());
-                else if (auto dynamicArrayPattern = dynamic_cast<ptrn::PatternArrayDynamic*>(pattern))
-                    return u128(dynamicArrayPattern->getEntryCount());
-                else if (auto staticArrayPattern = dynamic_cast<ptrn::PatternArrayStatic*>(pattern))
-                    return u128(staticArrayPattern->getEntryCount());
+                if (auto iteratable = dynamic_cast<ptrn::Iteratable*>(pattern); iteratable != nullptr)
+                    return u128(iteratable->getEntryCount());
                 else
                     return u128(0);
             });
@@ -160,12 +152,8 @@ namespace pl::lib::libstd::core {
                         });
                 };
 
-                if (auto structPattern = dynamic_cast<ptrn::PatternStruct*>(pattern))
-                    return hasMember(structPattern->getMembers());
-                else if (auto unionPattern = dynamic_cast<ptrn::PatternUnion*>(pattern))
-                    return hasMember(unionPattern->getMembers());
-                else if (auto bitfieldPattern = dynamic_cast<ptrn::PatternBitfield*>(pattern))
-                    return hasMember(bitfieldPattern->getFields());
+                if (auto iteratable = dynamic_cast<ptrn::Iteratable*>(pattern); iteratable != nullptr)
+                    return hasMember(iteratable->getEntries());
                 else
                     return false;
             });

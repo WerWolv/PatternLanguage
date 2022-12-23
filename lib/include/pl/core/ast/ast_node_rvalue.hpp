@@ -257,16 +257,8 @@ namespace pl::core::ast {
 
                 auto indexPattern = currPattern.get();
 
-                if (auto structPattern = dynamic_cast<ptrn::PatternStruct *>(indexPattern))
-                    searchScope = structPattern->getMembers();
-                else if (auto unionPattern = dynamic_cast<ptrn::PatternUnion *>(indexPattern))
-                    searchScope = unionPattern->getMembers();
-                else if (auto bitfieldPattern = dynamic_cast<ptrn::PatternBitfield *>(indexPattern))
-                    searchScope = bitfieldPattern->getFields();
-                else if (auto dynamicArrayPattern = dynamic_cast<ptrn::PatternArrayDynamic *>(indexPattern))
-                    searchScope = dynamicArrayPattern->getEntries();
-                else if (auto staticArrayPattern = dynamic_cast<ptrn::PatternArrayStatic *>(indexPattern))
-                    searchScope = { staticArrayPattern->getTemplate()->clone() };
+                if (auto iteratable = dynamic_cast<ptrn::Iteratable *>(indexPattern); iteratable != nullptr)
+                    searchScope = iteratable->getEntries();
             }
 
             if (currPattern == nullptr)

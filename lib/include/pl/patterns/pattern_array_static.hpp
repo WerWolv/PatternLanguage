@@ -26,6 +26,10 @@ namespace pl::ptrn {
             return this->m_highlightTemplate;
         }
 
+        [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getEntries() override {
+            return { this->getTemplate()->clone() };
+        }
+
         void forEachEntry(u64 start, u64 end, const std::function<void(u64, Pattern*)>& fn) override {
             auto evaluator = this->getEvaluator();
             auto startArrayIndex = evaluator->getCurrentArrayIndex();
