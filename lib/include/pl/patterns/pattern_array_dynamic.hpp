@@ -26,7 +26,8 @@ namespace pl::ptrn {
         void setColor(u32 color) override {
             Pattern::setColor(color);
             for (auto &entry : this->m_entries)
-                entry->setColor(color);
+                if (!entry->hasOverriddenColor())
+                    entry->setColor(color);
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
@@ -115,7 +116,8 @@ namespace pl::ptrn {
             this->m_entries = std::move(entries);
 
             for (auto &entry : this->m_entries) {
-                entry->setBaseColor(this->getColor());
+                if (!entry->hasOverriddenColor())
+                    entry->setBaseColor(this->getColor());
             }
 
             if (!this->m_entries.empty())
