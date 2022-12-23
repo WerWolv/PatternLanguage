@@ -39,9 +39,6 @@ namespace pl::cli::sub {
             for (const auto &attribute : attributes) {
                 result += attribute->getAttribute();
 
-                if (const auto &value = attribute->getValue(); value.has_value())
-                    result += fmt::format("(\"{}\")", value.value());
-
                 result += ", ";
             }
 
