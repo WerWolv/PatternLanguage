@@ -787,7 +787,7 @@ namespace pl::core {
                     if (!MATCHES(sequence(tkn::Operator::BoolGreaterThan)))
                         err::P0002.throwError(fmt::format("Expected '>' to close template list, got {}.", getFormattedToken(0)), {}, 1);
 
-                    return foundType;
+                    return std::unique_ptr<ast::ASTNodeTypeDecl>(static_cast<ast::ASTNodeTypeDecl*>(foundType->clone().release()));
                 }
 
             return foundType;
