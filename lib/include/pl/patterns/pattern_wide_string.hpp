@@ -76,7 +76,10 @@ namespace pl::ptrn {
         }
 
         std::shared_ptr<Pattern> getEntry(size_t index) const override {
-            return std::make_shared<PatternWideCharacter>(this->getEvaluator(), this->getOffset() + index);
+            auto result = std::make_shared<PatternWideCharacter>(this->getEvaluator(), this->getOffset() + index * sizeof(char16_t));
+            result->setSection(this->getSection());
+
+            return result;
         }
 
         size_t getEntryCount() const override {

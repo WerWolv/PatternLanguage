@@ -217,28 +217,8 @@ namespace pl::core::ast {
                             [this](ptrn::Pattern *pattern) { err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
                             [&, this](auto &&index) {
                                 auto pattern = currPattern.get();
-                                if (dynamic_cast<ptrn::PatternArrayDynamic *>(pattern) != nullptr) {
-                                    if (static_cast<u128>(index) >= searchScope.size() || static_cast<i128>(index) < 0)
-                                        err::E0006.throwError(fmt::format("Cannot access out of bounds index '{}'.", index), {}, this);
-
-                                    currPattern = std::move(searchScope[index]);
-                                } else if (auto staticArrayPattern = dynamic_cast<ptrn::PatternArrayStatic *>(pattern); staticArrayPattern != nullptr) {
-                                    if (static_cast<u128>(index) >= staticArrayPattern->getEntryCount() || static_cast<i128>(index) < 0)
-                                        err::E0006.throwError(fmt::format("Cannot access out of bounds index '{}'.", index), {}, this);
-
-                                    auto newPattern = searchScope.front();
-                                    newPattern->setOffset(staticArrayPattern->getOffset() + index * staticArrayPattern->getTemplate()->getSize());
-                                    currPattern = std::move(newPattern);
-                                } else if (auto stringPattern = dynamic_cast<ptrn::PatternString *>(pattern); stringPattern != nullptr) {
-                                    if (static_cast<u128>(index) >= (stringPattern->getSize() / sizeof(char)) || static_cast<i128>(index) < 0)
-                                        err::E0006.throwError(fmt::format("Cannot access out of bounds index '{}'.", index), {}, this);
-
-                                    currPattern = std::make_unique<ptrn::PatternCharacter>(evaluator, stringPattern->getOffset() + index * sizeof(char));
-                                } else if (auto wideStringPattern = dynamic_cast<ptrn::PatternWideString *>(pattern); wideStringPattern != nullptr) {
-                                    if (static_cast<u128>(index) >= (wideStringPattern->getSize() / sizeof(char16_t)) || static_cast<i128>(index) < 0)
-                                        err::E0006.throwError(fmt::format("Cannot access out of bounds index '{}'.", index), {}, this);
-
-                                    currPattern = std::make_unique<ptrn::PatternWideCharacter>(evaluator, wideStringPattern->getOffset() + index * sizeof(char16_t));
+                                if (auto *iteratable = dynamic_cast<ptrn::Iteratable *>(pattern); iteratable != nullptr) {
+                                    currPattern = iteratable->getEntry(index);
                                 } else {
                                     err::E0006.throwError(fmt::format("Cannot access non-array type '{}'.", pattern->getTypeName()), {}, this);
                                 }

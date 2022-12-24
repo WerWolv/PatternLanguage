@@ -46,7 +46,7 @@ namespace pl::core::ast {
             else if (this->m_type == Token::ValueType::Padding)
                 pattern = std::unique_ptr<ptrn::Pattern>(new ptrn::PatternPadding(evaluator, offset, 1));
             else if (this->m_type == Token::ValueType::String)
-                pattern = std::unique_ptr<ptrn::Pattern>(new ptrn::PatternString(evaluator, offset, 1));
+                pattern = std::unique_ptr<ptrn::Pattern>(new ptrn::PatternString(evaluator, offset, 0));
             else if (this->m_type == Token::ValueType::Auto)
                 return { };
             else
