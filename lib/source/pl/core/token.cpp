@@ -61,7 +61,7 @@ namespace pl::core {
                               [](const u128 &result) -> std::string { return hlp::to_string(result); },
                               [](const i128 &result) -> std::string { return hlp::to_string(result); },
                               [](const bool &result) -> std::string { return result ? "true" : "false"; },
-                              [](const char &result) -> std::string { return { 1, result }; },
+                              [](const char &result) -> std::string { return { result }; },
                               [](ptrn::Pattern *result) -> std::string { return result->toString(); },
                               [](auto &&result) -> std::string { return std::to_string(result); }
                           }, literal);
