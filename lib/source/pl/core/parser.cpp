@@ -1201,7 +1201,7 @@ namespace pl::core {
             return create<ast::ASTNodeConditionalStatement>(std::move(condition), std::move(trueBody), std::move(falseBody));
         }
         else
-            err::P0002.throwError("Invalid bitfield member definition.", {}, 1);
+            err::P0002.throwError("Invalid bitfield member definition.", {}, 0);
 
         if (!MATCHES(sequence(tkn::Separator::Semicolon)))
             err::P0002.throwError(fmt::format("Expected ';' at end of statement, got {}.", getFormattedToken(0)), {}, 1);
