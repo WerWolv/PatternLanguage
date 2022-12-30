@@ -18,7 +18,7 @@ add_subdirectory(../external/cli11 ../external/cli11)
 
 target_compile_options(plcli PRIVATE -Wall -Wextra -Werror -Wno-unknown-pragmas)
 target_include_directories(plcli PUBLIC include)
-target_link_libraries(plcli PUBLIC libpl libpl-gen CLI11)
+target_link_libraries(plcli PUBLIC libpl libpl-gen CLI11 fmt::fmt intervaltree)
 
 if (WIN32)
     set(CMAKE_INSTALL_BINDIR ".")
