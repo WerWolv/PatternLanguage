@@ -1,6 +1,6 @@
 # Pattern Language 
 
-![Unit Tests](https://img.shields.io/github/workflow/status/WerWolv/PatternLanguage/Unit%20Tests?label=Unit%20Tests&style=flat-square)<br>
+![Unit Tests](https://img.shields.io/github/actions/workflow/status/WerWolv/PatternLanguage/tests.yml?branch=master&label=Unit%20Tests&style=flat-square)<br>
 ![Coverage Status](https://img.shields.io/coveralls/github/WerWolv/PatternLanguage?style=flat-square&label=Library%20Coverage)
 ![Coverage Status](https://img.shields.io/coveralls/github/WerWolv/ImHex-Patterns?style=flat-square&label=Pattern%20Coverage)
 
