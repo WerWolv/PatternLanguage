@@ -19,7 +19,7 @@ elseif (UNIX AND NOT APPLE)
 endif ()
 
 if (NOT TARGET fmt::fmt)
-    add_subdirectory(external/fmt EXCLUDE_FROM_ALL)
+    add_subdirectory(external/fmt)
     set_property(TARGET fmt PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif ()
 
