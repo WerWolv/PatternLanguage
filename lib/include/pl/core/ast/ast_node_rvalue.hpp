@@ -141,6 +141,7 @@ namespace pl::core::ast {
             std::vector<std::shared_ptr<ptrn::Pattern>> searchScope;
             std::shared_ptr<ptrn::Pattern> currPattern;
             i32 scopeIndex = 0;
+            bool indexable = true;
 
             if (!evaluator->isGlobalScope()) {
                 const auto &globalScope = evaluator->getGlobalScope().scope;
@@ -158,6 +159,9 @@ namespace pl::core::ast {
             }
 
             for (const auto &part : this->getPath()) {
+
+                if (!indexable)
+                    err::E0001.throwError("Member access of a non-iterable type.", "Try using a struct-like object or an array instead.", this);
 
                 if (part.index() == 0) {
                     // Variable access
@@ -239,6 +243,9 @@ namespace pl::core::ast {
 
                 if (auto iteratable = dynamic_cast<ptrn::Iteratable *>(indexPattern); iteratable != nullptr)
                     searchScope = iteratable->getEntries();
+                else
+                    indexable = false;
+
             }
 
             if (currPattern == nullptr)
