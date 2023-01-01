@@ -39,6 +39,8 @@ namespace pl::core::ast {
         [[nodiscard]] constexpr bool isOutVariable() const { return this->m_outVariable; }
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             u64 startOffset = evaluator->dataOffset();
 
             auto scopeGuard = PL_SCOPE_GUARD {
@@ -93,8 +95,9 @@ namespace pl::core::ast {
         }
 
         FunctionResult execute(Evaluator *evaluator) const override {
-            evaluator->createVariable(this->getName(), this->getType().get(), { }, this->m_outVariable);
+            evaluator->updateRuntime(this);
 
+            evaluator->createVariable(this->getName(), this->getType().get(), { }, this->m_outVariable);
 
             if (this->m_placementOffset != nullptr) {
                 const auto placementNode = this->m_placementOffset->evaluate(evaluator);

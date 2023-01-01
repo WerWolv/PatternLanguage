@@ -321,7 +321,16 @@ namespace pl::ptrn {
         }
 
         void clearFormatCache() {
+            if (this->m_cachedDisplayValue == nullptr)
+                return;
+
             this->m_cachedDisplayValue.reset();
+
+            if (auto *iteratable = dynamic_cast<Iteratable*>(this); iteratable != nullptr) {
+                for (auto &entry : iteratable->getEntries()) {
+                    entry->clearFormatCache();
+                }
+            }
         }
 
         virtual void accept(PatternVisitor &v) = 0;

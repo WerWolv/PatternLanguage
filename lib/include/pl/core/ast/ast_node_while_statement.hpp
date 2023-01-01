@@ -35,6 +35,7 @@ namespace pl::core::ast {
         }
 
         FunctionResult execute(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
 
             u64 loopIterations = 0;
             while (evaluateCondition(evaluator)) {
@@ -81,6 +82,8 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] bool evaluateCondition(Evaluator *evaluator) const {
+            evaluator->updateRuntime(this);
+
             const auto node    = this->getCondition()->evaluate(evaluator);
             const auto literal = dynamic_cast<ASTNodeLiteral *>(node.get());
             if (literal == nullptr)

@@ -44,6 +44,8 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             api::FunctionParameterCount paramCount;
 
             if (this->m_parameterPack.has_value() && !this->m_defaultParameters.empty())

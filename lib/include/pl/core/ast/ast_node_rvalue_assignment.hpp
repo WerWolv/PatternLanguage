@@ -34,6 +34,8 @@ namespace pl::core::ast {
         }
 
         FunctionResult execute(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             const auto lhs     = this->getLValue()->createPatterns(evaluator);
             const auto rhs     = this->getRValue()->evaluate(evaluator);
 

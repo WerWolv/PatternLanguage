@@ -30,20 +30,20 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] virtual std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const {
-            hlp::unused(evaluator);
+            evaluator->updateRuntime(this);
 
             return this->clone();
         }
 
         [[nodiscard]] virtual std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const {
-            hlp::unused(evaluator);
+            evaluator->updateRuntime(this);
 
             return {};
         }
 
         using FunctionResult = std::optional<Token::Literal>;
         virtual FunctionResult execute(Evaluator *evaluator) const {
-            hlp::unused(evaluator);
+            evaluator->updateRuntime(this);
 
             err::E0001.throwError("Cannot execute non-functional statement.", "This is a evaluator bug!", this);
         }

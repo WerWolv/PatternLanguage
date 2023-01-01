@@ -20,6 +20,8 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             auto startOffset = evaluator->dataOffset();
             PL_ON_SCOPE_EXIT { evaluator->dataOffset() = startOffset; };
 

@@ -47,6 +47,8 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             if (this->getPath().size() == 1) {
                 if (auto name = std::get_if<std::string>(&this->getPath().front()); name != nullptr) {
                     if (*name == "$") return std::unique_ptr<ASTNode>(new ASTNodeLiteral(u128(evaluator->dataOffset())));
@@ -138,6 +140,8 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             std::vector<std::shared_ptr<ptrn::Pattern>> searchScope;
             std::shared_ptr<ptrn::Pattern> currPattern;
             i32 scopeIndex = 0;

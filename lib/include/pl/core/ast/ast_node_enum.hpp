@@ -24,6 +24,8 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             auto pattern = std::make_unique<ptrn::PatternEnum>(evaluator, evaluator->dataOffset(), 0);
 
             std::vector<ptrn::PatternEnum::EnumValue> enumEntries;

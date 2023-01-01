@@ -53,6 +53,8 @@ namespace pl::core::ast {
         [[nodiscard]] std::optional<std::endian> getEndian() const { return this->m_endian; }
 
         [[nodiscard]] std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             auto type = this->getType()->evaluate(evaluator);
 
             if (auto attributable = dynamic_cast<Attributable *>(type.get())) {
@@ -69,6 +71,8 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             evaluator->pushTemplateParameters();
             PL_ON_SCOPE_EXIT { evaluator->popTemplateParameters(); };
 

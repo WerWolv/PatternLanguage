@@ -24,6 +24,8 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
 
             for (auto &node : this->m_variables) {
@@ -35,6 +37,8 @@ namespace pl::core::ast {
         }
 
         FunctionResult execute(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             for (auto &variable : this->m_variables) {
                 auto variableDecl = dynamic_cast<ASTNodeVariableDecl *>(variable.get());
                 auto variableType = variableDecl->getType()->evaluate(evaluator);

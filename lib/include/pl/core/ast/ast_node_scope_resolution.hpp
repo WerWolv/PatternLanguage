@@ -18,6 +18,8 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             auto type = this->m_type->evaluate(evaluator);
 
             if (auto enumType = dynamic_cast<ASTNodeEnum *>(type.get())) {

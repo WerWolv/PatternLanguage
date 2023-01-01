@@ -36,8 +36,8 @@ namespace pl::ptrn {
             if (this->isSealed())
                 return;
 
-            for (u64 i = start; i < this->m_members.size() && i < end; i++)
-                fn(i, this->m_members[i].get());
+            for (u64 i = start; i < this->m_sortedMembers.size() && i < end; i++)
+                fn(i, this->m_sortedMembers[i]);
         }
 
         size_t getEntryCount() const override {

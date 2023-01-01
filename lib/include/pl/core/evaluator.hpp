@@ -6,6 +6,7 @@
 #include <optional>
 #include <vector>
 #include <memory>
+#include <unordered_set>
 
 #include <pl/core/log_console.hpp>
 #include <pl/core/token.hpp>
@@ -335,6 +336,16 @@ namespace pl::core {
         bool isDebugModeEnabled() const {
             return this->m_debugMode;
         }
+
+        void updateRuntime(const ast::ASTNode *node);
+
+        void addBreakpoint(u64 line);
+        void removeBreakpoint(u64 line);
+        void clearBreakpoints();
+        void setBreakpointHitCallback(const std::function<void()> &callback);
+        const std::unordered_set<int>& getBreakpoints() const;
+        std::optional<u32> getPauseLine() const;
+
     private:
         void patternCreated();
         void patternDestroyed();
@@ -377,6 +388,7 @@ namespace pl::core {
         std::vector<std::vector<u8>> m_heap;
 
         std::function<bool()> m_dangerousFunctionCalledCallback = []{ return false; };
+        std::function<void()> m_breakpointHitCallback = []{ };
         std::atomic<DangerousFunctionPermission> m_allowDangerousFunctions = DangerousFunctionPermission::Ask;
         ControlFlowStatement m_currControlFlowStatement = ControlFlowStatement::None;
         BitfieldOrder m_bitfieldOrder = BitfieldOrder::RightToLeft;
@@ -393,6 +405,9 @@ namespace pl::core {
         };
 
         std::optional<u64> m_currArrayIndex;
+
+        std::unordered_set<int> m_breakpoints;
+        std::optional<u32> m_lastPauseLine;
 
         u32 getNextPatternColor() {
             constexpr static std::array Palette = { 0x70B4771F, 0x700E7FFF, 0x702CA02C, 0x702827D6, 0x70BD6794, 0x704B568C, 0x70C277E3, 0x7022BDBC, 0x70CFBE17 };

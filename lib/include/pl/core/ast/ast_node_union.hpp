@@ -22,6 +22,8 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             auto pattern = std::make_shared<ptrn::PatternUnion>(evaluator, evaluator->dataOffset(), 0);
 
             size_t size = 0;

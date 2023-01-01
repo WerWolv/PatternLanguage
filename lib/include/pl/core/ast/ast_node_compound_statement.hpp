@@ -24,6 +24,8 @@ namespace pl::core::ast {
         [[nodiscard]] const std::vector<std::unique_ptr<ASTNode>>& getStatements() const { return this->m_statements; }
 
         [[nodiscard]] std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             std::unique_ptr<ASTNode> result = nullptr;
 
             for (const auto &statement : this->m_statements) {
@@ -34,6 +36,8 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             std::vector<std::shared_ptr<ptrn::Pattern>> result;
 
             for (const auto &statement : this->m_statements) {
@@ -45,8 +49,9 @@ namespace pl::core::ast {
         }
 
         FunctionResult execute(Evaluator *evaluator) const override {
-            FunctionResult result;
+            evaluator->updateRuntime(this);
 
+            FunctionResult result;
             auto variables         = *evaluator->getScope(0).scope;
 
             auto scopeGuard = PL_SCOPE_GUARD {

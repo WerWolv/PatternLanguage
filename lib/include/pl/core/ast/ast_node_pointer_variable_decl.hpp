@@ -34,6 +34,8 @@ namespace pl::core::ast {
         [[nodiscard]] constexpr const std::unique_ptr<ASTNode> &getPlacementOffset() const { return this->m_placementOffset; }
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             auto startOffset = evaluator->dataOffset();
 
             auto scopeGuard = PL_SCOPE_GUARD {

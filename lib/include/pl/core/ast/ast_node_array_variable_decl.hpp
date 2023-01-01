@@ -44,6 +44,8 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             auto startOffset = evaluator->dataOffset();
 
             auto scopeGuard = PL_SCOPE_GUARD {
@@ -101,6 +103,8 @@ namespace pl::core::ast {
         }
 
         FunctionResult execute(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             if (this->m_size == nullptr)
                 err::E0004.throwError("Function arrays cannot be unsized.", {}, this);
 

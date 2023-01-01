@@ -699,6 +699,33 @@ namespace pl::core {
         return true;
     }
 
+    void Evaluator::updateRuntime(const ast::ASTNode *node) {
+        if (this->m_evaluated)
+            return;
+
+        this->handleAbort();
+
+        auto line = node->getLine();
+        if (this->m_breakpoints.contains(line)) {
+            if (this->m_lastPauseLine != line) {
+                this->m_lastPauseLine = line;
+                this->m_breakpointHitCallback();
+            }
+        } else {
+            this->m_lastPauseLine.reset();
+        }
+    }
+
+    void Evaluator::addBreakpoint(u64 line) { this->m_breakpoints.insert(line); }
+    void Evaluator::removeBreakpoint(u64 line) { this->m_breakpoints.erase(line); }
+    void Evaluator::clearBreakpoints() { this->m_breakpoints.clear(); }
+    void Evaluator::setBreakpointHitCallback(const std::function<void()> &callback) { this->m_breakpointHitCallback = callback; }
+    const std::unordered_set<int> &Evaluator::getBreakpoints() const { return this->m_breakpoints; }
+
+    std::optional<u32> Evaluator::getPauseLine() const {
+        return this->m_lastPauseLine;
+    }
+
     void Evaluator::patternCreated() {
         if (this->m_currPatternCount > this->m_patternLimit && !this->m_evaluated)
             err::E0007.throwError(fmt::format("Pattern count exceeded set limit of '{}'.", this->getPatternLimit()), "If this is intended, try increasing the limit using '#pragma pattern_limit <new_limit>'.");

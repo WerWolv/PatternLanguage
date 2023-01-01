@@ -28,6 +28,8 @@ namespace pl::core::ast {
         [[nodiscard]] bool isPadding() const { return this->getName() == "$padding$"; }
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             auto node = this->m_size->evaluate(evaluator);
             auto literal = dynamic_cast<ASTNodeLiteral *>(node.get());
             if (literal == nullptr)

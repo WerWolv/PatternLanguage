@@ -25,6 +25,8 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             auto offset = evaluator->dataOffset();
             auto size   = Token::getTypeSize(this->m_type);
 

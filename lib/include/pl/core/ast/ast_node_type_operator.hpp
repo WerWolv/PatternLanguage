@@ -30,6 +30,8 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             u128 result = 0x00;
             if (this->m_providerOperation) {
                 switch (this->getOperator()) {

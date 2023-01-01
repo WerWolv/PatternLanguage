@@ -44,6 +44,8 @@ namespace pl::core::ast {
         }
 
         FunctionResult execute(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             const auto node    = this->getRValue()->evaluate(evaluator);
             const auto literal = dynamic_cast<ASTNodeLiteral *>(node.get());
             if (literal == nullptr)

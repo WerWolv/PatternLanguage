@@ -34,13 +34,14 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
-
             this->execute(evaluator);
 
             return {};
         }
 
         [[nodiscard]] std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             evaluator->pushSectionId(ptrn::Pattern::HeapSectionId);
 
             auto startOffset = evaluator->dataOffset();

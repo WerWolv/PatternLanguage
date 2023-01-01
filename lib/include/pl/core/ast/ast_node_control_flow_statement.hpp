@@ -23,6 +23,8 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             if (auto result = this->execute(evaluator); result.has_value())
                 evaluator->setMainResult(*result);
 
@@ -30,6 +32,8 @@ namespace pl::core::ast {
         }
 
         FunctionResult execute(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             if (this->m_rvalue == nullptr) {
                 evaluator->setCurrentControlFlowStatement(this->m_type);
                 return std::nullopt;

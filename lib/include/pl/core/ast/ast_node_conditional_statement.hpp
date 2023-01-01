@@ -25,6 +25,8 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             auto &scope = *evaluator->getScope(0).scope;
             auto &body  = evaluateCondition(evaluator) ? this->m_trueBody : this->m_falseBody;
 
@@ -46,6 +48,8 @@ namespace pl::core::ast {
         }
 
         FunctionResult execute(Evaluator *evaluator) const override {
+            evaluator->updateRuntime(this);
+
             auto &body = evaluateCondition(evaluator) ? this->m_trueBody : this->m_falseBody;
 
             auto variables     = *evaluator->getScope(0).scope;

@@ -259,11 +259,20 @@ namespace pl::ptrn {
                 return;
 
             for (auto i = start; i < end; i++)
-                callback(i, this->getEntry(i).get());
+                callback(i, this->m_sortedFields[i]);
+        }
+
+        void sort(const std::function<bool (const Pattern *, const Pattern *)> &comparator) override {
+            this->m_sortedFields.clear();
+            for (auto &member : this->m_fields)
+                this->m_sortedFields.push_back(member.get());
+
+            std::sort(this->m_sortedFields.begin(), this->m_sortedFields.end(), comparator);
         }
 
     private:
         std::vector<std::shared_ptr<Pattern>> m_fields;
+        std::vector<Pattern *> m_sortedFields;
     };
 
 }
