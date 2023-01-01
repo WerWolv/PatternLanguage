@@ -161,6 +161,9 @@ namespace pl::ptrn {
 
             if (!this->m_fields.empty())
                 this->setBaseColor(this->m_fields.front()->getColor());
+
+            for (const auto &field : this->m_fields)
+                this->m_sortedFields.push_back(field.get());
         }
 
         void setColor(u32 color) override {
@@ -224,7 +227,7 @@ namespace pl::ptrn {
                     if (field->getBitSize() == 1)
                         valueString += fmt::format("{} | ", field->getVariableName());
                     else
-                        valueString += fmt::format("{}({}) | ", field->getVariableName(), fieldValue);
+                        valueString += fmt::format("{}({}) | ", field->getVariableName(), field->toString());
                 }
             }
 
