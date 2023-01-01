@@ -333,7 +333,7 @@ namespace pl::core {
         std::optional<Token::DocComment> getDocComment() {
             auto token = this->m_curr;
 
-            while (token >= this->m_startToken) {
+            while (true) {
                 if (token[0].type == Token::Type::DocComment) {
                     auto content = std::get<Token::DocComment>(token[0].value);
 
@@ -352,7 +352,10 @@ namespace pl::core {
                         return content;
                 }
 
-                token--;
+                if (token > this->m_startToken)
+                    token--;
+                else
+                    break;
             }
 
             return std::nullopt;
