@@ -30,6 +30,7 @@ namespace pl::core::ast {
             this->m_reference           = other.m_reference;
             this->m_completed           = other.m_completed;
             this->m_valid               = other.m_valid;
+            this->m_templateType        = other.m_templateType;
 
             for (const auto &templateParameter : other.m_templateParameters) {
                 this->m_templateParameters.push_back(templateParameter->clone());
@@ -157,6 +158,9 @@ namespace pl::core::ast {
         }
 
         void setTemplateParameters(std::vector<std::shared_ptr<ASTNode>> &&types) {
+            if (!types.empty())
+                this->m_templateType = true;
+
             this->m_templateParameters = std::move(types);
         }
 
