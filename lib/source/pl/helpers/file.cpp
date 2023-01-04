@@ -76,7 +76,7 @@ namespace pl::hlp::fs {
     std::vector<u8> File::readBytes(size_t numBytes) {
         if (!isValid()) return {};
 
-        auto size = numBytes ?: getSize();
+        auto size = numBytes == 0 ? getSize() : numBytes;
         if (size == 0) return {};
 
         std::vector<u8> bytes(size);
