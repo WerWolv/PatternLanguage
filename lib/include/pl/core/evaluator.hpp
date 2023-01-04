@@ -262,7 +262,7 @@ namespace pl::core {
 
         void createArrayVariable(const std::string &name, ast::ASTNode *type, size_t entryCount);
         void createVariable(const std::string &name, ast::ASTNode *type, const std::optional<Token::Literal> &value = std::nullopt, bool outVariable = false, bool reference = false, bool templateVariable = false);
-        std::shared_ptr<ptrn::Pattern> getVariableByName(const std::string &name);
+        std::shared_ptr<ptrn::Pattern>& getVariableByName(const std::string &name);
         void setVariable(const std::string &name, const Token::Literal &value);
         void setVariable(ptrn::Pattern *pattern, const Token::Literal &value);
         void setVariableAddress(const std::string &variableName, u64 address, u64 section = 0);

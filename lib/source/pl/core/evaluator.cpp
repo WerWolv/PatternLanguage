@@ -223,7 +223,7 @@ namespace pl::core {
         }, literal);
     }
 
-    std::shared_ptr<ptrn::Pattern> Evaluator::getVariableByName(const std::string &name) {
+    std::shared_ptr<ptrn::Pattern>& Evaluator::getVariableByName(const std::string &name) {
         // Search for variable in current scope
         {
             auto &variables = *this->getScope(0).scope;
@@ -252,7 +252,7 @@ namespace pl::core {
             }
         }
 
-        return nullptr;
+        err::E0003.throwError(fmt::format("Cannot find variable '{}' in this scope.", name));
     }
 
     void Evaluator::setVariable(const std::string &name, const Token::Literal &value) {
@@ -261,9 +261,7 @@ namespace pl::core {
             return;
 
         auto pattern = [&]() -> std::shared_ptr<ptrn::Pattern> {
-            std::shared_ptr<ptrn::Pattern> variablePattern = this->getVariableByName(name);
-            if (variablePattern == nullptr)
-                return nullptr;
+            auto& variablePattern = this->getVariableByName(name);
 
             if (!variablePattern->isLocal() && !variablePattern->isReference())
                 err::E0011.throwError(fmt::format("Cannot modify global variable '{}' as it has been placed in memory.", name));
@@ -297,9 +295,6 @@ namespace pl::core {
 
             return variablePattern;
         }();
-
-        if (pattern == nullptr)
-            err::E0003.throwError(fmt::format("Cannot find variable '{}' in this scope.", name));
 
         this->setVariable(pattern.get(), value);
     }
@@ -392,8 +387,6 @@ namespace pl::core {
             err::E0005.throwError(fmt::format("Cannot place variable '{}' in heap.", variableName));
 
         auto variable = this->getVariableByName(variableName);
-        if (variable == nullptr)
-            err::E0003.throwError(fmt::format("Cannot find variable '{}' in this scope.", variableName));
 
         variable->setOffset(address);
         variable->setSection(section);
