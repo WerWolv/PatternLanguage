@@ -37,7 +37,7 @@ add_library(libpl ${LIBRARY_TYPE}
 target_compile_options(libpl PRIVATE -Wall -Wextra -Werror -Wno-unknown-pragmas)
 
 target_include_directories(libpl PUBLIC include)
-target_link_libraries(libpl PRIVATE fmt-header-only)
+target_link_libraries(libpl PRIVATE fmt::fmt-header-only)
 target_link_libraries(libpl PUBLIC intervaltree)
 
 set_property(TARGET libpl PROPERTY POSITION_INDEPENDENT_CODE ON)
