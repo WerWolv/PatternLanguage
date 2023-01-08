@@ -32,8 +32,8 @@ namespace pl::ptrn {
         }
 
         std::string getFormattedValue() override {
-            const char character = core::Token::literalToCharacter(this->getValue());
-            return this->formatDisplayValue(fmt::format("'{0}'", character), this->getValue());
+            const u8 character = core::Token::literalToCharacter(this->getValue());
+            return this->formatDisplayValue(fmt::format("'{0}'", hlp::encodeByteString({ character })), this->getValue());
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override { return areCommonPropertiesEqual<decltype(*this)>(other); }
