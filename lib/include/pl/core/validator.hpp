@@ -1,8 +1,8 @@
 #pragma once
 
-
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -17,7 +17,7 @@ namespace pl::core {
     public:
         Validator() = default;
 
-        bool validate(const std::string &sourceCode, const std::vector<std::shared_ptr<ast::ASTNode>> &ast);
+        bool validate(const std::string &sourceCode, const std::vector<std::shared_ptr<ast::ASTNode>> &ast, bool firstRun = false);
 
         const std::optional<err::PatternLanguageError> &getError() { return this->m_error; }
 
@@ -32,6 +32,7 @@ namespace pl::core {
         u32 m_recursionDepth = 0;
 
         ast::ASTNode *m_lastNode = nullptr;
+        std::set<ast::ASTNode*> m_validatedNodes;
     };
 
 }

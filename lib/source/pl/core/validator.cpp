@@ -18,25 +18,35 @@
 
 namespace pl::core {
 
-    bool Validator::validate(const std::string &sourceCode, const std::vector<std::shared_ptr<ast::ASTNode>> &ast) {
+    bool Validator::validate(const std::string &sourceCode, const std::vector<std::shared_ptr<ast::ASTNode>> &ast, bool firstRun) {
         std::unordered_set<std::string> identifiers;
 
+        if (firstRun) {
+            this->m_recursionDepth = 0;
+            this->m_validatedNodes.clear();
+        }
+
         this->m_recursionDepth++;
+        PL_ON_SCOPE_EXIT { this->m_recursionDepth--; };
+
         try {
 
             for (const auto &node : ast) {
+                if (this->m_validatedNodes.contains(node.get()))
+                    continue;
+
                 if (node == nullptr)
                     err::V0001.throwError("Null-Pointer found in AST.", "This is a parser bug. Please report it on GitHub.");
 
                 this->m_lastNode = node.get();
 
                 // Variables named "$padding$" are paddings and can appear multiple times per type definition
-                // Variables that don't have a name are anonymous and can appear multiple times per type definition
                 identifiers.erase("$padding$");
+                // Variables that don't have a name are anonymous and can appear multiple times per type definition
                 identifiers.erase("");
 
                 if (this->m_recursionDepth > this->m_maxRecursionDepth)
-                    err::V0003.throwError(fmt::format("Type recursion depth exceeded set limit of '{}'.", this->m_maxRecursionDepth), "If this is intended, try increasing the limit using '#pragma eval_depth <new_limit>'.");
+                    return true;
 
                 if (auto variableDeclNode = dynamic_cast<ast::ASTNodeVariableDecl *>(node.get()); variableDeclNode != nullptr) {
                     if (!identifiers.insert(variableDeclNode->getName()).second)
@@ -91,6 +101,8 @@ namespace pl::core {
                             err::V0002.throwError(fmt::format("Redefinition of function parameter '{0}'", name));
                     }
                 }
+
+                this->m_validatedNodes.insert(node.get());
             }
 
         } catch (err::ValidatorError::Exception &e) {
@@ -103,12 +115,8 @@ namespace pl::core {
             else
                 this->m_error = err::PatternLanguageError(e.format(sourceCode, 1, 1), 1, 1);
 
-            this->m_recursionDepth = 0;
-
             return false;
         }
-
-        this->m_recursionDepth--;
 
         return true;
     }

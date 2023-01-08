@@ -69,7 +69,7 @@ namespace pl {
             return std::nullopt;
         }
 
-        if (!this->m_internals.validator->validate(code, *ast)) {
+        if (!this->m_internals.validator->validate(code, *ast, true)) {
             this->m_currError = this->m_internals.validator->getError();
 
             return std::nullopt;
