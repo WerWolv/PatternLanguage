@@ -8,7 +8,12 @@ option(LIBPL_ENABLE_TESTS "Enable testing" OFF)
 option(LIBPL_ENABLE_CLI "Enable building the CLI tool" ON)
 option(LIBPL_ENABLE_EXAMPLE "Enable building the examples" OFF)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-stringop-overflow -Wno-array-bounds")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-stringop-overflow")
+endif()
+if (NOT (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC"))
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-array-bounds")
+endif()
 
 if (WIN32)
     add_compile_definitions(OS_WINDOWS)
