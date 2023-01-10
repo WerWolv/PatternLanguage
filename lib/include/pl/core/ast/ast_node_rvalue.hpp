@@ -226,6 +226,8 @@ namespace pl::core::ast {
                             [&, this](auto &&index) {
                                 auto pattern = currPattern.get();
                                 if (auto *iteratable = dynamic_cast<ptrn::Iteratable *>(pattern); iteratable != nullptr) {
+                                    if (size_t(index) >= iteratable->getEntryCount())
+                                        core::err::E0006.throwError("Index out of bounds.", fmt::format("Tried to access index {} in array of size {}.", index, iteratable->getEntryCount()), this);
                                     currPattern = iteratable->getEntry(index);
                                 } else {
                                     err::E0006.throwError(fmt::format("Cannot access non-array type '{}'.", pattern->getTypeName()), {}, this);
