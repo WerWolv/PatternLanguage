@@ -27,10 +27,10 @@ namespace pl::hlp {
     }
 
 
-    std::string to_string(u128 value);
-    std::string to_string(i128 value);
+    [[nodiscard]] std::string to_string(u128 value);
+    [[nodiscard]] std::string to_string(i128 value);
 
-    std::vector<u8> toBytes(const auto &value) {
+    [[nodiscard]] std::vector<u8> toBytes(const auto &value) {
         std::vector<u8> bytes(sizeof(value));
         std::memcpy(bytes.data(), &value, sizeof(value));
         return bytes;
@@ -62,7 +62,7 @@ namespace pl::hlp {
         return (value & mask) >> to;
     }
 
-    constexpr inline i128 signExtend(size_t numBits, i128 value) {
+    [[nodiscard]] constexpr inline i128 signExtend(size_t numBits, i128 value) {
         i128 mask = 1ULL << u128(numBits - 1);
         return (value ^ mask) - mask;
     }
@@ -94,7 +94,7 @@ namespace pl::hlp {
     }
 
     template<typename T>
-    constexpr T changeEndianess(const T &value, size_t size, std::endian endian) {
+    [[nodiscard]] constexpr T changeEndianess(const T &value, size_t size, std::endian endian) {
         if (endian == std::endian::native)
             return value;
 
@@ -114,7 +114,7 @@ namespace pl::hlp {
     }
 
     template<pl::integral T>
-    constexpr T changeEndianess(const T &value, std::endian endian) {
+    [[nodiscard]] constexpr T changeEndianess(const T &value, std::endian endian) {
         return changeEndianess(value, sizeof(value), endian);
     }
 
@@ -125,27 +125,27 @@ namespace pl::hlp {
     }
 
     template<typename T, typename... Args>
-    std::vector<T> moveToVector(T &&first, Args &&...rest) {
+    [[nodiscard]] std::vector<T> moveToVector(T &&first, Args &&...rest) {
         std::vector<T> result;
         moveToVector(result, std::move(first), std::move(rest)...);
 
         return result;
     }
 
-    inline std::string trim(std::string s) {
-        s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+    [[nodiscard]] inline std::string trim(std::string s) {
+        s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](u8 ch) {
             return !std::isspace(ch) && ch >= 0x20;
         }));
-        s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+        s.erase(std::find_if(s.rbegin(), s.rend(), [](u8 ch) {
             return !std::isspace(ch) && ch >= 0x20;
         }).base(), s.end());
 
         return s;
     }
 
-    float float16ToFloat32(u16 float16);
+    [[nodiscard]] float float16ToFloat32(u16 float16);
 
-    inline bool containsIgnoreCase(const std::string &a, const std::string &b) {
+    [[nodiscard]] inline bool containsIgnoreCase(const std::string &a, const std::string &b) {
         auto iter = std::search(a.begin(), a.end(), b.begin(), b.end(), [](char ch1, char ch2) {
             return std::toupper(ch1) == std::toupper(ch2);
         });
@@ -153,10 +153,10 @@ namespace pl::hlp {
         return iter != a.end();
     }
 
-    std::string replaceAll(std::string string, const std::string &search, const std::string &replace);
-    std::vector<std::string> splitString(const std::string &string, const std::string &delimiter);
+    [[nodiscard]] std::string replaceAll(std::string string, const std::string &search, const std::string &replace);
+    [[nodiscard]] std::vector<std::string> splitString(const std::string &string, const std::string &delimiter);
 
-    constexpr inline size_t strnlen(const char *s, size_t n) {
+    [[nodiscard]] constexpr inline size_t strnlen(const char *s, size_t n) {
         size_t i = 0;
         while (i < n && s[i] != '\x00') i++;
 

@@ -61,9 +61,7 @@ namespace pl::core {
                 offset += 1;
             }
 
-            hlp::trim(value);
-
-            return value;
+            return hlp::trim(value);
         };
 
         auto getDirective = [&](std::string directive) {

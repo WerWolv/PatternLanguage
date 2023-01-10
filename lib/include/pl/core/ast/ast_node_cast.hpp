@@ -32,7 +32,7 @@ namespace pl::core::ast {
             if (literal == nullptr)
                 err::E0010.throwError("Cannot use void expression in a cast.", {}, this);
 
-            auto type    = dynamic_cast<ASTNodeBuiltinType *>(evaluatedType.get())->getType();
+            auto type = dynamic_cast<ASTNodeBuiltinType *>(evaluatedType.get())->getType();
 
             auto typePatterns = this->m_type->createPatterns(evaluator);
             if (typePatterns.empty())
@@ -107,7 +107,9 @@ namespace pl::core::ast {
                            {
                                std::string string(sizeof(value), '\x00');
                                std::memcpy(string.data(), &value, string.size());
-                               hlp::trim(string);
+
+                               // Remove trailing null bytes
+                               string.erase(string.find('\x00'));
 
                                if (typePattern->getEndian() != std::endian::native)
                                    std::reverse(string.begin(), string.end());
