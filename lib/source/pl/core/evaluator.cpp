@@ -543,6 +543,7 @@ namespace pl::core {
         this->m_sections.clear();
         this->m_sectionIdStack.clear();
         this->m_sectionId = 1;
+        this->m_outVariables.clear();
 
         this->m_scopes.clear();
         this->m_heap.clear();
