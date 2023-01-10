@@ -71,7 +71,7 @@ jobs:
         lcov -d ./lib --gcov-tool /usr/bin/gcov-12 -c -o coverage.info
 
     - name: ⬆️ Upload Coverage Report
-      if: ${{ env.GITHUB_TOKEN != '' }}
+      if: ${{ env.DISPATCH_TOKEN != '' }}
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
