@@ -33,8 +33,9 @@ namespace pl::ptrn {
 
     class Pattern {
     public:
-        constexpr static u64 MainSectionId = 0x0000'0000'0000'0000;
-        constexpr static u64 HeapSectionId = 0xFFFF'FFFF'FFFF'FFFF;
+        constexpr static u64 MainSectionId          = 0x0000'0000'0000'0000;
+        constexpr static u64 HeapSectionId          = 0xFFFF'FFFF'FFFF'FFFF;
+        constexpr static u64 PatternLocalSectionId  = 0xFFFF'FFFF'FFFF'FFFE;
 
         Pattern(core::Evaluator *evaluator, u64 offset, size_t size)
             : m_evaluator(evaluator), m_offset(offset), m_size(size) {
@@ -42,7 +43,7 @@ namespace pl::ptrn {
             if (evaluator != nullptr) {
                 this->m_color       = evaluator->getNextPatternColor();
                 this->m_manualColor = false;
-                evaluator->patternCreated();
+                evaluator->patternCreated(this);
             }
         }
 
@@ -65,13 +66,14 @@ namespace pl::ptrn {
                 this->m_attributes = std::make_unique<std::map<std::string, std::string>>(*other.m_attributes);
 
             if (this->m_evaluator != nullptr) {
-                this->m_evaluator->patternCreated();
+                this->m_evaluator->patternCreated(this);
             }
         }
 
         virtual ~Pattern() {
-            if (this->m_evaluator != nullptr)
-                this->m_evaluator->patternDestroyed();
+            if (this->m_evaluator != nullptr) {
+                this->m_evaluator->patternDestroyed(this);
+            }
         }
 
         virtual std::unique_ptr<Pattern> clone() const = 0;

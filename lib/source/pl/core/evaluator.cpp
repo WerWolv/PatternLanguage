@@ -101,11 +101,19 @@ namespace pl::core {
             });
         }
 
+        auto sectionId = this->getSectionId();
         auto startOffset = this->dataOffset();
 
         auto heapAddress = u64(this->getHeap().size());
-        if (!reference)
-            this->getHeap().emplace_back();
+        u32 patternLocalAddress = 0;
+        if (!reference) {
+            if (sectionId == ptrn::Pattern::HeapSectionId)
+                this->getHeap().emplace_back();
+            else if (sectionId == ptrn::Pattern::PatternLocalSectionId) {
+                patternLocalAddress = this->m_patternLocalStorage.empty() ? 0 : this->m_patternLocalStorage.rbegin()->first + 1;
+                this->m_patternLocalStorage.insert({ patternLocalAddress, { } });
+            }
+        }
 
         std::shared_ptr<ptrn::Pattern> pattern;
 
@@ -144,8 +152,15 @@ namespace pl::core {
 
         if (!reference) {
             pattern->setLocal(true);
-            pattern->setOffset(heapAddress << 32);
-            this->getHeap()[heapAddress].resize(pattern->getSize());
+
+            if (sectionId == ptrn::Pattern::HeapSectionId) {
+                pattern->setOffset(heapAddress << 32);
+                this->getHeap()[heapAddress].resize(pattern->getSize());
+            } else if (sectionId == ptrn::Pattern::PatternLocalSectionId) {
+                pattern->setSection(sectionId);
+                pattern->setOffset(u64(patternLocalAddress) << 32);
+                this->m_patternLocalStorage[patternLocalAddress].data.resize(pattern->getSize());
+            }
         }
         pattern->setReference(reference);
 
@@ -313,15 +328,18 @@ namespace pl::core {
         // Write value into variable storage
         {
             bool heapSection = pattern->getSection() == ptrn::Pattern::HeapSectionId;
+            bool patternLocalSection = pattern->getSection() == ptrn::Pattern::PatternLocalSectionId;
             auto &storage = [&, this]() -> auto& {
                 if (heapSection)
                     return this->getHeap()[pattern->getHeapAddress()];
+                else if (patternLocalSection)
+                    return this->m_patternLocalStorage[pattern->getHeapAddress()].data;
                 else
                     return this->getSection(pattern->getSection());
             }();
 
             auto copyToStorage = [&](const auto &value) {
-                u64 offset = heapSection ? pattern->getOffset() & 0xFFFF'FFFF : pattern->getOffset();
+                u64 offset = (heapSection || patternLocalSection) ? pattern->getOffset() & 0xFFFF'FFFF : pattern->getOffset();
 
                 storage.resize(offset + pattern->getSize());
                 std::memcpy(storage.data() + offset, &value, pattern->getSize());
@@ -356,7 +374,7 @@ namespace pl::core {
                         copyToStorage(value[0]);
                     },
                     [&, this](ptrn::Pattern * const value) {
-                        if (heapSection) {
+                        if (heapSection || patternLocalSection) {
                             storage.resize(pattern->getSize());
                             this->readData(value->getOffset(), storage.data(), value->getSize(), value->getSection());
                         } else if (storage.size() < pattern->getOffset() + pattern->getSize()) {
@@ -452,6 +470,25 @@ namespace pl::core {
             }
             else
                 err::E0011.throwError(fmt::format("Tried accessing out of bounds heap cell {}. This is a bug.", heapAddress));
+        } else if (sectionId == ptrn::Pattern::PatternLocalSectionId) {
+            auto &patternLocal = this->m_patternLocalStorage;
+
+            auto heapAddress = (address >> 32);
+            auto storageAddress = address & 0xFFFF'FFFF;
+            if (heapAddress < patternLocal.size()) {
+                auto &storage = patternLocal[heapAddress].data;
+
+                if (storageAddress + size > storage.size()) {
+                    storage.resize(storageAddress + size);
+                }
+
+                if (!write)
+                    std::memcpy(buffer, storage.data() + storageAddress, size);
+                else
+                    std::memcpy(storage.data() + storageAddress, buffer, size);
+            }
+            else
+                err::E0011.throwError(fmt::format("Tried accessing out of bounds pattern local storage cell {}. This is a bug.", heapAddress));
         } else if (sectionId == ptrn::Pattern::MainSectionId) {
             if (!write) {
                 if (address < this->m_dataBaseAddress + this->m_dataSize)
@@ -537,6 +574,7 @@ namespace pl::core {
 
         this->m_scopes.clear();
         this->m_heap.clear();
+        this->m_patternLocalStorage.clear();
         this->m_templateParameters.clear();
 
         this->m_customFunctions.clear();
@@ -710,14 +748,34 @@ namespace pl::core {
         return this->m_lastPauseLine;
     }
 
-    void Evaluator::patternCreated() {
+    void Evaluator::patternCreated(ptrn::Pattern *pattern) {
+        hlp::unused(pattern);
+
         if (this->m_currPatternCount > this->m_patternLimit && !this->m_evaluated)
             err::E0007.throwError(fmt::format("Pattern count exceeded set limit of '{}'.", this->getPatternLimit()), "If this is intended, try increasing the limit using '#pragma pattern_limit <new_limit>'.");
         this->m_currPatternCount++;
+
+        if (pattern->getSection() == ptrn::Pattern::PatternLocalSectionId) {
+            if (auto it = this->m_patternLocalStorage.find(pattern->getHeapAddress()); it != this->m_patternLocalStorage.end()) {
+                auto &[key, data] = *it;
+
+                data.referenceCount++;
+            }
+        }
     }
 
-    void Evaluator::patternDestroyed() {
+    void Evaluator::patternDestroyed(ptrn::Pattern *pattern) {
         this->m_currPatternCount--;
+
+        if (pattern->getSection() == ptrn::Pattern::PatternLocalSectionId) {
+            if (auto it = this->m_patternLocalStorage.find(pattern->getHeapAddress()); it != this->m_patternLocalStorage.end()) {
+                auto &[key, data] = *it;
+
+                data.referenceCount--;
+                if (data.referenceCount == 0)
+                    this->m_patternLocalStorage.erase(it);
+            }
+        }
     }
 
 }

@@ -70,6 +70,11 @@ namespace pl::core {
             size_t heapStartSize;
         };
 
+        struct PatternLocalData {
+            u32 referenceCount;
+            std::vector<u8> data;
+        };
+
         void pushScope(const std::shared_ptr<ptrn::Pattern> &parent, std::vector<std::shared_ptr<ptrn::Pattern>> &scope);
         void popScope();
 
@@ -347,8 +352,8 @@ namespace pl::core {
         std::optional<u32> getPauseLine() const;
 
     private:
-        void patternCreated();
-        void patternDestroyed();
+        void patternCreated(ptrn::Pattern *pattern);
+        void patternDestroyed(ptrn::Pattern *pattern);
 
     private:
         u64 m_currOffset = 0x00;
@@ -386,6 +391,7 @@ namespace pl::core {
         std::vector<std::vector<std::shared_ptr<ptrn::Pattern>>> m_templateParameters;
 
         std::vector<std::vector<u8>> m_heap;
+        std::map<u32, PatternLocalData> m_patternLocalStorage;
 
         std::function<bool()> m_dangerousFunctionCalledCallback = []{ return false; };
         std::function<void()> m_breakpointHitCallback = []{ };

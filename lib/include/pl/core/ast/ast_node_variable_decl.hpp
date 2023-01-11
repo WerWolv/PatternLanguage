@@ -83,15 +83,23 @@ namespace pl::core::ast {
                 err::E0005.throwError(fmt::format("Variables of type 'str' cannot be placed in memory.", this->m_name), { }, this);
 
             pattern->setVariableName(this->m_name);
-            pattern->setSection(evaluator->getSectionId());
+
+            if (this->m_placementSection != nullptr)
+                pattern->setSection(evaluator->getSectionId());
 
             applyVariableAttributes(evaluator, this, pattern.get());
+
 
             if (this->m_placementOffset != nullptr && !evaluator->isGlobalScope()) {
                 evaluator->dataOffset() = startOffset;
             }
 
-            return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
+            if (evaluator->getSectionId() == ptrn::Pattern::PatternLocalSectionId) {
+                this->execute(evaluator);
+                return { };
+            } else {
+                return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
+            }
         }
 
         FunctionResult execute(Evaluator *evaluator) const override {

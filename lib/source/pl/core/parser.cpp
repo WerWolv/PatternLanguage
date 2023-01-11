@@ -889,6 +889,12 @@ namespace pl::core {
             }
 
             return create<ast::ASTNodeVariableDecl>(variableName, type, std::move(placementOffset), std::move(placementSection));
+        } else if (MATCHES(sequence(tkn::Operator::Assign))) {
+            std::vector<std::unique_ptr<ast::ASTNode>> compounds;
+            compounds.push_back(create<ast::ASTNodeVariableDecl>(identifier, type, nullptr, create<ast::ASTNodeLiteral>(u128(ptrn::Pattern::PatternLocalSectionId))));
+            compounds.push_back(create<ast::ASTNodeLValueAssignment>(identifier, parseMathematicalExpression()));
+
+            return create<ast::ASTNodeCompoundStatement>(std::move(compounds));
         }
         else
             return create<ast::ASTNodeVariableDecl>(identifier, type);
