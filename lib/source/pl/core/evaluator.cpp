@@ -269,20 +269,10 @@ namespace pl::core {
             // If the variable is being set to a pattern, adjust its layout to the real layout as it potentially contains dynamically sized members
             std::visit(hlp::overloaded {
                 [&](ptrn::Pattern * const value) {
-                    auto offset = variablePattern->getOffset();
-                    auto section = variablePattern->getSection();
-                    bool reference = variablePattern->isReference();
-
                     variablePattern = value->clone();
 
                     variablePattern->setVariableName(name);
-                    variablePattern->setReference(reference);
-
-                    if (!reference) {
-                        variablePattern->setLocal(true);
-                        variablePattern->setOffset(offset);
-                        variablePattern->setSection(section);
-                    }
+                    variablePattern->setReference(true);
                 },
                 [&](const std::string &value) {
                     if (dynamic_cast<ptrn::PatternString*>(variablePattern.get()) != nullptr)
