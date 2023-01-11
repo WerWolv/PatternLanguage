@@ -107,11 +107,11 @@ namespace pl::core {
         auto heapAddress = u64(this->getHeap().size());
         u32 patternLocalAddress = 0;
         if (!reference) {
-            if (sectionId == ptrn::Pattern::HeapSectionId)
-                this->getHeap().emplace_back();
-            else if (sectionId == ptrn::Pattern::PatternLocalSectionId) {
+            if (sectionId == ptrn::Pattern::PatternLocalSectionId) {
                 patternLocalAddress = this->m_patternLocalStorage.empty() ? 0 : this->m_patternLocalStorage.rbegin()->first + 1;
                 this->m_patternLocalStorage.insert({ patternLocalAddress, { } });
+            } else {
+                this->getHeap().emplace_back();
             }
         }
 
