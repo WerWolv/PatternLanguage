@@ -36,8 +36,11 @@ namespace pl::ptrn {
             if (this->isSealed())
                 return;
 
-            for (u64 i = start; i < this->m_sortedMembers.size() && i < end; i++)
-                fn(i, this->m_sortedMembers[i]);
+            for (u64 i = start; i < this->m_sortedMembers.size() && i < end; i++) {
+                auto pattern = this->m_sortedMembers[i];
+                if (!pattern->isPatternLocal())
+                    fn(i, pattern);
+            }
         }
 
         size_t getEntryCount() const override {

@@ -257,12 +257,15 @@ namespace pl::ptrn {
             return this->m_fields.size();
         }
 
-        void forEachEntry(u64 start, u64 end, const std::function<void (u64, Pattern *)> &callback) override {
+        void forEachEntry(u64 start, u64 end, const std::function<void (u64, Pattern *)> &fn) override {
             if (this->isSealed())
                 return;
 
-            for (auto i = start; i < end; i++)
-                callback(i, this->m_sortedFields[i]);
+            for (auto i = start; i < end; i++) {
+                auto pattern = this->m_sortedFields[i];
+                if (!pattern->isPatternLocal())
+                    fn(i, pattern);
+            }
         }
 
         void sort(const std::function<bool (const Pattern *, const Pattern *)> &comparator) override {

@@ -164,7 +164,10 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] virtual std::vector<std::pair<u64, Pattern*>> getChildren() {
-            return { { this->getOffset(), this } };
+            if (this->isPatternLocal())
+                return { };
+            else
+                return { { this->getOffset(), this } };
         }
 
         void setHidden(bool hidden) {
@@ -200,6 +203,10 @@ namespace pl::ptrn {
 
         [[nodiscard]] bool isLocal() const {
             return this->m_section != MainSectionId;
+        }
+
+        [[nodiscard]] bool isPatternLocal() const {
+            return this->m_section == PatternLocalSectionId;
         }
 
         virtual void setReference(bool reference) {
