@@ -217,7 +217,7 @@ namespace pl::core {
 
                             auto pragmaValue = getDirectiveValue(true);
 
-                            this->m_pragmas[*pragmaKey] = { pragmaValue.value_or(""), lineNumber };
+                            this->m_pragmas[*pragmaKey].emplace_back(pragmaValue.value_or(""), lineNumber);
                         } else if (getDirective("error")) {
                             auto error = getDirectiveValue(true);
 
@@ -266,12 +266,14 @@ namespace pl::core {
             }
 
             // Handle pragmas
-            for (const auto &[type, data] : this->m_pragmas) {
-                const auto &[value, line] = data;
+            for (const auto &[type, datas] : this->m_pragmas) {
+                for (const auto &data : datas) {
+                    const auto &[value, line] = data;
 
-                if (this->m_pragmaHandlers.contains(type)) {
-                    if (!this->m_pragmaHandlers[type](runtime, value))
-                        err::M0006.throwError(fmt::format("Value '{}' cannot be used with the '{}' pragma directive.", value, type), { }, line);
+                    if (this->m_pragmaHandlers.contains(type)) {
+                        if (!this->m_pragmaHandlers[type](runtime, value))
+                            err::M0006.throwError(fmt::format("Value '{}' cannot be used with the '{}' pragma directive.", value, type), { }, line);
+                    }
                 }
             }
         } catch (err::PreprocessorError::Exception &e) {
