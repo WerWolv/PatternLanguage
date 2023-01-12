@@ -13,7 +13,7 @@
 Functions
 ---------
 
-``std::hash::crc32(u128 address, u64 size, u32 init, u32 poly) -> u32``
+``std::hash::crc32(auto pattern, u32 init, u32 poly) -> u32``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Calculates the CRC32 hash of the given memory region.**
@@ -24,8 +24,7 @@ Functions
     =========== =========================================================
     Parameter   Description
     =========== =========================================================
-    ``address`` Start address
-    ``size``    Region size
+    ``pattern`` The pattern to hash
     ``init``    Initial CRC32 value
     ``poly``    CRC32 polynomial
     ``return``  Calculated CRC32 checksum
