@@ -37,16 +37,17 @@ namespace pl::lib::libstd::core {
                     return attributes->contains(attributeName);
             });
 
-            /* get_attribute_value(pattern, attribute_name) */
-            runtime.addFunction(nsStdCore, "get_attribute_value", FunctionParameterCount::exactly(2), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
+            /* get_attribute_argument(pattern, attribute_name, index) */
+            runtime.addFunction(nsStdCore, "get_attribute_argument", FunctionParameterCount::exactly(3), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 auto pattern = Token::literalToPattern(params[0]);
                 auto attributeName = Token::literalToString(params[1], false);
+                auto index = Token::literalToUnsigned(params[2]);
 
                 auto &attributes = pattern->getAttributes();
                 if (attributes == nullptr || !attributes->contains(attributeName))
                     return std::string();
                 else
-                    return attributes->at(attributeName);
+                    return attributes->at(attributeName)[index];
             });
 
             /* set_pattern_color(pattern, color) */

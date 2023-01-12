@@ -63,7 +63,7 @@ namespace pl::ptrn {
             if (other.m_cachedDisplayValue != nullptr)
                 this->m_cachedDisplayValue = std::make_unique<std::string>(*other.m_cachedDisplayValue);
             if (other.m_attributes != nullptr)
-                this->m_attributes = std::make_unique<std::map<std::string, std::string>>(*other.m_attributes);
+                this->m_attributes = std::make_unique<std::map<std::string, std::vector<core::Token::Literal>>>(*other.m_attributes);
 
             if (this->m_evaluator != nullptr) {
                 this->m_evaluator->patternCreated(this);
@@ -98,13 +98,16 @@ namespace pl::ptrn {
                 this->m_variableName = std::make_unique<std::string>(name);
         }
 
-        [[nodiscard]] auto getComment() const {
-            return this->getAttributeValue("comment").value_or("");
+        [[nodiscard]] std::string getComment() const {
+            if (const auto &arguments = this->getAttributeArguments("comment"); !arguments.empty())
+                return core::Token::literalToString(arguments.front(), true);
+            else
+                return "";
         }
 
         void setComment(const std::string &comment) {
             if (!comment.empty())
-                this->addAttribute("comment", comment);
+                this->addAttribute("comment", { comment });
         }
 
         [[nodiscard]] virtual std::string getTypeName() const {
@@ -140,15 +143,35 @@ namespace pl::ptrn {
         }
         [[nodiscard]] bool hasOverriddenEndian() const { return this->m_endian.has_value(); }
 
-        [[nodiscard]] std::string getDisplayName() const { return this->getAttributeValue("name").value_or(this->getVariableName()); }
-        void setDisplayName(const std::string &name) { this->addAttribute("name", name); }
+        [[nodiscard]] std::string getDisplayName() const {
+            if (const auto &arguments = this->getAttributeArguments("name"); !arguments.empty())
+                return core::Token::literalToString(arguments.front(), true);
+            else
+                return this->getVariableName();
+        }
+        void setDisplayName(const std::string &name) { this->addAttribute("name", { name }); }
 
-        [[nodiscard]] auto getTransformFunction() const { return this->getAttributeValue("transform").value_or(""); }
-        void setTransformFunction(const std::string &functionName) { this->addAttribute("transform", functionName); }
-        [[nodiscard]] auto getReadFormatterFunction() const { return this->getAttributeValue("format_read").value_or(""); }
-        void setReadFormatterFunction(const std::string &functionName) { this->addAttribute("format_read", functionName); }
-        [[nodiscard]] auto getWriteFormatterFunction() const { return this->getAttributeValue("format_write").value_or(""); }
-        void setWriteFormatterFunction(const std::string &functionName) { this->addAttribute("format_write", functionName); }
+        [[nodiscard]] std::string getTransformFunction() const {
+            if (const auto &arguments = this->getAttributeArguments("transform"); !arguments.empty())
+                return core::Token::literalToString(arguments.front(), true);
+            else
+                return "";
+        }
+        void setTransformFunction(const std::string &functionName) { this->addAttribute("transform", { functionName }); }
+        [[nodiscard]] std::string getReadFormatterFunction() const {
+            if (const auto &arguments = this->getAttributeArguments("format_read"); !arguments.empty())
+                return core::Token::literalToString(arguments.front(), true);
+            else
+                return "";
+        }
+        void setReadFormatterFunction(const std::string &functionName) { this->addAttribute("format_read", { functionName }); }
+        [[nodiscard]] std::string getWriteFormatterFunction() const {
+            if (const auto &arguments = this->getAttributeArguments("format_write"); !arguments.empty())
+                return core::Token::literalToString(arguments.front(), true);
+            else
+                return "";
+        }
+        void setWriteFormatterFunction(const std::string &functionName) { this->addAttribute("format_write", { functionName }); }
 
         [[nodiscard]] virtual std::string getFormattedName() const = 0;
         [[nodiscard]] virtual std::string getFormattedValue() = 0;
@@ -344,11 +367,11 @@ namespace pl::ptrn {
 
         virtual void accept(PatternVisitor &v) = 0;
 
-        void addAttribute(const std::string &attribute, const std::string &value = "") {
+        void addAttribute(const std::string &attribute, const std::vector<core::Token::Literal> &arguments = {}) {
             if (this->m_attributes == nullptr)
-                this->m_attributes = std::make_unique<std::map<std::string, std::string>>();
+                this->m_attributes = std::make_unique<std::map<std::string, std::vector<core::Token::Literal>>>();
 
-            (*this->m_attributes)[attribute] = value;
+            (*this->m_attributes)[attribute] = arguments;
         }
 
         void removeAttribute(const std::string &attribute) {
@@ -367,9 +390,9 @@ namespace pl::ptrn {
             return this->m_attributes;
         }
 
-        [[nodiscard]] std::optional<std::string> getAttributeValue(const std::string &name) const {
+        [[nodiscard]] std::vector<core::Token::Literal> getAttributeArguments(const std::string &name) const {
             if (!this->hasAttribute(name))
-                return std::nullopt;
+                return {};
             else
                 return this->m_attributes->at(name);
         }
@@ -390,7 +413,7 @@ namespace pl::ptrn {
 
         core::Evaluator *m_evaluator;
 
-        std::unique_ptr<std::map<std::string, std::string>> m_attributes;
+        std::unique_ptr<std::map<std::string, std::vector<core::Token::Literal>>> m_attributes;
         mutable std::unique_ptr<std::string> m_cachedDisplayValue;
 
         std::unique_ptr<std::string> m_variableName;

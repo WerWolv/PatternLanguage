@@ -413,9 +413,15 @@ namespace pl::core {
             auto attribute = parseNamespaceResolution();
 
             if (MATCHES(sequence(tkn::Separator::LeftParenthesis))) {
-                currNode->addAttribute(create<ast::ASTNodeAttribute>(attribute, parseMathematicalExpression()));
+                std::vector<std::unique_ptr<ast::ASTNode>> args;
+                do {
+                    args.push_back(parseMathematicalExpression());
+                } while (MATCHES(sequence(tkn::Separator::Comma)));
+
                 if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
                     err::P0002.throwError(fmt::format("Expected ')', got {}", getFormattedToken(0)), {}, 1);
+
+                currNode->addAttribute(create<ast::ASTNodeAttribute>(attribute, std::move(args)));
             } else
                 currNode->addAttribute(create<ast::ASTNodeAttribute>(attribute));
 

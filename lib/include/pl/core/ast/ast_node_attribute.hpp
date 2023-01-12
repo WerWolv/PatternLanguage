@@ -11,15 +11,16 @@ namespace pl::core::ast {
 
     class ASTNodeAttribute : public ASTNode {
     public:
-        explicit ASTNodeAttribute(std::string attribute, std::unique_ptr<ASTNode> value = nullptr)
+        explicit ASTNodeAttribute(std::string attribute, std::vector<std::unique_ptr<ASTNode>> &&value = {})
             : ASTNode(), m_attribute(std::move(attribute)), m_value(std::move(value)) { }
 
         ~ASTNodeAttribute() override = default;
 
         ASTNodeAttribute(const ASTNodeAttribute &other) : ASTNode(other) {
             this->m_attribute = other.m_attribute;
-            if (other.m_value != nullptr)
-                this->m_value     = other.m_value->clone();
+
+            for (const auto &value : other.m_value)
+                this->m_value.emplace_back(value->clone());
         }
 
         [[nodiscard]] std::unique_ptr<ASTNode> clone() const override {
@@ -30,13 +31,13 @@ namespace pl::core::ast {
             return this->m_attribute;
         }
 
-        [[nodiscard]] const std::unique_ptr<ASTNode> &getValue() const {
+        [[nodiscard]] const std::vector<std::unique_ptr<ASTNode>> &getArguments() const {
             return this->m_value;
         }
 
     private:
         std::string m_attribute;
-        std::unique_ptr<ASTNode> m_value;
+        std::vector<std::unique_ptr<ASTNode>> m_value;
     };
 
 
@@ -66,9 +67,9 @@ namespace pl::core::ast {
         [[nodiscard]] bool hasAttribute(const std::string &key, bool needsParameter) const {
             return std::any_of(this->m_attributes.begin(), this->m_attributes.end(), [&](const std::unique_ptr<ASTNodeAttribute> &attribute) {
                 if (attribute->getAttribute() == key) {
-                    if (needsParameter && attribute->getValue() == nullptr)
+                    if (needsParameter && attribute->getArguments().empty())
                         err::E0008.throwError(fmt::format("Attribute '{}' expected a parameter.", key), fmt::format("Try [[{}(\"value\")]] instead.", key), attribute.get());
-                    else if (!needsParameter && attribute->getValue() != nullptr)
+                    else if (!needsParameter && !attribute->getArguments().empty())
                         err::E0008.throwError(fmt::format("Attribute '{}' did not expect a parameter.", key), fmt::format("Try [[{}]] instead.", key), attribute.get());
                     else
                         return true;
@@ -78,21 +79,23 @@ namespace pl::core::ast {
             });
         }
 
-        [[nodiscard]] std::shared_ptr<ASTNode> getAttributeValue(const std::string &key) const {
+        [[nodiscard]] const std::vector<std::unique_ptr<ASTNode>>& getAttributeArguments(const std::string &key) const {
             auto attribute = std::find_if(this->m_attributes.begin(), this->m_attributes.end(), [&](const std::unique_ptr<ASTNodeAttribute> &attribute) {
                 return attribute->getAttribute() == key;
             });
 
             if (attribute != this->m_attributes.end())
-                return (*attribute)->getValue()->clone();
-            else
-                return nullptr;
+                return (*attribute)->getArguments();
+            else {
+                static std::vector<std::unique_ptr<ASTNode>> empty;
+                return empty;
+            }
         }
 
         [[nodiscard]] std::shared_ptr<ASTNode> getFirstAttributeValue(const std::vector<std::string> &keys) const {
             for (const auto &key : keys) {
-                if (auto value = this->getAttributeValue(key); value != nullptr)
-                    return value;
+                if (const auto &arguments = this->getAttributeArguments(key); !arguments.empty())
+                    return arguments.front()->clone();
             }
 
             return nullptr;
@@ -139,8 +142,8 @@ namespace pl::core::ast {
             pattern->setReadFormatterFunction(functionName);
         }
 
-        if (auto value = attributable->getAttributeValue("format_write"); value) {
-            auto functionName = getAttributeValueAsString(value, evaluator);
+        if (const auto &arguments = attributable->getAttributeArguments("format_write"); arguments.size() == 1) {
+            auto functionName = getAttributeValueAsString(arguments.front(), evaluator);
             auto function = evaluator->findFunction(functionName);
             if (!function.has_value())
                 err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", functionName), {}, node);
@@ -151,8 +154,8 @@ namespace pl::core::ast {
             pattern->setWriteFormatterFunction(functionName);
         }
 
-        if (auto value = attributable->getAttributeValue("format_entries"); value) {
-            auto functionName = getAttributeValueAsString(value, evaluator);
+        if (const auto &arguments = attributable->getAttributeArguments("format_entries"); arguments.size() == 1) {
+            auto functionName = getAttributeValueAsString(arguments.front(), evaluator);
             auto function = evaluator->findFunction(functionName);
             if (!function.has_value())
                 err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", functionName), {}, node);
@@ -169,8 +172,8 @@ namespace pl::core::ast {
             }
         }
 
-        if (auto value = attributable->getAttributeValue("transform"); value) {
-            auto functionName = getAttributeValueAsString(value, evaluator);
+        if (const auto &arguments = attributable->getAttributeArguments("transform"); arguments.size() == 1) {
+            auto functionName = getAttributeValueAsString(arguments.front(), evaluator);
             auto function = evaluator->findFunction(functionName);
             if (!function.has_value())
                 err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", functionName), {}, node);
@@ -181,8 +184,8 @@ namespace pl::core::ast {
             pattern->setTransformFunction(functionName);
         }
 
-        if (auto value = attributable->getAttributeValue("pointer_base"); value) {
-            auto functionName = getAttributeValueAsString(value, evaluator);
+        if (const auto &arguments = attributable->getAttributeArguments("pointer_base"); arguments.size() == 1) {
+            auto functionName = getAttributeValueAsString(arguments.front(), evaluator);
             auto function = evaluator->findFunction(functionName);
             if (!function.has_value())
                 err::E0009.throwError(fmt::format("Pointer base function '{}' does not exist.", functionName), {}, node);
@@ -214,8 +217,8 @@ namespace pl::core::ast {
         }
 
         if (!pattern->hasOverriddenColor()) {
-            if (auto colorValue = attributable->getAttributeValue("color"); colorValue) {
-                auto colorString = getAttributeValueAsString(colorValue, evaluator);
+            if (const auto &arguments = attributable->getAttributeArguments("color"); arguments.size() == 1) {
+                auto colorString = getAttributeValueAsString(arguments.front(), evaluator);
                 u32 color = strtoul(colorString.c_str(), nullptr, 16);
                 pattern->setColor(hlp::changeEndianess(color, std::endian::big) >> 8);
             } else if (auto singleColor = attributable->hasAttribute("single_color", false); singleColor) {
@@ -224,8 +227,16 @@ namespace pl::core::ast {
         }
 
         for (const auto &attribute : attributable->getAttributes()) {
-            if (const auto &value = attribute->getValue(); value != nullptr)
-                pattern->addAttribute(attribute->getAttribute(), getAttributeValueAsString(value, evaluator));
+            if (const auto &arguments = attribute->getArguments(); !arguments.empty()) {
+                std::vector<core::Token::Literal> evaluatedArguments;
+                for (const auto &argument : arguments) {
+                    auto evaluatedArgument = argument->evaluate(evaluator);
+                    if (auto literalNode = dynamic_cast<ASTNodeLiteral*>(evaluatedArgument.get()); literalNode != nullptr)
+                        evaluatedArguments.push_back(literalNode->getValue());
+                }
+
+                pattern->addAttribute(attribute->getAttribute(), evaluatedArguments);
+            }
             else
                 pattern->addAttribute(attribute->getAttribute());
         }
@@ -242,20 +253,20 @@ namespace pl::core::ast {
 
         applyTypeAttributes(evaluator, node, pattern);
 
-        if (auto colorValue = attributable->getAttributeValue("color"); colorValue) {
-            auto colorString = getAttributeValueAsString(colorValue, evaluator);
+        if (const auto &arguments = attributable->getAttributeArguments("color"); arguments.size() == 1) {
+            auto colorString = getAttributeValueAsString(arguments.front(), evaluator);
             u32 color = strtoul(colorString.c_str(), nullptr, 16);
             pattern->setColor(hlp::changeEndianess(color, std::endian::big) >> 8);
         } else if (auto singleColor = attributable->hasAttribute("single_color", false); singleColor) {
             pattern->setColor(pattern->getColor());
         }
 
-        if (auto value = attributable->getAttributeValue("name"); value) {
-            pattern->setDisplayName(getAttributeValueAsString(value, evaluator));
+        if (const auto &arguments = attributable->getAttributeArguments("name"); arguments.size() == 1) {
+            pattern->setDisplayName(getAttributeValueAsString(arguments.front(), evaluator));
         }
 
-        if (auto value = attributable->getAttributeValue("comment"); value) {
-            pattern->setComment(getAttributeValueAsString(value, evaluator));
+        if (const auto &arguments = attributable->getAttributeArguments("comment"); arguments.size() == 1) {
+            pattern->setComment(getAttributeValueAsString(arguments.front(), evaluator));
         }
 
         if (attributable->hasAttribute("no_unique_address", false)) {
