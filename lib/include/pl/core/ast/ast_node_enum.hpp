@@ -26,7 +26,7 @@ namespace pl::core::ast {
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             evaluator->updateRuntime(this);
 
-            auto pattern = std::make_unique<ptrn::PatternEnum>(evaluator, evaluator->dataOffset(), 0);
+            auto pattern = std::make_shared<ptrn::PatternEnum>(evaluator, evaluator->dataOffset(), 0);
 
             std::vector<ptrn::PatternEnum::EnumValue> enumEntries;
             for (const auto &[name, expr] : this->m_entries) {
@@ -62,7 +62,7 @@ namespace pl::core::ast {
             pattern->setSize(underlying->getSize());
             pattern->setEndian(underlying->getEndian());
 
-            applyTypeAttributes(evaluator, this, pattern.get());
+            applyTypeAttributes(evaluator, this, pattern);
 
             return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
         }

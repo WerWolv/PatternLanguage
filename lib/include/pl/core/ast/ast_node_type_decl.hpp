@@ -102,10 +102,10 @@ namespace pl::core::ast {
                 if (auto iteratable = dynamic_cast<ptrn::Iteratable *>(pattern.get()); iteratable != nullptr) {
                     auto scope = iteratable->getEntries();
                     evaluator->pushScope(pattern, scope);
-                    applyTypeAttributes(evaluator, this, pattern.get());
+                    applyTypeAttributes(evaluator, this, pattern);
                     evaluator->popScope();
                 } else {
-                    applyTypeAttributes(evaluator, this, pattern.get());
+                    applyTypeAttributes(evaluator, this, pattern);
                 }
 
             }

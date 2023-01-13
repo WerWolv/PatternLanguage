@@ -116,13 +116,13 @@ namespace pl::core::ast {
 
     }
 
-    inline void applyTypeAttributes(Evaluator *evaluator, const ASTNode *node, ptrn::Pattern *pattern) {
+    inline void applyTypeAttributes(Evaluator *evaluator, const ASTNode *node, const std::shared_ptr<ptrn::Pattern> &pattern) {
         auto attributable = dynamic_cast<const Attributable *>(node);
         if (attributable == nullptr)
             err::E0008.throwError("Attributes cannot be applied to this statement.", {}, node);
 
         if (attributable->hasAttribute("inline", false)) {
-            auto inlinable = dynamic_cast<ptrn::Inlinable *>(pattern);
+            auto inlinable = dynamic_cast<ptrn::Inlinable *>(pattern.get());
 
             if (inlinable == nullptr)
                 err::E0008.throwError("[[inline]] attribute can only be used with nested types.", "Try applying it to a struct, union, bitfield or array instead.", node);
@@ -163,7 +163,7 @@ namespace pl::core::ast {
             if (function->parameterCount != api::FunctionParameterCount::exactly(1))
                 err::E0009.throwError(fmt::format("Formatter function '{}' needs to take exactly one parameter.", functionName), fmt::format("Try 'fn {}({} value)' instead", functionName, pattern->getTypeName()), node);
 
-            auto array = dynamic_cast<ptrn::PatternArrayDynamic *>(pattern);
+            auto array = dynamic_cast<ptrn::PatternArrayDynamic *>(pattern.get());
             if (array == nullptr)
                 err::E0009.throwError("The [[inline_array]] attribute can only be applied to dynamic array types.", {}, node);
 
@@ -191,7 +191,7 @@ namespace pl::core::ast {
                 err::E0009.throwError(fmt::format("Pointer base function '{}' does not exist.", functionName), {}, node);
 
 
-            if (auto pointerPattern = dynamic_cast<ptrn::PatternPointer *>(pattern)) {
+            if (auto pointerPattern = dynamic_cast<ptrn::PatternPointer *>(pattern.get())) {
                 i128 pointerValue = pointerPattern->getPointedAtAddress();
 
                 if (function->parameterCount != api::FunctionParameterCount::exactly(1))
@@ -242,7 +242,8 @@ namespace pl::core::ast {
         }
     }
 
-    inline void applyVariableAttributes(Evaluator *evaluator, const ASTNode *node, ptrn::Pattern *pattern) {
+    inline void applyVariableAttributes(Evaluator *evaluator, const ASTNode *node, const std::shared_ptr<ptrn::Pattern> &pattern) {
+
         auto attributable = dynamic_cast<const Attributable *>(node);
         if (attributable == nullptr)
             err::E0008.throwError("Attributes cannot be applied to this statement.", {}, node);
@@ -250,6 +251,12 @@ namespace pl::core::ast {
         auto endOffset          = evaluator->dataOffset();
         evaluator->dataOffset() = pattern->getOffset();
         PL_ON_SCOPE_EXIT { evaluator->dataOffset() = endOffset; };
+
+        auto thisScope = evaluator->getScope(0).scope;
+        evaluator->pushScope(pattern, *thisScope);
+        PL_ON_SCOPE_EXIT {
+            evaluator->popScope();
+        };
 
         applyTypeAttributes(evaluator, node, pattern);
 

@@ -41,11 +41,9 @@ namespace pl::core::ast {
                     [](auto &&offset) -> u8 { return static_cast<u8>(offset); }
             }, literal->getValue());
 
-            auto pattern = std::make_unique<ptrn::PatternBitfieldField>(evaluator, evaluator->dataOffset(), 0, bitSize);
+            auto pattern = std::make_shared<ptrn::PatternBitfieldField>(evaluator, evaluator->dataOffset(), 0, bitSize);
             pattern->setPadding(this->isPadding());
             pattern->setVariableName(this->getName());
-
-            applyVariableAttributes(evaluator, this, pattern.get());
 
             return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>({ std::move(pattern) });
         }

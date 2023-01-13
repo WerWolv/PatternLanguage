@@ -74,7 +74,7 @@ namespace pl::core::ast {
 
             auto &sizePattern = sizePatterns.front();
 
-            auto pattern = std::make_unique<ptrn::PatternPointer>(evaluator, pointerStartOffset, sizePattern->getSize());
+            auto pattern = std::make_shared<ptrn::PatternPointer>(evaluator, pointerStartOffset, sizePattern->getSize());
             pattern->setVariableName(this->m_name);
             pattern->setPointerTypePattern(std::move(sizePattern));
 
@@ -86,7 +86,7 @@ namespace pl::core::ast {
                 evaluator->dataOffset() = pointerStartOffset;
 
                 pattern->setPointedAtAddress(pointerAddress);
-                applyVariableAttributes(evaluator, this, pattern.get());
+                applyVariableAttributes(evaluator, this, pattern);
 
                 evaluator->dataOffset() = pattern->getPointedAtAddress();
 

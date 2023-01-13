@@ -74,7 +74,7 @@ namespace pl::core::ast {
 
             pattern->setMembers(memberPatterns);
 
-            applyTypeAttributes(evaluator, this, pattern.get());
+            applyTypeAttributes(evaluator, this, pattern);
 
             return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
         }

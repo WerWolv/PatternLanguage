@@ -62,7 +62,7 @@ namespace pl::core::ast {
             evaluator->dataOffset() = startOffset + size;
             pattern->setMembers(memberPatterns);
 
-            applyTypeAttributes(evaluator, this, pattern.get());
+            applyTypeAttributes(evaluator, this, pattern);
 
             return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
         }

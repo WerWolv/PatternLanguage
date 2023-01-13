@@ -65,6 +65,8 @@ namespace pl::core::ast {
                             bitOffset += bitfieldField->getBitSize();
                             bitfieldField->setSize((bitOffset + 7) / 8);
                         }
+
+                        applyVariableAttributes(evaluator, entry, pattern);
                     }
                     bitfieldPattern->setSize((bitOffset + 7) / 8);
                 }
@@ -96,7 +98,7 @@ namespace pl::core::ast {
 
             evaluator->dataOffset() += bitfieldPattern->getSize();
 
-            applyTypeAttributes(evaluator, this, bitfieldPattern.get());
+            applyTypeAttributes(evaluator, this, bitfieldPattern);
 
             return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(bitfieldPattern));
         }

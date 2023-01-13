@@ -78,7 +78,7 @@ namespace pl::core::ast {
 
             auto type = this->m_type->evaluate(evaluator);
 
-            std::unique_ptr<ptrn::Pattern> pattern;
+            std::shared_ptr<ptrn::Pattern> pattern;
             if (dynamic_cast<ASTNodeBuiltinType *>(type.get()))
                 pattern = createStaticArray(evaluator);
             else if (auto attributable = dynamic_cast<Attributable *>(type.get())) {
@@ -93,7 +93,7 @@ namespace pl::core::ast {
             }
 
             pattern->setSection(evaluator->getSectionId());
-            applyVariableAttributes(evaluator, this, pattern.get());
+            applyVariableAttributes(evaluator, this, pattern);
 
             if (this->m_placementOffset != nullptr && !evaluator->isGlobalScope()) {
                 evaluator->dataOffset() = startOffset;
