@@ -53,7 +53,8 @@ namespace pl::ptrn {
 
         void setSection(u64 id) override {
             for (auto &entry : this->m_entries)
-                entry->setSection(id);
+                if (entry->getSection() == ptrn::Pattern::MainSectionId)
+                    entry->setSection(id);
 
             Pattern::setSection(id);
         }
@@ -108,7 +109,8 @@ namespace pl::ptrn {
 
             for (u64 i = start; i < std::min<u64>(end, this->m_entries.size()); i++) {
                 evaluator->setCurrentArrayIndex(i);
-                fn(i, this->m_entries[i].get());
+                if (!this->m_entries[i]->isPatternLocal())
+                    fn(i, this->m_entries[i].get());
             }
         }
 

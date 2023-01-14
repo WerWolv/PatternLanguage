@@ -92,14 +92,22 @@ namespace pl::core::ast {
                 err::E0001.throwError("Invalid type used in array variable declaration.", { }, this);
             }
 
-            pattern->setSection(evaluator->getSectionId());
+            if (this->m_placementSection != nullptr)
+                pattern->setSection(evaluator->getSectionId());
+
             applyVariableAttributes(evaluator, this, pattern);
 
             if (this->m_placementOffset != nullptr && !evaluator->isGlobalScope()) {
                 evaluator->dataOffset() = startOffset;
             }
 
-            return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
+            if (evaluator->getSectionId() == ptrn::Pattern::PatternLocalSectionId) {
+                evaluator->dataOffset() = startOffset;
+                this->execute(evaluator);
+                return { };
+            } else {
+                return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
+            }
         }
 
         FunctionResult execute(Evaluator *evaluator) const override {
@@ -281,7 +289,8 @@ namespace pl::core::ast {
                 for (auto &pattern : patterns) {
                     pattern->setVariableName(fmt::format("[{}]", entryIndex));
                     pattern->setEndian(arrayPattern->getEndian());
-                    pattern->setSection(arrayPattern->getSection());
+                    if (pattern->getSection() == ptrn::Pattern::MainSectionId)
+                        pattern->setSection(arrayPattern->getSection());
 
                     size += pattern->getSize();
                     entryIndex++;

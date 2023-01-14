@@ -100,13 +100,25 @@ namespace pl::core::ast {
                 pattern->setSection(evaluator->getSectionId());
             }
 
+            if (this->m_placementSection != nullptr)
+                pattern->setSection(evaluator->getSectionId());
+
+            applyVariableAttributes(evaluator, this, pattern);
+
+
             if (this->m_placementOffset != nullptr && !evaluator->isGlobalScope()) {
                 evaluator->dataOffset() = startOffset;
             } else {
                 evaluator->dataOffset() = pointerEndOffset;
             }
 
-            return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
+            if (evaluator->getSectionId() == ptrn::Pattern::PatternLocalSectionId) {
+                evaluator->dataOffset() = startOffset;
+                this->execute(evaluator);
+                return { };
+            } else {
+                return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
+            }
         }
 
     private:

@@ -95,6 +95,7 @@ namespace pl::core::ast {
             }
 
             if (evaluator->getSectionId() == ptrn::Pattern::PatternLocalSectionId) {
+                evaluator->dataOffset() = startOffset;
                 this->execute(evaluator);
                 return { };
             } else {
