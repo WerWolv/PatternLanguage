@@ -61,11 +61,11 @@ namespace pl::ptrn {
             if (size == 0)
                 return "\"\"";
 
-            std::vector<u8> buffer(size, 0x00);
+            std::string buffer(size, 0x00);
             this->getEvaluator()->readData(this->getOffset(), buffer.data(), size, this->getSection());
-            auto displayString = hlp::encodeByteString(buffer);
+            auto displayString = hlp::encodeByteString({ buffer.begin(), buffer.end() });
 
-            return this->formatDisplayValue(fmt::format("\"{0}\" {1}", displayString, size > this->getSize() ? "(truncated)" : ""), displayString);
+            return this->formatDisplayValue(fmt::format("\"{0}\" {1}", displayString, size > this->getSize() ? "(truncated)" : ""), buffer);
         }
 
         std::shared_ptr<Pattern> getEntry(size_t index) const override {
