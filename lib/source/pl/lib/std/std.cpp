@@ -30,6 +30,9 @@ namespace pl::lib::libstd::libstd {
                     [&](ptrn::Pattern *value) {
                         formatArgs.push_back(value->toString());
                     },
+                    [&](const std::string &value) {
+                        formatArgs.push_back(value.c_str());
+                    },
                     [&](auto &&value) {
                         formatArgs.push_back(value);
                     }
