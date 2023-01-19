@@ -341,7 +341,8 @@ namespace pl::core {
             auto copyToStorage = [&](const auto &value) {
                 u64 offset = (heapSection || patternLocalSection) ? pattern->getOffset() & 0xFFFF'FFFF : pattern->getOffset();
 
-                storage.resize(offset + pattern->getSize());
+                if (storage.size() < offset + pattern->getSize())
+                    storage.resize(offset + pattern->getSize());
                 std::memcpy(storage.data() + offset, &value, pattern->getSize());
 
                 if (this->isDebugModeEnabled())
