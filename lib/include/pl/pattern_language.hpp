@@ -40,6 +40,7 @@ namespace pl {
 
     namespace ptrn {
         class Pattern;
+        class Iteratable;
     }
 
     class PatternLanguage {
