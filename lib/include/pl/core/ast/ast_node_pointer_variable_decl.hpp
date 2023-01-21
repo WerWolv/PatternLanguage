@@ -103,8 +103,6 @@ namespace pl::core::ast {
             if (this->m_placementSection != nullptr)
                 pattern->setSection(evaluator->getSectionId());
 
-            applyVariableAttributes(evaluator, this, pattern);
-
 
             if (this->m_placementOffset != nullptr && !evaluator->isGlobalScope()) {
                 evaluator->dataOffset() = startOffset;
