@@ -120,8 +120,12 @@ namespace pl::ptrn {
             std::string result = this->getFormattedName();
             result += " { ";
 
-            for (const auto &member : this->m_members)
+            for (const auto &member : this->m_members) {
+                if (member->getVariableName().starts_with("$"))
+                    continue;
+
                 result += fmt::format("{} = {}, ", member->getVariableName(), member->toString());
+            }
 
             if (!this->m_members.empty()) {
                 // Remove trailing ", "

@@ -19,6 +19,7 @@
 #include <pl/patterns/pattern_union.hpp>
 #include <pl/patterns/pattern_enum.hpp>
 #include <pl/patterns/pattern_bitfield.hpp>
+#include <pl/patterns/pattern_padding.hpp>
 
 namespace pl::core::ast {
 
@@ -52,6 +53,7 @@ namespace pl::core::ast {
             if (this->getPath().size() == 1) {
                 if (auto name = std::get_if<std::string>(&this->getPath().front()); name != nullptr) {
                     if (*name == "$") return std::unique_ptr<ASTNode>(new ASTNodeLiteral(u128(evaluator->dataOffset())));
+                    else if (*name == "null") return std::unique_ptr<ASTNode>(new ASTNodeLiteral(new ptrn::PatternPadding(evaluator, 0, 0)));
 
                     auto parameterPack = evaluator->getScope(0).parameterPack;
                     if (parameterPack && *name == parameterPack->name)
@@ -209,6 +211,8 @@ namespace pl::core::ast {
 
                         if (name == "$")
                             err::E0003.throwError("Invalid use of '$' operator in rvalue.", {}, this);
+                        else if (name == "null")
+                            err::E0003.throwError("Invalid use of 'null' keyword in rvalue.", {}, this);
 
                         if (!found)
                             err::E0003.throwError(fmt::format("No variable named '{}' found.", name), {}, this);

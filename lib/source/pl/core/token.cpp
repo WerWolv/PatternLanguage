@@ -184,6 +184,7 @@ namespace pl::core {
                                       case Break: return "break";
                                       case Continue: return "continue";
                                       case Reference: return "ref";
+                                      case Null: return "null";
                                   }
 
                                   return "";

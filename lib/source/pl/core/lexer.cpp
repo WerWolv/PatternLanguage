@@ -534,6 +534,8 @@ namespace pl::core {
                         addToken(tkn::Keyword::Continue);
                     else if (identifier == "ref")
                         addToken(tkn::Keyword::Reference);
+                    else if (identifier == "null")
+                        addToken(tkn::Keyword::Null);
 
                     // Check for built-in types
                     else if (identifier == "u8")

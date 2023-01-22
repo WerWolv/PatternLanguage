@@ -198,8 +198,12 @@ namespace pl::ptrn {
 
             result += " { ";
 
-            for (const auto &field : this->m_fields)
+            for (const auto &field : this->m_fields) {
+                if (field->getVariableName().starts_with("$"))
+                    continue;
+
                 result += fmt::format("{} = {}, ", field->getVariableName(), field->toString());
+            }
 
             // Remove trailing ", "
             result.pop_back();
