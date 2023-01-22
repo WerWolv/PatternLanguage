@@ -129,7 +129,7 @@ namespace pl::core {
         std::unique_ptr<ast::ASTNode> parseMathematicalExpression(bool inTemplate = false);
 
         std::unique_ptr<ast::ASTNode> parseFunctionDefinition();
-        std::unique_ptr<ast::ASTNode> parseFunctionVariableDecl();
+        std::unique_ptr<ast::ASTNode> parseFunctionVariableDecl(bool constant = false);
         std::unique_ptr<ast::ASTNode> parseFunctionStatement(bool needsSemicolon = true);
         std::unique_ptr<ast::ASTNode> parseFunctionVariableAssignment(const std::string &lvalue);
         std::unique_ptr<ast::ASTNode> parseFunctionVariableCompoundAssignment(const std::string &lvalue);
@@ -147,8 +147,8 @@ namespace pl::core {
         std::shared_ptr<ast::ASTNodeTypeDecl> parseUsingDeclaration();
         std::unique_ptr<ast::ASTNode> parsePadding();
         std::unique_ptr<ast::ASTNodeTypeDecl> parsePointerSizeType();
-        std::unique_ptr<ast::ASTNode> parseMemberVariable(const std::shared_ptr<ast::ASTNodeTypeDecl> &type, bool allowSection, const std::string &identifier);
-        std::unique_ptr<ast::ASTNode> parseMemberArrayVariable(const std::shared_ptr<ast::ASTNodeTypeDecl> &type, bool allowSection);
+        std::unique_ptr<ast::ASTNode> parseMemberVariable(const std::shared_ptr<ast::ASTNodeTypeDecl> &type, bool allowSection, bool constant, const std::string &identifier);
+        std::unique_ptr<ast::ASTNode> parseMemberArrayVariable(const std::shared_ptr<ast::ASTNodeTypeDecl> &type, bool allowSection, bool constant);
         std::unique_ptr<ast::ASTNode> parseMemberPointerVariable(const std::shared_ptr<ast::ASTNodeTypeDecl> &type);
         std::unique_ptr<ast::ASTNode> parseMemberPointerArrayVariable(const std::shared_ptr<ast::ASTNodeTypeDecl> &type);
         std::unique_ptr<ast::ASTNode> parseMember();

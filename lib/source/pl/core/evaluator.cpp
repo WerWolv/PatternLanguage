@@ -38,7 +38,7 @@ namespace pl::core {
         };
     }
 
-    void Evaluator::createArrayVariable(const std::string &name, ast::ASTNode *type, size_t entryCount) {
+    void Evaluator::createArrayVariable(const std::string &name, ast::ASTNode *type, size_t entryCount, bool constant) {
         // A variable named _ gets treated as "don't care"
         if (name == "_")
             return;
@@ -78,10 +78,11 @@ namespace pl::core {
         if (this->isDebugModeEnabled())
             this->getConsole().log(LogConsole::Level::Debug, fmt::format("Creating local array variable '{} {}[{}]' at heap address 0x{:X}.", pattern->getTypeName(), pattern->getVariableName(), entryCount, pattern->getOffset()));
 
+        pattern->setConstant(constant);
         variables.push_back(std::unique_ptr<ptrn::Pattern>(pattern));
     }
 
-    void Evaluator::createVariable(const std::string &name, ast::ASTNode *type, const std::optional<Token::Literal> &value, bool outVariable, bool reference, bool templateVariable) {
+    void Evaluator::createVariable(const std::string &name, ast::ASTNode *type, const std::optional<Token::Literal> &value, bool outVariable, bool reference, bool templateVariable, bool constant) {
         // A variable named _ gets treated as "don't care"
         if (name == "_")
             return;
@@ -162,7 +163,9 @@ namespace pl::core {
                 this->m_patternLocalStorage[patternLocalAddress].data.resize(pattern->getSize());
             }
         }
+
         pattern->setReference(reference);
+        pattern->setConstant(constant);
 
         if (outVariable) {
             if (this->isGlobalScope())
@@ -305,6 +308,10 @@ namespace pl::core {
     }
 
     void Evaluator::setVariable(ptrn::Pattern *pattern, const Token::Literal &value) {
+        if (pattern->isConstant() && pattern->isInitialized())
+            err::E0010.throwError(fmt::format("Cannot modify constant variable '{}'.", pattern->getVariableName()));
+        pattern->setInitialized(true);
+
         if (pattern->isReference()) {
             if (Token::getLiteralType(value) == Token::LiteralType::Pattern)
                 return;

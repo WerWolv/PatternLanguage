@@ -10,8 +10,8 @@ namespace pl::core::ast {
     class ASTNodeVariableDecl : public ASTNode,
                                 public Attributable {
     public:
-        ASTNodeVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeDecl> type, std::unique_ptr<ASTNode> &&placementOffset = nullptr, std::unique_ptr<ASTNode> &&placementSection = nullptr, bool inVariable = false, bool outVariable = false)
-            : ASTNode(), m_name(std::move(name)), m_type(std::move(type)), m_placementOffset(std::move(placementOffset)), m_placementSection(std::move(placementSection)), m_inVariable(inVariable), m_outVariable(outVariable) { }
+        ASTNodeVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeDecl> type, std::unique_ptr<ASTNode> &&placementOffset = nullptr, std::unique_ptr<ASTNode> &&placementSection = nullptr, bool inVariable = false, bool outVariable = false, bool constant = false)
+            : ASTNode(), m_name(std::move(name)), m_type(std::move(type)), m_placementOffset(std::move(placementOffset)), m_placementSection(std::move(placementSection)), m_inVariable(inVariable), m_outVariable(outVariable), m_constant(constant) { }
 
         ASTNodeVariableDecl(const ASTNodeVariableDecl &other) : ASTNode(other), Attributable(other) {
             this->m_name = other.m_name;
@@ -25,6 +25,7 @@ namespace pl::core::ast {
 
             this->m_inVariable  = other.m_inVariable;
             this->m_outVariable = other.m_outVariable;
+            this->m_constant    = other.m_constant;
         }
 
         [[nodiscard]] std::unique_ptr<ASTNode> clone() const override {
@@ -106,7 +107,7 @@ namespace pl::core::ast {
         FunctionResult execute(Evaluator *evaluator) const override {
             evaluator->updateRuntime(this);
 
-            evaluator->createVariable(this->getName(), this->getType().get(), { }, this->m_outVariable);
+            evaluator->createVariable(this->getName(), this->getType().get(), { }, this->m_outVariable, false, false, this->m_constant);
 
             if (this->m_placementOffset != nullptr) {
                 const auto placementNode = this->m_placementOffset->evaluate(evaluator);
@@ -131,12 +132,17 @@ namespace pl::core::ast {
             return std::nullopt;
         }
 
+        [[nodiscard]] bool isConstant() const {
+            return this->m_constant;
+        }
+
     private:
         std::string m_name;
         std::shared_ptr<ASTNodeTypeDecl> m_type;
         std::unique_ptr<ASTNode> m_placementOffset, m_placementSection;
 
         bool m_inVariable = false, m_outVariable = false;
+        bool m_constant = false;
     };
 
 }

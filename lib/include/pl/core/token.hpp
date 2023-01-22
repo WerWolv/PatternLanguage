@@ -56,6 +56,7 @@ namespace pl::core {
             Continue,
             Reference,
             Null,
+            Const
         };
 
         enum class Operator {
@@ -256,6 +257,7 @@ namespace pl::core {
             constexpr auto Out          = createToken(core::Token::Type::Keyword, Token::Keyword::Out);
             constexpr auto Reference    = createToken(core::Token::Type::Keyword, Token::Keyword::Reference);
             constexpr auto Null         = createToken(core::Token::Type::Keyword, Token::Keyword::Null);
+            constexpr auto Const        = createToken(core::Token::Type::Keyword, Token::Keyword::Const);
 
         }
 

@@ -19,8 +19,8 @@ namespace pl::core::ast {
     class ASTNodeArrayVariableDecl : public ASTNode,
                                      public Attributable {
     public:
-        ASTNodeArrayVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeDecl> type, std::unique_ptr<ASTNode> &&size, std::unique_ptr<ASTNode> &&placementOffset = {}, std::unique_ptr<ASTNode> &&placementSection = {})
-            : ASTNode(), m_name(std::move(name)), m_type(std::move(type)), m_size(std::move(size)), m_placementOffset(std::move(placementOffset)), m_placementSection(std::move(placementSection)) { }
+        ASTNodeArrayVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeDecl> type, std::unique_ptr<ASTNode> &&size, std::unique_ptr<ASTNode> &&placementOffset = {}, std::unique_ptr<ASTNode> &&placementSection = {}, bool constant = false)
+            : ASTNode(), m_name(std::move(name)), m_type(std::move(type)), m_size(std::move(size)), m_placementOffset(std::move(placementOffset)), m_placementSection(std::move(placementSection)), m_constant(constant) { }
 
         ASTNodeArrayVariableDecl(const ASTNodeArrayVariableDecl &other) : ASTNode(other), Attributable(other) {
             this->m_name = other.m_name;
@@ -127,7 +127,7 @@ namespace pl::core::ast {
                 [](auto &&size) -> i128 { return size; }
             }, sizeLiteral->getValue());
 
-            evaluator->createArrayVariable(this->m_name, this->m_type.get(), entryCount);
+            evaluator->createArrayVariable(this->m_name, this->m_type.get(), entryCount, this->m_constant);
 
             if (this->m_placementOffset != nullptr) {
                 const auto placementNode = this->m_placementOffset->evaluate(evaluator);
@@ -168,11 +168,16 @@ namespace pl::core::ast {
             return this->m_placementOffset;
         }
 
+        [[nodiscard]] bool isConstant() const {
+            return this->m_constant;
+        }
+
     private:
         std::string m_name;
         std::shared_ptr<ASTNodeTypeDecl> m_type;
         std::unique_ptr<ASTNode> m_size;
         std::unique_ptr<ASTNode> m_placementOffset, m_placementSection;
+        bool m_constant;
 
         std::unique_ptr<ptrn::Pattern> createStaticArray(Evaluator *evaluator) const {
             u64 startOffset = evaluator->dataOffset();

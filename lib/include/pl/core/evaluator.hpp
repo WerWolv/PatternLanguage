@@ -265,8 +265,8 @@ namespace pl::core {
 
         void createParameterPack(const std::string &name, const std::vector<Token::Literal> &values);
 
-        void createArrayVariable(const std::string &name, ast::ASTNode *type, size_t entryCount);
-        void createVariable(const std::string &name, ast::ASTNode *type, const std::optional<Token::Literal> &value = std::nullopt, bool outVariable = false, bool reference = false, bool templateVariable = false);
+        void createArrayVariable(const std::string &name, ast::ASTNode *type, size_t entryCount, bool constant = false);
+        void createVariable(const std::string &name, ast::ASTNode *type, const std::optional<Token::Literal> &value = std::nullopt, bool outVariable = false, bool reference = false, bool templateVariable = false, bool constant = false);
         std::shared_ptr<ptrn::Pattern>& getVariableByName(const std::string &name);
         void setVariable(const std::string &name, const Token::Literal &value);
         void setVariable(ptrn::Pattern *pattern, const Token::Literal &value);

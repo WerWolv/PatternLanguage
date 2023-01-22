@@ -185,6 +185,7 @@ namespace pl::core {
                                       case Continue: return "continue";
                                       case Reference: return "ref";
                                       case Null: return "null";
+                                      case Const: return "const";
                                   }
 
                                   return "";

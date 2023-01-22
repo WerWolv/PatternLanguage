@@ -55,6 +55,8 @@ namespace pl::ptrn {
             this->m_color = other.m_color;
             this->m_manualColor = other.m_manualColor;
             this->m_section = other.m_section;
+            this->m_initialized = other.m_initialized;
+            this->m_constant = other.m_constant;
 
             if (other.m_variableName != nullptr)
                 this->m_variableName = std::make_unique<std::string>(*other.m_variableName);
@@ -405,6 +407,22 @@ namespace pl::ptrn {
             return this->m_evaluator;
         }
 
+        [[nodiscard]] bool isConstant() const {
+            return this->m_constant;
+        }
+
+        void setConstant(bool constant) {
+            this->m_constant = constant;
+        }
+
+        [[nodiscard]] bool isInitialized() const {
+            return this->m_initialized;
+        }
+
+        void setInitialized(bool initialized) {
+            this->m_initialized = initialized;
+        }
+
     protected:
         std::optional<std::endian> m_endian;
 
@@ -426,6 +444,8 @@ namespace pl::ptrn {
         u32 m_color = 0x00;
 
         bool m_reference = false;
+        bool m_constant = false;
+        bool m_initialized = false;
 
         bool m_manualColor = false;
     };
