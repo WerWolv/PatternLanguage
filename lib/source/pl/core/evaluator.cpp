@@ -309,7 +309,7 @@ namespace pl::core {
 
     void Evaluator::setVariable(ptrn::Pattern *pattern, const Token::Literal &value) {
         if (pattern->isConstant() && pattern->isInitialized())
-            err::E0010.throwError(fmt::format("Cannot modify constant variable '{}'.", pattern->getVariableName()));
+            err::E0011.throwError(fmt::format("Cannot modify constant variable '{}'.", pattern->getVariableName()));
         pattern->setInitialized(true);
 
         if (pattern->isReference()) {
