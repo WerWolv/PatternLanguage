@@ -64,8 +64,10 @@ namespace pl::core {
             return hlp::trim(value);
         };
 
-        auto getDirective = [&](std::string directive) {
-            directive += " ";
+        auto getDirective = [&](std::string directive, bool hasArgs = true) {
+            if (hasArgs)
+                directive += " ";
+
             if (code.substr(offset, directive.length()) == directive) {
                 offset += directive.length();
                 return true;
@@ -131,7 +133,7 @@ namespace pl::core {
                             ifDefs.push_back(false);
                         else
                             ifDefs.push_back(!this->m_defines.contains(*defineName));
-                    } else if (getDirective("endif")) {
+                    } else if (getDirective("endif", false)) {
                          if (ifDefs.empty())
                              err::M0003.throwError("#endif without #ifdef.");
                          else
