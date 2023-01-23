@@ -129,7 +129,7 @@ namespace pl {
             return false;
         }
 
-        auto returnCode = core::Token::literalToSigned(evaluator->getMainResult().value_or(0));
+        auto returnCode = evaluator->getMainResult().value_or(0).toSigned();
         evaluator->getConsole().log(core::LogConsole::Level::Info, fmt::format("Pattern exited with code: {}", returnCode));
 
         if (checkResult && returnCode != 0) {

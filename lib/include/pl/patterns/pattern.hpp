@@ -102,7 +102,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string getComment() const {
             if (const auto &arguments = this->getAttributeArguments("comment"); !arguments.empty())
-                return core::Token::literalToString(arguments.front(), true);
+                return arguments.front().toString(true);
             else
                 return "";
         }
@@ -147,7 +147,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string getDisplayName() const {
             if (const auto &arguments = this->getAttributeArguments("name"); !arguments.empty())
-                return core::Token::literalToString(arguments.front(), true);
+                return arguments.front().toString(true);
             else
                 return this->getVariableName();
         }
@@ -155,21 +155,21 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string getTransformFunction() const {
             if (const auto &arguments = this->getAttributeArguments("transform"); !arguments.empty())
-                return core::Token::literalToString(arguments.front(), true);
+                return arguments.front().toString(true);
             else
                 return "";
         }
         void setTransformFunction(const std::string &functionName) { this->addAttribute("transform", { functionName }); }
         [[nodiscard]] std::string getReadFormatterFunction() const {
             if (const auto &arguments = this->getAttributeArguments("format_read"); !arguments.empty())
-                return core::Token::literalToString(arguments.front(), true);
+                return arguments.front().toString(true);
             else
                 return "";
         }
         void setReadFormatterFunction(const std::string &functionName) { this->addAttribute("format_read", { functionName }); }
         [[nodiscard]] std::string getWriteFormatterFunction() const {
             if (const auto &arguments = this->getAttributeArguments("format_write"); !arguments.empty())
-                return core::Token::literalToString(arguments.front(), true);
+                return arguments.front().toString(true);
             else
                 return "";
         }
@@ -280,7 +280,7 @@ namespace pl::ptrn {
                         auto result = function->func(this->m_evaluator, { literal });
 
                         if (result.has_value()) {
-                            return core::Token::literalToString(*result, true);
+                            return result->toString(true);
                         } else {
                             return "";
                         }
@@ -319,7 +319,7 @@ namespace pl::ptrn {
         }
 
         virtual std::vector<u8> getBytesOf(const core::Token::Literal &value) const {
-            auto bytes = core::Token::literalToBytes(value);
+            auto bytes = value.toBytes();
             if (this->getEndian() == std::endian::big)
                 std::reverse(bytes.begin(), bytes.end());
             bytes.resize(this->getSize());

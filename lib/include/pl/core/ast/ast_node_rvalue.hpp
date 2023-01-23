@@ -66,7 +66,7 @@ namespace pl::core::ast {
                             auto offsetNode = (*arraySegment)->evaluate(evaluator);
                             auto offsetLiteral = dynamic_cast<ASTNodeLiteral*>(offsetNode.get());
                             if (offsetLiteral != nullptr) {
-                                auto offset = Token::literalToUnsigned(offsetLiteral->getValue());
+                                auto offset = offsetLiteral->getValue().toUnsigned();
 
                                 u8 byte = 0x00;
                                 evaluator->readData(offset, &byte, 1, ptrn::Pattern::MainSectionId);

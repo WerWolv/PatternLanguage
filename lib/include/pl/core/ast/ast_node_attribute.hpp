@@ -111,7 +111,7 @@ namespace pl::core::ast {
             auto literalNode = value->evaluate(evaluator);
             auto literal = static_cast<ASTNodeLiteral*>(literalNode.get());
 
-            return Token::literalToString(literal->getValue(), true);
+            return literal->getValue().toString(true);
         }
 
     }
@@ -154,7 +154,7 @@ namespace pl::core::ast {
             pattern->setWriteFormatterFunction(functionName);
         }
 
-        if (const auto &value = attributable->getFirstAttributeValue({ "format_entries", "format_entries_read" }); value) {
+        if (const auto &value = attributable->getFirstAttributeValue({ "format_entries", "format_read_entries" }); value) {
             auto functionName = getAttributeValueAsString(value, evaluator);
             auto function = evaluator->findFunction(functionName);
             if (!function.has_value())
@@ -172,7 +172,7 @@ namespace pl::core::ast {
             }
         }
 
-        if (const auto &arguments = attributable->getAttributeArguments("format_entries_write"); arguments.size() == 1) {
+        if (const auto &arguments = attributable->getAttributeArguments("format_write_entries"); arguments.size() == 1) {
             auto functionName = getAttributeValueAsString(arguments.front(), evaluator);
             auto function = evaluator->findFunction(functionName);
             if (!function.has_value())
@@ -238,7 +238,7 @@ namespace pl::core::ast {
                 if (!result.has_value())
                     err::E0009.throwError(fmt::format("Pointer base function '{}' did not return a value.", functionName), "Try adding a 'return <value>;' statement in all code paths.", node);
 
-                pointerPattern->rebase(Token::literalToSigned(result.value()));
+                pointerPattern->rebase(result.value().toSigned());
             } else {
                 err::E0009.throwError("The [[pointer_base]] attribute can only be applied to pointer types.", {}, node);
             }

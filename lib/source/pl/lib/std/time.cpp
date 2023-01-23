@@ -54,7 +54,7 @@ namespace pl::lib::libstd::time {
 
             /* to_local(time) */
             runtime.addFunction(nsStdTime, "to_local", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
-                time_t time = Token::literalToUnsigned(params[0]);
+                time_t time = params[0].toUnsigned();
 
                 try {
                     auto localTime = fmt::localtime(time);
@@ -68,7 +68,7 @@ namespace pl::lib::libstd::time {
 
             /* to_utc(time) */
             runtime.addFunction(nsStdTime, "to_utc", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
-                time_t time = Token::literalToUnsigned(params[0]);
+                time_t time = params[0].toUnsigned();
 
                 try {
                     auto gmTime = fmt::gmtime(time);
@@ -81,7 +81,7 @@ namespace pl::lib::libstd::time {
 
             /* to_epoch(structured_time) */
             runtime.addFunction(nsStdTime, "to_epoch", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
-                u128 structuredTime = Token::literalToUnsigned(params[0]);
+                u128 structuredTime = params[0].toUnsigned();
 
                 tm time = unpackTMValue(structuredTime);
 
@@ -90,8 +90,8 @@ namespace pl::lib::libstd::time {
 
             /* format(format_string, structured_time) */
             runtime.addFunction(nsStdTime, "format", FunctionParameterCount::exactly(2), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
-                auto formatString = Token::literalToString(params[0], false);
-                u128 structuredTime = Token::literalToUnsigned(params[1]);
+                auto formatString = params[0].toString(false);
+                u128 structuredTime = params[1].toUnsigned();
 
                 auto time = unpackTMValue(structuredTime);
 

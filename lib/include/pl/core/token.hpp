@@ -156,7 +156,29 @@ namespace pl::core {
             constexpr bool operator==(const DocComment &) const = default;
         };
 
-        using Literal    = std::variant<char, bool, u128, i128, double, std::string, ptrn::Pattern *>;
+        struct Literal : public std::variant<char, bool, u128, i128, double, std::string, ptrn::Pattern *> {
+            using variant::variant;
+
+            [[nodiscard]] ptrn::Pattern* toPattern() const;
+            [[nodiscard]] u128 toUnsigned() const;
+            [[nodiscard]] i128 toSigned() const;
+            [[nodiscard]] double toFloatingPoint() const;
+            [[nodiscard]] char toCharacter() const;
+            [[nodiscard]] bool toBoolean() const;
+            [[nodiscard]] std::string toString(bool cast = false) const;
+            [[nodiscard]] std::vector<u8> toBytes() const;
+
+            [[nodiscard]] bool isPattern() const;
+            [[nodiscard]] bool isUnsigned() const;
+            [[nodiscard]] bool isSigned() const;
+            [[nodiscard]] bool isFloatingPoint() const;
+            [[nodiscard]] bool isCharacter() const;
+            [[nodiscard]] bool isBoolean() const;
+            [[nodiscard]] bool isString() const;
+
+            [[nodiscard]] ValueType getType() const;
+        };
+
         using ValueTypes = std::variant<Keyword, Identifier, Operator, Literal, ValueType, Separator, DocComment>;
 
         constexpr Token(Type type, auto value, u32 line, u32 column) : type(type), value(std::move(value)), line(line), column(column) {}
@@ -180,39 +202,6 @@ namespace pl::core {
         [[nodiscard]] constexpr static inline u32 getTypeSize(const ValueType &type) {
             return static_cast<u32>(type) >> 4;
         }
-
-        [[nodiscard]] constexpr static inline Token::ValueType getType(const Token::Literal &literal) {
-            return std::visit(hlp::overloaded {
-                [](char) { return Token::ValueType::Character; },
-                [](bool) { return Token::ValueType::Boolean; },
-                [](u128) { return Token::ValueType::Unsigned128Bit; },
-                [](i128) { return Token::ValueType::Signed128Bit; },
-                [](double) { return Token::ValueType::Double; },
-                [](const std::string &) { return Token::ValueType::String; },
-                [](const ptrn::Pattern *) { return Token::ValueType::CustomType; }
-            }, literal);
-        }
-
-        static ptrn::Pattern* literalToPattern(const core::Token::Literal &literal);
-        static u128 literalToUnsigned(const core::Token::Literal &literal);
-        static i128 literalToSigned(const core::Token::Literal &literal);
-        static double literalToFloatingPoint(const core::Token::Literal &literal);
-        static char literalToCharacter(const core::Token::Literal &literal);
-        static bool literalToBoolean(const core::Token::Literal &literal);
-        static std::string literalToString(const core::Token::Literal &literal, bool cast);
-        static std::vector<u8> literalToBytes(const core::Token::Literal &literal);
-
-        enum class LiteralType {
-            Character,
-            Boolean,
-            Unsigned,
-            Signed,
-            FloatingPoint,
-            String,
-            Pattern
-        };
-
-        static LiteralType getLiteralType(const core::Token::Literal &literal);
 
         [[nodiscard]] static const char* getTypeName(core::Token::ValueType type);
 

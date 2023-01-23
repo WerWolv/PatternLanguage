@@ -107,7 +107,7 @@ namespace pl::core::ast {
                 evaluator->getConsole().log(LogConsole::Level::Debug, fmt::format("Calling function {}({}).", functionName, [&]{
                     std::string parameters;
                     for (const auto &param : evaluatedParams)
-                        parameters += fmt::format("{}, ", Token::literalToString(param, true));
+                        parameters += fmt::format("{}, ", param.toString(true));
 
                     if (!evaluatedParams.empty())
                         parameters.resize(parameters.size() - 2);

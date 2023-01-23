@@ -19,9 +19,9 @@ namespace pl::lib::libstd::hash {
         {
             /* crc32(pattern, init, poly) */
             runtime.addFunction(nsStdHash, "crc32", FunctionParameterCount::exactly(3), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto pattern = Token::literalToPattern(params[0]);
-                auto init    = Token::literalToUnsigned(params[1]);
-                auto poly    = Token::literalToUnsigned(params[2]);
+                auto pattern = params[0].toPattern();
+                auto init    = params[1].toUnsigned();
+                auto poly    = params[2].toUnsigned();
 
                 // Lookup table generation
                 const auto table = [&] {

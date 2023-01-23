@@ -48,7 +48,7 @@ namespace pl::core::ast {
                 if (id == nullptr)
                     err::E0010.throwError("Cannot use void expression as section identifier.", {}, this);
 
-                evaluator->pushSectionId(Token::literalToUnsigned(id->getValue()));
+                evaluator->pushSectionId(id->getValue().toUnsigned());
             } else {
                 scopeGuard.release();
             }
@@ -81,7 +81,7 @@ namespace pl::core::ast {
             auto pointerEndOffset = evaluator->dataOffset();
 
             {
-                i128 pointerAddress = core::Token::literalToSigned(pattern->getValue());
+                i128 pointerAddress = pattern->getValue().toSigned();
 
                 evaluator->dataOffset() = pointerStartOffset;
 

@@ -156,7 +156,7 @@ namespace pl::ptrn {
         }
 
         std::string getFormattedValue() override {
-            auto data = core::Token::literalToSigned(this->getValue());
+            auto data = this->getValue().toSigned();
             return this->formatDisplayValue(fmt::format("*(0x{0:X})", data), this->getValue());
         }
 

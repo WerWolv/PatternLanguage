@@ -45,8 +45,8 @@ int runTests(int argc, char **argv) {
 
 
     runtime.addFunction({ "std" }, "assert", api::FunctionParameterCount::exactly(2), [](core::Evaluator *ctx, auto params) -> std::optional<core::Token::Literal> {
-        auto condition = core::Token::literalToBoolean(params[0]);
-        auto message   = core::Token::literalToString(params[1], false);
+        auto condition = params[0].toBoolean();
+        auto message   = params[1].toString(false);
 
         if (!condition)
             core::err::E0012.throwError(fmt::format("assertion failed \"{0}\"", message));

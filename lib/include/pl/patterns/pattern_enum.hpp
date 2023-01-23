@@ -66,20 +66,20 @@ namespace pl::ptrn {
         }
 
         std::string getFormattedValue() override {
-            auto value = core::Token::literalToUnsigned(this->getValue());
+            auto value = this->getValue().toUnsigned();
 
             return fmt::format("{} (0x{:0{}X})", this->toString(), value, this->getSize() * 2);
         }
 
         [[nodiscard]] std::string toString() const override {
-            u64 value = core::Token::literalToUnsigned(this->getValue());
+            u64 value = this->getValue().toUnsigned();
 
             std::string result = this->getTypeName() + "::";
 
             bool foundValue = false;
             for (auto &entry : this->getEnumValues()) {
-                auto min = core::Token::literalToUnsigned(entry.min);
-                auto max = core::Token::literalToUnsigned(entry.max);
+                auto min = entry.min.toUnsigned();
+                auto max = entry.max.toUnsigned();
 
                 if (value >= min && value <= max) {
                     result += entry.name;

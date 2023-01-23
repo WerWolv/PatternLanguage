@@ -58,7 +58,7 @@ namespace pl::core::ast {
                 if (id == nullptr)
                     err::E0010.throwError("Cannot use void expression as section identifier.", {}, this);
 
-                evaluator->pushSectionId(Token::literalToUnsigned(id->getValue()));
+                evaluator->pushSectionId(id->getValue().toUnsigned());
             } else {
                 scopeGuard.release();
             }
@@ -143,10 +143,10 @@ namespace pl::core::ast {
                     if (sectionLiteral == nullptr)
                         err::E0002.throwError("Cannot use void expression as section identifier.", {}, this);
 
-                    section = Token::literalToUnsigned(sectionLiteral->getValue());
+                    section = sectionLiteral->getValue().toUnsigned();
                 }
 
-                evaluator->setVariableAddress(this->getName(), Token::literalToUnsigned(offsetLiteral->getValue()), section);
+                evaluator->setVariableAddress(this->getName(), offsetLiteral->getValue().toUnsigned(), section);
             }
 
             return std::nullopt;

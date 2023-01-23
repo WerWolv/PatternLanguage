@@ -4,56 +4,56 @@
 
 namespace pl::core {
 
-    ptrn::Pattern* Token::literalToPattern(const core::Token::Literal &literal) {
+    ptrn::Pattern* Token::Literal::toPattern() const {
         return std::visit(hlp::overloaded {
                               [&](ptrn::Pattern *result) -> ptrn::Pattern* { return result; },
                               [&](const std::string &) -> ptrn::Pattern* { err::E0004.throwError("Cannot cast value to type 'pattern'."); },
                               [](auto &&) ->  ptrn::Pattern* { err::E0004.throwError("Cannot cast value to type 'pattern'."); }
-                          }, literal);
+                          }, *this);
     }
 
-    u128 Token::literalToUnsigned(const core::Token::Literal &literal) {
+    u128 Token::Literal::toUnsigned() const {
         return std::visit(hlp::overloaded {
                               [&](ptrn::Pattern *) -> u128 { err::E0004.throwError("Cannot cast value to type 'integer'."); },
                               [&](const std::string &) -> u128 { err::E0004.throwError("Cannot cast value to type 'integer'."); },
                               [](auto &&result) -> u128 { return result; }
-                          }, literal);
+                          }, *this);
     }
 
-    i128 Token::literalToSigned(const core::Token::Literal &literal) {
+    i128 Token::Literal::toSigned() const {
         return std::visit(hlp::overloaded {
                               [](const std::string &) -> i128 { err::E0004.throwError("Cannot cast value to type 'integer'."); },
                               [](ptrn::Pattern *) -> i128 { err::E0004.throwError("Cannot cast value to type 'integer'."); },
                               [](auto &&result) -> i128 { return result; }
-                          }, literal);
+                          }, *this);
     }
 
-    double Token::literalToFloatingPoint(const core::Token::Literal &literal) {
+    double Token::Literal::toFloatingPoint() const {
         return std::visit(hlp::overloaded {
                               [](const std::string &) -> double { err::E0004.throwError("Cannot cast value to type 'floating point'."); },
                               [](ptrn::Pattern *) -> double { err::E0004.throwError("Cannot cast value to type 'floating point'."); },
                               [](auto &&result) -> double { return result; }
-                          }, literal);
+                          }, *this);
     }
 
-    char Token::literalToCharacter(const core::Token::Literal &literal) {
+    char Token::Literal::toCharacter() const {
         return std::visit(hlp::overloaded {
                               [&](ptrn::Pattern *) -> char { err::E0004.throwError("Cannot cast value to type 'char'."); },
                               [&](const std::string &) -> char { err::E0004.throwError("Cannot cast value to type 'char'."); },
                               [](auto &&result) -> char { return result; }
-                          }, literal);
+                          }, *this);
     }
 
-    bool Token::literalToBoolean(const core::Token::Literal &literal) {
+    bool Token::Literal::toBoolean() const {
         return std::visit(hlp::overloaded {
                               [](const std::string &) -> bool { err::E0004.throwError("Cannot cast value to type 'bool'."); },
                               [](ptrn::Pattern *) -> bool { err::E0004.throwError("Cannot cast value to type 'bool'."); },
                               [](auto &&result) -> bool { return result != 0; }
-                          },  literal);
+                          },  *this);
     }
 
-    std::string Token::literalToString(const core::Token::Literal &literal, bool cast) {
-        if (!cast && std::get_if<std::string>(&literal) == nullptr)
+    std::string Token::Literal::toString(bool cast) const {
+        if (!cast && std::get_if<std::string>(this) == nullptr)
             err::E0004.throwError("Expected value of type 'string'.");
 
         return std::visit(hlp::overloaded {
@@ -64,27 +64,55 @@ namespace pl::core {
                               [](const char &result) -> std::string { return { result }; },
                               [](ptrn::Pattern *result) -> std::string { return result->toString(); },
                               [](auto &&result) -> std::string { return std::to_string(result); }
-                          }, literal);
+                          }, *this);
     }
 
-    std::vector<u8> Token::literalToBytes(const core::Token::Literal &literal) {
+    std::vector<u8> Token::Literal::toBytes() const {
         return std::visit(hlp::overloaded {
                 [](const std::string &result) -> std::vector<u8> { return { result.begin(), result.end() }; },
                 [](ptrn::Pattern *result) -> std::vector<u8> { return result->getBytes(); },
                 [](auto &&result) -> std::vector<u8> { return hlp::toBytes(result); }
-        }, literal);
+        }, *this);
     }
 
-    Token::LiteralType Token::getLiteralType(const core::Token::Literal &literal) {
+    bool Token::Literal::isUnsigned() const {
+        return std::holds_alternative<u128>(*this);
+    }
+
+    bool Token::Literal::isSigned() const {
+        return std::holds_alternative<i128>(*this);
+    }
+
+    bool Token::Literal::isFloatingPoint() const {
+        return std::holds_alternative<double>(*this);
+    }
+
+    bool Token::Literal::isCharacter() const {
+        return std::holds_alternative<char>(*this);
+    }
+
+    bool Token::Literal::isBoolean() const {
+        return std::holds_alternative<bool>(*this);
+    }
+
+    bool Token::Literal::isString() const {
+        return std::holds_alternative<std::string>(*this);
+    }
+
+    bool Token::Literal::isPattern() const {
+        return std::holds_alternative<ptrn::Pattern *>(*this);
+    }
+
+    Token::ValueType Token::Literal::getType() const {
         return std::visit(hlp::overloaded {
-                              [](const std::string &) -> LiteralType { return LiteralType::String; },
-                              [](ptrn::Pattern *) -> LiteralType { return LiteralType::Pattern; },
-                              [](u128) -> LiteralType { return LiteralType::Unsigned; },
-                              [](i128) -> LiteralType { return LiteralType::Signed; },
-                              [](double) -> LiteralType { return LiteralType::FloatingPoint; },
-                              [](char) -> LiteralType { return LiteralType::Character; },
-                              [](bool) -> LiteralType { return LiteralType::Boolean; }
-                          }, literal);
+                [](char) { return Token::ValueType::Character; },
+                [](bool) { return Token::ValueType::Boolean; },
+                [](u128) { return Token::ValueType::Unsigned128Bit; },
+                [](i128) { return Token::ValueType::Signed128Bit; },
+                [](double) { return Token::ValueType::Double; },
+                [](const std::string &) { return Token::ValueType::String; },
+                [](const ptrn::Pattern *) { return Token::ValueType::CustomType; }
+        }, *this);
     }
 
     [[nodiscard]] std::string Token::getFormattedType() const {
@@ -249,7 +277,7 @@ namespace pl::core {
                                   return fmt::format("'{}'", identifier.get());
                               },
                               [](const Token::Literal &literal) -> std::string  {
-                                  return fmt::format("'{}'", Token::literalToString(literal, true));
+                                  return fmt::format("'{}'", literal.toString(true));
                               },
                               [](Token::ValueType valueType) -> std::string  {
                                   return getTypeName(valueType);

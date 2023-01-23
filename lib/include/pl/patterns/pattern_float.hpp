@@ -36,7 +36,7 @@ namespace pl::ptrn {
         }
 
         std::vector<u8> getBytesOf(const core::Token::Literal &value) const override {
-            auto doubleValue = core::Token::literalToFloatingPoint(value);
+            auto doubleValue = value.toFloatingPoint();
             std::vector<u8> result;
 
             result.resize(this->getSize());
@@ -65,7 +65,7 @@ namespace pl::ptrn {
         }
 
         std::string getFormattedValue() override {
-            auto value = core::Token::literalToFloatingPoint(this->getValue());
+            auto value = this->getValue().toFloatingPoint();
             if (this->getSize() == 4) {
                 auto f32 = static_cast<float>(value);
                 u32 integerResult = 0;
@@ -83,7 +83,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string toString() const override {
             auto value = this->getValue();
-            auto result = fmt::format("{}", core::Token::literalToFloatingPoint(value));
+            auto result = fmt::format("{}", value.toFloatingPoint());
 
             return this->formatDisplayValue(result, value);
         }

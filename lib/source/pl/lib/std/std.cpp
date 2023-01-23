@@ -18,7 +18,7 @@ namespace pl::lib::libstd::libstd {
         std::string format(const auto &params) {
             using namespace pl::core;
 
-            auto format = Token::literalToString(params[0], true);
+            auto format = params[0].toString(true);
             std::string message;
 
             fmt::dynamic_format_arg_store<fmt::format_context> formatArgs;
@@ -68,7 +68,7 @@ namespace pl::lib::libstd::libstd {
 
             /* env(name) */
             runtime.addFunction(nsStd, "env", FunctionParameterCount::exactly(1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto name = Token::literalToString(params[0], false);
+                auto name = params[0].toString(false);
 
                 auto env = ctx->getEnvVariable(name);
                 if (env)
@@ -86,14 +86,14 @@ namespace pl::lib::libstd::libstd {
 
             /* error(message) */
             runtime.addFunction(nsStd, "error", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
-                err::E0012.throwError(Token::literalToString(params[0], true));
+                err::E0012.throwError(params[0].toString(true));
 
                 return std::nullopt;
             });
 
             /* warning(message) */
             runtime.addFunction(nsStd, "warning", FunctionParameterCount::exactly(1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                ctx->getConsole().log(LogConsole::Level::Warning, Token::literalToString(params[0], true));
+                ctx->getConsole().log(LogConsole::Level::Warning, params[0].toString(true));
 
                 return std::nullopt;
             });

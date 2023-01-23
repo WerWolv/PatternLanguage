@@ -64,13 +64,13 @@ namespace pl::ptrn {
 
         std::string getFormattedValue() override {
             auto literal = this->getValue();
-            auto value = core::Token::literalToUnsigned(this->getValue());
+            auto value =this->getValue().toUnsigned();
 
             return this->formatDisplayValue(fmt::format("{0} (0x{1:X})", value, value), literal);
         }
 
         [[nodiscard]] std::string toString() const override {
-            auto result = fmt::format("{}", core::Token::literalToUnsigned(this->getValue()));
+            auto result = fmt::format("{}", this->getValue().toUnsigned());
 
             return this->formatDisplayValue(result, this->getValue());
         }
@@ -226,7 +226,7 @@ namespace pl::ptrn {
             for (const auto &pattern : this->m_fields) {
                 auto field = static_cast<PatternBitfieldField *>(pattern.get());
 
-                auto fieldValue = core::Token::literalToUnsigned(field->getValue());
+                auto fieldValue = field->getValue().toUnsigned();
 
                 if (fieldValue > 0) {
                     if (field->getBitSize() == 1)

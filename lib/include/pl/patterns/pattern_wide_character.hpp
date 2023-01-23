@@ -28,7 +28,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string toString() const override {
             auto value = this->getValue();
-            char16_t character = core::Token::literalToUnsigned(value);
+            char16_t character = value.toUnsigned();
             character = hlp::changeEndianess(character, this->getEndian());
 
             auto result = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>("???").to_bytes(character);

@@ -32,7 +32,7 @@ namespace pl::ptrn {
         }
 
         std::string getFormattedValue() override {
-            const u8 character = core::Token::literalToCharacter(this->getValue());
+            const u8 character = this->getValue().toCharacter();
             return this->formatDisplayValue(fmt::format("'{0}'", hlp::encodeByteString({ character })), this->getValue());
         }
 
@@ -44,7 +44,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string toString() const override {
             auto value = this->getValue();
-            auto result = fmt::format("{}", hlp::encodeByteString({ u8(core::Token::literalToCharacter(value)) }));
+            auto result = fmt::format("{}", hlp::encodeByteString({ u8(value.toCharacter()) }));
 
             return this->formatDisplayValue(result, value);
         }

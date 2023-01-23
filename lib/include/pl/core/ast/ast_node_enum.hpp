@@ -42,8 +42,8 @@ namespace pl::core::ast {
                     err::E0010.throwError("Cannot use void expression as enum value.", {}, this);
 
                 // Check that the enum values can be converted to integers
-                (void)Token::literalToUnsigned(minLiteral->getValue());
-                (void)Token::literalToUnsigned(maxLiteral->getValue());
+                (void)minLiteral->getValue().toUnsigned();
+                (void)maxLiteral->getValue().toUnsigned();
 
                 enumEntries.push_back(ptrn::PatternEnum::EnumValue{
                     minLiteral->getValue(),

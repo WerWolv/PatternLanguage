@@ -32,7 +32,7 @@ namespace pl::ptrn {
         }
 
         std::string getFormattedValue() override {
-            switch (core::Token::literalToUnsigned(this->getValue())) {
+            switch (this->getValue().toUnsigned()) {
                 case 0: return "false";
                 case 1: return "true";
                 default: return "true*";
@@ -47,7 +47,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string toString() const override {
             auto value = this->getValue();
-            auto result = fmt::format("{}", core::Token::literalToBoolean(value) ? "true" : "false");
+            auto result = fmt::format("{}", value.toBoolean() ? "true" : "false");
 
             return this->formatDisplayValue(result, value);
         }

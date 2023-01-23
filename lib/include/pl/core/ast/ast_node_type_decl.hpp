@@ -81,7 +81,7 @@ namespace pl::core::ast {
                 if (auto lvalue = dynamic_cast<ASTNodeLValueAssignment *>(templateParameter.get())) {
                     auto value = lvalue->getRValue()->evaluate(evaluator);
                     if (auto literal = dynamic_cast<ASTNodeLiteral*>(value.get()); literal != nullptr) {
-                        evaluator->createVariable(lvalue->getLValueName(), new ASTNodeBuiltinType(Token::getType(literal->getValue())), {}, false, false, true);
+                        evaluator->createVariable(lvalue->getLValueName(), new ASTNodeBuiltinType(literal->getValue().getType()), {}, false, false, true);
                         evaluator->setVariable(lvalue->getLValueName(), literal->getValue());
                     }
                 }

@@ -44,7 +44,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string toString() const override {
             auto value = this->getValue();
-            auto result = core::Token::literalToString(value, false);
+            auto result = value.toString(false);
 
             return this->formatDisplayValue(result, value);
         }

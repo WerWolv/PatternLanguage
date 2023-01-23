@@ -202,9 +202,8 @@ namespace pl::core {
                else if (dynamic_cast<const ptrn::PatternSigned*>(pattern))
                    return truncateValue<i128>(pattern->getSize(), i128(value));
                else if (dynamic_cast<const ptrn::PatternFloat*>(pattern)) {
-                   if (pattern->getSize() == sizeof(float)) {
+                   if (pattern->getSize() == sizeof(float))
                        return double(float(value));
-                   }
                    else
                        return double(value);
                } else if (dynamic_cast<const ptrn::PatternBoolean*>(pattern))
@@ -212,7 +211,7 @@ namespace pl::core {
                else if (dynamic_cast<const ptrn::PatternCharacter*>(pattern) || dynamic_cast<const ptrn::PatternWideCharacter*>(pattern))
                    return truncateValue(pattern->getSize(), u128(value));
                else if (dynamic_cast<const ptrn::PatternString*>(pattern))
-                   return Token::literalToString(value, false);
+                   return Token::Literal(value).toString(false);
                else
                    err::E0004.throwError(fmt::format("Cannot cast from type 'integer' to type '{}'.", pattern->getTypeName()));
             },
@@ -313,7 +312,7 @@ namespace pl::core {
         pattern->setInitialized(true);
 
         if (pattern->isReference()) {
-            if (Token::getLiteralType(value) == Token::LiteralType::Pattern)
+            if (value.getType() == tkn::ValueType::CustomType)
                 return;
             else {
                 pattern->setReference(false);
