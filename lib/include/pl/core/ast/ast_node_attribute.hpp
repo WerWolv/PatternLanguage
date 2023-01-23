@@ -154,7 +154,25 @@ namespace pl::core::ast {
             pattern->setWriteFormatterFunction(functionName);
         }
 
-        if (const auto &arguments = attributable->getAttributeArguments("format_entries"); arguments.size() == 1) {
+        if (const auto &value = attributable->getFirstAttributeValue({ "format_entries", "format_entries_read" }); value) {
+            auto functionName = getAttributeValueAsString(value, evaluator);
+            auto function = evaluator->findFunction(functionName);
+            if (!function.has_value())
+                err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", functionName), {}, node);
+
+            if (function->parameterCount != api::FunctionParameterCount::exactly(1))
+                err::E0009.throwError(fmt::format("Formatter function '{}' needs to take exactly one parameter.", functionName), fmt::format("Try 'fn {}({} value)' instead", functionName, pattern->getTypeName()), node);
+
+            auto array = dynamic_cast<ptrn::PatternArrayDynamic *>(pattern.get());
+            if (array == nullptr)
+                err::E0009.throwError("The [[format_entries_read]] attribute can only be applied to dynamic array types.", {}, node);
+
+            for (const auto &entry : array->getEntries()) {
+                entry->setReadFormatterFunction(functionName);
+            }
+        }
+
+        if (const auto &arguments = attributable->getAttributeArguments("format_entries_write"); arguments.size() == 1) {
             auto functionName = getAttributeValueAsString(arguments.front(), evaluator);
             auto function = evaluator->findFunction(functionName);
             if (!function.has_value())
@@ -165,10 +183,10 @@ namespace pl::core::ast {
 
             auto array = dynamic_cast<ptrn::PatternArrayDynamic *>(pattern.get());
             if (array == nullptr)
-                err::E0009.throwError("The [[inline_array]] attribute can only be applied to dynamic array types.", {}, node);
+                err::E0009.throwError("The [[format_entries_write]] attribute can only be applied to dynamic array types.", {}, node);
 
             for (const auto &entry : array->getEntries()) {
-                entry->setReadFormatterFunction(functionName);
+                entry->setWriteFormatterFunction(functionName);
             }
         }
 
@@ -176,12 +194,30 @@ namespace pl::core::ast {
             auto functionName = getAttributeValueAsString(arguments.front(), evaluator);
             auto function = evaluator->findFunction(functionName);
             if (!function.has_value())
-                err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", functionName), {}, node);
+                err::E0009.throwError(fmt::format("Transform function '{}' does not exist.", functionName), {}, node);
 
             if (function->parameterCount != api::FunctionParameterCount::exactly(1))
                 err::E0009.throwError(fmt::format("Transform function '{}' needs to take exactly one parameter.", functionName), fmt::format("Try 'fn {}({} value)' instead", functionName, pattern->getTypeName()), node);
 
             pattern->setTransformFunction(functionName);
+        }
+
+        if (const auto &arguments = attributable->getAttributeArguments("transform_entries"); arguments.size() == 1) {
+            auto functionName = getAttributeValueAsString(arguments.front(), evaluator);
+            auto function = evaluator->findFunction(functionName);
+            if (!function.has_value())
+                err::E0009.throwError(fmt::format("Transform function '{}' does not exist.", functionName), {}, node);
+
+            if (function->parameterCount != api::FunctionParameterCount::exactly(1))
+                err::E0009.throwError(fmt::format("Transform function '{}' needs to take exactly one parameter.", functionName), fmt::format("Try 'fn {}({} value)' instead", functionName, pattern->getTypeName()), node);
+
+            auto array = dynamic_cast<ptrn::PatternArrayDynamic *>(pattern.get());
+            if (array == nullptr)
+                err::E0009.throwError("The [[transform_entries]] attribute can only be applied to dynamic array types.", {}, node);
+
+            for (const auto &entry : array->getEntries()) {
+                entry->setTransformFunction(functionName);
+            }
         }
 
         if (const auto &arguments = attributable->getAttributeArguments("pointer_base"); arguments.size() == 1) {
