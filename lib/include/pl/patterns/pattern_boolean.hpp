@@ -17,7 +17,7 @@ namespace pl::ptrn {
             bool boolean = false;
             this->getEvaluator()->readData(this->getOffset(), &boolean, 1, this->getSection());
 
-            return boolean;
+            return transformValue(boolean);
         }
 
         std::vector<u8> getBytesOf(const core::Token::Literal &value) const override {

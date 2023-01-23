@@ -185,7 +185,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] virtual core::Token::Literal getValue() const {
-            return u128();
+            return this->transformValue(u128());
         }
 
         [[nodiscard]] virtual std::vector<std::pair<u64, Pattern*>> getChildren() {
@@ -423,9 +423,18 @@ namespace pl::ptrn {
             this->m_initialized = initialized;
         }
 
+
     protected:
         std::optional<std::endian> m_endian;
 
+        [[nodiscard]] core::Token::Literal transformValue(const core::Token::Literal &value) const {
+            auto evaluator = this->getEvaluator();
+            if (auto transformFunc = evaluator->findFunction(this->getTransformFunction()); transformFunc.has_value())
+                if (auto result = transformFunc->func(evaluator, { value }); result.has_value())
+                    return *result;
+
+            return value;
+        }
     private:
         friend pl::core::Evaluator;
 

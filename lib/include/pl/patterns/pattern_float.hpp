@@ -21,7 +21,7 @@ namespace pl::ptrn {
 
                 float result = 0;
                 std::memcpy(&result, &data, sizeof(float));
-                return double(result);
+                return transformValue(double(result));
             } else if (this->getSize() == 8) {
                 u64 data = 0;
                 this->getEvaluator()->readData(this->getOffset(), &data, 8, this->getSection());
@@ -29,7 +29,7 @@ namespace pl::ptrn {
 
                 double result = 0;
                 std::memcpy(&result, &data, sizeof(double));
-                return result;
+                return transformValue(result);
             } else {
                 return std::numeric_limits<double>::quiet_NaN();
             }

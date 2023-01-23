@@ -19,7 +19,7 @@ namespace pl::ptrn {
         [[nodiscard]] core::Token::Literal getValue() const override {
             char16_t character = '\u0000';
             this->getEvaluator()->readData(this->getOffset(), &character, 2, this->getSection());
-            return u128(hlp::changeEndianess(character, this->getEndian()));
+            return transformValue(u128(hlp::changeEndianess(character, this->getEndian())));
         }
 
         [[nodiscard]] std::string getFormattedName() const override {

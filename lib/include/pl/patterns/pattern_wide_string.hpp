@@ -17,7 +17,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
-            return this->getValue(this->getSize());
+            return transformValue(this->getValue(this->getSize()));
         }
 
         std::string getValue(size_t size) const {

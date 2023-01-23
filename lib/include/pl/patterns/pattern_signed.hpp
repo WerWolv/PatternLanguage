@@ -18,7 +18,7 @@ namespace pl::ptrn {
             this->getEvaluator()->readData(this->getOffset(), &data, this->getSize(), this->getSection());
             data = hlp::changeEndianess(data, this->getSize(), this->getEndian());
 
-            return hlp::signExtend(this->getSize() * 8, data);
+            return transformValue(hlp::signExtend(this->getSize() * 8, data));
         }
 
         [[nodiscard]] std::string getFormattedName() const override {

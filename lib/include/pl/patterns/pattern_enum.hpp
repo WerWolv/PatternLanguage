@@ -26,7 +26,7 @@ namespace pl::ptrn {
             u128 value = 0;
             this->getEvaluator()->readData(this->getOffset(), &value, this->getSize(), this->getSection());
 
-            return hlp::changeEndianess(value, this->getSize(), this->getEndian());
+            return transformValue(hlp::changeEndianess(value, this->getSize(), this->getEndian()));
         }
 
         [[nodiscard]] std::string getFormattedName() const override {

@@ -33,7 +33,7 @@ namespace pl::ptrn {
                 return hlp::signExtend(this->getSize() * 8, data);
             }
 
-            return data;
+            return transformValue(data);
         }
 
         [[nodiscard]] std::string getFormattedName() const override {

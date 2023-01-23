@@ -14,7 +14,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
-            return this->getValue(this->getSize());
+            return transformValue(this->getValue(this->getSize()));
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getEntries() override {

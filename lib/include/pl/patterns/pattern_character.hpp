@@ -17,7 +17,7 @@ namespace pl::ptrn {
             char character = '\x00';
             this->getEvaluator()->readData(this->getOffset(), &character, 1, this->getSection());
 
-            return character;
+            return transformValue(character);
         }
 
         std::vector<u8> getBytesOf(const core::Token::Literal &value) const override {

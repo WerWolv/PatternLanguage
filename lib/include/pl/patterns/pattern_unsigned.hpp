@@ -16,7 +16,7 @@ namespace pl::ptrn {
         [[nodiscard]] core::Token::Literal getValue() const override {
             u128 data = 0;
             this->getEvaluator()->readData(this->getOffset(), &data, this->getSize(), this->getSection());
-            return hlp::changeEndianess(data, this->getSize(), this->getEndian());
+            return transformValue(hlp::changeEndianess(data, this->getSize(), this->getEndian()));
         }
 
         [[nodiscard]] std::string getFormattedName() const override {

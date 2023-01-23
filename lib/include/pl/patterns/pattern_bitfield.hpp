@@ -27,7 +27,7 @@ namespace pl::ptrn {
             if (this->m_bitField->getEndian() != std::endian::native)
                 std::reverse(value.begin(), value.end());
 
-            return u128(hlp::extract(this->m_bitOffset + (this->m_bitSize - 1), this->m_bitOffset, value));
+            return transformValue(u128(hlp::extract(this->m_bitOffset + (this->m_bitSize - 1), this->m_bitOffset, value)));
         }
 
         void setBitfield(Pattern *bitField) {
