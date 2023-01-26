@@ -111,7 +111,7 @@ namespace pl::cli::sub {
         subcommand->add_option("-o,--output,OUTPUT_FILE", outputFilePath, "Output file")->required();
         subcommand->add_option("-I,--includes", includePaths, "Include file paths")->take_all()->check(CLI::ExistingDirectory);
         subcommand->add_option("-D,--define", defines, "Define a preprocessor macro")->take_all();
-        subcommand->add_flag("-n,--noimpls", includePaths, "Hide implementation details");
+        subcommand->add_flag("-n,--noimpls", hideImplementationDetails, "Hide implementation details");
 
         subcommand->callback([] {
 
