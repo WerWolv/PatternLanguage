@@ -100,13 +100,14 @@ namespace pl::cli::sub {
     void addDocsSubcommand(CLI::App *app) {
         static std::vector<std::fs::path> includePaths;
 
-        static std::fs::path patternFilePath;
+        static std::fs::path patternFilePath, outputFilePath;
         static bool hideImplementationDetails;
 
         auto subcommand = app->add_subcommand("docs");
 
         // Add command line arguments
         subcommand->add_option("-p,--pattern,PATTERN_FILE", patternFilePath, "Pattern file")->required()->check(CLI::ExistingFile);
+        subcommand->add_option("-o,--output,OUTPUT_FILE", outputFilePath, "Output file")->required()->check(CLI::NonexistentPath);
         subcommand->add_option("-I,--includes", includePaths, "Include file paths")->take_all()->check(CLI::ExistingDirectory);
         subcommand->add_flag("-n,--noimpls", includePaths, "Hide implementation details");
 
@@ -267,7 +268,7 @@ namespace pl::cli::sub {
                 }
             }
 
-            hlp::fs::File outputFile(patternFilePath.parent_path() / (patternFilePath.stem().string() + ".md"), hlp::fs::File::Mode::Create);
+            hlp::fs::File outputFile(outputFilePath, hlp::fs::File::Mode::Create);
             outputFile.write(documentation);
         });
     }
