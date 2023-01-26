@@ -14,6 +14,7 @@ namespace pl::cli::sub {
         static bool verbose = false;
         static bool allowDangerousFunctions = false;
         static u64 baseAddress = 0x00;
+        static std::vector<std::string> defines;
 
         static std::fs::path inputFilePath, patternFilePath;
 
@@ -24,6 +25,7 @@ namespace pl::cli::sub {
         subcommand->add_option("-p,--pattern,PATTERN_FILE", patternFilePath, "Pattern file")->required()->check(CLI::ExistingFile);
         subcommand->add_option("-I,--includes", includePaths, "Include file paths")->take_all()->check(CLI::ExistingDirectory);
         subcommand->add_option("-b,--base", baseAddress, "Base address")->default_val(0x00);
+        subcommand->add_option("-D,--define", defines, "Define a preprocessor macro")->take_all();
         subcommand->add_flag("-v,--verbose", verbose, "Verbose output")->default_val(false);
         subcommand->add_flag("-d,--dangerous", allowDangerousFunctions, "Allow dangerous functions")->default_val(false);
 
@@ -36,6 +38,9 @@ namespace pl::cli::sub {
             });
 
             runtime.addPragma("MIME", [](auto&, const auto&){ return true; });
+
+            for (const auto &define : defines)
+                runtime.addDefine(define);
 
             runtime.setIncludePaths(includePaths);
 

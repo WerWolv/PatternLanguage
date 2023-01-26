@@ -12,6 +12,7 @@ namespace pl::cli {
             pl::hlp::fs::File &inputFilePath,
             pl::hlp::fs::File &patternFilePath,
             const std::vector<std::fs::path> &includePaths,
+            const std::vector<std::string> &defines,
             bool allowDangerousFunctions,
             u64 baseAddress);
 }

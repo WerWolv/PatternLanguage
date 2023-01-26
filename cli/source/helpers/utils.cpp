@@ -9,6 +9,7 @@ namespace pl::cli {
             pl::hlp::fs::File &inputFile,
             pl::hlp::fs::File &patternFile,
             const std::vector<std::fs::path> &includePaths,
+            const std::vector<std::string> &defines,
             bool allowDangerousFunctions,
             u64 baseAddress) {
 
@@ -17,6 +18,9 @@ namespace pl::cli {
         });
 
         runtime.setIncludePaths(includePaths);
+
+        for (const auto &define : defines)
+            runtime.addDefine(define);
 
         runtime.setDataSource(baseAddress, inputFile.getSize(), [&](u64 address, void *buffer, size_t size) {
             inputFile.seek(address - baseAddress);

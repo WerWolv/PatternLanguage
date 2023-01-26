@@ -30,6 +30,7 @@ namespace pl::cli::sub {
 
     void addInfoSubcommand(CLI::App *app) {
         static std::vector<std::fs::path> includePaths;
+        static std::vector<std::string> defines;
 
         static std::fs::path patternFilePath;
         static std::string type;
@@ -39,6 +40,7 @@ namespace pl::cli::sub {
         // Add command line arguments
         subcommand->add_option("-p,--pattern,PATTERN_FILE", patternFilePath, "Pattern file")->required()->check(CLI::ExistingFile);
         subcommand->add_option("-I,--includes", includePaths, "Include file paths")->take_all()->check(CLI::ExistingDirectory);
+        subcommand->add_option("-D,--define", defines, "Define a preprocessor macro")->take_all();
         subcommand->add_option("-t,--type", type, "Type of information you want to query")->required()->check([](const std::string &value) -> std::string {
             if (value == "name" || value == "authors" || value == "description" || value == "mime" || value == "version")
                 return "";
@@ -53,6 +55,9 @@ namespace pl::cli::sub {
             runtime.setDangerousFunctionCallHandler([&]() {
                 return false;
             });
+
+            for (const auto &define : defines)
+                runtime.addDefine(define);
 
             runtime.setIncludePaths(includePaths);
 

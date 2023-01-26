@@ -14,6 +14,7 @@ namespace pl::cli::sub {
 
         static std::fs::path inputFilePath, outputFilePath, patternFilePath;
         static std::vector<std::fs::path> includePaths;
+        static std::vector<std::string> defines;
 
         static std::string formatterName;
         static bool verbose = false;
@@ -28,6 +29,7 @@ namespace pl::cli::sub {
         subcommand->add_option("-p,--pattern,PATTERN_FILE", patternFilePath, "Pattern file")->required()->check(CLI::ExistingFile);
         subcommand->add_option("-o,--output,OUTPUT_FILE", outputFilePath, "Output file")->check(CLI::NonexistentPath);
         subcommand->add_option("-I,--includes", includePaths, "Include file paths")->take_all()->check(CLI::ExistingDirectory);
+        subcommand->add_option("-D,--define", defines, "Define a preprocessor macro")->take_all();
         subcommand->add_option("-b,--base", baseAddress, "Base address")->default_val(0x00);
         subcommand->add_flag("-v,--verbose", verbose, "Verbose output")->default_val(false);
         subcommand->add_flag("-d,--dangerous", allowDangerousFunctions, "Allow dangerous functions")->default_val(false);
@@ -78,7 +80,7 @@ namespace pl::cli::sub {
 
             // Create and configure Pattern Language runtime
             pl::PatternLanguage runtime;
-            pl::cli::executePattern(runtime, inputFile, patternFile, includePaths, allowDangerousFunctions, baseAddress);
+            pl::cli::executePattern(runtime, inputFile, patternFile, includePaths, defines, allowDangerousFunctions, baseAddress);
 
             // Output console log if verbose mode is enabled
             if (verbose) {

@@ -99,6 +99,7 @@ namespace pl::cli::sub {
 
     void addDocsSubcommand(CLI::App *app) {
         static std::vector<std::fs::path> includePaths;
+        static std::vector<std::string> defines;
 
         static std::fs::path patternFilePath, outputFilePath;
         static bool hideImplementationDetails;
@@ -107,8 +108,9 @@ namespace pl::cli::sub {
 
         // Add command line arguments
         subcommand->add_option("-p,--pattern,PATTERN_FILE", patternFilePath, "Pattern file")->required()->check(CLI::ExistingFile);
-        subcommand->add_option("-o,--output,OUTPUT_FILE", outputFilePath, "Output file")->required()->check(CLI::NonexistentPath);
+        subcommand->add_option("-o,--output,OUTPUT_FILE", outputFilePath, "Output file")->required();
         subcommand->add_option("-I,--includes", includePaths, "Include file paths")->take_all()->check(CLI::ExistingDirectory);
+        subcommand->add_option("-D,--define", defines, "Define a preprocessor macro")->take_all();
         subcommand->add_flag("-n,--noimpls", includePaths, "Hide implementation details");
 
         subcommand->callback([] {
@@ -118,6 +120,9 @@ namespace pl::cli::sub {
             runtime.setDangerousFunctionCallHandler([&]() {
                 return false;
             });
+
+            for (const auto &define : defines)
+                runtime.addDefine(define);
 
             runtime.setIncludePaths(includePaths);
 
@@ -268,6 +273,7 @@ namespace pl::cli::sub {
                 }
             }
 
+            hlp::fs::createDirectories(outputFilePath.parent_path());
             hlp::fs::File outputFile(outputFilePath, hlp::fs::File::Mode::Create);
             outputFile.write(documentation);
         });
