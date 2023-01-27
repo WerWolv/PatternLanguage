@@ -40,7 +40,7 @@ namespace pl::ptrn {
                     evaluator->clearCurrentArrayIndex();
             };
 
-            auto entry = std::shared_ptr(this->m_template->clone());
+            auto &entry = this->m_template;
             for (u64 index = start; index < std::min<u64>(end, this->m_entryCount); index++) {
                 entry->setVariableName(fmt::format("[{0}]", index));
                 entry->setOffset(this->getOffset() + index * this->m_template->getSize());
