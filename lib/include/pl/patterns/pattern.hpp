@@ -31,6 +31,12 @@ namespace pl::ptrn {
         [[nodiscard]] virtual size_t getEntryCount() const = 0;
     };
 
+    enum class Visibility : u8 {
+        Visible,
+        HighlightHidden,
+        Hidden
+    };
+
     class Pattern {
     public:
         constexpr static u64 MainSectionId          = 0x0000'0000'0000'0000;
@@ -195,15 +201,30 @@ namespace pl::ptrn {
                 return { { this->getOffset(), this } };
         }
 
-        void setHidden(bool hidden) {
-            if (hidden)
-                this->addAttribute("hidden");
-            else
-                this->removeAttribute("hidden");
+        void setVisibility(Visibility visibility) {
+            switch (visibility) {
+                case Visibility::Visible:
+                    this->removeAttribute("hidden");
+                    this->removeAttribute("highlight_hidden");
+                    break;
+                case Visibility::Hidden:
+                    this->addAttribute("hidden");
+                    this->removeAttribute("highlight_hidden");
+                    break;
+                case Visibility::HighlightHidden:
+                    this->removeAttribute("hidden");
+                    this->addAttribute("highlight_hidden");
+                    break;
+            }
         }
 
-        [[nodiscard]] bool isHidden() const {
-            return this->hasAttribute("hidden");
+        [[nodiscard]] Visibility getVisibility() const {
+            if (this->hasAttribute("hidden"))
+                return Visibility::Hidden;
+            else if (this->hasAttribute("highlight_hidden"))
+                return Visibility::HighlightHidden;
+            else
+                return Visibility::Visible;
         }
 
         void setSealed(bool sealed) {

@@ -63,7 +63,7 @@ namespace pl::test {
                     if (!pattern->isSealed())
                         return false;
                 } else if (varName == "hiddenTest") {
-                    if (!pattern->isHidden())
+                    if (pattern->getVisibility() != ptrn::Pattern::Visibility::Hidden)
                         return false;
                 } else if (varName == "colorTest") {
                     if (pattern->getColor() != 0xFF00FF)

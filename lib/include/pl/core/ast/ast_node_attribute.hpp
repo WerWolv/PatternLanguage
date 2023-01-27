@@ -245,7 +245,11 @@ namespace pl::core::ast {
         }
 
         if (attributable->hasAttribute("hidden", false)) {
-            pattern->setHidden(true);
+            pattern->setVisibility(ptrn::Visibility::Hidden);
+        }
+
+        if (attributable->hasAttribute("highlight_hidden", false)) {
+            pattern->setVisibility(ptrn::Visibility::HighlightHidden);
         }
 
         if (attributable->hasAttribute("sealed", false)) {
