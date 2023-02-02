@@ -184,7 +184,7 @@ namespace pl::core {
 
             if (MATCHES(oneOf(tkn::Literal::Identifier))) {
                 auto startToken = this->m_curr;
-                if (op == tkn::Operator::SizeOf) {
+                if (op == Token::Operator::SizeOf) {
                     for (const auto &potentialTypes : getNamespacePrefixedNames(parseNamespaceResolution())) {
                         if (this->m_types.contains(potentialTypes)) {
                             this->m_curr = startToken - 1;
@@ -200,16 +200,16 @@ namespace pl::core {
                 }
             } else if (MATCHES(oneOf(tkn::Keyword::Parent, tkn::Keyword::This))) {
                 result = create<ast::ASTNodeTypeOperator>(op, this->parseRValue());
-            } else if (op == tkn::Operator::SizeOf && MATCHES(sequence(tkn::ValueType::Any))) {
+            } else if (op == Token::Operator::SizeOf && MATCHES(sequence(tkn::ValueType::Any))) {
                 auto type = getValue<Token::ValueType>(-1);
 
                 result = create<ast::ASTNodeLiteral>(u128(Token::getTypeSize(type)));
             } else if (MATCHES(sequence(tkn::Operator::Dollar))) {
                 result = create<ast::ASTNodeTypeOperator>(op);
             } else {
-                if (op == tkn::Operator::SizeOf)
+                if (op == Token::Operator::SizeOf)
                     err::P0005.throwError("Expected rvalue, type or '$' operator.", {}, 1);
-                else if (op == tkn::Operator::AddressOf)
+                else if (op == Token::Operator::AddressOf)
                     err::P0005.throwError("Expected rvalue or '$' operator.", {}, 1);
             }
 
