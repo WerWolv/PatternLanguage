@@ -312,7 +312,7 @@ namespace pl::core {
         pattern->setInitialized(true);
 
         if (pattern->isReference()) {
-            if (value.getType() == tkn::ValueType::CustomType)
+            if (value.getType() == Token::ValueType::CustomType)
                 return;
             else {
                 pattern->setReference(false);
