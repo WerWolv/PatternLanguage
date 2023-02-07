@@ -331,10 +331,30 @@ namespace pl::ptrn {
             return *this->m_cachedDisplayValue;
         }
 
-        std::vector<u8> getBytes() const {
+        std::vector<u8> getBytes() {
             std::vector<u8> result;
-            result.resize(this->getSize());
-            this->getEvaluator()->readData(this->getOffset(), result.data(), this->getSize(), this->getSection());
+            result.reserve(this->getChildren().size());
+
+            if (this->getSize() == 0)
+                return result;
+
+            if (auto iteratable = dynamic_cast<pl::ptrn::Iteratable*>(this); iteratable != nullptr) {
+                iteratable->forEachEntry(0, iteratable->getEntryCount(), [&](u64, pl::ptrn::Pattern *entry) {
+                    const auto children = entry->getChildren();
+                    for (const auto &[offset, child] : children) {
+                        auto startOffset = child->getOffset();
+
+                        child->setOffset(offset);
+                        PL_ON_SCOPE_EXIT { child->setOffset(startOffset); };
+
+                        auto bytes = child->getBytes();
+                        std::copy(bytes.begin(), bytes.end(), std::back_inserter(result));
+                    }
+                });
+            } else {
+                result.resize(this->getSize());
+                this->getEvaluator()->readData(this->getOffset(), result.data(), result.size(), this->getSection());
+            }
 
             return result;
         }

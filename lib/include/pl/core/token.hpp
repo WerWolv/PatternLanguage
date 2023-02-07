@@ -22,6 +22,8 @@ namespace pl::core {
 
     class Token {
     public:
+        Token() = default;
+
         enum class Type : u64 {
             Keyword,
             ValueType,
