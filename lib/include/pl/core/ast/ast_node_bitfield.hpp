@@ -55,9 +55,7 @@ namespace pl::core::ast {
             for (auto &entry : entries) {
                 auto patterns = entry->createPatterns(evaluator);
 
-                std::move(patterns.begin(), patterns.end(), std::back_inserter(potentialPatterns));
-
-                for (auto &pattern : potentialPatterns) {
+                for (auto &pattern : patterns) {
                     if (auto bitfieldField = dynamic_cast<ptrn::PatternBitfieldField*>(pattern.get()); bitfieldField != nullptr) {
                         if (bitfieldField->getSize() == 0) {
                             bitfieldField->setBitOffset(bitOffset);
@@ -71,6 +69,8 @@ namespace pl::core::ast {
                     bitfieldPattern->setSize((bitOffset + 7) / 8);
                 }
 
+                std::move(patterns.begin(), patterns.end(), std::back_inserter(potentialPatterns));
+
                 if (!evaluator->getCurrentArrayIndex().has_value()) {
                     if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
                         break;
@@ -80,7 +80,6 @@ namespace pl::core::ast {
                     } else if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Continue) {
                         evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
                         potentialPatterns.clear();
-                        bitOffset = 0;
                         break;
                     }
                 }

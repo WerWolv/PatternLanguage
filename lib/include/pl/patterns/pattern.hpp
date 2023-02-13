@@ -63,11 +63,9 @@ namespace pl::ptrn {
             this->m_section = other.m_section;
             this->m_initialized = other.m_initialized;
             this->m_constant = other.m_constant;
+            this->m_variableName = other.m_variableName;
+            this->m_typeName = other.m_typeName;
 
-            if (other.m_variableName != nullptr)
-                this->m_variableName = std::make_unique<std::string>(*other.m_variableName);
-            if (other.m_typeName != nullptr)
-                this->m_typeName = std::make_unique<std::string>(*other.m_typeName);
             if (other.m_cachedDisplayValue != nullptr)
                 this->m_cachedDisplayValue = std::make_unique<std::string>(*other.m_cachedDisplayValue);
             if (other.m_attributes != nullptr)
@@ -96,14 +94,14 @@ namespace pl::ptrn {
         void setSize(size_t size) { this->m_size = size; }
 
         [[nodiscard]] std::string getVariableName() const {
-            if (this->m_variableName == nullptr)
+            if (this->m_variableName.empty())
                 return fmt::format("{} @ 0x{:02X}", this->getTypeName(), this->getOffset());
             else
-                return *this->m_variableName;
+                return this->m_variableName;
         }
         void setVariableName(const std::string &name) {
             if (!name.empty())
-                this->m_variableName = std::make_unique<std::string>(name);
+                this->m_variableName = name;
         }
 
         [[nodiscard]] std::string getComment() const {
@@ -119,12 +117,12 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] virtual std::string getTypeName() const {
-            return this->m_typeName == nullptr ? "" : *this->m_typeName;
+            return this->m_typeName;
         }
 
         void setTypeName(const std::string &name) {
             if (!name.empty())
-                this->m_typeName = std::make_unique<std::string>(name);
+                this->m_typeName = name;
         }
 
         [[nodiscard]] u32 getColor() const { return this->m_color; }
@@ -285,8 +283,8 @@ namespace pl::ptrn {
                    this->m_size == other.m_size &&
                    (this->m_attributes == nullptr || other.m_attributes == nullptr || *this->m_attributes == *other.m_attributes) &&
                    (this->m_endian == other.m_endian || (!this->m_endian.has_value() && other.m_endian == std::endian::native) || (!other.m_endian.has_value() && this->m_endian == std::endian::native)) &&
-                   (this->m_variableName == nullptr || other.m_variableName == nullptr || *this->m_variableName == *other.m_variableName) &&
-                   (this->m_typeName == nullptr || other.m_typeName == nullptr || *this->m_typeName == *other.m_typeName) &&
+                   this->m_variableName == other.m_variableName &&
+                   this->m_typeName == other.m_typeName &&
                    this->m_section == other.m_section;
         }
 
@@ -484,8 +482,8 @@ namespace pl::ptrn {
         std::unique_ptr<std::map<std::string, std::vector<core::Token::Literal>>> m_attributes;
         mutable std::unique_ptr<std::string> m_cachedDisplayValue;
 
-        std::unique_ptr<std::string> m_variableName;
-        std::unique_ptr<std::string> m_typeName;
+        std::string m_variableName;
+        std::string m_typeName;
 
         u64 m_offset  = 0x00;
         size_t m_size = 0x00;
