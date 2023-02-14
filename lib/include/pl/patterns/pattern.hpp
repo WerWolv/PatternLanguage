@@ -333,9 +333,6 @@ namespace pl::ptrn {
             std::vector<u8> result;
             result.reserve(this->getChildren().size());
 
-            if (this->getSize() == 0)
-                return result;
-
             if (auto iteratable = dynamic_cast<pl::ptrn::Iteratable*>(this); iteratable != nullptr) {
                 iteratable->forEachEntry(0, iteratable->getEntryCount(), [&](u64, pl::ptrn::Pattern *entry) {
                     const auto children = entry->getChildren();
