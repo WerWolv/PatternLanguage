@@ -21,9 +21,11 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> getEntry(size_t index) const override {
-            this->m_highlightTemplate->setOffset(this->getOffset() + index * this->m_highlightTemplate->getSize());
+            std::shared_ptr<Pattern> highlightTemplate = this->m_template->clone();
+            highlightTemplate->setOffset(this->getOffset() + index * highlightTemplate->getSize());
 
-            return this->m_highlightTemplate;
+            this->m_highlightTemplates.push_back(highlightTemplate);
+            return highlightTemplate;
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getEntries() override {
@@ -65,7 +67,9 @@ namespace pl::ptrn {
 
         void setSection(u64 id) override {
             this->m_template->setSection(id);
-            this->m_highlightTemplate->setSection(id);
+
+            for (auto &highlightTemplate : this->m_highlightTemplates)
+                highlightTemplate->setSection(id);
 
             Pattern::setSection(id);
         }
@@ -76,9 +80,14 @@ namespace pl::ptrn {
             else {
                 std::vector<std::pair<u64, Pattern*>> result;
 
-                this->m_highlightTemplate->setVariableName(this->getVariableName());
-                this->m_highlightTemplate->setOffset(this->getOffset());
-                auto children = this->m_highlightTemplate->getChildren();
+                std::shared_ptr<Pattern> highlightTemplate = this->m_template->clone();
+
+                highlightTemplate->setVariableName(this->getVariableName());
+                highlightTemplate->setOffset(this->getOffset());
+
+                this->m_highlightTemplates.push_back(highlightTemplate);
+
+                auto children = highlightTemplate->getChildren();
 
                 result.reserve(this->getEntryCount() * children.size());
 
@@ -97,8 +106,8 @@ namespace pl::ptrn {
             if (this->m_template != nullptr)
                 this->m_template->setLocal(local);
 
-            if (this->m_highlightTemplate != nullptr)
-                this->m_highlightTemplate->setLocal(local);
+            for (auto &highlightTemplate : this->m_highlightTemplates)
+                highlightTemplate->setLocal(local);
 
             Pattern::setLocal(local);
         }
@@ -107,8 +116,8 @@ namespace pl::ptrn {
             if (this->m_template != nullptr)
                 this->m_template->setReference(reference);
 
-            if (this->m_highlightTemplate != nullptr)
-                this->m_highlightTemplate->setReference(reference);
+            for (auto &highlightTemplate : this->m_highlightTemplates)
+                highlightTemplate->setReference(reference);
 
             Pattern::setReference(reference);
         }
@@ -116,7 +125,9 @@ namespace pl::ptrn {
         void setColor(u32 color) override {
             Pattern::setColor(color);
             this->m_template->setColor(color);
-            this->m_highlightTemplate->setColor(color);
+
+            for (auto &highlightTemplate : this->m_highlightTemplates)
+                highlightTemplate->setColor(color);
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
@@ -144,13 +155,15 @@ namespace pl::ptrn {
 
         void setEntries(std::unique_ptr<Pattern> &&templatePattern, size_t count) {
             this->m_template          = std::move(templatePattern);
-            this->m_highlightTemplate = this->m_template->clone();
+            this->m_highlightTemplates.push_back(this->m_template->clone());
             this->m_entryCount        = count;
 
             this->m_template->setSection(this->getSection());
 
             this->m_template->setBaseColor(this->getColor());
-            this->m_highlightTemplate->setBaseColor(this->getColor());
+
+            for (auto &highlightTemplate : this->m_highlightTemplates)
+                highlightTemplate->setBaseColor(this->getColor());
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override {
@@ -208,7 +221,7 @@ namespace pl::ptrn {
 
     private:
         std::shared_ptr<Pattern> m_template = nullptr;
-        std::shared_ptr<Pattern> m_highlightTemplate = nullptr;
+        mutable std::vector<std::shared_ptr<Pattern>> m_highlightTemplates;
         size_t m_entryCount = 0;
 
         std::map<u64, std::string> m_formatCache;
