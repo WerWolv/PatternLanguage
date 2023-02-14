@@ -51,7 +51,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override {
-            if (!areCommonPropertiesEqual<decltype(*this)>(other))
+            if (!compareCommonProperties<decltype(*this)>(other))
                 return false;
 
             auto &otherBitfieldField = *static_cast<const PatternBitfieldField *>(&other);
@@ -62,17 +62,17 @@ namespace pl::ptrn {
             v.visit(*this);
         }
 
-        std::string getFormattedValue() override {
+        std::string formatDisplayValue() override {
             auto literal = this->getValue();
             auto value =this->getValue().toUnsigned();
 
-            return this->formatDisplayValue(fmt::format("{0} (0x{1:X})", value, value), literal);
+            return Pattern::formatDisplayValue(fmt::format("{0} (0x{1:X})", value, value), literal);
         }
 
         [[nodiscard]] std::string toString() const override {
             auto result = fmt::format("{}", this->getValue().toUnsigned());
 
-            return this->formatDisplayValue(result, this->getValue());
+            return Pattern::formatDisplayValue(result, this->getValue());
         }
 
         [[nodiscard]] bool isPadding() const { return this->m_padding; }
@@ -174,7 +174,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override {
-            if (!areCommonPropertiesEqual<decltype(*this)>(other))
+            if (!compareCommonProperties<decltype(*this)>(other))
                 return false;
 
             auto &otherBitfield = *static_cast<const PatternBitfield *>(&other);
@@ -211,10 +211,10 @@ namespace pl::ptrn {
 
             result += " }";
 
-            return this->formatDisplayValue(result, this->clone().get());
+            return Pattern::formatDisplayValue(result, this->clone().get());
         }
 
-        std::string getFormattedValue() override {
+        std::string formatDisplayValue() override {
             std::vector<u8> bytes(this->getSize(), 0);
             this->getEvaluator()->readData(this->getOffset(), bytes.data(), bytes.size(), this->getSection());
 
@@ -242,7 +242,7 @@ namespace pl::ptrn {
                 valueString.pop_back();
             }
 
-            return this->formatDisplayValue(fmt::format("{{ {} }}", valueString), this);
+            return Pattern::formatDisplayValue(fmt::format("{{ {} }}", valueString), this);
         }
 
         void setEndian(std::endian endian) override {

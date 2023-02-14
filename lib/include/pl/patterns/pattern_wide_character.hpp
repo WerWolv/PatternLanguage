@@ -33,17 +33,17 @@ namespace pl::ptrn {
 
             auto result = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>("???").to_bytes(character);
 
-            return this->formatDisplayValue(result, value);
+            return Pattern::formatDisplayValue(result, value);
         }
 
-        [[nodiscard]] bool operator==(const Pattern &other) const override { return areCommonPropertiesEqual<decltype(*this)>(other); }
+        [[nodiscard]] bool operator==(const Pattern &other) const override { return compareCommonProperties<decltype(*this)>(other); }
 
         void accept(PatternVisitor &v) override {
             v.visit(*this);
         }
 
-        std::string getFormattedValue() override {
-            return this->formatDisplayValue(fmt::format("'{0}'", this->toString()), this->getValue());
+        std::string formatDisplayValue() override {
+            return Pattern::formatDisplayValue(fmt::format("'{0}'", this->toString()), this->getValue());
         }
     };
 

@@ -46,16 +46,16 @@ namespace pl::ptrn {
             auto value = this->getValue();
             auto result = value.toString(false);
 
-            return this->formatDisplayValue(result, value);
+            return Pattern::formatDisplayValue(result, value);
         }
 
-        [[nodiscard]] bool operator==(const Pattern &other) const override { return areCommonPropertiesEqual<decltype(*this)>(other); }
+        [[nodiscard]] bool operator==(const Pattern &other) const override { return compareCommonProperties<decltype(*this)>(other); }
 
         void accept(PatternVisitor &v) override {
             v.visit(*this);
         }
 
-        std::string getFormattedValue() override {
+        std::string formatDisplayValue() override {
             auto size = std::min<size_t>(this->getSize(), 0x7F);
 
             if (size == 0)
@@ -65,7 +65,7 @@ namespace pl::ptrn {
             this->getEvaluator()->readData(this->getOffset(), buffer.data(), size, this->getSection());
             auto displayString = hlp::encodeByteString({ buffer.begin(), buffer.end() });
 
-            return this->formatDisplayValue(fmt::format("\"{0}\" {1}", displayString, size > this->getSize() ? "(truncated)" : ""), buffer);
+            return Pattern::formatDisplayValue(fmt::format("\"{0}\" {1}", displayString, size > this->getSize() ? "(truncated)" : ""), buffer);
         }
 
         std::shared_ptr<Pattern> getEntry(size_t index) const override {

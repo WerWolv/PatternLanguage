@@ -120,7 +120,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override {
-            if (areCommonPropertiesEqual<decltype(*this)>(other)) {
+            if (compareCommonProperties<decltype(*this)>(other)) {
                 auto otherPointer = static_cast<const PatternPointer *>(&other);
 
                 return otherPointer->m_pointedAtAddress == this->m_pointedAtAddress &&
@@ -155,15 +155,15 @@ namespace pl::ptrn {
             v.visit(*this);
         }
 
-        std::string getFormattedValue() override {
+        std::string formatDisplayValue() override {
             auto data = this->getValue().toSigned();
-            return this->formatDisplayValue(fmt::format("*(0x{0:X})", data), this->getValue());
+            return Pattern::formatDisplayValue(fmt::format("*(0x{0:X})", data), this->getValue());
         }
 
         [[nodiscard]] std::string toString() const override {
             auto result = this->m_pointedAt->toString();
 
-            return this->formatDisplayValue(result, this->clone().get());
+            return Pattern::formatDisplayValue(result, this->clone().get());
         }
 
     private:

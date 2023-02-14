@@ -20,13 +20,13 @@ namespace pl::ptrn {
             return { };
         }
 
-        [[nodiscard]] bool operator==(const Pattern &other) const override { return areCommonPropertiesEqual<decltype(*this)>(other); }
+        [[nodiscard]] bool operator==(const Pattern &other) const override { return compareCommonProperties<decltype(*this)>(other); }
 
         void accept(PatternVisitor &v) override {
             v.visit(*this);
         }
 
-        std::string getFormattedValue() override {
+        std::string formatDisplayValue() override {
             return "";
         }
 
@@ -38,7 +38,7 @@ namespace pl::ptrn {
                    return fmt::format("padding[{}]", this->getSize());
             }();
 
-            return this->formatDisplayValue(result, this->getValue());
+            return Pattern::formatDisplayValue(result, this->getValue());
         }
     };
 

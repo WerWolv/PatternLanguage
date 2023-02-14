@@ -135,7 +135,7 @@ namespace pl::ptrn {
 
             result += " }";
 
-            return this->formatDisplayValue(result, this->clone().get());
+            return Pattern::formatDisplayValue(result, this->clone().get());
         }
 
         void sort(const std::function<bool (const Pattern *, const Pattern *)> &comparator) override {
@@ -150,7 +150,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override {
-            if (!areCommonPropertiesEqual<decltype(*this)>(other))
+            if (!compareCommonProperties<decltype(*this)>(other))
                 return false;
 
             auto &otherUnion = *static_cast<const PatternUnion *>(&other);
@@ -180,8 +180,8 @@ namespace pl::ptrn {
             v.visit(*this);
         }
 
-        std::string getFormattedValue() override {
-            return this->formatDisplayValue("{ ... }", this);
+        std::string formatDisplayValue() override {
+            return Pattern::formatDisplayValue("{ ... }", this);
         }
 
     private:
