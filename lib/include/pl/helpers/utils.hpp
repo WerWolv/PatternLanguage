@@ -36,6 +36,22 @@ namespace pl::hlp {
         return bytes;
     }
 
+    [[nodiscard]] std::vector<u8> toMinimalBytes(const auto &value) {
+        auto bytes = toBytes(value);
+
+        while (bytes.size() > 1 && bytes.back() == 0)
+            bytes.pop_back();
+
+        if (bytes.size() < sizeof(u128)) {
+            u32 newSize;
+            for (newSize = 1; newSize < bytes.size(); newSize <<= 1);
+
+            bytes.resize(newSize);
+        }
+
+        return bytes;
+    }
+
     std::string encodeByteString(const std::vector<u8> &bytes);
 
     [[nodiscard]] constexpr inline u64 extract(u8 from, u8 to, const pl::unsigned_integral auto &value) {
