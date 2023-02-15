@@ -48,6 +48,8 @@ namespace pl::core {
             Parent,
             This,
             While,
+            Match,
+            Default,
             For,
             Function,
             Return,
@@ -230,6 +232,8 @@ namespace pl::core {
             constexpr auto Else         = createToken(core::Token::Type::Keyword, Token::Keyword::Else);
             constexpr auto While        = createToken(core::Token::Type::Keyword, Token::Keyword::While);
             constexpr auto For          = createToken(core::Token::Type::Keyword, Token::Keyword::For);
+            constexpr auto Match        = createToken(core::Token::Type::Keyword, Token::Keyword::Match);
+            constexpr auto Default      = createToken(core::Token::Type::Keyword, Token::Keyword::Default);
             constexpr auto Return       = createToken(core::Token::Type::Keyword, Token::Keyword::Return);
             constexpr auto Break        = createToken(core::Token::Type::Keyword, Token::Keyword::Break);
             constexpr auto Continue     = createToken(core::Token::Type::Keyword, Token::Keyword::Continue);

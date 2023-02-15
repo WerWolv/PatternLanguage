@@ -504,6 +504,10 @@ namespace pl::core {
                         addToken(tkn::Keyword::LittleEndian);
                     else if (identifier == "if")
                         addToken(tkn::Keyword::If);
+                    else if (identifier == "match")
+                        addToken(tkn::Keyword::Match);
+                    else if (identifier == "default")
+                        addToken(tkn::Keyword::Default);
                     else if (identifier == "else")
                         addToken(tkn::Keyword::Else);
                     else if (identifier == "false")
