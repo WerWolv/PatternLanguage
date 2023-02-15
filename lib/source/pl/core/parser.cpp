@@ -42,14 +42,8 @@
 namespace pl::core {
 
     /* Mathematical expressions */
-
-    // Identifier([(parseMathematicalExpression)|<(parseMathematicalExpression),...>(parseMathematicalExpression)]
-    std::unique_ptr<ast::ASTNode> Parser::parseFunctionCall() {
-        std::string functionName = parseNamespaceResolution();
-
-        if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
-            err::P0002.throwError(fmt::format("Expected '(' after function name, got {}.", getFormattedToken(0)), {}, 1);
-
+    // ([(parseMathematicalExpression)|<(parseMathematicalExpression),...>(parseMathematicalExpression)]
+    std::vector<std::unique_ptr<ast::ASTNode>> Parser::parseParameters() {
         std::vector<std::unique_ptr<ast::ASTNode>> params;
 
         while (!MATCHES(sequence(tkn::Separator::RightParenthesis))) {
@@ -62,6 +56,18 @@ namespace pl::core {
             else if (!MATCHES(sequence(tkn::Separator::Comma)))
                 err::P0002.throwError(fmt::format("Expected ',' in-between parameters, got {}.", getFormattedToken(0)), {}, 1);
         }
+
+        return params;
+    }
+
+    // Identifier(<parseParameters>)
+    std::unique_ptr<ast::ASTNode> Parser::parseFunctionCall() {
+        std::string functionName = parseNamespaceResolution();
+
+        if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
+            err::P0002.throwError(fmt::format("Expected '(' after function name, got {}.", getFormattedToken(0)), {}, 1);
+
+        auto params = parseParameters();
 
         return create<ast::ASTNodeFunctionCall>(functionName, std::move(params));
     }
@@ -724,6 +730,20 @@ namespace pl::core {
         return create<ast::ASTNodeConditionalStatement>(std::move(condition), std::move(trueBody), std::move(falseBody));
     }
 
+    // match ((parseParameters)) { (parseParameters { (parseMember) })*, default { (parseMember) } }
+    std::unique_ptr<ast::ASTNode> Parser::parseMatchStatement() {
+        if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
+            err::P0002.throwError(fmt::format("Expected '(' after 'match', got {}.", getFormattedToken(0)), {}, 1);
+
+        auto condition = parseParameters();
+
+        if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
+            err::P0002.throwError(fmt::format("Expected '{{' after match head, got {}.", getFormattedToken(0)), {}, 1);
+
+        // INFO: Temporary code.
+        return create<ast::ASTNodeFunctionCall>("", std::move(condition));
+    }
+
     // while ((parseMathematicalExpression))
     std::unique_ptr<ast::ASTNode> Parser::parseWhileStatement() {
         auto condition = parseMathematicalExpression();
@@ -1052,6 +1072,8 @@ namespace pl::core {
             member = parsePadding();
         else if (MATCHES(sequence(tkn::Keyword::If)))
             return parseConditional();
+        else if (MATCHES(sequence(tkn::Keyword::Match))) 
+            return parseMatchStatement();
         else if (MATCHES(oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue)))
             member = parseFunctionControlFlowStatement();
         else
