@@ -180,7 +180,29 @@ namespace pl::ptrn {
         void setWriteFormatterFunction(const std::string &functionName) { this->addAttribute("format_write", { functionName }); }
 
         [[nodiscard]] virtual std::string getFormattedName() const = 0;
-        [[nodiscard]] virtual std::string getFormattedValue() = 0;
+
+        [[nodiscard]] std::string getFormattedValue() {
+            if (this->m_cachedDisplayValue != nullptr)
+                return *this->m_cachedDisplayValue;
+
+            try {
+                auto &currOffset = this->m_evaluator->dataOffset();
+                auto startOffset = currOffset;
+                currOffset = this->getOffset();
+
+                auto savedScope = this->m_evaluator->getScope(0);
+
+                PL_ON_SCOPE_EXIT {
+                    this->m_evaluator->getScope(0) = savedScope;
+                    currOffset = startOffset;
+                };
+
+                return this->formatDisplayValue();
+            } catch(std::exception &e) {
+                this->m_cachedDisplayValue = std::make_unique<std::string>(e.what());
+                return *this->m_cachedDisplayValue;
+            }
+        }
 
         [[nodiscard]] virtual std::string toString() const {
             auto result = fmt::format("{} {} @ 0x{:X}", this->getTypeName(), this->getVariableName(), this->getOffset());
@@ -276,64 +298,19 @@ namespace pl::ptrn {
         [[nodiscard]] virtual bool operator!=(const Pattern &other) const final { return !operator==(other); }
         [[nodiscard]] virtual bool operator==(const Pattern &other) const = 0;
 
-        template<typename T>
-        [[nodiscard]] bool areCommonPropertiesEqual(const Pattern &other) const {
-            return typeid(other) == typeid(std::remove_cvref_t<T>) &&
-                   this->m_offset == other.m_offset &&
-                   this->m_size == other.m_size &&
-                   (this->m_attributes == nullptr || other.m_attributes == nullptr || *this->m_attributes == *other.m_attributes) &&
-                   (this->m_endian == other.m_endian || (!this->m_endian.has_value() && other.m_endian == std::endian::native) || (!other.m_endian.has_value() && this->m_endian == std::endian::native)) &&
-                   this->m_variableName == other.m_variableName &&
-                   this->m_typeName == other.m_typeName &&
-                   this->m_section == other.m_section;
-        }
-
-        [[nodiscard]] std::string calcDisplayValue(const std::string &value, const core::Token::Literal &literal) const {
-            const auto &formatterFunctionName = this->getReadFormatterFunction();
-            if (formatterFunctionName.empty())
-                return value;
-            else {
-                try {
-                    const auto function = this->m_evaluator->findFunction(formatterFunctionName);
-                    if (function.has_value()) {
-                        auto result = function->func(this->m_evaluator, { literal });
-
-                        if (result.has_value()) {
-                            return result->toString(true);
-                        } else {
-                            return "";
-                        }
-                    } else {
-                        return "";
-                    }
-
-                } catch (core::err::EvaluatorError::Exception &error) {
-                    return error.what();
-                }
-            }
-        }
-
-        [[nodiscard]] std::string formatDisplayValue(const std::string &value, const core::Token::Literal &literal) const {
-            if (this->m_cachedDisplayValue == nullptr) {
-                auto &currOffset = this->m_evaluator->dataOffset();
-                auto startOffset = currOffset;
-                currOffset = this->getOffset();
-
-                auto savedScope = this->m_evaluator->getScope(0);
-                this->m_cachedDisplayValue = std::make_unique<std::string>(calcDisplayValue(value, literal));
-                this->m_evaluator->getScope(0) = savedScope;
-
-                currOffset = startOffset;
-            }
-
-            return *this->m_cachedDisplayValue;
-        }
-
         std::vector<u8> getBytes() {
             std::vector<u8> result;
             result.reserve(this->getChildren().size());
 
-            if (auto iteratable = dynamic_cast<pl::ptrn::Iteratable*>(this); iteratable != nullptr) {
+            if (!this->getTransformFunction().empty()) {
+                auto bytes = std::visit(hlp::overloaded {
+                        [](u128 value) { return hlp::toMinimalBytes(value); },
+                        [](i128 value) { return hlp::toMinimalBytes(value); },
+                        [](Pattern *pattern) { return pattern->getBytes(); },
+                        [](auto value) { return hlp::toBytes(value); }
+                }, this->getValue());
+                std::copy(bytes.begin(), bytes.end(), std::back_inserter(result));
+            } else if (auto iteratable = dynamic_cast<pl::ptrn::Iteratable*>(this); iteratable != nullptr) {
                 iteratable->forEachEntry(0, iteratable->getEntryCount(), [&](u64, pl::ptrn::Pattern *entry) {
                     const auto children = entry->getChildren();
                     for (const auto &[offset, child] : children) {
@@ -471,6 +448,46 @@ namespace pl::ptrn {
 
             return value;
         }
+
+        [[nodiscard]] virtual std::string formatDisplayValue() = 0;
+
+        [[nodiscard]] std::string formatDisplayValue(const std::string &value, const core::Token::Literal &literal) const {
+            const auto &formatterFunctionName = this->getReadFormatterFunction();
+            if (formatterFunctionName.empty())
+                return value;
+            else {
+                try {
+                    const auto function = this->m_evaluator->findFunction(formatterFunctionName);
+                    if (function.has_value()) {
+                        auto result = function->func(this->m_evaluator, { literal });
+
+                        if (result.has_value()) {
+                            return result->toString(true);
+                        } else {
+                            return "";
+                        }
+                    } else {
+                        return "";
+                    }
+
+                } catch (core::err::EvaluatorError::Exception &error) {
+                    return error.what();
+                }
+            }
+        }
+
+        template<typename T>
+        [[nodiscard]] bool compareCommonProperties(const Pattern &other) const {
+            return typeid(other) == typeid(std::remove_cvref_t<T>) &&
+                   this->m_offset == other.m_offset &&
+                   this->m_size == other.m_size &&
+                   (this->m_attributes == nullptr || other.m_attributes == nullptr || *this->m_attributes == *other.m_attributes) &&
+                   (this->m_endian == other.m_endian || (!this->m_endian.has_value() && other.m_endian == std::endian::native) || (!other.m_endian.has_value() && this->m_endian == std::endian::native)) &&
+                   this->m_variableName == other.m_variableName &&
+                   this->m_typeName == other.m_typeName &&
+                   this->m_section == other.m_section;
+        }
+
     private:
         friend pl::core::Evaluator;
 

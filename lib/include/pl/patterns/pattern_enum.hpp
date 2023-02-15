@@ -46,7 +46,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override {
-            if (!areCommonPropertiesEqual<decltype(*this)>(other))
+            if (!compareCommonProperties<decltype(*this)>(other))
                 return false;
 
             auto &otherEnum = *static_cast<const PatternEnum *>(&other);
@@ -65,7 +65,7 @@ namespace pl::ptrn {
             v.visit(*this);
         }
 
-        std::string getFormattedValue() override {
+        std::string formatDisplayValue() override {
             auto value = this->getValue().toUnsigned();
 
             return fmt::format("{} (0x{:0{}X})", this->toString(), value, this->getSize() * 2);
@@ -91,7 +91,7 @@ namespace pl::ptrn {
             if (!foundValue)
                 result += "???";
 
-            return this->formatDisplayValue(result, this->clone().get());
+            return Pattern::formatDisplayValue(result, this->clone().get());
         }
 
     private:

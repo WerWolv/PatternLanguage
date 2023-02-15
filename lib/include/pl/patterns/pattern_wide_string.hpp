@@ -51,16 +51,16 @@ namespace pl::ptrn {
 
             auto result = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>("???").to_bytes(buffer);
 
-            return this->formatDisplayValue(result, this->getValue());
+            return Pattern::formatDisplayValue(result, this->getValue());
         }
 
-        [[nodiscard]] bool operator==(const Pattern &other) const override { return areCommonPropertiesEqual<decltype(*this)>(other); }
+        [[nodiscard]] bool operator==(const Pattern &other) const override { return compareCommonProperties<decltype(*this)>(other); }
 
         void accept(PatternVisitor &v) override {
             v.visit(*this);
         }
 
-        std::string getFormattedValue() override {
+        std::string formatDisplayValue() override {
             auto size = std::min<size_t>(this->getSize(), 0x100);
 
             if (size == 0)
@@ -68,7 +68,7 @@ namespace pl::ptrn {
 
             std::string utf8String = this->getValue(size);
 
-            return this->formatDisplayValue(fmt::format("\"{0}\" {1}", utf8String, size > this->getSize() ? "(truncated)" : ""), utf8String);
+            return Pattern::formatDisplayValue(fmt::format("\"{0}\" {1}", utf8String, size > this->getSize() ? "(truncated)" : ""), utf8String);
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getEntries() override {

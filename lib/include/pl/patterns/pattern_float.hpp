@@ -58,24 +58,24 @@ namespace pl::ptrn {
             return this->getTypeName();
         }
 
-        [[nodiscard]] bool operator==(const Pattern &other) const override { return areCommonPropertiesEqual<decltype(*this)>(other); }
+        [[nodiscard]] bool operator==(const Pattern &other) const override { return compareCommonProperties<decltype(*this)>(other); }
 
         void accept(PatternVisitor &v) override {
             v.visit(*this);
         }
 
-        std::string getFormattedValue() override {
+        std::string formatDisplayValue() override {
             auto value = this->getValue().toFloatingPoint();
             if (this->getSize() == 4) {
                 auto f32 = static_cast<float>(value);
                 u32 integerResult = 0;
                 std::memcpy(&integerResult, &f32, sizeof(float));
-                return this->formatDisplayValue(fmt::format("{:g} (0x{:0{}X})", f32, integerResult, this->getSize() * 2), f32);
+                return Pattern::formatDisplayValue(fmt::format("{:g} (0x{:0{}X})", f32, integerResult, this->getSize() * 2), f32);
             } else if (this->getSize() == 8) {
                 auto f64 = static_cast<double>(value);
                 u64 integerResult = 0;
                 std::memcpy(&integerResult, &f64, sizeof(double));
-                return this->formatDisplayValue(fmt::format("{:g} (0x{:0{}X})", f64, integerResult, this->getSize() * 2), f64);
+                return Pattern::formatDisplayValue(fmt::format("{:g} (0x{:0{}X})", f64, integerResult, this->getSize() * 2), f64);
             } else {
                 return "Floating Point Data";
             }
@@ -85,7 +85,7 @@ namespace pl::ptrn {
             auto value = this->getValue();
             auto result = fmt::format("{}", value.toFloatingPoint());
 
-            return this->formatDisplayValue(result, value);
+            return Pattern::formatDisplayValue(result, value);
         }
     };
 

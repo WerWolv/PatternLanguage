@@ -31,7 +31,7 @@ namespace pl::ptrn {
             return "bool";
         }
 
-        std::string getFormattedValue() override {
+        std::string formatDisplayValue() override {
             switch (this->getValue().toUnsigned()) {
                 case 0: return "false";
                 case 1: return "true";
@@ -39,7 +39,7 @@ namespace pl::ptrn {
             }
         }
 
-        [[nodiscard]] bool operator==(const Pattern &other) const override { return areCommonPropertiesEqual<decltype(*this)>(other); }
+        [[nodiscard]] bool operator==(const Pattern &other) const override { return compareCommonProperties<decltype(*this)>(other); }
 
         void accept(PatternVisitor &v) override {
             v.visit(*this);
@@ -49,7 +49,7 @@ namespace pl::ptrn {
             auto value = this->getValue();
             auto result = fmt::format("{}", value.toBoolean() ? "true" : "false");
 
-            return this->formatDisplayValue(result, value);
+            return Pattern::formatDisplayValue(result, value);
         }
     };
 
