@@ -302,7 +302,15 @@ namespace pl::ptrn {
             std::vector<u8> result;
             result.reserve(this->getChildren().size());
 
-            if (auto iteratable = dynamic_cast<pl::ptrn::Iteratable*>(this); iteratable != nullptr) {
+            if (!this->getTransformFunction().empty()) {
+                auto bytes = std::visit(hlp::overloaded {
+                        [](u128 value) { return hlp::toMinimalBytes(value); },
+                        [](i128 value) { return hlp::toMinimalBytes(value); },
+                        [](Pattern *pattern) { return pattern->getBytes(); },
+                        [](auto value) { return hlp::toBytes(value); }
+                }, this->getValue());
+                std::copy(bytes.begin(), bytes.end(), std::back_inserter(result));
+            } else if (auto iteratable = dynamic_cast<pl::ptrn::Iteratable*>(this); iteratable != nullptr) {
                 iteratable->forEachEntry(0, iteratable->getEntryCount(), [&](u64, pl::ptrn::Pattern *entry) {
                     const auto children = entry->getChildren();
                     for (const auto &[offset, child] : children) {
@@ -315,14 +323,6 @@ namespace pl::ptrn {
                         std::copy(bytes.begin(), bytes.end(), std::back_inserter(result));
                     }
                 });
-            } else if (!this->getTransformFunction().empty()) {
-                auto bytes = std::visit(hlp::overloaded {
-                        [](u128 value) { return hlp::toMinimalBytes(value); },
-                        [](i128 value) { return hlp::toMinimalBytes(value); },
-                        [](Pattern *pattern) { return pattern->getBytes(); },
-                        [](auto value) { return hlp::toBytes(value); }
-                }, this->getValue());
-                std::copy(bytes.begin(), bytes.end(), std::back_inserter(result));
             } else {
                 result.resize(this->getSize());
                 this->getEvaluator()->readData(this->getOffset(), result.data(), result.size(), this->getSection());
