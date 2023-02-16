@@ -28,7 +28,7 @@ namespace pl::core::ast {
             evaluator->updateRuntime(this);
 
             auto &scope = *evaluator->getScope(0).scope;
-            auto &body  = evaluateCondition(evaluator) ? this->m_trueBody : this->m_falseBody;
+            auto &body  = evaluateCondition(getCondition(), evaluator) ? this->m_trueBody : this->m_falseBody;
 
             for (auto &node : body) {
                 auto newPatterns = node->createPatterns(evaluator);
@@ -50,7 +50,7 @@ namespace pl::core::ast {
         FunctionResult execute(Evaluator *evaluator) const override {
             evaluator->updateRuntime(this);
 
-            auto &body = evaluateCondition(evaluator) ? this->m_trueBody : this->m_falseBody;
+            auto &body = evaluateCondition(getCondition(), evaluator) ? this->m_trueBody : this->m_falseBody;
 
             auto variables     = *evaluator->getScope(0).scope;
             auto parameterPack = evaluator->getScope(0).parameterPack;
@@ -92,8 +92,8 @@ namespace pl::core::ast {
         }
 
     private:
-        [[nodiscard]] bool evaluateCondition(Evaluator *evaluator) const {
-            const auto node    = this->getCondition()->evaluate(evaluator);
+        [[nodiscard]] bool evaluateCondition(const std::unique_ptr<ASTNode> &condition, Evaluator *evaluator) const {
+            const auto node    = condition->evaluate(evaluator);
             const auto literal = dynamic_cast<ASTNodeLiteral *>(node.get());
             if (literal == nullptr)
                 err::E0010.throwError("Cannot use void expression as condition.", {}, this);
@@ -104,7 +104,6 @@ namespace pl::core::ast {
                 [](auto &&value) -> bool { return value != 0; }
             }, literal->getValue());
         }
-
         std::unique_ptr<ASTNode> m_condition;
         std::vector<std::unique_ptr<ASTNode>> m_trueBody, m_falseBody;
     };

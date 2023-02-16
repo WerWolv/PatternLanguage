@@ -424,6 +424,9 @@ namespace pl::core {
                 } else if (c == '%') {
                     addToken(tkn::Operator::Percent);
                     offset += 1;
+                } else if (c == '_') {
+                    addToken(tkn::Operator::Underscore);
+                    offset += 1;
                 } else if (code.substr(offset, 2) == "<<") {
                     addToken(tkn::Operator::LeftShift);
                     offset += 2;
@@ -504,6 +507,8 @@ namespace pl::core {
                         addToken(tkn::Keyword::LittleEndian);
                     else if (identifier == "if")
                         addToken(tkn::Keyword::If);
+                    else if (identifier == "match")
+                        addToken(tkn::Keyword::Match);
                     else if (identifier == "else")
                         addToken(tkn::Keyword::Else);
                     else if (identifier == "false")

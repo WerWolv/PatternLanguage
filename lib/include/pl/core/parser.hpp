@@ -105,6 +105,7 @@ namespace pl::core {
             return result;
         }
 
+        std::vector<std::unique_ptr<ast::ASTNode>> parseParameters();
         std::unique_ptr<ast::ASTNode> parseFunctionCall();
         std::unique_ptr<ast::ASTNode> parseStringLiteral();
         std::string parseNamespaceResolution();
@@ -136,11 +137,14 @@ namespace pl::core {
         std::unique_ptr<ast::ASTNode> parseFunctionControlFlowStatement();
         std::vector<std::unique_ptr<ast::ASTNode>> parseStatementBody();
         std::unique_ptr<ast::ASTNode> parseFunctionConditional();
+        std::unique_ptr<ast::ASTNode> parseFunctionMatch();
         std::unique_ptr<ast::ASTNode> parseFunctionWhileLoop();
         std::unique_ptr<ast::ASTNode> parseFunctionForLoop();
 
         void parseAttribute(ast::Attributable *currNode);
         std::unique_ptr<ast::ASTNode> parseConditional();
+        std::pair<std::unique_ptr<ast::ASTNode>, bool> parseCaseParameters(std::vector<std::unique_ptr<ast::ASTNode>> &condition);
+        std::unique_ptr<ast::ASTNode> parseMatchStatement();
         std::unique_ptr<ast::ASTNode> parseWhileStatement();
         std::unique_ptr<ast::ASTNodeTypeDecl> parseType();
         std::vector<std::shared_ptr<ast::ASTNode>> parseTemplateList();

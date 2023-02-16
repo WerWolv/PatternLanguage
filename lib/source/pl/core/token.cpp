@@ -195,6 +195,7 @@ namespace pl::core {
                                       case Union: return "union";
                                       case Using: return "using";
                                       case Enum: return "enum";
+                                      case Match: return "match";
                                       case Bitfield: return "bitfield";
                                       case LittleEndian: return "le";
                                       case BigEndian: return "be";
@@ -269,6 +270,7 @@ namespace pl::core {
                                       case AddressOf: return "addressof";
                                       case SizeOf: return "sizeof";
                                       case ScopeResolution: return "::";
+                                      case Underscore: return "_";
                                   }
 
                                   return "";
