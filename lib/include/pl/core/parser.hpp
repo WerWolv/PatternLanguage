@@ -120,14 +120,14 @@ namespace pl::core {
         std::unique_ptr<ast::ASTNode> parseShiftExpression();
         std::unique_ptr<ast::ASTNode> parseBinaryAndExpression();
         std::unique_ptr<ast::ASTNode> parseBinaryXorExpression();
-        std::unique_ptr<ast::ASTNode> parseBinaryOrExpression();
-        std::unique_ptr<ast::ASTNode> parseBooleanAnd(bool inTemplate);
-        std::unique_ptr<ast::ASTNode> parseBooleanXor(bool inTemplate);
-        std::unique_ptr<ast::ASTNode> parseBooleanOr(bool inTemplate);
-        std::unique_ptr<ast::ASTNode> parseRelationExpression(bool inTemplate);
-        std::unique_ptr<ast::ASTNode> parseEqualityExpression(bool inTemplate);
-        std::unique_ptr<ast::ASTNode> parseTernaryConditional(bool inTemplate);
-        std::unique_ptr<ast::ASTNode> parseMathematicalExpression(bool inTemplate = false);
+        std::unique_ptr<ast::ASTNode> parseBinaryOrExpression(bool inMatchRange);
+        std::unique_ptr<ast::ASTNode> parseBooleanAnd(bool inTemplate, bool inMatchRange);
+        std::unique_ptr<ast::ASTNode> parseBooleanXor(bool inTemplate, bool inMatchRange);
+        std::unique_ptr<ast::ASTNode> parseBooleanOr(bool inTemplate, bool inMatchRange);
+        std::unique_ptr<ast::ASTNode> parseRelationExpression(bool inTemplate, bool inMatchRange);
+        std::unique_ptr<ast::ASTNode> parseEqualityExpression(bool inTemplate, bool inMatchRange);
+        std::unique_ptr<ast::ASTNode> parseTernaryConditional(bool inTemplate, bool inMatchRange);
+        std::unique_ptr<ast::ASTNode> parseMathematicalExpression(bool inTemplate = false, bool inMatchRange = false);
 
         std::unique_ptr<ast::ASTNode> parseFunctionDefinition();
         std::unique_ptr<ast::ASTNode> parseFunctionVariableDecl(bool constant = false);

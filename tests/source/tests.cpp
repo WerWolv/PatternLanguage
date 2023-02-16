@@ -10,6 +10,7 @@
 #include "test_patterns/test_pattern_failing_assert.hpp"
 #include "test_patterns/test_pattern_bitfields.hpp"
 #include "test_patterns/test_pattern_math.hpp"
+#include "test_patterns/test_pattern_match.hpp"
 #include "test_patterns/test_pattern_rvalues.hpp"
 #include "test_patterns/test_pattern_namespaces.hpp"
 #include "test_patterns/test_pattern_extra_semicolon.hpp"
@@ -29,6 +30,7 @@ std::array Tests = {
     TEST(FailingAssert),
     TEST(Bitfields),
     TEST(Math),
+    TEST(Matching),
     TEST(RValues),
     TEST(Namespaces),
     TEST(ExtraSemicolon),

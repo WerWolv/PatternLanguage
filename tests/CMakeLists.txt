@@ -11,6 +11,7 @@ set(AVAILABLE_TESTS
         Enums
         Literals
         Padding
+        Matching
         SucceedingAssert
         FailingAssert
         Bitfields
