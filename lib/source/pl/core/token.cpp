@@ -196,7 +196,6 @@ namespace pl::core {
                                       case Using: return "using";
                                       case Enum: return "enum";
                                       case Match: return "match";
-                                      case Default: return "default";
                                       case Bitfield: return "bitfield";
                                       case LittleEndian: return "le";
                                       case BigEndian: return "be";
