@@ -731,22 +731,25 @@ namespace pl::core {
         return create<ast::ASTNodeConditionalStatement>(std::move(condition), std::move(trueBody), std::move(falseBody));
     }
 
-    std::unique_ptr<ast::ASTNode> Parser::parseCaseParameters(std::vector<std::unique_ptr<ast::ASTNode>> &condition) {
+    std::pair<std::unique_ptr<ast::ASTNode>, bool> Parser::parseCaseParameters(std::vector<std::unique_ptr<ast::ASTNode>> &condition) {
         std::vector<std::unique_ptr<ast::ASTNode>> compiledConditions;
 
         size_t i = 0;
+        bool isDefault = true;
         while (!MATCHES(sequence(tkn::Separator::RightParenthesis))) {
             if(i > condition.size()-1) {
                 err::P0002.throwError("Size of case parameters bigger than size of match condition.", {}, 1);
             }
             if(MATCHES(sequence(tkn::Operator::Underscore))) {
-                // pass true
+                // if '_' is found, act as wildcard, push literal(true)
                 compiledConditions.push_back(std::make_unique<ast::ASTNodeLiteral>(true));
             } else {
+                isDefault = false;
                 auto param = parseMathematicalExpression();
 
+                // bound condition[i] and parameter[i] into bool(condition == parameter)
                 compiledConditions.push_back(create<ast::ASTNodeMathematicalExpression>(
-                        std::move(condition[i]), std::move(param), Token::Operator::BoolEqual));
+                        condition[i]->clone(), std::move(param), Token::Operator::BoolEqual));
             }
 
             i++;
@@ -762,14 +765,14 @@ namespace pl::core {
             err::P0002.throwError("Size of case parameters smaller than size of match condition.", {}, 1);
         }
 
-        // concat all conditions using BoolAnd
+        // make multi expressions into single expression
         auto cond = std::move(compiledConditions[0]);
         for(size_t j = 1; j < compiledConditions.size(); j++) {
             cond = create<ast::ASTNodeMathematicalExpression>(
                     std::move(cond), std::move(compiledConditions[j]), Token::Operator::BoolAnd);
         }
 
-        return cond;
+        return {std::move(cond), isDefault};
     }
 
     // match ((parseParameters)) { (parseParameters { (parseMember) })*, default { (parseMember) } }
@@ -783,12 +786,13 @@ namespace pl::core {
             err::P0002.throwError(fmt::format("Expected '{{' after match head, got {}.", getFormattedToken(0)), {}, 1);
 
         std::vector<ast::MatchCase> cases;
+        std::optional<ast::MatchCase> defaultCase;
 
         while(!MATCHES(sequence(tkn::Separator::RightBrace))) {
             if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
                 err::P0002.throwError(fmt::format("Expected '(', got {}.", getFormattedToken(0)), {}, 1);
 
-            auto cond = parseCaseParameters(condition);
+            auto [caseCondition, isDefault] = parseCaseParameters(condition);
             std::vector<std::unique_ptr<ast::ASTNode>> body;
 
             if (MATCHES(sequence(tkn::Separator::LeftBrace))) {
@@ -797,14 +801,16 @@ namespace pl::core {
                 }
             } else body.push_back(parseMember());
 
-            ast::MatchCase caseNode = {std::move(cond), std::move(body)};
-            cases.push_back(caseNode);
+            if(isDefault)
+                defaultCase = ast::MatchCase(std::move(caseCondition), std::move(body));
+            else
+                cases.emplace_back(std::move(caseCondition), std::move(body));
 
             if(MATCHES(sequence(tkn::Separator::RightBrace)))
                 break;
         }
 
-        return create<ast::ASTNodeMatchStatement>(std::move(cases));
+        return create<ast::ASTNodeMatchStatement>(std::move(cases), std::move(defaultCase));
     }
 
     // while ((parseMathematicalExpression))
