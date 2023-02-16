@@ -56,7 +56,7 @@ Conditionals like this can be used in Structs, Unions and Bitfields :version:`1.
   :width: 100%
   :alt: Conditional Decoding
 
-Match statements :version:`1.24.0`
+Match statements :version:`1.28.0`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Match statements are a more powerful alternative to conditionals. They allow you to more
@@ -95,7 +95,7 @@ easily match against multiple values and have more forms of comparison logic ava
     Packet packet[3] @ 0xF0;
 
 But the match statement allows for much more than just a simple switch.
-It also allows you match multiple values at once and use more complex comparison logic.
+It also allows you to match multiple values at once and use more complex comparison logic.
 Alongside is also the `_` wildcard that matches any value, and thus also creates the default case.
 
 .. code-block:: hexpat
