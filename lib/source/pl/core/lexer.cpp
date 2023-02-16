@@ -424,9 +424,6 @@ namespace pl::core {
                 } else if (c == '%') {
                     addToken(tkn::Operator::Percent);
                     offset += 1;
-                } else if (c == '_') {
-                    addToken(tkn::Operator::Underscore);
-                    offset += 1;
                 } else if (code.substr(offset, 2) == "<<") {
                     addToken(tkn::Operator::LeftShift);
                     offset += 2;
@@ -543,6 +540,8 @@ namespace pl::core {
                         addToken(tkn::Keyword::Null);
                     else if (identifier == "const")
                         addToken(tkn::Keyword::Const);
+                    else if (identifier == "_")
+                        addToken(tkn::Keyword::Underscore);
 
                     // Check for built-in types
                     else if (identifier == "u8")

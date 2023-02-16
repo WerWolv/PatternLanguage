@@ -779,7 +779,7 @@ namespace pl::core {
             if (caseIndex > condition.size() - 1) {
                 err::P0002.throwError("Size of case parameters bigger than size of match condition.", {}, 1);
             }
-            if (MATCHES(sequence(tkn::Operator::Underscore))) {
+            if (MATCHES(sequence(tkn::Keyword::Underscore))) {
                 // if '_' is found, act as wildcard, push literal(true)
                 compiledConditions.push_back(std::make_unique<ast::ASTNodeLiteral>(true));
             } else {

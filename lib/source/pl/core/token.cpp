@@ -215,6 +215,7 @@ namespace pl::core {
                                       case Reference: return "ref";
                                       case Null: return "null";
                                       case Const: return "const";
+                                      case Underscore: return "_";
                                   }
 
                                   return "";
@@ -270,7 +271,6 @@ namespace pl::core {
                                       case AddressOf: return "addressof";
                                       case SizeOf: return "sizeof";
                                       case ScopeResolution: return "::";
-                                      case Underscore: return "_";
                                   }
 
                                   return "";

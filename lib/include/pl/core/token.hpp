@@ -59,7 +59,8 @@ namespace pl::core {
             Continue,
             Reference,
             Null,
-            Const
+            Const,
+            Underscore
         };
 
         enum class Operator {
@@ -88,7 +89,6 @@ namespace pl::core {
             BoolXor,
             BoolNot,
             TernaryConditional,
-            Underscore,
             Dollar,
             AddressOf,
             SizeOf,
@@ -252,6 +252,7 @@ namespace pl::core {
             constexpr auto Reference    = createToken(core::Token::Type::Keyword, Token::Keyword::Reference);
             constexpr auto Null         = createToken(core::Token::Type::Keyword, Token::Keyword::Null);
             constexpr auto Const        = createToken(core::Token::Type::Keyword, Token::Keyword::Const);
+            constexpr auto Underscore   = createToken(core::Token::Type::Keyword, Token::Keyword::Underscore);
 
         }
 
@@ -299,7 +300,6 @@ namespace pl::core {
             constexpr auto SizeOf                   = createToken(core::Token::Type::Operator, Token::Operator::SizeOf);
             constexpr auto At                       = createToken(core::Token::Type::Operator, Token::Operator::At);
             constexpr auto Assign                   = createToken(core::Token::Type::Operator, Token::Operator::Assign);
-            constexpr auto Underscore               = createToken(core::Token::Type::Operator, Token::Operator::Underscore);
 
         }
 
