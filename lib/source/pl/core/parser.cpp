@@ -808,9 +808,9 @@ namespace pl::core {
 
         // make multi expressions into single expression
         auto cond = std::move(compiledConditions[0]);
-        for(size_t j = 1; j < compiledConditions.size(); j++) {
+        for(size_t condIndex = 1; condIndex < compiledConditions.size(); condIndex++) {
             cond = create<ast::ASTNodeMathematicalExpression>(
-                    std::move(cond), std::move(compiledConditions[j]), Token::Operator::BoolAnd);
+                    std::move(cond), std::move(compiledConditions[condIndex]), Token::Operator::BoolAnd);
         }
 
         return {std::move(cond), isDefault};
