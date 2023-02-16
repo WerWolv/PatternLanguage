@@ -321,7 +321,7 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parseBinaryOrExpression(bool inMatchRange) {
         auto node = this->parseBinaryXorExpression();
 
-        if(inMatchRange && peek(tkn::Operator::BitOr))
+        if (inMatchRange && peek(tkn::Operator::BitOr))
             return node;
         while (MATCHES(sequence(tkn::Operator::BitOr))) {
             node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryXorExpression(), Token::Operator::BitOr);
@@ -782,11 +782,11 @@ namespace pl::core {
             if (MATCHES(sequence(tkn::Operator::Underscore))) {
                 // if '_' is found, act as wildcard, push literal(true)
                 compiledConditions.push_back(std::make_unique<ast::ASTNodeLiteral>(true));
-            } else  {
+            } else {
                 isDefault = false;
                 auto &param = condition[caseIndex];
                 auto first = parseMathematicalExpression(false, true);
-                if(peek(tkn::Operator::BitOr)) {
+                if (peek(tkn::Operator::BitOr)) {
                     // check for multiple options
                     // a | b | c should compile to
                     // param == a || param == b || param == c
@@ -795,12 +795,12 @@ namespace pl::core {
                         options.push_back(parseMathematicalExpression(false, true));
                     }
                     auto cond = create<ast::ASTNodeMathematicalExpression>(param->clone(), std::move(first), Token::Operator::BoolEqual);
-                    for(auto &option : options) {
+                    for (auto &option : options) {
                         auto eq = create<ast::ASTNodeMathematicalExpression>(param->clone(), std::move(option), Token::Operator::BoolEqual);
                         cond = create<ast::ASTNodeMathematicalExpression>(std::move(cond), std::move(eq), Token::Operator::BoolOr);
                     }
                     compiledConditions.push_back(std::move(cond));
-                } else if(MATCHES(sequence(tkn::Separator::Dot, tkn::Separator::Dot, tkn::Separator::Dot))) {
+                } else if (MATCHES(sequence(tkn::Separator::Dot, tkn::Separator::Dot, tkn::Separator::Dot))) {
                     // range a ... b should compile to
                     // param >= a && param <= b
                     auto last = parseMathematicalExpression();
