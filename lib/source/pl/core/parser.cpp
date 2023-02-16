@@ -679,6 +679,9 @@ namespace pl::core {
                 err::P0002.throwError(fmt::format("Expected '(', got {}.", getFormattedToken(0)), {}, 1);
 
             auto [caseCondition, isDefault] = parseCaseParameters(condition);
+            if(!MATCHES(sequence(tkn::Operator::Colon)))
+                err::P0002.throwError(fmt::format("Expected ':', got {}.", getFormattedToken(0)), {}, 1);
+
             auto body = parseStatementBody();
 
             if(isDefault)
@@ -833,11 +836,14 @@ namespace pl::core {
             auto [caseCondition, isDefault] = parseCaseParameters(condition);
             std::vector<std::unique_ptr<ast::ASTNode>> body;
 
-            if (MATCHES(sequence(tkn::Separator::LeftBrace))) {
+            if (MATCHES(sequence(tkn::Operator::Colon, tkn::Separator::LeftBrace))) {
                 while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
                     body.push_back(parseMember());
                 }
-            } else body.push_back(parseMember());
+            } else if (MATCHES(sequence(tkn::Operator::Colon))) {
+                body.push_back(parseMember());
+            } else
+                err::P0002.throwError(fmt::format("Expected ':' after case condition, got {}.", getFormattedToken(0)), {}, 1);
 
             if(isDefault)
                 defaultCase = ast::MatchCase(std::move(caseCondition), std::move(body));
