@@ -764,7 +764,7 @@ namespace pl::core {
 
         // concat all conditions using BoolAnd
         auto cond = std::move(compiledConditions[0]);
-        for(size_t j = 1; i < compiledConditions.size(); j++) {
+        for(size_t j = 1; j < compiledConditions.size(); j++) {
             cond = create<ast::ASTNodeMathematicalExpression>(
                     std::move(cond), std::move(compiledConditions[j]), Token::Operator::BoolAnd);
         }
