@@ -121,11 +121,11 @@ class PatternLanguageLexer(RegexLexer):
 
     tokens = {
         'root': [
-            (r'(?<![a-zA-Z0-9_])(using|struct|union|enum|bitfield|be|le|fn|return|in|out|continue|break|ref|parent|addressof|sizeof|namespace|padding)(?![a-zA-Z0-9_])', token.Keyword.Reserved),
+            (r'(?<![a-zA-Z0-9_])(using|struct|union|enum|bitfield|be|le|fn|return|in|out|match|continue|break|ref|parent|addressof|sizeof|namespace|padding)(?![a-zA-Z0-9_])', token.Keyword.Reserved),
             (r'(?<![a-zA-Z0-9_])(u8|u16|u24|u32|u48|u64|u96|u128|s8|s16|s24|s32|s48|s64|s96|s128|float|double|char|char16|bool|auto|str)(?![a-zA-Z0-9_])', token.Keyword.Type),
             (r'(?<![a-zA-Z0-9_])(while|for|if|else|true|false|\$)(?![a-zA-Z0-9_])', token.Keyword.Type),
             (r'//.+', token.Comment),
-            (r'[\{\}\[\]\;\:\=\.\,\@\(\)\>\<\+\-\*\/\!]', token.Operator),
+            (r'[\{\}\[\]\;\:\=\.\,\@\(\)\>\<\+\-\*\/\!\|]', token.Operator),
             (r'(#.+)', token.Comment.Preproc),
             (r'[a-zA-Z_][0-9A-Za-z_]*', token.Name),
             (r'\b(?<!\.)(0x[0-9A-Fa-f]+|0b[0-1]+|[0-9]+|[0-9]+\.[0-9]+)(?![\.\d])', token.Number),
