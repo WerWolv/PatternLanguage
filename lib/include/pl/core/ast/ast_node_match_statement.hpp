@@ -138,7 +138,7 @@ namespace pl::core::ast {
                 auto &condition = m_cases[i].condition;
                 if(evaluateCondition(condition, evaluator)) {
                     if(matchedBody.has_value())
-                        err::E0011.throwError(fmt::format("Match is ambiguous. Both case {} and {} match.", matchedBody.value() + 1, i + 1), {}, condition.get());
+                        err::E0013.throwError(fmt::format("Match is ambiguous. Both case {} and {} match.", matchedBody.value() + 1, i + 1), {}, condition.get());
                     matchedBody = i;
                 }
             }
