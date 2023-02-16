@@ -774,10 +774,10 @@ namespace pl::core {
         size_t caseIndex = 0;
         bool isDefault = true;
         while (!MATCHES(sequence(tkn::Separator::RightParenthesis))) {
-            if(caseIndex > condition.size() - 1) {
+            if (caseIndex > condition.size() - 1) {
                 err::P0002.throwError("Size of case parameters bigger than size of match condition.", {}, 1);
             }
-            if(MATCHES(sequence(tkn::Operator::Underscore))) {
+            if (MATCHES(sequence(tkn::Operator::Underscore))) {
                 // if '_' is found, act as wildcard, push literal(true)
                 compiledConditions.push_back(std::make_unique<ast::ASTNodeLiteral>(true));
             } else {
@@ -798,17 +798,17 @@ namespace pl::core {
                 err::P0002.throwError(fmt::format("Expected ',' in-between parameters, got {}.", getFormattedToken(0)), {}, 1);
         }
 
-        if(compiledConditions.empty()) {
+        if (compiledConditions.empty()) {
             err::P0002.throwError("No parameters found in case statement.", {}, 1);
         }
 
-        if(caseIndex != condition.size()) {
+        if (caseIndex != condition.size()) {
             err::P0002.throwError("Size of case parameters smaller than size of match condition.", {}, 1);
         }
 
         // make multi expressions into single expression
         auto cond = std::move(compiledConditions[0]);
-        for(size_t condIndex = 1; condIndex < compiledConditions.size(); condIndex++) {
+        for (size_t condIndex = 1; condIndex < compiledConditions.size(); condIndex++) {
             cond = create<ast::ASTNodeMathematicalExpression>(
                     std::move(cond), std::move(compiledConditions[condIndex]), Token::Operator::BoolAnd);
         }
@@ -829,7 +829,7 @@ namespace pl::core {
         std::vector<ast::MatchCase> cases;
         std::optional<ast::MatchCase> defaultCase;
 
-        while(!MATCHES(sequence(tkn::Separator::RightBrace))) {
+        while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
             if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
                 err::P0002.throwError(fmt::format("Expected '(', got {}.", getFormattedToken(0)), {}, 1);
 
@@ -845,12 +845,12 @@ namespace pl::core {
             } else
                 err::P0002.throwError(fmt::format("Expected ':' after case condition, got {}.", getFormattedToken(0)), {}, 1);
 
-            if(isDefault)
+            if (isDefault)
                 defaultCase = ast::MatchCase(std::move(caseCondition), std::move(body));
             else
                 cases.emplace_back(std::move(caseCondition), std::move(body));
 
-            if(MATCHES(sequence(tkn::Separator::RightBrace)))
+            if (MATCHES(sequence(tkn::Separator::RightBrace)))
                 break;
         }
 

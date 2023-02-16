@@ -61,7 +61,7 @@ namespace pl::core::ast {
             auto &scope = *evaluator->getScope(0).scope;
             auto body  = getCaseBody(evaluator);
 
-            if(!body) return {};
+            if (!body) return {};
 
             for (auto &node : *body) {
                 auto newPatterns = node->createPatterns(evaluator);
@@ -142,7 +142,7 @@ namespace pl::core::ast {
             std::optional<size_t> matchedBody;
             for (size_t i = 0; i < this->m_cases.size(); i++) {
                 auto &condition = this->m_cases[i].condition;
-                if(evaluateCondition(condition, evaluator)) {
+                if (evaluateCondition(condition, evaluator)) {
                     if(matchedBody.has_value())
                         err::E0013.throwError(fmt::format("Match is ambiguous. Both case {} and {} match.", matchedBody.value() + 1, i + 1), {}, condition.get());
                     matchedBody = i;
