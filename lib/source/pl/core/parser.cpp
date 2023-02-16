@@ -318,9 +318,11 @@ namespace pl::core {
     }
 
     // (parseBinaryXorExpression) | (parseBinaryXorExpression)
-    std::unique_ptr<ast::ASTNode> Parser::parseBinaryOrExpression() {
+    std::unique_ptr<ast::ASTNode> Parser::parseBinaryOrExpression(bool inMatchRange) {
         auto node = this->parseBinaryXorExpression();
 
+        if(inMatchRange && peek(tkn::Operator::BitOr))
+            return node;
         while (MATCHES(sequence(tkn::Operator::BitOr))) {
             node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryXorExpression(), Token::Operator::BitOr);
         }
@@ -329,76 +331,76 @@ namespace pl::core {
     }
 
     // (parseBinaryOrExpression) < >=|<=|>|< > (parseBinaryOrExpression)
-    std::unique_ptr<ast::ASTNode> Parser::parseRelationExpression(bool inTemplate) {
-        auto node = this->parseBinaryOrExpression();
+    std::unique_ptr<ast::ASTNode> Parser::parseRelationExpression(bool inTemplate, bool inMatchRange) {
+        auto node = this->parseBinaryOrExpression(inMatchRange);
 
         if (inTemplate && peek(tkn::Operator::BoolGreaterThan))
             return node;
 
         while (MATCHES(sequence(tkn::Operator::BoolGreaterThan) || sequence(tkn::Operator::BoolLessThan) || sequence(tkn::Operator::BoolGreaterThanOrEqual) || sequence(tkn::Operator::BoolLessThanOrEqual))) {
             auto op = getValue<Token::Operator>(-1);
-            node    = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryOrExpression(), op);
+            node    = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryOrExpression(inMatchRange), op);
         }
 
         return node;
     }
 
     // (parseRelationExpression) <==|!=> (parseRelationExpression)
-    std::unique_ptr<ast::ASTNode> Parser::parseEqualityExpression(bool inTemplate) {
-        auto node = this->parseRelationExpression(inTemplate);
+    std::unique_ptr<ast::ASTNode> Parser::parseEqualityExpression(bool inTemplate, bool inMatchRange) {
+        auto node = this->parseRelationExpression(inTemplate, inMatchRange);
 
         while (MATCHES(sequence(tkn::Operator::BoolEqual) || sequence(tkn::Operator::BoolNotEqual))) {
             auto op = getValue<Token::Operator>(-1);
-            node    = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseRelationExpression(inTemplate), op);
+            node    = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseRelationExpression(inTemplate, inMatchRange), op);
         }
 
         return node;
     }
 
     // (parseEqualityExpression) && (parseEqualityExpression)
-    std::unique_ptr<ast::ASTNode> Parser::parseBooleanAnd(bool inTemplate) {
-        auto node = this->parseEqualityExpression(inTemplate);
+    std::unique_ptr<ast::ASTNode> Parser::parseBooleanAnd(bool inTemplate, bool inMatchRange) {
+        auto node = this->parseEqualityExpression(inTemplate, inMatchRange);
 
         while (MATCHES(sequence(tkn::Operator::BoolAnd))) {
-            node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseEqualityExpression(inTemplate), Token::Operator::BoolAnd);
+            node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseEqualityExpression(inTemplate, inMatchRange), Token::Operator::BoolAnd);
         }
 
         return node;
     }
 
     // (parseBooleanAnd) ^^ (parseBooleanAnd)
-    std::unique_ptr<ast::ASTNode> Parser::parseBooleanXor(bool inTemplate) {
-        auto node = this->parseBooleanAnd(inTemplate);
+    std::unique_ptr<ast::ASTNode> Parser::parseBooleanXor(bool inTemplate, bool inMatchRange) {
+        auto node = this->parseBooleanAnd(inTemplate, inMatchRange);
 
         while (MATCHES(sequence(tkn::Operator::BoolXor))) {
-            node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBooleanAnd(inTemplate), Token::Operator::BoolXor);
+            node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBooleanAnd(inTemplate, inMatchRange), Token::Operator::BoolXor);
         }
 
         return node;
     }
 
     // (parseBooleanXor) || (parseBooleanXor)
-    std::unique_ptr<ast::ASTNode> Parser::parseBooleanOr(bool inTemplate) {
-        auto node = this->parseBooleanXor(inTemplate);
+    std::unique_ptr<ast::ASTNode> Parser::parseBooleanOr(bool inTemplate, bool inMatchRange) {
+        auto node = this->parseBooleanXor(inTemplate, inMatchRange);
 
         while (MATCHES(sequence(tkn::Operator::BoolOr))) {
-            node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBooleanXor(inTemplate), Token::Operator::BoolOr);
+            node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBooleanXor(inTemplate, inMatchRange), Token::Operator::BoolOr);
         }
 
         return node;
     }
 
     // (parseBooleanOr) ? (parseBooleanOr) : (parseBooleanOr)
-    std::unique_ptr<ast::ASTNode> Parser::parseTernaryConditional(bool inTemplate) {
-        auto node = this->parseBooleanOr(inTemplate);
+    std::unique_ptr<ast::ASTNode> Parser::parseTernaryConditional(bool inTemplate, bool inMatchRange) {
+        auto node = this->parseBooleanOr(inTemplate, inMatchRange);
 
         while (MATCHES(sequence(tkn::Operator::TernaryConditional))) {
-            auto second = this->parseBooleanOr(inTemplate);
+            auto second = this->parseBooleanOr(inTemplate, inMatchRange);
 
             if (!MATCHES(sequence(tkn::Operator::Colon)))
                 err::P0002.throwError(fmt::format("Expected ':' after ternary condition, got {}", getFormattedToken(0)), {}, 1);
 
-            auto third = this->parseBooleanOr(inTemplate);
+            auto third = this->parseBooleanOr(inTemplate, inMatchRange);
             node = create<ast::ASTNodeTernaryExpression>(std::move(node), std::move(second), std::move(third), Token::Operator::TernaryConditional);
         }
 
@@ -406,8 +408,8 @@ namespace pl::core {
     }
 
     // (parseTernaryConditional)
-    std::unique_ptr<ast::ASTNode> Parser::parseMathematicalExpression(bool inTemplate) {
-        return this->parseTernaryConditional(inTemplate);
+    std::unique_ptr<ast::ASTNode> Parser::parseMathematicalExpression(bool inTemplate, bool inMatchRange) {
+        return this->parseTernaryConditional(inTemplate, inMatchRange);
     }
 
     // [[ <Identifier[( (parseStringLiteral) )], ...> ]]
@@ -780,13 +782,37 @@ namespace pl::core {
             if (MATCHES(sequence(tkn::Operator::Underscore))) {
                 // if '_' is found, act as wildcard, push literal(true)
                 compiledConditions.push_back(std::make_unique<ast::ASTNodeLiteral>(true));
-            } else {
+            } else  {
                 isDefault = false;
-                auto param = parseMathematicalExpression();
-
-                // bound condition[caseIndex] and parameter[caseIndex] into bool(condition == parameter)
-                compiledConditions.push_back(create<ast::ASTNodeMathematicalExpression>(
-                        condition[caseIndex]->clone(), std::move(param), Token::Operator::BoolEqual));
+                auto &param = condition[caseIndex];
+                auto first = parseMathematicalExpression(false, true);
+                if(peek(tkn::Operator::BitOr)) {
+                    // check for multiple options
+                    // a | b | c should compile to
+                    // param == a || param == b || param == c
+                    std::vector<std::unique_ptr<ast::ASTNode>> options;
+                    while (MATCHES(sequence(tkn::Operator::BitOr))) {
+                        options.push_back(parseMathematicalExpression(false, true));
+                    }
+                    auto cond = create<ast::ASTNodeMathematicalExpression>(param->clone(), std::move(first), Token::Operator::BoolEqual);
+                    for(auto &option : options) {
+                        auto eq = create<ast::ASTNodeMathematicalExpression>(param->clone(), std::move(option), Token::Operator::BoolEqual);
+                        cond = create<ast::ASTNodeMathematicalExpression>(std::move(cond), std::move(eq), Token::Operator::BoolOr);
+                    }
+                    compiledConditions.push_back(std::move(cond));
+                } else if(MATCHES(sequence(tkn::Separator::Dot, tkn::Separator::Dot, tkn::Separator::Dot))) {
+                    // range a ... b should compile to
+                    // param >= a && param <= b
+                    auto last = parseMathematicalExpression();
+                    auto cond = create<ast::ASTNodeMathematicalExpression>(param->clone(), std::move(first), Token::Operator::BoolGreaterThanOrEqual);
+                    auto cond2 = create<ast::ASTNodeMathematicalExpression>(param->clone(), std::move(last), Token::Operator::BoolLessThanOrEqual);
+                    cond = create<ast::ASTNodeMathematicalExpression>(std::move(cond), std::move(cond2), Token::Operator::BoolAnd);
+                    compiledConditions.push_back(std::move(cond));
+                } else {
+                    // else just compile to param == a
+                    auto cond = create<ast::ASTNodeMathematicalExpression>(param->clone(), std::move(first), Token::Operator::BoolEqual);
+                    compiledConditions.push_back(std::move(cond));
+                }
             }
 
             caseIndex++;
