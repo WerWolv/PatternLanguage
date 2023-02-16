@@ -56,6 +56,83 @@ Conditionals like this can be used in Structs, Unions and Bitfields :version:`1.
   :width: 100%
   :alt: Conditional Decoding
 
+Match statements :version:`1.24.0`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Match statements are a more powerful alternative to conditionals. They allow you to more
+easily match against multiple values and have more forms of comparison logic available.
+
+.. code-block:: hexpat
+
+    enum Type : u8 {
+        A = 0x54,
+        B = 0xA0,
+        C = 0x0B
+    };
+
+    struct PacketA {
+        float x;
+    };
+
+    struct PacketB {
+        u8 y;
+    };
+
+    struct PacketC {
+        char z[];
+    };
+
+    struct Packet {
+        Type type;
+        
+        match (type) {
+            (Type::A): PacketA packet;
+            (Type::B): PacketB packet;
+            (Type::C): PacketC packet;
+        }
+    };
+
+    Packet packet[3] @ 0xF0;
+
+But the match statement allows for much more than just a simple switch.
+It also allows you match multiple values at once and use more complex comparison logic.
+Alongside is also the `_` wildcard that matches any value, and thus also creates the default case.
+
+.. code-block:: hexpat
+
+  ... 
+  struct Packet {
+    Type type;
+    u8 size;
+    
+    match (type) {
+      (Type::A, 0x200): PacketA packet;
+      (Type::C, _): PacketC packet;
+      (_, _): PacketB packet;
+    }
+  };
+
+  Packet packet[3] @ 0xF0;
+
+Also the match statement has special comparisons for allowing for more batchful comparisons.
+The `...` operator allows you to match a range of values, and the `|` operator allows to match between multiple values.
+
+.. code-block:: hexpat
+
+  ... 
+  struct Packet {
+    Type type;
+    u8 size;
+    
+    match (type) {
+      (Type::A, 0x200): PacketA packet;
+      (Type::C, 0x100 | 0x200): PacketC packet;
+      (Type::B, 0x100 ... 0x300): PacketB packet;
+    }
+  };
+
+  Packet packet[3] @ 0xF0;
+
 
 Pattern control flow :version:`1.13.0`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
