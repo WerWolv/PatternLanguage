@@ -424,6 +424,9 @@ namespace pl::core {
                 } else if (c == '%') {
                     addToken(tkn::Operator::Percent);
                     offset += 1;
+                } else if (c == '_') {
+                    addToken(tkn::Operator::Underscore);
+                    offset += 1;
                 } else if (code.substr(offset, 2) == "<<") {
                     addToken(tkn::Operator::LeftShift);
                     offset += 2;

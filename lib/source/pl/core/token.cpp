@@ -271,6 +271,7 @@ namespace pl::core {
                                       case AddressOf: return "addressof";
                                       case SizeOf: return "sizeof";
                                       case ScopeResolution: return "::";
+                                      case Underscore: return "_";
                                   }
 
                                   return "";
