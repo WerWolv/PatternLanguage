@@ -771,10 +771,10 @@ namespace pl::core {
     std::pair<std::unique_ptr<ast::ASTNode>, bool> Parser::parseCaseParameters(std::vector<std::unique_ptr<ast::ASTNode>> &condition) {
         std::vector<std::unique_ptr<ast::ASTNode>> compiledConditions;
 
-        size_t i = 0;
+        size_t caseIndex = 0;
         bool isDefault = true;
         while (!MATCHES(sequence(tkn::Separator::RightParenthesis))) {
-            if(i > condition.size()-1) {
+            if(caseIndex > condition.size() - 1) {
                 err::P0002.throwError("Size of case parameters bigger than size of match condition.", {}, 1);
             }
             if(MATCHES(sequence(tkn::Operator::Underscore))) {
@@ -784,12 +784,12 @@ namespace pl::core {
                 isDefault = false;
                 auto param = parseMathematicalExpression();
 
-                // bound condition[i] and parameter[i] into bool(condition == parameter)
+                // bound condition[caseIndex] and parameter[caseIndex] into bool(condition == parameter)
                 compiledConditions.push_back(create<ast::ASTNodeMathematicalExpression>(
-                        condition[i]->clone(), std::move(param), Token::Operator::BoolEqual));
+                        condition[caseIndex]->clone(), std::move(param), Token::Operator::BoolEqual));
             }
 
-            i++;
+            caseIndex++;
             if (MATCHES(sequence(tkn::Separator::Comma, tkn::Separator::RightParenthesis)))
                 err::P0002.throwError(fmt::format("Expected ')' at end of parameter list, got {}.", getFormattedToken(0)), {}, 1);
             else if (MATCHES(sequence(tkn::Separator::RightParenthesis)))
@@ -802,7 +802,7 @@ namespace pl::core {
             err::P0002.throwError("No parameters found in case statement.", {}, 1);
         }
 
-        if(i != condition.size()) {
+        if(caseIndex != condition.size()) {
             err::P0002.throwError("Size of case parameters smaller than size of match condition.", {}, 1);
         }
 

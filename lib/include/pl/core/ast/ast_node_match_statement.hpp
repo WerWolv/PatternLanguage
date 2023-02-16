@@ -44,7 +44,11 @@ namespace pl::core::ast {
         ASTNodeMatchStatement(const ASTNodeMatchStatement &other) : ASTNode(other) {
             for (auto &matchCase : other.m_cases)
                 this->m_cases.push_back(matchCase);
-            other.m_defaultCase ? this->m_defaultCase.emplace(*other.m_defaultCase) : this->m_defaultCase = std::nullopt;
+            if(other.m_defaultCase) {
+                this->m_defaultCase.emplace(*other.m_defaultCase);
+            } else {
+                this->m_defaultCase = std::nullopt;
+            }
         }
 
         [[nodiscard]] std::unique_ptr<ASTNode> clone() const override {
@@ -77,10 +81,12 @@ namespace pl::core::ast {
 
             auto body = getCaseBody(evaluator);
 
-            if(!body) return std::nullopt;
+            if (!body) return std::nullopt;
 
-            auto variables     = *evaluator->getScope(0).scope;
-            auto parameterPack = evaluator->getScope(0).parameterPack;
+            auto &currScope = evaluator->getScope(0);
+
+            auto variables     = *currScope.scope;
+            auto parameterPack = currScope.parameterPack;
 
             evaluator->pushScope(nullptr, variables);
             evaluator->getScope(0).parameterPack = parameterPack;
@@ -134,19 +140,19 @@ namespace pl::core::ast {
 
         [[nodiscard]] const std::vector<std::unique_ptr<ASTNode>>* getCaseBody(Evaluator *evaluator) const {
             std::optional<size_t> matchedBody;
-            for(size_t i = 0; i < m_cases.size(); i++) {
-                auto &condition = m_cases[i].condition;
+            for (size_t i = 0; i < this->m_cases.size(); i++) {
+                auto &condition = this->m_cases[i].condition;
                 if(evaluateCondition(condition, evaluator)) {
                     if(matchedBody.has_value())
                         err::E0013.throwError(fmt::format("Match is ambiguous. Both case {} and {} match.", matchedBody.value() + 1, i + 1), {}, condition.get());
                     matchedBody = i;
                 }
             }
-            if(matchedBody.has_value())
-                return &m_cases[matchedBody.value()].body;
+            if (matchedBody.has_value())
+                return &this->m_cases[matchedBody.value()].body;
             // if no found, then attempt to use default case
-            if(m_defaultCase.has_value())
-                return &m_defaultCase.value().body;
+            if (this->m_defaultCase.has_value())
+                return &this->m_defaultCase.value().body;
             return nullptr;
         }
 
