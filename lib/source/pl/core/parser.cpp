@@ -550,7 +550,7 @@ namespace pl::core {
         else if (MATCHES(sequence(tkn::Keyword::If))) {
             statement      = parseFunctionConditional();
             needsSemicolon = false;
-        } else if(MATCHES(sequence(tkn::Keyword::Match))) {
+        } else if (MATCHES(sequence(tkn::Keyword::Match))) {
             statement      = parseFunctionMatch();
             needsSemicolon = false;
         } else if (MATCHES(sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis))) {
@@ -674,22 +674,22 @@ namespace pl::core {
         std::vector<ast::MatchCase> cases;
         std::optional<ast::MatchCase> defaultCase;
 
-        while(!MATCHES(sequence(tkn::Separator::RightBrace))) {
+        while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
             if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
                 err::P0002.throwError(fmt::format("Expected '(', got {}.", getFormattedToken(0)), {}, 1);
 
             auto [caseCondition, isDefault] = parseCaseParameters(condition);
-            if(!MATCHES(sequence(tkn::Operator::Colon)))
+            if (!MATCHES(sequence(tkn::Operator::Colon)))
                 err::P0002.throwError(fmt::format("Expected ':', got {}.", getFormattedToken(0)), {}, 1);
 
             auto body = parseStatementBody();
 
-            if(isDefault)
+            if (isDefault)
                 defaultCase = ast::MatchCase(std::move(caseCondition), std::move(body));
             else
                 cases.emplace_back(std::move(caseCondition), std::move(body));
 
-            if(MATCHES(sequence(tkn::Separator::RightBrace)))
+            if (MATCHES(sequence(tkn::Separator::RightBrace)))
                 break;
         }
 
