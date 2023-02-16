@@ -16,6 +16,7 @@
 #include <pl/core/ast/ast_node_lvalue_assignment.hpp>
 #include <pl/core/ast/ast_node_mathematical_expression.hpp>
 #include <pl/core/ast/ast_node_multi_variable_decl.hpp>
+#include <pl/core/ast/ast_node_match_statement.hpp>
 #include <pl/core/ast/ast_node_pointer_variable_decl.hpp>
 #include <pl/core/ast/ast_node_rvalue.hpp>
 #include <pl/core/ast/ast_node_rvalue_assignment.hpp>
@@ -730,6 +731,47 @@ namespace pl::core {
         return create<ast::ASTNodeConditionalStatement>(std::move(condition), std::move(trueBody), std::move(falseBody));
     }
 
+    std::unique_ptr<ast::ASTNode> Parser::parseCaseParameters(std::vector<std::unique_ptr<ast::ASTNode>> &condition) {
+        std::vector<std::unique_ptr<ast::ASTNode>> compiledConditions;
+
+        size_t i = 0;
+        while (!MATCHES(sequence(tkn::Separator::RightParenthesis))) {
+            if(i > condition.size()-1) {
+                err::P0002.throwError("Size of case parameters bigger than size of match condition.", {}, 1);
+            }
+            if(MATCHES(sequence(tkn::Operator::Underscore))) {
+                // pass true
+                compiledConditions.push_back(std::make_unique<ast::ASTNodeLiteral>(true));
+            } else {
+                auto param = parseMathematicalExpression();
+
+                compiledConditions.push_back(create<ast::ASTNodeMathematicalExpression>(
+                        std::move(condition[i]), std::move(param), Token::Operator::BoolEqual));
+            }
+
+            i++;
+            if (MATCHES(sequence(tkn::Separator::Comma, tkn::Separator::RightParenthesis)))
+                err::P0002.throwError(fmt::format("Expected ')' at end of parameter list, got {}.", getFormattedToken(0)), {}, 1);
+            else if (MATCHES(sequence(tkn::Separator::RightParenthesis)))
+                break;
+            else if (!MATCHES(sequence(tkn::Separator::Comma)))
+                err::P0002.throwError(fmt::format("Expected ',' in-between parameters, got {}.", getFormattedToken(0)), {}, 1);
+        }
+
+        if(i != condition.size()) {
+            err::P0002.throwError("Size of case parameters smaller than size of match condition.", {}, 1);
+        }
+
+        // concat all conditions using BoolAnd
+        auto cond = std::move(compiledConditions[0]);
+        for(size_t j = 1; i < compiledConditions.size(); j++) {
+            cond = create<ast::ASTNodeMathematicalExpression>(
+                    std::move(cond), std::move(compiledConditions[j]), Token::Operator::BoolAnd);
+        }
+
+        return cond;
+    }
+
     // match ((parseParameters)) { (parseParameters { (parseMember) })*, default { (parseMember) } }
     std::unique_ptr<ast::ASTNode> Parser::parseMatchStatement() {
         if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
@@ -740,8 +782,29 @@ namespace pl::core {
         if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
             err::P0002.throwError(fmt::format("Expected '{{' after match head, got {}.", getFormattedToken(0)), {}, 1);
 
-        // INFO: Temporary code.
-        return create<ast::ASTNodeFunctionCall>("", std::move(condition));
+        std::vector<ast::MatchCase> cases;
+
+        while(!MATCHES(sequence(tkn::Separator::RightBrace))) {
+            if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
+                err::P0002.throwError(fmt::format("Expected '(', got {}.", getFormattedToken(0)), {}, 1);
+
+            auto cond = parseCaseParameters(condition);
+            std::vector<std::unique_ptr<ast::ASTNode>> body;
+
+            if (MATCHES(sequence(tkn::Separator::LeftBrace))) {
+                while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
+                    body.push_back(parseMember());
+                }
+            } else body.push_back(parseMember());
+
+            ast::MatchCase caseNode = {std::move(cond), std::move(body)};
+            cases.push_back(caseNode);
+
+            if(MATCHES(sequence(tkn::Separator::RightBrace)))
+                break;
+        }
+
+        return create<ast::ASTNodeMatchStatement>(std::move(cases));
     }
 
     // while ((parseMathematicalExpression))

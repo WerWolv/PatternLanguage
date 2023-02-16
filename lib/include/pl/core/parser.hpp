@@ -142,6 +142,7 @@ namespace pl::core {
 
         void parseAttribute(ast::Attributable *currNode);
         std::unique_ptr<ast::ASTNode> parseConditional();
+        std::unique_ptr<ast::ASTNode> parseCaseParameters(std::vector<std::unique_ptr<ast::ASTNode>> &condition);
         std::unique_ptr<ast::ASTNode> parseMatchStatement();
         std::unique_ptr<ast::ASTNode> parseWhileStatement();
         std::unique_ptr<ast::ASTNodeTypeDecl> parseType();

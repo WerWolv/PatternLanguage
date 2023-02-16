@@ -3,32 +3,40 @@
 #include <pl/core/ast/ast_node.hpp>
 #include <pl/core/ast/ast_node_literal.hpp>
 #include <pl/core/ast/ast_node_mathematical_expression.hpp>
+#include <utility>
 
 namespace pl::core::ast {
+
+    struct MatchCase {
+        std::unique_ptr<ASTNode> condition;
+        std::vector<std::unique_ptr<ASTNode>> body;
+
+        MatchCase() = default;
+
+        MatchCase(std::unique_ptr<ASTNode> condition, std::vector<std::unique_ptr<ASTNode>> body)
+            : condition(std::move(condition)), body(std::move(body)) { }
+
+        MatchCase(const MatchCase &other) {
+            this->condition = other.condition->clone();
+            for (auto &statement : other.body)
+                this->body.push_back(statement->clone());
+        }
+
+        MatchCase(MatchCase &&other) noexcept {
+            this->condition = std::move(other.condition);
+            this->body = std::move(other.body);
+        }
+    };
+
     class ASTNodeMatchStatement : public ASTNode {
 
-        struct Case {
-            std::vector<std::unique_ptr<ASTNode>> conditions;
-            std::vector<std::unique_ptr<ASTNode>> bodies;
-        };
-
     public:
-        explicit ASTNodeMatchStatement(std::vector<Case> cases, std::vector<std::unique_ptr<ASTNode>> &&defaultCase) 
-            : ASTNode(), m_cases(cases), m_defaultCase(std::move(defaultCase)) { }
+        explicit ASTNodeMatchStatement(std::vector<MatchCase> cases)
+            : ASTNode(), m_cases(std::move(cases)) { }
 
         ASTNodeMatchStatement(const ASTNodeMatchStatement &other) : ASTNode(other) {
-
-            for (auto &case_ : other.m_cases) {
-                Case newCase;
-                for (auto &condition : case_.conditions)
-                    newCase.conditions.push_back(condition->clone());
-                for (auto &body : case_.bodies)
-                    newCase.bodies.push_back(body->clone());
-                this->m_cases.push_back(newCase);
-            }
-
-            for (auto &defaultCase : other.m_defaultCase)
-                this->m_defaultCase.push_back(defaultCase->clone());
+            for (auto &matchCase : other.m_cases)
+                this->m_cases.push_back(matchCase);
         }
 
         [[nodiscard]] std::unique_ptr<ASTNode> clone() const override {
@@ -39,9 +47,11 @@ namespace pl::core::ast {
             evaluator->updateRuntime(this);
 
             auto &scope = *evaluator->getScope(0).scope;
-            auto &body  = getCaseBody(evaluator);
+            auto body  = getCaseBody(evaluator);
 
-            for (auto &node : body) {
+            if(!body) return {};
+
+            for (auto &node : *body) {
                 auto newPatterns = node->createPatterns(evaluator);
                 for (auto &pattern : newPatterns) {
                     scope.push_back(std::move(pattern));
@@ -57,7 +67,9 @@ namespace pl::core::ast {
          FunctionResult execute(Evaluator *evaluator) const override {
             evaluator->updateRuntime(this);
 
-            auto &body = getCaseBody(evaluator);
+            auto body = getCaseBody(evaluator);
+
+            if(!body) return std::nullopt;
 
             auto variables     = *evaluator->getScope(0).scope;
             auto parameterPack = evaluator->getScope(0).parameterPack;
@@ -68,7 +80,7 @@ namespace pl::core::ast {
                 evaluator->popScope();
             };
 
-            for (auto &statement : body) {
+            for (auto &statement : *body) {
                 auto result = statement->execute(evaluator);
 
                 if (auto ctrlStatement = evaluator->getCurrentControlFlowStatement(); ctrlStatement != ControlFlowStatement::None) {
@@ -111,23 +123,16 @@ namespace pl::core::ast {
                 [](auto &&value) -> bool { return value != 0; }
             }, literal->getValue());
         }
-    // compare two vectors of ASTNodes
-        [[nodiscard]] bool evalulate(const std::vector<std::unique_ptr<ASTNode>> &conditions, Evaluator* evaluator) const {
-            for (auto &condition : conditions) {
-                if(!evaluateCondition(condition, evaluator))
-                    return false;
-            }
-        }
 
-        [[nodiscard]] const std::vector<std::unique_ptr<ASTNode>> getCaseBody(Evaluator *evaluator) const {
+        [[nodiscard]] const std::vector<std::unique_ptr<ASTNode>>* getCaseBody(Evaluator *evaluator) const {
             for(auto &case_ : m_cases) {
-                if(evalulate(case_.conditions, evaluator))
-                    return case_.bodies;
+                if(evaluateCondition(case_.condition, evaluator))
+                    return &case_.body;
             }
-            return m_defaultCase;
+            // if no found, then return empty vector
+            return nullptr;
         }
 
-        std::vector<Case> m_cases;
-        std::vector<std::unique_ptr<ASTNode>> m_defaultCase;
+        std::vector<MatchCase> m_cases;
     };
 }
