@@ -550,6 +550,9 @@ namespace pl::core {
         else if (MATCHES(sequence(tkn::Keyword::If))) {
             statement      = parseFunctionConditional();
             needsSemicolon = false;
+        } else if(MATCHES(sequence(tkn::Keyword::Match))) {
+            statement      = parseFunctionMatch();
+            needsSemicolon = false;
         } else if (MATCHES(sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis))) {
             statement      = parseFunctionWhileLoop();
             needsSemicolon = false;
@@ -659,6 +662,37 @@ namespace pl::core {
         return create<ast::ASTNodeConditionalStatement>(std::move(condition), std::move(trueBody), std::move(falseBody));
     }
 
+    std::unique_ptr<ast::ASTNode> Parser::parseFunctionMatch() {
+        if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
+            err::P0002.throwError(fmt::format("Expected '(' after 'match', got {}.", getFormattedToken(0)), {}, 1);
+
+        auto condition = parseParameters();
+
+        if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
+            err::P0002.throwError(fmt::format("Expected '{{' after match head, got {}.", getFormattedToken(0)), {}, 1);
+
+        std::vector<ast::MatchCase> cases;
+        std::optional<ast::MatchCase> defaultCase;
+
+        while(!MATCHES(sequence(tkn::Separator::RightBrace))) {
+            if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
+                err::P0002.throwError(fmt::format("Expected '(', got {}.", getFormattedToken(0)), {}, 1);
+
+            auto [caseCondition, isDefault] = parseCaseParameters(condition);
+            auto body = parseStatementBody();
+
+            if(isDefault)
+                defaultCase = ast::MatchCase(std::move(caseCondition), std::move(body));
+            else
+                cases.emplace_back(std::move(caseCondition), std::move(body));
+
+            if(MATCHES(sequence(tkn::Separator::RightBrace)))
+                break;
+        }
+
+        return create<ast::ASTNodeMatchStatement>(std::move(cases), std::move(defaultCase));
+    }
+
     std::unique_ptr<ast::ASTNode> Parser::parseFunctionWhileLoop() {
         auto condition = parseMathematicalExpression();
         std::vector<std::unique_ptr<ast::ASTNode>> body;
@@ -759,6 +793,10 @@ namespace pl::core {
                 break;
             else if (!MATCHES(sequence(tkn::Separator::Comma)))
                 err::P0002.throwError(fmt::format("Expected ',' in-between parameters, got {}.", getFormattedToken(0)), {}, 1);
+        }
+
+        if(compiledConditions.empty()) {
+            err::P0002.throwError("No parameters found in case statement.", {}, 1);
         }
 
         if(i != condition.size()) {

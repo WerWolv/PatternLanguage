@@ -137,6 +137,7 @@ namespace pl::core {
         std::unique_ptr<ast::ASTNode> parseFunctionControlFlowStatement();
         std::vector<std::unique_ptr<ast::ASTNode>> parseStatementBody();
         std::unique_ptr<ast::ASTNode> parseFunctionConditional();
+        std::unique_ptr<ast::ASTNode> parseFunctionMatch();
         std::unique_ptr<ast::ASTNode> parseFunctionWhileLoop();
         std::unique_ptr<ast::ASTNode> parseFunctionForLoop();
 
