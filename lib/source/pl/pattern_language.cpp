@@ -317,7 +317,7 @@ namespace pl {
                     if (this->m_aborted)
                         return;
 
-                    if (child->getSize() == 0 || child->isLocal())
+                    if (child->getSize() == 0)
                         continue;
 
                     intervals.emplace_back(address, address + child->getSize() - 1, child);
@@ -342,10 +342,6 @@ namespace pl {
             value->clearFormatCache();
 
             return value;
-        });
-
-        std::erase_if(results, [](const auto &pattern) {
-            return pattern->isLocal();
         });
 
         return results;
