@@ -79,7 +79,7 @@ namespace pl::hlp {
     }
 
     [[nodiscard]] constexpr inline i128 signExtend(size_t numBits, i128 value) {
-        i128 mask = 1ULL << u128(numBits - 1);
+        i128 mask = u128(1) << u128(numBits - 1);
         return (value ^ mask) - mask;
     }
 
