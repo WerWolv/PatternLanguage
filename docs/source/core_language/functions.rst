@@ -16,10 +16,16 @@ Parameter types need to be specified explicitly, return type is automatically de
 
     std::print(min(100, 200)); // 100
 
+Global Scope
+^^^^^^^^^^^^
+
+The global scope for the most part, works the same as a function. All statements in the global scope will get executed when the program is executed.
+The only difference is that new types can be defined in the global scope.
+
 Parameter packs :version:`1.14.0`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To allow passing an unlimited number of parameters to functions, parameter packs can be used. 
+To allow passing an unlimited number of parameters to functions, parameter packs can be used.
 
 .. code-block:: hexpat
 
@@ -32,7 +38,7 @@ To allow passing an unlimited number of parameters to functions, parameter packs
 
     print_sequence(1, 2, 3, 4, 5, 6);
 
-Parameter packs can exclusively be used as arguments to other functions. Using them automatically expands them acting as if the contained values 
+Parameter packs can exclusively be used as arguments to other functions. Using them automatically expands them acting as if the contained values
 get passed to the other function individually.
 
 The above function will print out all passed values in sequence by printing the first parameter and then removing it by not passing it on to the function during
@@ -100,12 +106,16 @@ Custom types may also be used inside of functions :version:`1.19.0`
         return converter.floatingPoint;
     };
 
-``_`` variable :version:`1.19.0`
---------------------------------
+It is also possible to declare constants using the ``const`` keyword :version:`1.27.0`
 
-Variables named ``_`` are treated as no-ops. Creating a variable with this name will cause its definition and
-assignment to it be discarded. 
+.. code-block:: hexpat
 
+    fn get_value() {
+        const u32 value = 1234;
+        return value;
+    };
+
+    std::print("{}", get_value()); // 1234
 
 Control statements
 ^^^^^^^^^^^^^^^^^^
@@ -181,3 +191,18 @@ The return type of the function will automatically be determined by the value re
     };
 
     std::print("{}", get_value()); // 1234
+
+Pattern views :version:`1.26.0`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Pattern views are a way to access bytes as a certain type without actually placing a pattern there that will end up in the output.
+
+.. code-block:: hexpat
+
+    fn read_u32(u32 address) {
+        u32 value @ address;
+
+        return value;
+    };
+
+    std::print("{}", read_u32(0x1234)); // Prints the value at address 0x1234 formatted as a u32

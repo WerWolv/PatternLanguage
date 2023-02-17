@@ -9,14 +9,14 @@ Attributes are special directives that can add extra configuration individual va
     u8 red   [[color("FF0000")]];
     u8 green [[color("00FF00")]];
     u8 blue  [[color("0000FF")]];
-  } [[static]];
+  } [[static, color(std::format("{:02X}{:02X}{:02X}", red, green, blue))]];
 
 .. note::
 
   | Attributes can either have no arguments: ``[[attribute_name]]``
-  | Or a single string argument: ``[[attribute_name("attribute_value")]]``
+  | Or one or more arguments: ``[[attribute_name("arg1", 1234)]]``
 
-It's also possible to apply multiple attributes to the same variable or type: ``[[attribute1, attribute2]]``
+It's also possible to apply multiple attributes to the same variable or type: ``[[attribute1, attribute2(1234)]]``
 
 ------------------------
 
@@ -28,6 +28,9 @@ Variable Attributes
   :version:`1.16.0`
   Variable attributes may also be applied to types directly to cause all patterns
   created from them to have those attributes applied.
+
+  To access members of the variable the attribute is applied to, use the ``this`` keyword.
+  Some attributes expect an optional pattern as argument. If this is not necessary, you can use the ``null`` keyword instead.
 
 ``[[color("RRGGBB")]]``
 -----------------------
@@ -44,18 +47,30 @@ Changes the display name of the variable in the pattern data view without affect
 
 Adds a comment to the current variable that is displayed when hovering over it in the pattern data view.
 
-``[[format("formatter_function_name")]]``
------------------------------------------
+``[[format("formatter_function_name")]]`` / ``[[format_read("formatter_function_name")]]``
+------------------------------------------------------------------------------------------
 
 Overrides the default display value formatter with a custom function. 
 The function requires a single argument representing the value to be formatted (e.g ``u32`` if this attribute was applied to a variable of type ``u32``) and return a string which will be displayed in place of the default value.
 
 It's also possible to return a pattern or value from this function which will then be default formatted using the default pattern language rules. :version:`v1.22.0`
 
-``[[format_entries("formatter_function_name")]]`` :version:`1.15.0`
--------------------------------------------------------------------
+``[[format_write("formatter_function_name")]]`` :version:`1.26.0`
+-----------------------------------------------
 
-Can be applied to arrays and works the same as the ``[[format]]`` attribute but overrides the default dispay value formatter of all array entries
+Allows to specify a custom write formatter function for a type.
+The function takes in a string of the input provided by the user and returns any pattern that will be turned into bytes and gets written to the address of that pattern.
+
+``[[format_entries("formatter_function_name")]]`` / ``[[format_read_entries("formatter_function_name")]]`` :version:`1.15.0`
+----------------------------------------------------------------------------------------------------------------------------
+
+Can be applied to arrays and works the same as the ``[[format_read]]`` attribute but overrides the default display value formatter of all array entries
+instead of just the array pattern itself.
+
+``[[format_write_entries("formatter_function_name")]]`` :version:`1.27.0`
+-------------------------------------------------------------------------
+
+Can be applied to arrays and works the same as the ``[[format_write]]`` attribute but overrides the default value write formatter of all array entries
 instead of just the array pattern itself.
 
 ``[[hidden]]``
@@ -74,6 +89,12 @@ Useful to flatten the displayed tree structure and avoid unnecessary indentation
 
 Specifies a function that will be executed to preprocess the value read from that variable before it's being accessed through the dot syntax (``some_struct.some_value``).
 The function requires a single argument representing the original value that was read (e.g ``u32`` if this attribute was applied to a variable of type ``u32``) and return a value that will be returned instead.
+
+`[[transform_entries("formatter_function_name")]]`` :version:`1.27.0`
+---------------------------------------------------------------------
+
+Can be applied to arrays and works the same as the ``[[transform]]`` attribute but overrides the transform function of all array entries
+instead of just the array pattern itself.
 
 ``[[pointer_base("pointer_base_function_name")]]`` :version:`1.10.1`
 --------------------------------------------------------------------
@@ -110,9 +131,14 @@ Type Attributes
 These attributes can be applied to bitfields to set if bits should be indexed from left to right or from right to left
 
 ``[[sealed]]`` :version:`1.20.0`
----------------------------------------------------------------
+--------------------------------
 
-These attributes can be applied to structs, unions and bitfields.
+This attribute can be applied to structs, unions and bitfields.
 It causes tools that display Patterns in some way to not display the implementation details (such as children of this type) anymore but
 instead treat like a built-in type. This is mainly useful for making custom types that should decode and display the bytes in a custom
 format using the ``[[format]]`` attribute.
+
+``[[highlight_hidden]]`` :version:`1.27.0`
+------------------------------------------
+
+Works the same as the ``[[hidden]]`` attribute but only hides the highlighting of the variable and not the variable in the pattern data view.

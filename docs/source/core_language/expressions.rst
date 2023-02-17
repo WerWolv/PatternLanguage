@@ -133,6 +133,11 @@ It's also possible to assign a value to the dollar operator to change the curren
 
     $ += 0x100;
 
+The dollar operator can also be used to access single bytes of the main data. :version:`v1.26.0`
+
+.. code-block:: hexpat
+
+    std::print($[0]); // Prints the value of the byte at address 0x00
 
 Casting Operator
 ----------------

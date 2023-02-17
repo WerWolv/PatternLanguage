@@ -344,6 +344,20 @@ Inheritance allows copying all members of the parent struct into the child struc
 
 The struct ``Child`` now contains ``type``, ``value`` and ``string``.
 
+Anonymous members :version:`1.26.0`
+-----------------------------------
+
+It's possible to declare variables inside of structs or unions without giving them a name.
+This is useful when you know that there's a pattern of a certain type at this offset but the name of the variable is not known yet or isn't important.
+
+.. code-block:: hexpat
+
+  struct MyStruct {
+    u32;
+    float;
+    MyOtherStruct;
+  };
+
 Conditional parsing
 -------------------
 
@@ -451,3 +465,16 @@ To mark a template parameter as a non-type template parameter, use the ``auto`` 
   };
 
   Array<u32, 0x100> array @ 0x00;
+
+Pattern local variables :version:`1.27.0`
+-----------------------------------------
+
+It's possible to declare local variables inside of patterns that don't show up in the final type but can be used to store information for later use.
+To declare a local variable, simple initialize it with a value using the ``=`` operator.
+
+.. code-block:: hexpat
+
+    struct MyType {
+        u32 x, y, z; // Regular members
+        float localVariable = 0.5; // Local variable
+    };
