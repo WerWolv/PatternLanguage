@@ -13,10 +13,20 @@
 Types
 -----
 
-``type::LEB128``
+``type::LEB128``, ``type::uLEB128``
 
-**Visualizes a LEB128 number.**
+**Visualizes a unsigned LEB128 number.**
 
-.. image:: assets/leb128.png
+.. image:: assets/uleb128.png
   :width: 100%
-  :alt: LEB128
+  :alt: unsigned LEB128
+
+------------------------
+
+``type::sLEB128``
+
+**Visualizes a signed LEB128 number.**
+
+.. image:: assets/sleb128.png
+  :width: 100%
+  :alt: signed LEB128
