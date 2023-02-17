@@ -72,17 +72,14 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::string toString() const override {
-            u64 value = this->getValue().toUnsigned();
+            u128 value = this->getValue().toUnsigned();
 
             std::string result = this->getTypeName() + "::";
 
             bool foundValue = false;
-            for (auto &entry : this->getEnumValues()) {
-                auto min = entry.min.toUnsigned();
-                auto max = entry.max.toUnsigned();
-
-                if (value >= min && value <= max) {
-                    result += entry.name;
+            for (auto &[min, max, name] : this->getEnumValues()) {
+                if (value >= min.toUnsigned() && value <= max.toUnsigned()) {
+                    result += name;
                     foundValue = true;
                     break;
                 }
