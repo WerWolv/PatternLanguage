@@ -133,7 +133,7 @@ Functions
     =================== ===========================================================================
     ``address``         Address of value to read
     ``size``            Size of value to read. This can be 1, 2, 4, 8 or 16
-    ``endian``          Endianess of the read value :version:`v1.23.0`
+    ``endian``          Endianess of the read value :version:`1.23.0`
     ``return``          Value as the smalest unsigned type that can fit this many bytes
     =================== ===========================================================================
 
@@ -153,7 +153,7 @@ Functions
     =================== ===========================================================================
     ``address``         Address of value to read
     ``size``            Size of value to read. This can be 1, 2, 4, 8 or 16
-    ``endian``          Endianess of the read value :version:`v1.23.0`
+    ``endian``          Endianess of the read value :version:`1.23.0`
     ``return``          Value as the smalest signed type that can fit this many bytes
     =================== ===========================================================================
 

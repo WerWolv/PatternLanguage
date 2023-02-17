@@ -16,3 +16,5 @@ This part of the documentation covers the syntax, concepts and use of all the co
    in_out
    attributes
    preprocessor
+   comments
+   sections
