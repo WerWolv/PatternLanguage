@@ -4,8 +4,22 @@
 #include <pl/core/log_console.hpp>
 #include <pl/core/evaluator.hpp>
 #include <pl/patterns/pattern.hpp>
+#include <pl/helpers/buffer.hpp>
+#include <numeric>
+#include "pl/lib/std/types.hpp"
+
+#define BUFFER_THRESHOLD 0x3000
+#define CHUNKS 20
 
 namespace pl::lib::libstd::math {
+
+    enum AccumulationOperation {
+        ADD,
+        MULTIPLY,
+        MODULO,
+        MIN,
+        MAX
+    };
 
     void registerFunctions(pl::PatternLanguage &runtime) {
         using FunctionParameterCount = pl::api::FunctionParameterCount;
@@ -106,7 +120,6 @@ namespace pl::lib::libstd::math {
                 return std::atan2(params[0].toFloatingPoint(), params[1].toFloatingPoint());
             });
 
-
             /* sinh(value) */
             runtime.addFunction(nsStdMath, "sinh", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 return std::sinh(params[0].toFloatingPoint());
@@ -135,6 +148,45 @@ namespace pl::lib::libstd::math {
             /* atanh(value) */
             runtime.addFunction(nsStdMath, "atanh", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 return std::atanh(params[0].toFloatingPoint());
+            });
+
+            /* helper functions */
+            runtime.addFunction(nsStdMath, "accumulate", FunctionParameterCount::between(3,5), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
+                auto start = params[0].toUnsigned();
+                auto end = params[1].toUnsigned();
+                auto size = params[2].toUnsigned();
+                AccumulationOperation op = ADD;
+                if(params.size() > 3) {
+                    op = static_cast<AccumulationOperation>(params[3].toUnsigned());
+                }
+                types::Endian endian = 0;
+                if(params.size() > 4) {
+                    endian = static_cast<types::Endian>(params[4].toUnsigned());
+                }
+
+                u128 result = 0;
+                u128 endAddr = end / size;
+                using namespace hlp::bf;
+                auto reader = BufferedReader(ctx);
+                reader.seek(start);
+                reader.setEndAddress(end);
+                for(u128 addr = 0; addr < endAddr; ++addr) {
+                    auto bytes = reader.read(addr, size);
+                    // copy to u128
+                    u128 value = 0;
+                    std::memcpy(&value, bytes.data(), size);
+                    // swap endianess
+                    value = hlp::changeEndianess(value, size, endian);
+                    switch (op) {
+                        case ADD: result += value; break;
+                        case MULTIPLY: result *= value; break;
+                        case MIN: result = std::min(result, value); break;
+                        case MAX: result = std::max(result, value); break;
+                        case MODULO: result %= value; break;
+                    }
+                }
+
+                return result;
             });
         }
     }
