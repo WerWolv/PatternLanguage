@@ -170,7 +170,7 @@ namespace pl::lib::libstd::math {
                 auto reader = BufferedReader(ctx);
                 reader.seek(start);
                 reader.setEndAddress(end);
-                for(u128 addr = 0; addr < endAddr; ++addr) {
+                for(u128 addr = start; addr < endAddr; ++addr) {
                     auto bytes = reader.read(addr, size);
                     // copy to u128
                     u128 value = 0;
