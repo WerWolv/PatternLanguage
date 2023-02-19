@@ -87,6 +87,10 @@ namespace pl::core::ast {
                 }
             }
 
+            auto currEndian = evaluator->getDefaultEndian();
+            PL_ON_SCOPE_EXIT { evaluator->setDefaultEndian(currEndian); };
+
+            evaluator->setDefaultEndian(this->m_endian.value_or(currEndian));
             auto patterns = this->getType()->createPatterns(evaluator);
 
             for (auto &pattern : patterns) {
@@ -95,9 +99,6 @@ namespace pl::core::ast {
 
                 if (!this->m_name.empty())
                     pattern->setTypeName(this->m_name);
-
-                if (this->m_endian.has_value())
-                    pattern->setEndian(this->m_endian.value());
 
                 if (auto iteratable = dynamic_cast<ptrn::Iteratable *>(pattern.get()); iteratable != nullptr) {
                     auto scope = iteratable->getEntries();

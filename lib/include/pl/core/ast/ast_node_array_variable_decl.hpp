@@ -127,8 +127,6 @@ namespace pl::core::ast {
                 [](auto &&size) -> i128 { return size; }
             }, sizeLiteral->getValue());
 
-            evaluator->createArrayVariable(this->m_name, this->m_type.get(), entryCount, this->m_constant);
-
             if (this->m_placementOffset != nullptr) {
                 const auto placementNode = this->m_placementOffset->evaluate(evaluator);
                 const auto offsetLiteral = dynamic_cast<ASTNodeLiteral *>(placementNode.get());
@@ -139,14 +137,17 @@ namespace pl::core::ast {
                 u64 section = 0;
                 if (this->m_placementSection != nullptr) {
                     const auto sectionNode = this->m_placementSection->evaluate(evaluator);
-                    const auto sectionLiteral = dynamic_cast<ASTNodeLiteral *>(placementNode.get());
+                    const auto sectionLiteral = dynamic_cast<ASTNodeLiteral *>(sectionNode.get());
                     if (sectionLiteral == nullptr)
                         err::E0002.throwError("Cannot use void expression as section identifier.", {}, this);
 
                     section = sectionLiteral->getValue().toUnsigned();
                 }
 
+                evaluator->createArrayVariable(this->m_name, this->m_type.get(), entryCount, section, this->m_constant);
                 evaluator->setVariableAddress(this->getName(), offsetLiteral->getValue().toUnsigned(), section);
+            } else {
+                evaluator->createArrayVariable(this->m_name, this->m_type.get(), entryCount, ptrn::Pattern::HeapSectionId, this->m_constant);
             }
 
             return std::nullopt;

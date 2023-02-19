@@ -38,7 +38,7 @@ namespace pl::core {
         };
     }
 
-    void Evaluator::createArrayVariable(const std::string &name, ast::ASTNode *type, size_t entryCount, bool constant) {
+    void Evaluator::createArrayVariable(const std::string &name, ast::ASTNode *type, size_t entryCount, u64 section, bool constant) {
         // A variable named _ gets treated as "don't care"
         if (name == "_")
             return;
@@ -58,20 +58,31 @@ namespace pl::core {
 
         auto pattern = new ptrn::PatternArrayDynamic(this, 0, typePattern->getSize() * entryCount);
 
-        typePattern->setLocal(true);
-        std::vector<std::shared_ptr<ptrn::Pattern>> entries;
-        for (size_t i = 0; i < entryCount; i++) {
-            auto entryPattern = typePattern->clone();
+        if (section == ptrn::Pattern::HeapSectionId) {
+            typePattern->setLocal(true);
+            std::vector<std::shared_ptr<ptrn::Pattern>> entries;
+            for (size_t i = 0; i < entryCount; i++) {
+                auto entryPattern = typePattern->clone();
 
-            auto &heap = this->getHeap();
-            entryPattern->setOffset(u64(heap.size()) << 32);
-            heap.emplace_back();
+                auto &heap = this->getHeap();
+                entryPattern->setOffset(u64(heap.size()) << 32);
+                heap.emplace_back();
 
-            entries.push_back(std::move(entryPattern));
+                entries.push_back(std::move(entryPattern));
+            }
+            pattern->setEntries(std::move(entries));
+            pattern->setLocal(true);
+        } else {
+            typePattern->setSection(section);
+            std::vector<std::shared_ptr<ptrn::Pattern>> entries;
+            for (size_t i = 0; i < entryCount; i++) {
+                auto entryPattern = typePattern->clone();
+                entryPattern->setOffset(entryPattern->getSize() * i);
+                entries.push_back(std::move(entryPattern));
+            }
+            pattern->setEntries(std::move(entries));
+            pattern->setSection(section);
         }
-
-        pattern->setEntries(std::move(entries));
-        pattern->setLocal(true);
 
         pattern->setVariableName(name);
 
