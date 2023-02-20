@@ -24,7 +24,6 @@ namespace pl::ptrn {
             std::shared_ptr<Pattern> highlightTemplate = this->m_template->clone();
             highlightTemplate->setOffset(this->getOffset() + index * highlightTemplate->getSize());
 
-            this->m_highlightTemplates.push_back(highlightTemplate);
             return highlightTemplate;
         }
 
