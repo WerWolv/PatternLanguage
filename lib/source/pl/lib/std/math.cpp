@@ -1,3 +1,5 @@
+#include <numeric>
+
 #include <pl.hpp>
 
 #include <pl/core/token.hpp>
@@ -5,20 +7,16 @@
 #include <pl/core/evaluator.hpp>
 #include <pl/patterns/pattern.hpp>
 #include <pl/helpers/buffer.hpp>
-#include <numeric>
-#include "pl/lib/std/types.hpp"
-
-#define BUFFER_THRESHOLD 0x3000
-#define CHUNKS 20
+#include <pl/lib/std/types.hpp>
 
 namespace pl::lib::libstd::math {
 
-    enum AccumulationOperation {
-        ADD,
-        MULTIPLY,
-        MODULO,
-        MIN,
-        MAX
+    enum class AccumulationOperation {
+        Add,
+        Multiply,
+        Modulo,
+        Min,
+        Max
     };
 
     void registerFunctions(pl::PatternLanguage &runtime) {
@@ -155,7 +153,7 @@ namespace pl::lib::libstd::math {
                 auto start = params[0].toUnsigned();
                 auto end = params[1].toUnsigned();
                 auto size = params[2].toUnsigned();
-                AccumulationOperation op = ADD;
+                AccumulationOperation op = Add;
                 if(params.size() > 3) {
                     op = static_cast<AccumulationOperation>(params[3].toUnsigned());
                 }
@@ -164,10 +162,13 @@ namespace pl::lib::libstd::math {
                     endian = static_cast<types::Endian>(params[4].toUnsigned());
                 }
 
+                if(size > 16) {
+                    err::E0003.throwError("Size cannot be bigger than sizeof(u128)", {}, 0);
+                }
+ 
                 u128 result = 0;
                 u128 endAddr = end / size;
-                using namespace hlp::bf;
-                auto reader = BufferedReader(ctx);
+                auto reader = hlp::bf::BufferedReader(ctx);
                 reader.seek(start);
                 reader.setEndAddress(end);
                 for(u128 addr = start; addr < endAddr; ++addr) {
@@ -178,11 +179,11 @@ namespace pl::lib::libstd::math {
                     // swap endianess
                     value = hlp::changeEndianess(value, size, endian);
                     switch (op) {
-                        case ADD: result += value; break;
-                        case MULTIPLY: result *= value; break;
-                        case MIN: result = std::min(result, value); break;
-                        case MAX: result = std::max(result, value); break;
-                        case MODULO: result %= value; break;
+                        case Add: result += value; break;
+                        case Multiply: result *= value; break;
+                        case Min: result = std::min(result, value); break;
+                        case Max: result = std::max(result, value); break;
+                        case Modulo: result %= value; break;
                     }
                 }
 
