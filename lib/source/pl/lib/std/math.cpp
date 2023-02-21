@@ -153,7 +153,7 @@ namespace pl::lib::libstd::math {
                 auto start = params[0].toUnsigned();
                 auto end = params[1].toUnsigned();
                 auto size = params[2].toUnsigned();
-                AccumulationOperation op = Add;
+                AccumulationOperation op = AccumulationOperation::Add;
                 if(params.size() > 3) {
                     op = static_cast<AccumulationOperation>(params[3].toUnsigned());
                 }
@@ -179,11 +179,11 @@ namespace pl::lib::libstd::math {
                     // swap endianess
                     value = hlp::changeEndianess(value, size, endian);
                     switch (op) {
-                        case Add: result += value; break;
-                        case Multiply: result *= value; break;
-                        case Min: result = std::min(result, value); break;
-                        case Max: result = std::max(result, value); break;
-                        case Modulo: result %= value; break;
+                        case AccumulationOperation::Add: result += value; break;
+                        case AccumulationOperation::Multiply: result *= value; break;
+                        case AccumulationOperation::Min: result = std::min(result, value); break;
+                        case AccumulationOperation::Max: result = std::max(result, value); break;
+                        case AccumulationOperation::Modulo: result %= value; break;
                     }
                 }
 
