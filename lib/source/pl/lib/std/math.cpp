@@ -1,11 +1,23 @@
+#include <numeric>
+
 #include <pl.hpp>
 
 #include <pl/core/token.hpp>
 #include <pl/core/log_console.hpp>
 #include <pl/core/evaluator.hpp>
 #include <pl/patterns/pattern.hpp>
+#include <pl/helpers/buffer.hpp>
+#include <pl/lib/std/types.hpp>
 
 namespace pl::lib::libstd::math {
+
+    enum class AccumulationOperation {
+        Add,
+        Multiply,
+        Modulo,
+        Min,
+        Max
+    };
 
     void registerFunctions(pl::PatternLanguage &runtime) {
         using FunctionParameterCount = pl::api::FunctionParameterCount;
@@ -106,7 +118,6 @@ namespace pl::lib::libstd::math {
                 return std::atan2(params[0].toFloatingPoint(), params[1].toFloatingPoint());
             });
 
-
             /* sinh(value) */
             runtime.addFunction(nsStdMath, "sinh", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 return std::sinh(params[0].toFloatingPoint());
@@ -135,6 +146,53 @@ namespace pl::lib::libstd::math {
             /* atanh(value) */
             runtime.addFunction(nsStdMath, "atanh", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 return std::atanh(params[0].toFloatingPoint());
+            });
+
+            /* helper functions */
+            runtime.addFunction(nsStdMath, "accumulate", FunctionParameterCount::between(3,5), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
+                auto start = params[0].toUnsigned();
+                auto end   = params[1].toUnsigned();
+                auto size  = params[2].toUnsigned();
+                
+                AccumulationOperation op = AccumulationOperation::Add;
+                if (params.size() > 3)
+                    op = static_cast<AccumulationOperation>(params[3].toUnsigned());
+                
+                types::Endian endian = 0;
+                if (params.size() > 4)
+                    endian = static_cast<types::Endian>(params[4].toUnsigned());
+
+                if (size > 16)
+                    err::E0003.throwError("Size cannot be bigger than sizeof(u128)", {}, 0);
+ 
+                u128 result = 0;
+                u128 endAddr = end / size;
+
+                auto reader = hlp::bf::BufferedReader(ctx);
+                reader.seek(start);
+                reader.setEndAddress(end);
+
+                for (u128 addr = start; addr < endAddr; ++addr) {
+                    auto bytes = reader.read(addr, size);
+
+                    // Copy bytes to u128
+                    u128 value = 0;
+                    std::memcpy(&value, bytes.data(), size);
+
+                    // Swap endianess
+                    value = hlp::changeEndianess(value, size, endian);
+
+                    // Accumulate value into result
+                    switch (op) {
+                        case AccumulationOperation::Add: result += value; break;
+                        case AccumulationOperation::Multiply: result *= value; break;
+                        case AccumulationOperation::Min: result = std::min(result, value); break;
+                        case AccumulationOperation::Max: result = std::max(result, value); break;
+                        case AccumulationOperation::Modulo: result %= value; break;
+                    }
+                }
+
+                return result;
             });
         }
     }
