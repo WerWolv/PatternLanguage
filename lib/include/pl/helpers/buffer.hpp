@@ -8,25 +8,9 @@
 
 namespace pl::hlp::bf {
 
-    constexpr static inline unsigned long long operator""_Bytes(unsigned long long bytes) noexcept {
-        return bytes;
-    }
-
-    constexpr static inline unsigned long long operator""_KiB(unsigned long long kiB) noexcept {
-        return operator""_Bytes(kiB * 1024);
-    }
-
-    constexpr static inline unsigned long long operator""_MiB(unsigned long long MiB) noexcept {
-        return operator""_KiB(MiB * 1024);
-    }
-
-    constexpr static inline unsigned long long operator""_GiB(unsigned long long GiB) noexcept {
-        return operator""_MiB(GiB * 1024);
-    }
-
     class BufferedReader {
     public:
-        explicit BufferedReader(core::Evaluator* ctx, size_t bufferSize = 16_MiB, u64 sectionId = ptrn::Pattern::MainSectionId)
+        explicit BufferedReader(core::Evaluator* ctx, size_t bufferSize = 0x100'0000, u64 sectionId = ptrn::Pattern::MainSectionId)
                 : m_provider(ctx), m_bufferAddress(ctx->getDataBaseAddress()), m_section(sectionId),
                   m_maxBufferSize(bufferSize),
                   m_endAddress(ctx->getDataBaseAddress() + ctx->getDataSize() - 1LLU), m_buffer(bufferSize) {

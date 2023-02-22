@@ -151,33 +151,38 @@ namespace pl::lib::libstd::math {
             /* helper functions */
             runtime.addFunction(nsStdMath, "accumulate", FunctionParameterCount::between(3,5), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 auto start = params[0].toUnsigned();
-                auto end = params[1].toUnsigned();
-                auto size = params[2].toUnsigned();
+                auto end   = params[1].toUnsigned();
+                auto size  = params[2].toUnsigned();
+                
                 AccumulationOperation op = AccumulationOperation::Add;
-                if(params.size() > 3) {
+                if (params.size() > 3)
                     op = static_cast<AccumulationOperation>(params[3].toUnsigned());
-                }
+                
                 types::Endian endian = 0;
-                if(params.size() > 4) {
+                if (params.size() > 4)
                     endian = static_cast<types::Endian>(params[4].toUnsigned());
-                }
 
-                if(size > 16) {
+                if (size > 16)
                     err::E0003.throwError("Size cannot be bigger than sizeof(u128)", {}, 0);
-                }
  
                 u128 result = 0;
                 u128 endAddr = end / size;
+
                 auto reader = hlp::bf::BufferedReader(ctx);
                 reader.seek(start);
                 reader.setEndAddress(end);
-                for(u128 addr = start; addr < endAddr; ++addr) {
+
+                for (u128 addr = start; addr < endAddr; ++addr) {
                     auto bytes = reader.read(addr, size);
-                    // copy to u128
+
+                    // Copy bytes to u128
                     u128 value = 0;
                     std::memcpy(&value, bytes.data(), size);
-                    // swap endianess
+
+                    // Swap endianess
                     value = hlp::changeEndianess(value, size, endian);
+
+                    // Accumulate value into result
                     switch (op) {
                         case AccumulationOperation::Add: result += value; break;
                         case AccumulationOperation::Multiply: result *= value; break;
