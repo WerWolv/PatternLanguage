@@ -28,43 +28,44 @@ namespace pl::core::ast {
             evaluator->updateRuntime(this);
 
             auto bitfieldPattern = std::make_shared<ptrn::PatternBitfield>(evaluator, evaluator->dataOffset(), 0);
+            if (this->hasAttribute("left_to_right", false))
+                bitfieldPattern->setEndian(std::endian::big);
+            else if (this->hasAttribute("right_to_left", false))
+                bitfieldPattern->setEndian(std::endian::little);
+            else {
+                switch (evaluator->getBitfieldOrder()) {
+                case BitfieldOrder::LeftToRight:
+                    bitfieldPattern->setEndian(std::endian::big);
+                    break;
+                case BitfieldOrder::RightToLeft:
+                    bitfieldPattern->setEndian(std::endian::little);
+                    break;
+                }
+            }
 
             size_t bitOffset = 0x00;
 
             std::vector<std::shared_ptr<ptrn::Pattern>> fields;
             std::vector<std::shared_ptr<ptrn::Pattern>> potentialPatterns;
 
-            BitfieldOrder order = evaluator->getBitfieldOrder();
-            if (this->hasAttribute("left_to_right", false))
-                order = BitfieldOrder::LeftToRight;
-            else if (this->hasAttribute("right_to_left", false))
-                order = BitfieldOrder::RightToLeft;
-
-            std::vector<ASTNode *> entries;
-            for (const auto &entry : this->m_entries)
-                entries.emplace_back(entry.get());
-
-            if (order == BitfieldOrder::LeftToRight)
-                std::reverse(entries.begin(), entries.end());
-
             evaluator->pushScope(bitfieldPattern, potentialPatterns);
             ON_SCOPE_EXIT {
                 evaluator->popScope();
             };
 
-            for (auto &entry : entries) {
+            for (auto &entry : this->m_entries) {
                 auto patterns = entry->createPatterns(evaluator);
 
                 for (auto &pattern : patterns) {
                     if (auto bitfieldField = dynamic_cast<ptrn::PatternBitfieldField*>(pattern.get()); bitfieldField != nullptr) {
                         if (bitfieldField->getSize() == 0) {
+                            bitfieldField->setEndian(bitfieldPattern->getEndian());
                             bitfieldField->setBitOffset(bitOffset);
                             bitfieldField->setSection(evaluator->getSectionId());
                             bitOffset += bitfieldField->getBitSize();
-                            bitfieldField->setSize((bitOffset + 7) / 8);
                         }
 
-                        applyVariableAttributes(evaluator, entry, pattern);
+                        applyVariableAttributes(evaluator, entry.get(), pattern);
                     }
                     bitfieldPattern->setSize((bitOffset + 7) / 8);
                 }
@@ -88,11 +89,13 @@ namespace pl::core::ast {
             for (auto &pattern : potentialPatterns) {
                 if (auto bitfieldField = dynamic_cast<ptrn::PatternBitfieldField*>(pattern.get()); bitfieldField != nullptr) {
                     bitfieldField->setBitfield(bitfieldPattern.get());
+                    bitfieldField->setBitfieldBitSize(bitOffset);
                     if (!bitfieldField->isPadding())
                         fields.push_back(std::move(pattern));
                 }
             }
 
+            bitfieldPattern->setSize((bitOffset + 7) / 8);
             bitfieldPattern->setFields(fields);
 
             evaluator->dataOffset() += bitfieldPattern->getSize();
