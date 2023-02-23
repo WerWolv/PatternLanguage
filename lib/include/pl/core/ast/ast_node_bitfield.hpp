@@ -2,6 +2,7 @@
 
 #include <pl/core/ast/ast_node.hpp>
 #include <pl/core/ast/ast_node_attribute.hpp>
+#include <pl/core/ast/ast_node_bitfield_field.hpp>
 
 #include <pl/patterns/pattern_bitfield.hpp>
 
@@ -48,28 +49,27 @@ namespace pl::core::ast {
             std::vector<std::shared_ptr<ptrn::Pattern>> fields;
             std::vector<std::shared_ptr<ptrn::Pattern>> potentialPatterns;
 
+            auto prevBitfieldFieldAddedCallback = evaluator->getBitfieldFieldAddedCallback();
             evaluator->pushScope(bitfieldPattern, potentialPatterns);
+            evaluator->setBitfieldFieldAddedCallback([&](const ast::ASTNodeBitfieldField& node, std::shared_ptr<ptrn::PatternBitfieldField> field) {
+                if (field->getSize() == 0) {
+                    field->setEndian(bitfieldPattern->getEndian());
+                    field->setBitOffset(bitOffset);
+                    field->setSection(evaluator->getSectionId());
+                    bitOffset += field->getBitSize();
+                }
+
+                bitfieldPattern->setSize((bitOffset + 7) / 8);
+
+                applyVariableAttributes(evaluator, &node, field);
+            });
             ON_SCOPE_EXIT {
                 evaluator->popScope();
+                evaluator->setBitfieldFieldAddedCallback(move(prevBitfieldFieldAddedCallback));
             };
 
             for (auto &entry : this->m_entries) {
                 auto patterns = entry->createPatterns(evaluator);
-
-                for (auto &pattern : patterns) {
-                    if (auto bitfieldField = dynamic_cast<ptrn::PatternBitfieldField*>(pattern.get()); bitfieldField != nullptr) {
-                        if (bitfieldField->getSize() == 0) {
-                            bitfieldField->setEndian(bitfieldPattern->getEndian());
-                            bitfieldField->setBitOffset(bitOffset);
-                            bitfieldField->setSection(evaluator->getSectionId());
-                            bitOffset += bitfieldField->getBitSize();
-                        }
-
-                        applyVariableAttributes(evaluator, entry.get(), pattern);
-                    }
-                    bitfieldPattern->setSize((bitOffset + 7) / 8);
-                }
-
                 std::move(patterns.begin(), patterns.end(), std::back_inserter(potentialPatterns));
 
                 if (!evaluator->getCurrentArrayIndex().has_value()) {

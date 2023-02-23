@@ -19,12 +19,16 @@ namespace pl::ptrn {
 
     class Pattern;
     class PatternCreationLimiter;
+    class PatternBitfieldField;
 
 }
 
 namespace pl::core {
 
-    namespace ast { class ASTNode; }
+    namespace ast {
+        class ASTNode;
+        class ASTNodeBitfieldField;
+    }
 
     enum class DangerousFunctionPermission {
         Ask,
@@ -218,6 +222,14 @@ namespace pl::core {
             return this->m_bitfieldOrder;
         }
 
+        void setBitfieldFieldAddedCallback(std::function<void(const ast::ASTNodeBitfieldField&, std::shared_ptr<ptrn::PatternBitfieldField>)> callback) {
+            this->m_bitfieldFieldAddedCallback = callback;
+        }
+
+        [[nodiscard]] std::function<void(const ast::ASTNodeBitfieldField&, std::shared_ptr<ptrn::PatternBitfieldField>)> getBitfieldFieldAddedCallback() {
+            return this->m_bitfieldFieldAddedCallback;
+        }
+
         u64 &dataOffset() { return this->m_currOffset; }
 
         bool addBuiltinFunction(const std::string &name, api::FunctionParameterCount numParams, std::vector<Token::Literal> defaultParameters, const api::FunctionCallback &function, bool dangerous) {
@@ -399,6 +411,7 @@ namespace pl::core {
         std::atomic<DangerousFunctionPermission> m_allowDangerousFunctions = DangerousFunctionPermission::Ask;
         ControlFlowStatement m_currControlFlowStatement = ControlFlowStatement::None;
         BitfieldOrder m_bitfieldOrder = BitfieldOrder::RightToLeft;
+        std::function<void(const ast::ASTNodeBitfieldField&, std::shared_ptr<ptrn::PatternBitfieldField>)> m_bitfieldFieldAddedCallback = [](const ast::ASTNodeBitfieldField&, std::shared_ptr<ptrn::PatternBitfieldField>){ };
 
         std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;
 
