@@ -112,6 +112,9 @@ namespace pl::lib::libstd::core {
                     case 1:
                         ctx->setBitfieldOrder(pl::core::BitfieldOrder::RightToLeft);
                         break;
+                    case 2:
+                        ctx->setBitfieldOrder({});
+                        break;
                     default:
                         err::E0012.throwError("Invalid endian value.", "Try one of the values in the std::core::BitfieldOrder enum.");
                 }
@@ -121,14 +124,16 @@ namespace pl::lib::libstd::core {
 
             /* get_bitfield_order() -> order */
             runtime.addFunction(nsStdCore, "get_bitfield_order", FunctionParameterCount::none(), [](Evaluator *ctx, auto) -> std::optional<Token::Literal> {
-                switch (ctx->getBitfieldOrder()) {
-                    case pl::core::BitfieldOrder::LeftToRight:
-                        return 0;
-                    case pl::core::BitfieldOrder::RightToLeft:
-                        return 1;
+                if (ctx->getBitfieldOrder().has_value()) {
+                    switch (ctx->getBitfieldOrder().value()) {
+                        case pl::core::BitfieldOrder::LeftToRight:
+                            return 0;
+                        case pl::core::BitfieldOrder::RightToLeft:
+                            return 1;
+                    }
                 }
 
-                return std::nullopt;
+                return 2;
             });
 
             /* array_index() -> index */

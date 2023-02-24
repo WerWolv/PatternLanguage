@@ -33,8 +33,8 @@ namespace pl::core::ast {
                 bitfieldPattern->setEndian(std::endian::big);
             else if (this->hasAttribute("right_to_left", false))
                 bitfieldPattern->setEndian(std::endian::little);
-            else {
-                switch (evaluator->getBitfieldOrder()) {
+            else if (evaluator->getBitfieldOrder().has_value()) {
+                switch (evaluator->getBitfieldOrder().value()) {
                 case BitfieldOrder::LeftToRight:
                     bitfieldPattern->setEndian(std::endian::big);
                     break;
