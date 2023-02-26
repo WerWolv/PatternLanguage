@@ -60,6 +60,16 @@ namespace pl::lib::libstd::core {
                 return std::nullopt;
             });
 
+            /* set_display_name(pattern, name) */
+            runtime.addFunction(nsStdCore, "set_dislpay_name", FunctionParameterCount::exactly(2), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
+                auto pattern = params[0].toPattern();
+                auto name = params[1].toString(false);
+
+                pattern->setDisplayName(name);
+
+                return std::nullopt;
+            });
+
             /* set_pattern_comment(pattern, comment) */
             runtime.addFunction(nsStdCore, "set_pattern_comment", FunctionParameterCount::exactly(2), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 auto pattern = params[0].toPattern();
