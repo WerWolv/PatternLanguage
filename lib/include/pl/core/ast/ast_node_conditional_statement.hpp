@@ -91,6 +91,13 @@ namespace pl::core::ast {
             return std::nullopt;
         }
 
+        [[nodiscard]] const std::vector<std::unique_ptr<ASTNode>> &getTrueBody() const {
+            return this->m_trueBody;
+        }
+        [[nodiscard]] const std::vector<std::unique_ptr<ASTNode>> &getFalseBody() const {
+            return this->m_falseBody;
+        }
+
     private:
         [[nodiscard]] bool evaluateCondition(const std::unique_ptr<ASTNode> &condition, Evaluator *evaluator) const {
             const auto node    = condition->evaluate(evaluator);

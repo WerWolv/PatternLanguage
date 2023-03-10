@@ -12,22 +12,33 @@
 #include <pl/core/ast/ast_node_enum.hpp>
 #include <pl/core/ast/ast_node_bitfield.hpp>
 #include <pl/core/ast/ast_node_bitfield_field.hpp>
+#include <pl/core/ast/ast_node_conditional_statement.hpp>
 
 #include <unordered_set>
 #include <string>
 
 namespace pl::core {
 
-    bool Validator::validate(const std::string &sourceCode, const std::vector<std::shared_ptr<ast::ASTNode>> &ast, bool firstRun) {
-        std::unordered_set<std::string> identifiers;
-
+    bool Validator::validate(const std::string &sourceCode, const std::vector<std::shared_ptr<ast::ASTNode>> &ast, bool newScope, bool firstRun) {
         if (firstRun) {
             this->m_recursionDepth = 0;
             this->m_validatedNodes.clear();
+            this->m_identifiers.clear();
         }
 
+        newScope = newScope || this->m_identifiers.empty();
+        if (newScope)
+            this->m_identifiers.emplace_back();
+
+        auto &identifiers = this->m_identifiers.back();
+
         this->m_recursionDepth++;
-        PL_ON_SCOPE_EXIT { this->m_recursionDepth--; };
+        PL_ON_SCOPE_EXIT {
+            this->m_recursionDepth--;
+
+            if (newScope)
+                this->m_identifiers.pop_back();
+        };
 
         try {
 
@@ -91,6 +102,11 @@ namespace pl::core {
                         if (!enumIdentifiers.insert(name).second)
                             err::V0002.throwError(fmt::format("Redefinition of enum entry '{0}'", name));
                     }
+                } else if (auto conditionalNode = dynamic_cast<ast::ASTNodeConditionalStatement *>(node.get()); conditionalNode != nullptr) {
+                    if (!this->validate(sourceCode, conditionalNode->getTrueBody(), false))
+                        return false;
+                    if (!this->validate(sourceCode, conditionalNode->getFalseBody(), false))
+                        return false;
                 } else if (auto functionNode = dynamic_cast<ast::ASTNodeFunctionDefinition *>(node.get()); functionNode != nullptr) {
                     if (!identifiers.insert(functionNode->getName()).second)
                         err::V0002.throwError(fmt::format("Redefinition of identifier '{0}'", functionNode->getName()));
@@ -119,5 +135,14 @@ namespace pl::core {
         }
 
         return true;
+    }
+
+    bool Validator::validate(const std::string &sourceCode, const std::vector<std::unique_ptr<ast::ASTNode>> &ast, bool newScope, bool firstRun) {
+        std::vector<std::shared_ptr<ast::ASTNode>> sharedAst;
+        sharedAst.reserve(ast.size());
+        for (const auto &node : ast)
+            sharedAst.emplace_back(node->clone());
+
+        return this->validate(sourceCode, sharedAst, newScope, firstRun);
     }
 }
