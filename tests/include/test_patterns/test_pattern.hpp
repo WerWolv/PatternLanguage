@@ -50,7 +50,7 @@ namespace pl::test {
         }
 
         [[nodiscard]] virtual bool runChecks(const std::vector<std::shared_ptr<ptrn::Pattern>> &patterns) const {
-            pl::hlp::unused(patterns);
+            wolv::util::unused(patterns);
 
             return true;
         }

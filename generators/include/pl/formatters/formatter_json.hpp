@@ -6,23 +6,23 @@ namespace pl::gen::fmt {
     public:
         JsonPatternVisitor() = default;
 
-        void visit(pl::ptrn::PatternArrayDynamic& pattern)  override { formatArray(&pattern);   }
-        void visit(pl::ptrn::PatternArrayStatic& pattern)   override { formatArray(&pattern);   }
-        void visit(pl::ptrn::PatternBitfieldField& pattern) override { formatValue(&pattern);   }
-        void visit(pl::ptrn::PatternBitfield& pattern)      override { formatObject(&pattern);  }
-        void visit(pl::ptrn::PatternBoolean& pattern)       override { formatValue(&pattern);   }
-        void visit(pl::ptrn::PatternCharacter& pattern)     override { formatValue(&pattern);   }
-        void visit(pl::ptrn::PatternEnum& pattern)          override { formatString(&pattern);  }
-        void visit(pl::ptrn::PatternFloat& pattern)         override { formatValue(&pattern);   }
-        void visit(pl::ptrn::PatternPadding& pattern)       override { hlp::unused(pattern);    }
-        void visit(pl::ptrn::PatternPointer& pattern)       override { formatPointer(&pattern); }
-        void visit(pl::ptrn::PatternSigned& pattern)        override { formatValue(&pattern);   }
-        void visit(pl::ptrn::PatternString& pattern)        override { formatString(&pattern);  }
-        void visit(pl::ptrn::PatternStruct& pattern)        override { formatObject(&pattern);  }
-        void visit(pl::ptrn::PatternUnion& pattern)         override { formatObject(&pattern);  }
-        void visit(pl::ptrn::PatternUnsigned& pattern)      override { formatValue(&pattern);   }
-        void visit(pl::ptrn::PatternWideCharacter& pattern) override { formatString(&pattern);  }
-        void visit(pl::ptrn::PatternWideString& pattern)    override { formatString(&pattern);  }
+        void visit(pl::ptrn::PatternArrayDynamic& pattern)  override { formatArray(&pattern);       }
+        void visit(pl::ptrn::PatternArrayStatic& pattern)   override { formatArray(&pattern);       }
+        void visit(pl::ptrn::PatternBitfieldField& pattern) override { formatValue(&pattern);       }
+        void visit(pl::ptrn::PatternBitfield& pattern)      override { formatObject(&pattern);      }
+        void visit(pl::ptrn::PatternBoolean& pattern)       override { formatValue(&pattern);       }
+        void visit(pl::ptrn::PatternCharacter& pattern)     override { formatValue(&pattern);       }
+        void visit(pl::ptrn::PatternEnum& pattern)          override { formatString(&pattern);      }
+        void visit(pl::ptrn::PatternFloat& pattern)         override { formatValue(&pattern);       }
+        void visit(pl::ptrn::PatternPadding& pattern)       override { wolv::util::unused(pattern); }
+        void visit(pl::ptrn::PatternPointer& pattern)       override { formatPointer(&pattern);     }
+        void visit(pl::ptrn::PatternSigned& pattern)        override { formatValue(&pattern);       }
+        void visit(pl::ptrn::PatternString& pattern)        override { formatString(&pattern);      }
+        void visit(pl::ptrn::PatternStruct& pattern)        override { formatObject(&pattern);      }
+        void visit(pl::ptrn::PatternUnion& pattern)         override { formatObject(&pattern);      }
+        void visit(pl::ptrn::PatternUnsigned& pattern)      override { formatValue(&pattern);       }
+        void visit(pl::ptrn::PatternWideCharacter& pattern) override { formatString(&pattern);      }
+        void visit(pl::ptrn::PatternWideString& pattern)    override { formatString(&pattern);      }
 
         [[nodiscard]] auto getResult() const {
             return this->m_result;
@@ -55,7 +55,7 @@ namespace pl::gen::fmt {
 
         void formatString(pl::ptrn::Pattern *pattern) {
             auto result = pattern->toString();
-            result = hlp::replaceAll(result, "\n", " ");
+            result = wolv::util::replaceStrings(result, "\n", " ");
             result = hlp::encodeByteString({ result.begin(), result.end() });
 
             addLine(pattern->getVariableName(), ::fmt::format("\"{}\",", result));
