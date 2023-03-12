@@ -33,6 +33,8 @@ if (NOT TARGET intervaltree)
     set_property(TARGET intervaltree PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif ()
 
+add_subdirectory(external/libwolv)
+
 add_subdirectory(lib)
 add_subdirectory(generators EXCLUDE_FROM_ALL)
 

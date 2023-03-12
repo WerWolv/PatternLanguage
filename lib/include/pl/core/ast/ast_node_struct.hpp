@@ -32,7 +32,7 @@ namespace pl::core::ast {
             std::vector<std::shared_ptr<ptrn::Pattern>> memberPatterns;
 
             evaluator->pushScope(pattern, memberPatterns);
-            PL_ON_SCOPE_EXIT {
+            ON_SCOPE_EXIT {
                 evaluator->popScope();
             };
 

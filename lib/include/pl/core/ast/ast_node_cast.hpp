@@ -23,7 +23,7 @@ namespace pl::core::ast {
             evaluator->updateRuntime(this);
 
             auto startOffset = evaluator->dataOffset();
-            PL_ON_SCOPE_EXIT { evaluator->dataOffset() = startOffset; };
+            ON_SCOPE_EXIT { evaluator->dataOffset() = startOffset; };
 
             auto evaluatedValue = this->m_value->evaluate(evaluator);
             auto evaluatedType  = this->m_type->evaluate(evaluator);
@@ -42,7 +42,7 @@ namespace pl::core::ast {
 
             auto value = literal->getValue();
 
-            value = std::visit(hlp::overloaded {
+            value = std::visit(wolv::util::overloaded {
                 [&](ptrn::Pattern *value) -> Token::Literal {
                     if (Token::isInteger(type) && value->getSize() <= Token::getTypeSize(type)) {
                         u128 result = 0;
@@ -56,7 +56,7 @@ namespace pl::core::ast {
                 [](auto &value) -> Token::Literal { return value; }
             }, value);
 
-            return std::unique_ptr<ASTNode>(std::visit(hlp::overloaded {
+            return std::unique_ptr<ASTNode>(std::visit(wolv::util::overloaded {
                 [&, this](ptrn::Pattern *value) -> ASTNode * { err::E0004.throwError(fmt::format("Cannot cast value of type '{}' to type '{}'.", value->getTypeName(), Token::getTypeName(type)), {}, this); },
                 [&, this](std::string &value) -> ASTNode * {
                     if (Token::isUnsigned(type)) {

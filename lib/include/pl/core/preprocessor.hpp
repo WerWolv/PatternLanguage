@@ -8,12 +8,11 @@
 #include <unordered_map>
 #include <utility>
 
-#include <pl/helpers/fs.hpp>
-#include <pl/helpers/types.hpp>
-
 #include <pl/api.hpp>
-
+#include <pl/helpers/types.hpp>
 #include <pl/core/errors/preprocessor_errors.hpp>
+
+#include <wolv/io/fs.hpp>
 
 namespace pl::core {
 
@@ -46,7 +45,7 @@ namespace pl::core {
         std::unordered_map<std::string, std::pair<std::string, u32>> m_defines;
         std::unordered_map<std::string, std::vector<std::pair<std::string, u32>>> m_pragmas;
 
-        std::set<std::filesystem::path> m_onceIncludedFiles;
+        std::set<std::fs::path> m_onceIncludedFiles;
 
         std::optional<err::PatternLanguageError> m_error;
 

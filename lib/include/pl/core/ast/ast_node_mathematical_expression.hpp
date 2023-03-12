@@ -10,7 +10,7 @@ namespace pl::core::ast {
 
 #define FLOAT_BIT_OPERATION(name)                                                       \
     auto name(pl::floating_point auto left, auto right) const {                         \
-        hlp::unused(left, right);                                                        \
+        wolv::util::unused(left, right);                                                \
         err::E0002.throwError(                                                          \
             "Invalid floating point operation.",                                        \
             "This operation doesn't make sense to be used with floating point values.", \
@@ -18,7 +18,7 @@ namespace pl::core::ast {
         return 0;                                                                       \
     }                                                                                   \
     auto name(auto left, pl::floating_point auto right) const {                         \
-        hlp::unused(left, right);                                                        \
+        wolv::util::unused(left, right);                                                \
         err::E0002.throwError(                                                          \
             "Invalid floating point operation.",                                        \
             "This operation doesn't make sense to be used with floating point values.", \
@@ -26,7 +26,7 @@ namespace pl::core::ast {
         return 0;                                                                       \
     }                                                                                   \
     auto name(pl::floating_point auto left, pl::floating_point auto right) const {      \
-        hlp::unused(left, right);                                                        \
+        wolv::util::unused(left, right);                                                \
         err::E0002.throwError(                                                          \
             "Invalid floating point operation.",                                        \
             "This operation doesn't make sense to be used with floating point values.", \
@@ -58,7 +58,7 @@ namespace pl::core::ast {
         }
 
         FLOAT_BIT_OPERATION(bitNot) {
-            hlp::unused(left);
+            wolv::util::unused(left);
 
             return ~static_cast<u128>(right);
         }
@@ -123,19 +123,19 @@ namespace pl::core::ast {
                 }
             };
 
-            return std::unique_ptr<ASTNode>(std::visit(hlp::overloaded {
-                [&](u128 left, ptrn::Pattern *const &right)                 -> ASTNode * { return handlePatternOperations(left, right->getValue().toUnsigned()); },
-                [&](i128 left, ptrn::Pattern *const &right)                 -> ASTNode * { return handlePatternOperations(left, right->getValue().toSigned()); },
-                [&](double left, ptrn::Pattern *const &right)               -> ASTNode * { return handlePatternOperations(left, right->getValue().toFloatingPoint()); },
-                [&](char left, ptrn::Pattern *const &right)                 -> ASTNode * { return handlePatternOperations(left, right->getValue().toSigned()); },
-                [&](bool left, ptrn::Pattern *const &right)                 -> ASTNode * { return handlePatternOperations(left, right->getValue().toBoolean()); },
-                [&](const std::string &left, ptrn::Pattern *const &right)   -> ASTNode * { return handlePatternOperations(left, right->getValue().toString(true)); },
-                [&](ptrn::Pattern *const &left, u128 right)                 -> ASTNode * { return handlePatternOperations(left->getValue().toUnsigned(), right); },
-                [&](ptrn::Pattern *const &left, i128 right)                 -> ASTNode * { return handlePatternOperations(left->getValue().toSigned(), right); },
-                [&](ptrn::Pattern *const &left, double right)               -> ASTNode * { return handlePatternOperations(left->getValue().toFloatingPoint(), right); },
-                [&](ptrn::Pattern *const &left, char right)                 -> ASTNode * { return handlePatternOperations(left->getValue().toSigned(), right); },
-                [&](ptrn::Pattern *const &left, bool right)                 -> ASTNode * { return handlePatternOperations(left->getValue().toBoolean(), right); },
-                [&](ptrn::Pattern *const &left, const std::string &right)   -> ASTNode * { return handlePatternOperations(left->getValue().toString(true), right); },
+            return std::unique_ptr<ASTNode>(std::visit(wolv::util::overloaded {
+                [&](u128 left, ptrn::Pattern *const &right)                 -> ASTNode * { return handlePatternOperations(left, right->getValue().toUnsigned());        },
+                [&](i128 left, ptrn::Pattern *const &right)                 -> ASTNode * { return handlePatternOperations(left, right->getValue().toSigned());          },
+                [&](double left, ptrn::Pattern *const &right)               -> ASTNode * { return handlePatternOperations(left, right->getValue().toFloatingPoint());   },
+                [&](char left, ptrn::Pattern *const &right)                 -> ASTNode * { return handlePatternOperations(left, right->getValue().toSigned());          },
+                [&](bool left, ptrn::Pattern *const &right)                 -> ASTNode * { return handlePatternOperations(left, right->getValue().toBoolean());         },
+                [&](const std::string &left, ptrn::Pattern *const &right)   -> ASTNode * { return handlePatternOperations(left, right->getValue().toString(true));      },
+                [&](ptrn::Pattern *const &left, u128 right)                 -> ASTNode * { return handlePatternOperations(left->getValue().toUnsigned(), right);        },
+                [&](ptrn::Pattern *const &left, i128 right)                 -> ASTNode * { return handlePatternOperations(left->getValue().toSigned(), right);          },
+                [&](ptrn::Pattern *const &left, double right)               -> ASTNode * { return handlePatternOperations(left->getValue().toFloatingPoint(), right);   },
+                [&](ptrn::Pattern *const &left, char right)                 -> ASTNode * { return handlePatternOperations(left->getValue().toSigned(), right);          },
+                [&](ptrn::Pattern *const &left, bool right)                 -> ASTNode * { return handlePatternOperations(left->getValue().toBoolean(), right);         },
+                [&](ptrn::Pattern *const &left, const std::string &right)   -> ASTNode * { return handlePatternOperations(left->getValue().toString(true), right);      },
                 [&](u128, const std::string &)                              -> ASTNode * { throwInvalidOperandError(); },
                 [&](i128, const std::string &)                              -> ASTNode * { throwInvalidOperandError(); },
                 [&](double, const std::string &)                            -> ASTNode * { throwInvalidOperandError(); },

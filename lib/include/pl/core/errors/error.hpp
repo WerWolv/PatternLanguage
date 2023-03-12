@@ -7,6 +7,8 @@
 
 #include <pl/helpers/utils.hpp>
 
+#include <wolv/utils/string.hpp>
+
 #include <fmt/format.h>
 
 namespace pl::core::err {
@@ -60,7 +62,7 @@ namespace pl::core::err {
                 if (line != 0 && column != 0) {
                     errorMessage += fmt::format("  --> <Source Code>:{}:{}\n", line, column);
 
-                    auto lines = hlp::splitString(sourceCode, "\n");
+                    auto lines = wolv::util::splitString(sourceCode, "\n");
 
                     if ((line - 1) < lines.size()) {
                         const auto &errorLine = lines[line - 1];

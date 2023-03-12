@@ -46,7 +46,7 @@ namespace pl::core::ast {
                 if (literal == nullptr)
                     return std::nullopt;
                 else {
-                    return std::visit(hlp::overloaded {
+                    return std::visit(wolv::util::overloaded {
                         [](const auto &value) -> FunctionResult {
                             return value;
                         },

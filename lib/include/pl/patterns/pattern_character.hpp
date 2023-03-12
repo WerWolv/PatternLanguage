@@ -6,7 +6,7 @@ namespace pl::ptrn {
 
     class PatternCharacter : public Pattern {
     public:
-        explicit PatternCharacter(core::Evaluator *evaluator, u64 offset)
+        PatternCharacter(core::Evaluator *evaluator, u64 offset)
             : Pattern(evaluator, offset, 1) { }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
@@ -22,7 +22,7 @@ namespace pl::ptrn {
 
         std::vector<u8> getBytesOf(const core::Token::Literal &value) const override {
             if (auto charValue = std::get_if<char>(&value); charValue != nullptr)
-                return hlp::toBytes(*charValue);
+                return wolv::util::toContainer<std::vector<u8>>(wolv::util::toBytes(*charValue));
             else
                 return { };
         }

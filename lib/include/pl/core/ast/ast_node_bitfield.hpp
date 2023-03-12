@@ -48,7 +48,7 @@ namespace pl::core::ast {
                 std::reverse(entries.begin(), entries.end());
 
             evaluator->pushScope(bitfieldPattern, potentialPatterns);
-            PL_ON_SCOPE_EXIT {
+            ON_SCOPE_EXIT {
                 evaluator->popScope();
             };
 

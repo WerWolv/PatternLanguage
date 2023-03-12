@@ -5,6 +5,8 @@
 #include <pl/core/ast/ast_node_lvalue_assignment.hpp>
 #include <pl/core/ast/ast_node_builtin_type.hpp>
 
+#include <wolv/utils/guards.hpp>
+
 namespace pl::core::ast {
 
     class ASTNodeTypeDecl : public ASTNode,
@@ -75,7 +77,7 @@ namespace pl::core::ast {
             evaluator->updateRuntime(this);
 
             evaluator->pushTemplateParameters();
-            PL_ON_SCOPE_EXIT { evaluator->popTemplateParameters(); };
+            ON_SCOPE_EXIT { evaluator->popTemplateParameters(); };
 
             for (const auto &templateParameter : this->m_templateParameters) {
                 if (auto lvalue = dynamic_cast<ASTNodeLValueAssignment *>(templateParameter.get())) {
@@ -88,7 +90,7 @@ namespace pl::core::ast {
             }
 
             auto currEndian = evaluator->getDefaultEndian();
-            PL_ON_SCOPE_EXIT { evaluator->setDefaultEndian(currEndian); };
+            ON_SCOPE_EXIT { evaluator->setDefaultEndian(currEndian); };
 
             evaluator->setDefaultEndian(this->m_endian.value_or(currEndian));
             auto patterns = this->getType()->createPatterns(evaluator);

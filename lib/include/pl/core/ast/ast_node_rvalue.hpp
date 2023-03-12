@@ -224,7 +224,7 @@ namespace pl::core::ast {
                     if (index == nullptr)
                         err::E0010.throwError("Cannot use void expression as array index.", {}, this);
 
-                    std::visit(hlp::overloaded {
+                    std::visit(wolv::util::overloaded {
                             [this](const std::string &) { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
                             [this](ptrn::Pattern *pattern) { err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
                             [&, this](auto &&index) {

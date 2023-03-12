@@ -31,7 +31,7 @@ namespace pl::core::ast {
             u64 startOffset = evaluator->dataOffset();
 
             evaluator->pushScope(pattern, memberPatterns);
-            PL_ON_SCOPE_EXIT {
+            ON_SCOPE_EXIT {
                 evaluator->popScope();
             };
 

@@ -38,7 +38,7 @@ namespace pl::core::ast {
 
             auto startOffset = evaluator->dataOffset();
 
-            auto scopeGuard = PL_SCOPE_GUARD {
+            auto scopeGuard = SCOPE_GUARD {
                 evaluator->popSectionId();
             };
 
@@ -59,7 +59,7 @@ namespace pl::core::ast {
                 if (offset == nullptr)
                     err::E0010.throwError("Cannot use void expression as placement offset.", {}, this);
 
-                evaluator->dataOffset() = std::visit(hlp::overloaded {
+                evaluator->dataOffset() = std::visit(wolv::util::overloaded {
                     [this](const std::string &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
                     [this](ptrn::Pattern *) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
                     [](auto &&offset) -> u64 { return u64(offset); }

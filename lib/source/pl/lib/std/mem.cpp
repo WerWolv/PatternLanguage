@@ -42,14 +42,14 @@ namespace pl::lib::libstd::mem {
 
             /* base_address() */
             runtime.addFunction(nsStdMem, "base_address", FunctionParameterCount::none(), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                hlp::unused(params);
+                wolv::util::unused(params);
 
                 return u128(ctx->getDataBaseAddress());
             });
 
             /* size() */
             runtime.addFunction(nsStdMem, "size", FunctionParameterCount::none(), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                hlp::unused(params);
+                wolv::util::unused(params);
 
                 return u128(ctx->getDataSize());
             });

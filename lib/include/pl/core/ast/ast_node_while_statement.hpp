@@ -46,7 +46,7 @@ namespace pl::core::ast {
 
                 evaluator->pushScope(nullptr, variables);
                 evaluator->getScope(0).parameterPack = parameterPack;
-                PL_ON_SCOPE_EXIT {
+                ON_SCOPE_EXIT {
                     evaluator->popScope();
                 };
 
@@ -89,7 +89,7 @@ namespace pl::core::ast {
             if (literal == nullptr)
                 err::E0010.throwError("Cannot use void expression as condition.", {}, this);
 
-            return std::visit(hlp::overloaded {
+            return std::visit(wolv::util::overloaded {
                 [](const std::string &value) -> bool { return !value.empty(); },
                 [this](ptrn::Pattern *const &pattern) -> bool { err::E0002.throwError(fmt::format("Cannot cast {} to bool.", pattern->getTypeName()), {}, this); },
                 [](auto &&value) -> bool { return value != 0; }

@@ -47,7 +47,7 @@ namespace pl::lib::libstd::time {
         {
             /* epoch() */
             runtime.addFunction(nsStdTime, "epoch", FunctionParameterCount::exactly(0), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
-                hlp::unused(params);
+                wolv::util::unused(params);
 
                 return { std::time(nullptr) };
             });

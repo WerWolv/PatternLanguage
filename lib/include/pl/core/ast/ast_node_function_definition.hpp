@@ -74,7 +74,7 @@ namespace pl::core::ast {
                 auto startOffset = ctx->dataOffset();
                 ctx->pushScope(nullptr, variables);
                 ctx->pushSectionId(ptrn::Pattern::HeapSectionId);
-                PL_ON_SCOPE_EXIT {
+                ON_SCOPE_EXIT {
                     ctx->popScope();
                     ctx->dataOffset() = startOffset;
                     ctx->popSectionId();
@@ -118,7 +118,7 @@ namespace pl::core::ast {
                         if (!result.has_value())
                             return std::nullopt;
                         else
-                            return std::visit(hlp::overloaded {
+                            return std::visit(wolv::util::overloaded {
                                 [](const auto &value) -> FunctionResult {
                                     return value;
                                 },

@@ -206,7 +206,7 @@ namespace pl::core {
     }
 
     static Token::Literal castLiteral(const ptrn::Pattern *pattern, const Token::Literal &literal) {
-        return std::visit(hlp::overloaded {
+        return std::visit(wolv::util::overloaded {
             [&](auto &value) -> Token::Literal {
                if (dynamic_cast<const ptrn::PatternUnsigned*>(pattern) || dynamic_cast<const ptrn::PatternEnum*>(pattern))
                    return truncateValue<u128>(pattern->getSize(), u128(value));
@@ -295,7 +295,7 @@ namespace pl::core {
                 err::E0011.throwError(fmt::format("Cannot modify global variable '{}' as it has been placed in memory.", name));
 
             // If the variable is being set to a pattern, adjust its layout to the real layout as it potentially contains dynamically sized members
-            std::visit(hlp::overloaded {
+            std::visit(wolv::util::overloaded {
                 [&](ptrn::Pattern * const value) {
                     variablePattern = value->clone();
 
@@ -366,7 +366,7 @@ namespace pl::core {
                     this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
             };
 
-            std::visit(hlp::overloaded {
+            std::visit(wolv::util::overloaded {
                     [&](const auto &value) {
                         auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
                         copyToStorage(adjustedValue);
@@ -606,7 +606,7 @@ namespace pl::core {
         if (this->m_allowDangerousFunctions == DangerousFunctionPermission::Deny)
             this->m_allowDangerousFunctions = DangerousFunctionPermission::Ask;
 
-        PL_ON_SCOPE_EXIT {
+        ON_SCOPE_EXIT {
             this->m_envVariables.clear();
             this->m_evaluated = true;
         };
@@ -649,7 +649,7 @@ namespace pl::core {
                         for (auto &pattern : varDeclNode->createPatterns(this)) {
                             if (localVariable) {
                                 auto name = pattern->getVariableName();
-                                hlp::unused(varDeclNode->execute(this));
+                                wolv::util::unused(varDeclNode->execute(this));
 
                                 if (varDeclNode->isInVariable() && this->m_inVariables.contains(name))
                                     this->setVariable(name, this->m_inVariables[name]);
@@ -673,7 +673,7 @@ namespace pl::core {
 
                         for (auto &pattern : arrayVarDeclNode->createPatterns(this)) {
                             if (localVariable) {
-                                hlp::unused(arrayVarDeclNode->execute(this));
+                                wolv::util::unused(arrayVarDeclNode->execute(this));
 
                                 this->dataOffset() = startOffset;
                             } else {
@@ -693,7 +693,7 @@ namespace pl::core {
                         }
                     } else {
                         this->pushSectionId(ptrn::Pattern::HeapSectionId);
-                        hlp::unused(node->execute(this));
+                        wolv::util::unused(node->execute(this));
                         this->popSectionId();
                     }
 
@@ -767,7 +767,7 @@ namespace pl::core {
     }
 
     void Evaluator::patternCreated(ptrn::Pattern *pattern) {
-        hlp::unused(pattern);
+        wolv::util::unused(pattern);
 
         if (this->m_currPatternCount > this->m_patternLimit && !this->m_evaluated)
             err::E0007.throwError(fmt::format("Pattern count exceeded set limit of '{}'.", this->getPatternLimit()), "If this is intended, try increasing the limit using '#pragma pattern_limit <new_limit>'.");

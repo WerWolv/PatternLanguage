@@ -1,7 +1,9 @@
 #include <pl/core/preprocessor.hpp>
 
 #include <fmt/format.h>
-#include <pl/helpers/file.hpp>
+
+#include <wolv/io/file.hpp>
+#include <wolv/utils/string.hpp>
 
 namespace pl::core {
 
@@ -157,21 +159,21 @@ namespace pl::core {
                             if (includePath.is_relative()) {
                                 for (const auto &dir : this->m_includePaths) {
                                     std::fs::path potentialPath = dir / includePath;
-                                    if (hlp::fs::isRegularFile(potentialPath)) {
+                                    if (wolv::io::fs::isRegularFile(potentialPath)) {
                                         includePath = potentialPath;
                                         break;
                                     }
                                 }
                             }
 
-                            if (!hlp::fs::isRegularFile(includePath)) {
+                            if (!wolv::io::fs::isRegularFile(includePath)) {
                                 if (includePath.parent_path().filename().string() == "std")
                                     err::M0004.throwError("Path doesn't point to a valid file.", "This file might be part of the standard library. Make sure it's installed.");
                                 else
                                     err::M0004.throwError("Path doesn't point to a valid file.");
                             }
 
-                            hlp::fs::File file(includePath, hlp::fs::File::Mode::Read);
+                            wolv::io::File file(includePath, wolv::io::File::Mode::Read);
                             if (!file.isValid()) {
                                 err::M0005.throwError(fmt::format("Failed to open file.", *includeFile));
                             }
@@ -264,7 +266,7 @@ namespace pl::core {
                 if (value.empty())
                     continue;
 
-                output = hlp::replaceAll(output, define, value);
+                output = wolv::util::replaceStrings(output, define, value);
             }
 
             // Handle pragmas

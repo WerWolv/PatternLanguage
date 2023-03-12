@@ -99,7 +99,7 @@ namespace pl::ptrn {
             auto evaluator = this->getEvaluator();
             auto startArrayIndex = evaluator->getCurrentArrayIndex();
 
-            PL_ON_SCOPE_EXIT {
+            ON_SCOPE_EXIT {
                 if (startArrayIndex.has_value())
                     evaluator->setCurrentArrayIndex(*startArrayIndex);
                 else

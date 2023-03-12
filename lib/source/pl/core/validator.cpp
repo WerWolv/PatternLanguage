@@ -33,7 +33,7 @@ namespace pl::core {
         auto &identifiers = this->m_identifiers.back();
 
         this->m_recursionDepth++;
-        PL_ON_SCOPE_EXIT {
+        ON_SCOPE_EXIT {
             this->m_recursionDepth--;
 
             if (newScope)

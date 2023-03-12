@@ -290,11 +290,11 @@ namespace pl::core::ast {
 
         auto endOffset          = evaluator->dataOffset();
         evaluator->dataOffset() = pattern->getOffset();
-        PL_ON_SCOPE_EXIT { evaluator->dataOffset() = endOffset; };
+        ON_SCOPE_EXIT { evaluator->dataOffset() = endOffset; };
 
         auto thisScope = evaluator->getScope(0).scope;
         evaluator->pushScope(pattern, *thisScope);
-        PL_ON_SCOPE_EXIT {
+        ON_SCOPE_EXIT {
             evaluator->popScope();
         };
 

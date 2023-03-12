@@ -4,3 +4,6 @@
 [submodule "external/cli11"]
 	path = external/cli11
 	url = https://github.com/CLIUtils/CLI11
+[submodule "external/libwolv"]
+	path = external/libwolv
+	url = https://github.com/WerWolv/libwolv

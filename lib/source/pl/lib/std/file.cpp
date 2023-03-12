@@ -5,7 +5,7 @@
 #include <pl/core/evaluator.hpp>
 #include <pl/patterns/pattern.hpp>
 
-#include <pl/helpers/file.hpp>
+#include <wolv/io/file.hpp>
 
 namespace pl::lib::libstd::file {
 
@@ -20,7 +20,7 @@ namespace pl::lib::libstd::file {
         api::Namespace nsStdFile = { "builtin", "std", "file" };
         {
             static u32 fileCounter = 0;
-            static std::map<u32, hlp::fs::File> openFiles;
+            static std::map<u32, wolv::io::File> openFiles;
 
             runtime.addCleanupCallback([](pl::PatternLanguage&) {
                 for (auto &[id, file] : openFiles)
@@ -35,22 +35,22 @@ namespace pl::lib::libstd::file {
                 const auto path     = params[0].toString(false);
                 const auto modeEnum = params[1].toUnsigned();
 
-                hlp::fs::File::Mode mode;
+                wolv::io::File::Mode mode;
                 switch (modeEnum) {
                     case 1:
-                        mode = hlp::fs::File::Mode::Read;
+                        mode = wolv::io::File::Mode::Read;
                         break;
                     case 2:
-                        mode = hlp::fs::File::Mode::Write;
+                        mode = wolv::io::File::Mode::Write;
                         break;
                     case 3:
-                        mode = hlp::fs::File::Mode::Create;
+                        mode = wolv::io::File::Mode::Create;
                         break;
                     default:
                         err::E0012.throwError("Invalid file open mode.", "Try 'std::fs::Mode::Read', 'std::fs::Mode::Write' or 'std::fs::Mode::Create'.");
                 }
 
-                hlp::fs::File file(path, mode);
+                wolv::io::File file(path, mode);
 
                 if (!file.isValid())
                     err::E0012.throwError(fmt::format("Failed to open file '{}'.", path));

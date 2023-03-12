@@ -13,7 +13,6 @@ endif ()
 
 add_library(libpl ${LIBRARY_TYPE}
         source/pl/helpers/utils.cpp
-        source/pl/helpers/file.cpp
 
         source/pl/core/token.cpp
         source/pl/pattern_language.cpp
@@ -38,7 +37,7 @@ target_compile_options(libpl PRIVATE -Wall -Wextra -Werror -Wpedantic -Wno-unkno
 
 target_include_directories(libpl PUBLIC include)
 target_link_libraries(libpl PRIVATE fmt::fmt-header-only)
-target_link_libraries(libpl PUBLIC intervaltree)
+target_link_libraries(libpl PUBLIC intervaltree libwolv-io libwolv-utils libwolv-hash)
 
 set_property(TARGET libpl PROPERTY POSITION_INDEPENDENT_CODE ON)
 

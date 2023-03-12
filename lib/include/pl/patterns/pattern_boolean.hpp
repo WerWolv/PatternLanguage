@@ -22,7 +22,7 @@ namespace pl::ptrn {
 
         std::vector<u8> getBytesOf(const core::Token::Literal &value) const override {
             if (auto boolValue = std::get_if<bool>(&value); boolValue != nullptr)
-                return hlp::toBytes(*boolValue);
+                return wolv::util::toContainer<std::vector<u8>>(wolv::util::toBytes(*boolValue));
             else
                 return { };
         }

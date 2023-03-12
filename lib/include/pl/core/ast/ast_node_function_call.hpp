@@ -45,7 +45,7 @@ namespace pl::core::ast {
             evaluator->pushSectionId(ptrn::Pattern::HeapSectionId);
 
             auto startOffset = evaluator->dataOffset();
-            PL_ON_SCOPE_EXIT {
+            ON_SCOPE_EXIT {
                 evaluator->dataOffset() = startOffset;
                 evaluator->popSectionId();
             };

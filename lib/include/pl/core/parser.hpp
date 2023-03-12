@@ -228,7 +228,7 @@ namespace pl::core {
             else if constexpr (S == Not)
                 return false;
             else
-                hlp::unreachable();
+                std::unreachable();
         }
 
         template<Setting S = Normal>
@@ -259,7 +259,7 @@ namespace pl::core {
                 partReset();
                 return false;
             } else
-                hlp::unreachable();
+                std::unreachable();
         }
 
         template<Setting S = Normal>
@@ -274,7 +274,7 @@ namespace pl::core {
             else if constexpr (S == Not)
                 return true;
             else
-                hlp::unreachable();
+                std::unreachable();
         }
 
         template<Setting S = Normal>
@@ -284,7 +284,7 @@ namespace pl::core {
             else if constexpr (S == Not)
                 return sequenceImpl<Not>(token) && oneOfImpl(args...);
             else
-                hlp::unreachable();
+                std::unreachable();
         }
 
         template<Setting S = Normal>

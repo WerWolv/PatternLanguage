@@ -37,13 +37,13 @@ namespace pl::core::ast {
             if (first == nullptr || second == nullptr || third == nullptr)
                 err::E0010.throwError("Cannot use void expression in ternary expression.", {}, this);
 
-            auto condition = std::visit(hlp::overloaded {
+            auto condition = std::visit(wolv::util::overloaded {
                 [](const std::string &value) -> bool { return !value.empty(); },
                 [this](const std::shared_ptr<ptrn::Pattern> &pattern) -> bool { err::E0002.throwError(fmt::format("Cannot cast {} to bool.", pattern->getTypeName()), {}, this); },
                 [](auto &&value) -> bool { return bool(value); }
             }, first->getValue());
 
-            return std::visit(hlp::overloaded {
+            return std::visit(wolv::util::overloaded {
                 [condition]<typename T, typename U> requires std::convertible_to<T, U> && std::convertible_to<U, T>
                 (const T &second, const U &third) -> std::unique_ptr<ASTNode> { return std::unique_ptr<ASTNode>(new ASTNodeLiteral(condition ? second : third)); },
                 [this](auto &&, auto &&) -> std::unique_ptr<ASTNode> { err::E0002.throwError("Second and third operand in ternary expression have different types.", {}, this); }

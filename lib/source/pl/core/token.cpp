@@ -5,7 +5,7 @@
 namespace pl::core {
 
     ptrn::Pattern* Token::Literal::toPattern() const {
-        return std::visit(hlp::overloaded {
+        return std::visit(wolv::util::overloaded {
                               [&](ptrn::Pattern *result) -> ptrn::Pattern* { return result; },
                               [&](const std::string &) -> ptrn::Pattern* { err::E0004.throwError("Cannot cast value to type 'pattern'."); },
                               [](auto &&) ->  ptrn::Pattern* { err::E0004.throwError("Cannot cast value to type 'pattern'."); }
@@ -13,7 +13,7 @@ namespace pl::core {
     }
 
     u128 Token::Literal::toUnsigned() const {
-        return std::visit(hlp::overloaded {
+        return std::visit(wolv::util::overloaded {
                               [&](ptrn::Pattern *) -> u128 { err::E0004.throwError("Cannot cast value to type 'integer'."); },
                               [&](const std::string &) -> u128 { err::E0004.throwError("Cannot cast value to type 'integer'."); },
                               [](auto &&result) -> u128 { return result; }
@@ -21,7 +21,7 @@ namespace pl::core {
     }
 
     i128 Token::Literal::toSigned() const {
-        return std::visit(hlp::overloaded {
+        return std::visit(wolv::util::overloaded {
                               [](const std::string &) -> i128 { err::E0004.throwError("Cannot cast value to type 'integer'."); },
                               [](ptrn::Pattern *) -> i128 { err::E0004.throwError("Cannot cast value to type 'integer'."); },
                               [](auto &&result) -> i128 { return result; }
@@ -29,7 +29,7 @@ namespace pl::core {
     }
 
     double Token::Literal::toFloatingPoint() const {
-        return std::visit(hlp::overloaded {
+        return std::visit(wolv::util::overloaded {
                               [](const std::string &) -> double { err::E0004.throwError("Cannot cast value to type 'floating point'."); },
                               [](ptrn::Pattern *) -> double { err::E0004.throwError("Cannot cast value to type 'floating point'."); },
                               [](auto &&result) -> double { return result; }
@@ -37,7 +37,7 @@ namespace pl::core {
     }
 
     char Token::Literal::toCharacter() const {
-        return std::visit(hlp::overloaded {
+        return std::visit(wolv::util::overloaded {
                               [&](ptrn::Pattern *) -> char { err::E0004.throwError("Cannot cast value to type 'char'."); },
                               [&](const std::string &) -> char { err::E0004.throwError("Cannot cast value to type 'char'."); },
                               [](auto &&result) -> char { return result; }
@@ -45,7 +45,7 @@ namespace pl::core {
     }
 
     bool Token::Literal::toBoolean() const {
-        return std::visit(hlp::overloaded {
+        return std::visit(wolv::util::overloaded {
                               [](const std::string &) -> bool { err::E0004.throwError("Cannot cast value to type 'bool'."); },
                               [](ptrn::Pattern *) -> bool { err::E0004.throwError("Cannot cast value to type 'bool'."); },
                               [](auto &&result) -> bool { return result != 0; }
@@ -56,7 +56,7 @@ namespace pl::core {
         if (!cast && std::get_if<std::string>(this) == nullptr)
             err::E0004.throwError("Expected value of type 'string'.");
 
-        return std::visit(hlp::overloaded {
+        return std::visit(wolv::util::overloaded {
                               [](const std::string &result) -> std::string { return result; },
                               [](const u128 &result) -> std::string { return hlp::to_string(result); },
                               [](const i128 &result) -> std::string { return hlp::to_string(result); },
@@ -68,10 +68,12 @@ namespace pl::core {
     }
 
     std::vector<u8> Token::Literal::toBytes() const {
-        return std::visit(hlp::overloaded {
+        return std::visit(wolv::util::overloaded {
                 [](const std::string &result) -> std::vector<u8> { return { result.begin(), result.end() }; },
                 [](ptrn::Pattern *result) -> std::vector<u8> { return result->getBytes(); },
-                [](auto &&result) -> std::vector<u8> { return hlp::toBytes(result); }
+                [](auto &&result) -> std::vector<u8> {
+                    return wolv::util::toContainer<std::vector<u8>>(wolv::util::toBytes(result));
+                }
         }, *this);
     }
 
@@ -104,7 +106,7 @@ namespace pl::core {
     }
 
     Token::ValueType Token::Literal::getType() const {
-        return std::visit(hlp::overloaded {
+        return std::visit(wolv::util::overloaded {
                 [](char) { return Token::ValueType::Character; },
                 [](bool) { return Token::ValueType::Boolean; },
                 [](u128) { return Token::ValueType::Unsigned128Bit; },
@@ -187,7 +189,7 @@ namespace pl::core {
     }
 
     [[nodiscard]] std::string Token::getFormattedValue() const {
-        return std::visit(hlp::overloaded {
+        return std::visit(wolv::util::overloaded {
                               [](Token::Keyword keyword) -> std::string {
                                   switch (keyword) {
                                       using enum Token::Keyword;

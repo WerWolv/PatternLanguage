@@ -6,8 +6,9 @@
 #include <pl/core/log_console.hpp>
 #include <pl/core/evaluator.hpp>
 #include <pl/patterns/pattern.hpp>
-#include <pl/helpers/buffer.hpp>
 #include <pl/lib/std/types.hpp>
+
+#include <pl/helpers/buffered_reader.hpp>
 
 namespace pl::lib::libstd::math {
 
@@ -148,19 +149,20 @@ namespace pl::lib::libstd::math {
                 return std::atanh(params[0].toFloatingPoint());
             });
 
-            /* helper functions */
-            runtime.addFunction(nsStdMath, "accumulate", FunctionParameterCount::between(3,5), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto start = params[0].toUnsigned();
-                auto end   = params[1].toUnsigned();
-                auto size  = params[2].toUnsigned();
-                
+            /* accumulate(start, end, size, section, operation = Add, endian = Native) */
+            runtime.addFunction(nsStdMath, "accumulate", FunctionParameterCount::between(4, 6), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
+                auto start      = params[0].toUnsigned();
+                auto end        = params[1].toUnsigned();
+                auto size       = params[2].toUnsigned();
+                auto section    = params[3].toUnsigned();
+
                 AccumulationOperation op = AccumulationOperation::Add;
-                if (params.size() > 3)
-                    op = static_cast<AccumulationOperation>(params[3].toUnsigned());
+                if (params.size() > 4)
+                    op = static_cast<AccumulationOperation>(params[4].toUnsigned());
                 
                 types::Endian endian = 0;
-                if (params.size() > 4)
-                    endian = static_cast<types::Endian>(params[4].toUnsigned());
+                if (params.size() > 5)
+                    endian = static_cast<types::Endian>(params[5].toUnsigned());
 
                 if (size > 16)
                     err::E0003.throwError("Size cannot be bigger than sizeof(u128)", {}, 0);
@@ -168,7 +170,7 @@ namespace pl::lib::libstd::math {
                 u128 result = 0;
                 u128 endAddr = end / size;
 
-                auto reader = hlp::bf::BufferedReader(ctx);
+                auto reader = hlp::MemoryReader(ctx, section);
                 reader.seek(start);
                 reader.setEndAddress(end);
 

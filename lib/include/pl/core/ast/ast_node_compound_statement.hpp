@@ -54,7 +54,7 @@ namespace pl::core::ast {
             FunctionResult result;
             auto variables         = *evaluator->getScope(0).scope;
 
-            auto scopeGuard = PL_SCOPE_GUARD {
+            auto scopeGuard = SCOPE_GUARD {
                 evaluator->popScope();
             };
 

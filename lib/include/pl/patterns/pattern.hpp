@@ -3,10 +3,13 @@
 #include <pl/core/errors/error.hpp>
 #include <pl/core/evaluator.hpp>
 #include <pl/pattern_visitor.hpp>
-#include <pl/helpers/guards.hpp>
 #include <pl/helpers/types.hpp>
 #include <pl/helpers/utils.hpp>
+
 #include <fmt/format.h>
+
+#include <wolv/utils/core.hpp>
+#include <wolv/utils/guards.hpp>
 
 #include <string>
 
@@ -192,7 +195,7 @@ namespace pl::ptrn {
 
                 auto savedScope = this->m_evaluator->getScope(0);
 
-                PL_ON_SCOPE_EXIT {
+                ON_SCOPE_EXIT {
                     this->m_evaluator->getScope(0) = savedScope;
                     currOffset = startOffset;
                 };
@@ -292,7 +295,7 @@ namespace pl::ptrn {
         }
 
         virtual void sort(const std::function<bool(const Pattern *left, const Pattern *right)> &comparator) {
-            hlp::unused(comparator);
+            wolv::util::unused(comparator);
         }
 
         [[nodiscard]] virtual bool operator!=(const Pattern &other) const final { return !operator==(other); }
@@ -303,11 +306,11 @@ namespace pl::ptrn {
             result.reserve(this->getChildren().size());
 
             if (!this->getTransformFunction().empty()) {
-                auto bytes = std::visit(hlp::overloaded {
+                auto bytes = std::visit(wolv::util::overloaded {
                         [](u128 value) { return hlp::toMinimalBytes(value); },
                         [](i128 value) { return hlp::toMinimalBytes(value); },
                         [](Pattern *pattern) { return pattern->getBytes(); },
-                        [](auto value) { return hlp::toBytes(value); }
+                        [](auto value) { return wolv::util::toContainer<std::vector<u8>>(wolv::util::toBytes(value)); }
                 }, this->getValue());
                 std::copy(bytes.begin(), bytes.end(), std::back_inserter(result));
             } else if (auto iteratable = dynamic_cast<pl::ptrn::Iteratable*>(this); iteratable != nullptr) {
@@ -317,7 +320,7 @@ namespace pl::ptrn {
                         auto startOffset = child->getOffset();
 
                         child->setOffset(offset);
-                        PL_ON_SCOPE_EXIT { child->setOffset(startOffset); };
+                        ON_SCOPE_EXIT { child->setOffset(startOffset); };
 
                         auto bytes = child->getBytes();
                         std::copy(bytes.begin(), bytes.end(), std::back_inserter(result));
@@ -357,7 +360,7 @@ namespace pl::ptrn {
                         }
                     }
                 } catch (core::err::EvaluatorError::Exception &error) {
-                    hlp::unused(error);
+                    wolv::util::unused(error);
                 }
             }
 

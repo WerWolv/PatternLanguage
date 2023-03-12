@@ -1,8 +1,5 @@
 #pragma once
 
-#include <pl/helpers/types.hpp>
-#include <pl/helpers/concepts.hpp>
-
 #include <array>
 #include <bit>
 #include <cstring>
@@ -16,28 +13,19 @@
 #include <variant>
 #include <vector>
 
+#include <pl/helpers/types.hpp>
+#include <pl/helpers/concepts.hpp>
+
+#include <wolv/utils/core.hpp>
+
 namespace pl::hlp {
-
-    [[noreturn]] inline void unreachable() {
-        __builtin_unreachable();
-    }
-
-    inline void unused(auto && ... x) {
-        ((void)x, ...);
-    }
-
 
     [[nodiscard]] std::string to_string(u128 value);
     [[nodiscard]] std::string to_string(i128 value);
 
-    [[nodiscard]] std::vector<u8> toBytes(const auto &value) {
-        std::vector<u8> bytes(sizeof(value));
-        std::memcpy(bytes.data(), &value, sizeof(value));
-        return bytes;
-    }
-
     [[nodiscard]] std::vector<u8> toMinimalBytes(const auto &value) {
-        auto bytes = toBytes(value);
+        auto bytesArray = wolv::util::toBytes(value);
+        auto bytes = std::vector<u8>(bytesArray.begin(), bytesArray.end());
 
         while (bytes.size() > 1 && bytes.back() == 0)
             bytes.pop_back();
@@ -82,11 +70,6 @@ namespace pl::hlp {
         i128 mask = u128(1) << u128(numBits - 1);
         return (value ^ mask) - mask;
     }
-
-    template<class... Ts>
-    struct overloaded : Ts... { using Ts::operator()...; };
-    template<class... Ts>
-    overloaded(Ts...) -> overloaded<Ts...>;
 
     template<size_t Size>
     struct SizeTypeImpl { };
@@ -167,16 +150,6 @@ namespace pl::hlp {
         });
 
         return iter != a.end();
-    }
-
-    [[nodiscard]] std::string replaceAll(std::string string, const std::string &search, const std::string &replace);
-    [[nodiscard]] std::vector<std::string> splitString(const std::string &string, const std::string &delimiter);
-
-    [[nodiscard]] constexpr inline size_t strnlen(const char *s, size_t n) {
-        size_t i = 0;
-        while (i < n && s[i] != '\x00') i++;
-
-        return i;
     }
 
 }

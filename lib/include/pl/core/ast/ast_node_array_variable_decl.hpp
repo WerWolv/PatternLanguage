@@ -48,7 +48,7 @@ namespace pl::core::ast {
 
             auto startOffset = evaluator->dataOffset();
 
-            auto scopeGuard = PL_SCOPE_GUARD {
+            auto scopeGuard = SCOPE_GUARD {
                 evaluator->popSectionId();
             };
 
@@ -69,7 +69,7 @@ namespace pl::core::ast {
                 if (offset == nullptr)
                     err::E0010.throwError("Cannot use void expression as placement offset.", {}, this);
 
-                evaluator->dataOffset() = std::visit(hlp::overloaded {
+                evaluator->dataOffset() = std::visit(wolv::util::overloaded {
                     [this](const std::string &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
                     [this](ptrn::Pattern *) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
                     [](auto &&offset) -> u64 { return offset; }
@@ -121,7 +121,7 @@ namespace pl::core::ast {
             if (sizeLiteral == nullptr)
                 err::E0004.throwError("Function arrays require a fixed size.", {}, this);
 
-            auto entryCount = std::visit(hlp::overloaded {
+            auto entryCount = std::visit(wolv::util::overloaded {
                 [this](const std::string &) -> i128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
                 [this](ptrn::Pattern *pattern) -> i128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
                 [](auto &&size) -> i128 { return size; }
@@ -199,7 +199,7 @@ namespace pl::core::ast {
                 auto sizeNode = this->m_size->evaluate(evaluator);
 
                 if (auto literal = dynamic_cast<ASTNodeLiteral *>(sizeNode.get()); literal != nullptr) {
-                    entryCount = std::visit(hlp::overloaded {
+                    entryCount = std::visit(wolv::util::overloaded {
                         [this](const std::string &) -> i128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
                         [this](ptrn::Pattern *pattern) -> i128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
                         [](auto &&size) -> i128 { return size; }
@@ -275,7 +275,7 @@ namespace pl::core::ast {
 
         std::unique_ptr<ptrn::Pattern> createDynamicArray(Evaluator *evaluator) const {
             auto startArrayIndex = evaluator->getCurrentArrayIndex();
-            PL_ON_SCOPE_EXIT {
+            ON_SCOPE_EXIT {
                 if (startArrayIndex.has_value())
                     evaluator->setCurrentArrayIndex(*startArrayIndex);
                 else
@@ -318,7 +318,7 @@ namespace pl::core::ast {
                 auto sizeNode = this->m_size->evaluate(evaluator);
 
                 if (auto literal = dynamic_cast<ASTNodeLiteral *>(sizeNode.get()); literal != nullptr) {
-                    auto entryCount = std::visit(hlp::overloaded {
+                    auto entryCount = std::visit(wolv::util::overloaded {
                         [this](const std::string &) -> u128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
                         [this](ptrn::Pattern *pattern) -> u128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
                         [](auto &&size) -> u128 { return size; }
