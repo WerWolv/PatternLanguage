@@ -341,7 +341,7 @@ namespace pl::core {
                 if (token[0].type == Token::Type::DocComment) {
                     auto content = std::get<Token::DocComment>(token[0].value);
 
-                    auto trimmed = hlp::trim(content.comment);
+                    auto trimmed = wolv::util::trim(content.comment);
                     if (trimmed.starts_with("DOCS IGNORE ON")) {
                         this->m_ignoreDocs = true;
                         return std::nullopt;

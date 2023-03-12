@@ -131,17 +131,6 @@ namespace pl::hlp {
         return result;
     }
 
-    [[nodiscard]] inline std::string trim(std::string s) {
-        s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](u8 ch) {
-            return !std::isspace(ch) && ch >= 0x20;
-        }));
-        s.erase(std::find_if(s.rbegin(), s.rend(), [](u8 ch) {
-            return !std::isspace(ch) && ch >= 0x20;
-        }).base(), s.end());
-
-        return s;
-    }
-
     [[nodiscard]] float float16ToFloat32(u16 float16);
 
     [[nodiscard]] inline bool containsIgnoreCase(const std::string &a, const std::string &b) {

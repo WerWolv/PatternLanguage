@@ -1,13 +1,13 @@
 #include <cli/helpers/utils.hpp>
 
-#include <pl/helpers/file.hpp>
+#include <wolv/io/file.hpp>
 
 namespace pl::cli {
 
     void executePattern(
             PatternLanguage &runtime,
-            pl::hlp::fs::File &inputFile,
-            pl::hlp::fs::File &patternFile,
+            wolv::io::File &inputFile,
+            wolv::io::File &patternFile,
             const std::vector<std::fs::path> &includePaths,
             const std::vector<std::string> &defines,
             bool allowDangerousFunctions,

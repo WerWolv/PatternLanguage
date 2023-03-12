@@ -1,6 +1,6 @@
 #include <pl/pattern_language.hpp>
 #include <pl/formatters.hpp>
-#include <pl/helpers/file.hpp>
+#include <wolv/io/file.hpp>
 
 #include <cli/helpers/utils.hpp>
 
@@ -65,14 +65,14 @@ namespace pl::cli::sub {
             }
 
             // Open input file
-            hlp::fs::File inputFile(inputFilePath, hlp::fs::File::Mode::Read);
+            wolv::io::File inputFile(inputFilePath, wolv::io::File::Mode::Read);
             if (!inputFile.isValid()) {
                 ::fmt::print("Failed to open file '{}'\n", inputFilePath.string());
                 std::exit(EXIT_FAILURE);
             }
 
             // Open pattern file
-            hlp::fs::File patternFile(patternFilePath, hlp::fs::File::Mode::Read);
+            wolv::io::File patternFile(patternFilePath, wolv::io::File::Mode::Read);
             if (!patternFile.isValid()) {
                 ::fmt::print("Failed to open file '{}'\n", patternFilePath.string());
                 std::exit(EXIT_FAILURE);
@@ -111,7 +111,7 @@ namespace pl::cli::sub {
             auto result = formatter->format(runtime);
 
             // Write results to output file
-            hlp::fs::File outputFile(outputFilePath, hlp::fs::File::Mode::Create);
+            wolv::io::File outputFile(outputFilePath, wolv::io::File::Mode::Create);
             if (!outputFile.isValid()) {
                 ::fmt::print("Failed to create output file: {}\n", outputFilePath.string());
                 std::exit(EXIT_FAILURE);

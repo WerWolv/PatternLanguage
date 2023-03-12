@@ -1,6 +1,7 @@
 #include <pl/pattern_language.hpp>
 #include <pl/core/parser.hpp>
-#include <pl/helpers/file.hpp>
+
+#include <wolv/io/file.hpp>
 
 #include <CLI/CLI.hpp>
 #include <fmt/format.h>
@@ -127,7 +128,7 @@ namespace pl::cli::sub {
             runtime.setIncludePaths(includePaths);
 
             // Execute pattern file
-            hlp::fs::File patternFile(patternFilePath, hlp::fs::File::Mode::Read);
+            wolv::io::File patternFile(patternFilePath, wolv::io::File::Mode::Read);
 
             auto ast = runtime.parseString(patternFile.readString());
             if (!ast.has_value()) {
@@ -141,11 +142,11 @@ namespace pl::cli::sub {
             {
                 // Add global documentation
                 for (auto comment : runtime.getInternals().parser->getGlobalDocComments()) {
-                    comment = hlp::trim(comment);
+                    comment = wolv::util::trim(comment);
                     if (comment.starts_with('*'))
                         comment = comment.substr(1);
 
-                    documentation += fmt::format("**{}**\n", hlp::trim(comment));
+                    documentation += fmt::format("**{}**\n", wolv::util::trim(comment));
                 }
 
                 {
@@ -158,24 +159,24 @@ namespace pl::cli::sub {
 
                         sectionContent += fmt::format("### **{}**\n", name);
 
-                        for (auto line : hlp::splitString(type->getDocComment(), "\n")) {
-                            line = hlp::trim(line);
+                        for (auto line : wolv::util::splitString(type->getDocComment(), "\n")) {
+                            line = wolv::util::trim(line);
                             if (line.starts_with('*'))
                                 line = line.substr(1);
-                            line = hlp::trim(line);
+                            line = wolv::util::trim(line);
 
                             if (line.starts_with('@')) {
                                 line = line.substr(1);
 
                                 if (line.starts_with("tparam ")) {
                                     line = line.substr(5);
-                                    line = hlp::trim(line);
+                                    line = wolv::util::trim(line);
 
                                     if (line.empty())
                                         continue;
 
-                                    auto paramName = hlp::splitString(line, " ")[0];
-                                    sectionContent += fmt::format("- `<{}>`: {}\n", paramName, hlp::trim(line.substr(paramName.size())));
+                                    auto paramName = wolv::util::splitString(line, " ")[0];
+                                    sectionContent += fmt::format("- `<{}>`: {}\n", paramName, wolv::util::trim(line.substr(paramName.size())));
                                 } else if (line.starts_with("internal ")) {
                                     goto skip_type;
                                 }
@@ -184,7 +185,7 @@ namespace pl::cli::sub {
                             }
                         }
 
-                        sectionContent += generateTypeDocumentation(hlp::splitString(name, "::").back(), type.get()) + "\n";
+                        sectionContent += generateTypeDocumentation(wolv::util::splitString(name, "::").back(), type.get()) + "\n";
 
                         skip_type:;
                     }
@@ -210,27 +211,27 @@ namespace pl::cli::sub {
 
                             sectionContent += fmt::format("### **{}**\n", name);
 
-                            for (auto line : hlp::splitString(functionDecl->getDocComment(), "\n")) {
-                                line = hlp::trim(line);
+                            for (auto line : wolv::util::splitString(functionDecl->getDocComment(), "\n")) {
+                                line = wolv::util::trim(line);
                                 if (line.starts_with('*'))
                                     line = line.substr(1);
-                                line = hlp::trim(line);
+                                line = wolv::util::trim(line);
 
                                 if (line.starts_with('@')) {
                                     line = line.substr(1);
 
                                     if (line.starts_with("param ")) {
                                         line = line.substr(5);
-                                        line = hlp::trim(line);
+                                        line = wolv::util::trim(line);
 
                                         if (line.empty())
                                             continue;
 
-                                        auto paramName = hlp::splitString(line, " ")[0];
-                                        sectionContent += fmt::format("- `{}`: {}\n", paramName, hlp::trim(line.substr(paramName.size())));
+                                        auto paramName = wolv::util::splitString(line, " ")[0];
+                                        sectionContent += fmt::format("- `{}`: {}\n", paramName, wolv::util::trim(line.substr(paramName.size())));
                                     } else if (line.starts_with("return ")) {
                                         line = line.substr(6);
-                                        line = hlp::trim(line);
+                                        line = wolv::util::trim(line);
 
                                         sectionContent += fmt::format("- `return`: {}\n", line);
                                     } else if (line.starts_with("internal ")) {
@@ -242,7 +243,7 @@ namespace pl::cli::sub {
                             }
 
                             sectionContent += "\n```pat\n";
-                            sectionContent += fmt::format("fn {}(", hlp::splitString(functionDecl->getName(), "::").back());
+                            sectionContent += fmt::format("fn {}(", wolv::util::splitString(functionDecl->getName(), "::").back());
 
                             const auto &params = functionDecl->getParams();
                             for (const auto &[paramName, paramType] : params) {
@@ -273,8 +274,8 @@ namespace pl::cli::sub {
                 }
             }
 
-            hlp::fs::createDirectories(outputFilePath.parent_path());
-            hlp::fs::File outputFile(outputFilePath, hlp::fs::File::Mode::Create);
+            wolv::io::fs::createDirectories(outputFilePath.parent_path());
+            wolv::io::File outputFile(outputFilePath, wolv::io::File::Mode::Create);
             outputFile.write(documentation);
         });
     }

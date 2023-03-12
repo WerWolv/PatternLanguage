@@ -1,6 +1,6 @@
 #include <pl/pattern_language.hpp>
 #include <pl/formatters.hpp>
-#include <pl/helpers/file.hpp>
+#include <wolv/io/file.hpp>
 
 #include <CLI/CLI.hpp>
 #include <fmt/format.h>
@@ -44,7 +44,7 @@ namespace pl::cli::sub {
 
             runtime.setIncludePaths(includePaths);
 
-            auto data = hlp::fs::File(inputFilePath, hlp::fs::File::Mode::Read).readBytes();
+            auto data = wolv::io::File(inputFilePath, wolv::io::File::Mode::Read).readBytes();
             runtime.setDataSource(baseAddress, data.size(), [&](u64 address, void *buffer, size_t size) {
                 if (address + size > data.size())
                     std::memset(buffer, 0x00, size);

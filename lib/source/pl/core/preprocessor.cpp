@@ -63,7 +63,7 @@ namespace pl::core {
                 offset += 1;
             }
 
-            return hlp::trim(value);
+            return wolv::util::trim(value);
         };
 
         auto getDirective = [&](std::string directive, bool hasArgs = true) {

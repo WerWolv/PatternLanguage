@@ -1,6 +1,6 @@
 #include <pl/pattern_language.hpp>
 #include <pl/core/parser.hpp>
-#include <pl/helpers/file.hpp>
+#include <wolv/io/file.hpp>
 
 #include <CLI/CLI.hpp>
 #include <fmt/format.h>
@@ -18,7 +18,7 @@ namespace pl::cli::sub {
     namespace {
 
         std::string trimValue(const std::string &string) {
-            std::string trimmed = hlp::trim(string);
+            std::string trimmed = wolv::util::trim(string);
 
             if (trimmed.starts_with('"') && trimmed.ends_with('"'))
                 trimmed = trimmed.substr(1, trimmed.size() - 2);
@@ -62,7 +62,7 @@ namespace pl::cli::sub {
             runtime.setIncludePaths(includePaths);
 
             // Execute pattern file
-            hlp::fs::File patternFile(patternFilePath, hlp::fs::File::Mode::Read);
+            wolv::io::File patternFile(patternFilePath, wolv::io::File::Mode::Read);
 
             std::string patternName, patternVersion;
             std::vector<std::string> patternAuthors, patternDescriptions, patternMimes;
