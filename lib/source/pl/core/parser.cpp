@@ -1252,25 +1252,22 @@ namespace pl::core {
 
         typeDecl->setTemplateParameters(this->parseTemplateList());
 
-        if (MATCHES(sequence(tkn::Operator::Colon, tkn::Literal::Identifier))) {
+        this->m_currTemplateType.push_back(typeDecl);
+
+        if (MATCHES(sequence(tkn::Operator::Colon))) {
             // Inheritance
-
             do {
-                auto inheritedTypeName = getValue<Token::Identifier>(-1).get();
-                if (!this->m_types.contains(inheritedTypeName))
-                    err::P0003.throwError(fmt::format("Cannot inherit from unknown type {}.", typeName), fmt::format("If this type is being declared further down in the code, consider forward declaring it with 'using {};'.", typeName), 1);
-
-                structNode->addInheritance(this->m_types[inheritedTypeName]->clone());
-            } while (MATCHES(sequence(tkn::Separator::Comma, tkn::Literal::Identifier)));
-
-        } else if (MATCHES(sequence(tkn::Operator::Colon, tkn::ValueType::Any))) {
-            err::P0003.throwError("Cannot inherit from built-in type.", {}, 1);
+                if (MATCHES(sequence(tkn::ValueType::Any)))
+                    err::P0002.throwError("Cannot inherit from built-in type.", {}, 1);
+                if (!MATCHES(sequence(tkn::Literal::Identifier)))
+                    err::P0002.throwError(fmt::format("Expected type to inherit from, got {}.", getFormattedToken(0)), {}, 0);
+                structNode->addInheritance(parseCustomType());
+            } while (MATCHES(sequence(tkn::Separator::Comma)));
         }
 
         if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
             err::P0002.throwError(fmt::format("Expected '{{' after struct declaration, got {}.", getFormattedToken(0)), {}, 1);
 
-        this->m_currTemplateType.push_back(typeDecl);
         while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
             structNode->addMember(parseMember());
         }
