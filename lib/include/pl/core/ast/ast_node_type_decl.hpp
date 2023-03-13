@@ -76,6 +76,22 @@ namespace pl::core::ast {
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             evaluator->updateRuntime(this);
 
+            std::vector<std::unique_ptr<ASTNodeLiteral>> templateParamLiterals(this->m_templateParameters.size());
+
+            // Get template parameter values before pushing a new template parameter scope so that variables from the parent scope are used before being overwritten.
+            for (size_t i = 0; i < this->m_templateParameters.size(); i++) {
+                auto &templateParameter = this->m_templateParameters[i];
+                if (auto lvalue = dynamic_cast<ASTNodeLValueAssignment *>(templateParameter.get())) {
+                    if (!lvalue->getRValue())
+                        err::E0003.throwError(fmt::format("No value set for non-type template parameter {}. This is a bug.", lvalue->getLValueName()), {}, this);
+                    auto value = lvalue->getRValue()->evaluate(evaluator);
+                    if (auto literal = dynamic_cast<ASTNodeLiteral*>(value.release()))
+                        templateParamLiterals[i] = std::unique_ptr<ASTNodeLiteral>(literal);
+                    else
+                        err::E0003.throwError(fmt::format("Template parameter {} is not a literal. This is a bug.", lvalue->getLValueName()), {}, this);
+                }
+            }
+
             evaluator->pushTemplateParameters();
             ON_SCOPE_EXIT {
                 evaluator->popTemplateParameters();
@@ -87,15 +103,18 @@ namespace pl::core::ast {
                     evaluator->popSectionId();
                 };
 
-                for (const auto &templateParameter : this->m_templateParameters) {
+                for (size_t i = 0; i < this->m_templateParameters.size(); i++) {
+                    auto &templateParameter = this->m_templateParameters[i];
                     if (auto lvalue = dynamic_cast<ASTNodeLValueAssignment *>(templateParameter.get())) {
-                        if (!lvalue->getRValue())
-                            err::E0003.throwError(fmt::format("No value set for non-type template parameter {}. This is a bug.", lvalue->getLValueName()), {}, this);
-                        auto value = lvalue->getRValue()->evaluate(evaluator);
-                        if (auto literal = dynamic_cast<ASTNodeLiteral*>(value.get()); literal != nullptr) {
-                            evaluator->createVariable(lvalue->getLValueName(), new ASTNodeBuiltinType(literal->getValue().getType()), {}, false, false, true);
-                            evaluator->setVariable(lvalue->getLValueName(), literal->getValue());
-                        }
+                        auto value = templateParamLiterals[i]->getValue();
+
+                        m_currentTemplateParameterType = std::make_unique<ASTNodeBuiltinType>(value.getType());
+                        m_currentTemplateParameterType->setSourceLocation(lvalue->getLine(), lvalue->getColumn());
+
+                        evaluator->createVariable(lvalue->getLValueName(), m_currentTemplateParameterType.get(), {}, false, false, true);
+                        evaluator->setVariable(lvalue->getLValueName(), value);
+
+                        m_currentTemplateParameterType = nullptr;
                     }
                 }
             }
@@ -196,6 +215,8 @@ namespace pl::core::ast {
         std::optional<std::endian> m_endian;
         std::vector<std::shared_ptr<ASTNode>> m_templateParameters;
         bool m_reference = false;
+
+        mutable std::unique_ptr<ASTNodeBuiltinType> m_currentTemplateParameterType;
     };
 
 }
