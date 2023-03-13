@@ -4,6 +4,7 @@
 
 #include <pl/helpers/utils.hpp>
 #include <wolv/io/file.hpp>
+#include <wolv/utils/guards.hpp>
 
 #include <pl/pattern_language.hpp>
 #include <pl/core/evaluator.hpp>
@@ -115,7 +116,7 @@ int main(int argc, char **argv) {
             break;
     }
 
-    PL_ON_SCOPE_EXIT {
+    ON_SCOPE_EXIT {
         for (auto &[key, value] : TestPattern::getTests())
             delete value;
     };
