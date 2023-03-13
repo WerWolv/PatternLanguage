@@ -77,14 +77,23 @@ namespace pl::core::ast {
             evaluator->updateRuntime(this);
 
             evaluator->pushTemplateParameters();
-            ON_SCOPE_EXIT { evaluator->popTemplateParameters(); };
+            ON_SCOPE_EXIT {
+                evaluator->popTemplateParameters();
+            };
 
-            for (const auto &templateParameter : this->m_templateParameters) {
-                if (auto lvalue = dynamic_cast<ASTNodeLValueAssignment *>(templateParameter.get())) {
-                    auto value = lvalue->getRValue()->evaluate(evaluator);
-                    if (auto literal = dynamic_cast<ASTNodeLiteral*>(value.get()); literal != nullptr) {
-                        evaluator->createVariable(lvalue->getLValueName(), new ASTNodeBuiltinType(literal->getValue().getType()), {}, false, false, true);
-                        evaluator->setVariable(lvalue->getLValueName(), literal->getValue());
+            {
+                evaluator->pushSectionId(ptrn::Pattern::HeapSectionId);
+                ON_SCOPE_EXIT {
+                    evaluator->popSectionId();
+                };
+
+                for (const auto &templateParameter : this->m_templateParameters) {
+                    if (auto lvalue = dynamic_cast<ASTNodeLValueAssignment *>(templateParameter.get())) {
+                        auto value = lvalue->getRValue()->evaluate(evaluator);
+                        if (auto literal = dynamic_cast<ASTNodeLiteral*>(value.get()); literal != nullptr) {
+                            evaluator->createVariable(lvalue->getLValueName(), new ASTNodeBuiltinType(literal->getValue().getType()), {}, false, false, true);
+                            evaluator->setVariable(lvalue->getLValueName(), literal->getValue());
+                        }
                     }
                 }
             }

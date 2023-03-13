@@ -122,8 +122,10 @@ namespace pl::core {
             if (sectionId == ptrn::Pattern::PatternLocalSectionId) {
                 patternLocalAddress = this->m_patternLocalStorage.empty() ? 0 : this->m_patternLocalStorage.rbegin()->first + 1;
                 this->m_patternLocalStorage.insert({ patternLocalAddress, { } });
-            } else {
+            } else if (sectionId == ptrn::Pattern::HeapSectionId) {
                 this->getHeap().emplace_back();
+            } else {
+                err::E0001.throwError(fmt::format("Attempted to place a variable into section 0x{:X}.", sectionId), {}, type);
             }
         }
 
