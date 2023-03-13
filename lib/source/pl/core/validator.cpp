@@ -103,10 +103,13 @@ namespace pl::core {
                             err::V0002.throwError(fmt::format("Redefinition of enum entry '{0}'", name));
                     }
                 } else if (auto conditionalNode = dynamic_cast<ast::ASTNodeConditionalStatement *>(node.get()); conditionalNode != nullptr) {
+                    auto prevIdentifiers = identifiers;
                     if (!this->validate(sourceCode, conditionalNode->getTrueBody(), false))
                         return false;
+                    identifiers = prevIdentifiers;
                     if (!this->validate(sourceCode, conditionalNode->getFalseBody(), false))
                         return false;
+                    identifiers = prevIdentifiers;
                 } else if (auto functionNode = dynamic_cast<ast::ASTNodeFunctionDefinition *>(node.get()); functionNode != nullptr) {
                     if (!identifiers.insert(functionNode->getName()).second)
                         err::V0002.throwError(fmt::format("Redefinition of identifier '{0}'", functionNode->getName()));
