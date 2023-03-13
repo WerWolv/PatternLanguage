@@ -943,6 +943,9 @@ namespace pl::core {
                     index++;
                 } while (MATCHES(sequence(tkn::Separator::Comma)));
 
+                if (index < templateTypes.size())
+                    err::P0002.throwError(fmt::format("Not enough template parameters provided, expected {} parameters.", templateTypes.size()), {}, 1);
+
                 if (!MATCHES(sequence(tkn::Operator::BoolGreaterThan)))
                     err::P0002.throwError(fmt::format("Expected '>' to close template list, got {}.", getFormattedToken(0)), {}, 1);
 

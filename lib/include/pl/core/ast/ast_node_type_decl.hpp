@@ -89,6 +89,8 @@ namespace pl::core::ast {
 
                 for (const auto &templateParameter : this->m_templateParameters) {
                     if (auto lvalue = dynamic_cast<ASTNodeLValueAssignment *>(templateParameter.get())) {
+                        if (!lvalue->getRValue())
+                            err::E0003.throwError(fmt::format("No value set for non-type template parameter {}. This is a bug.", lvalue->getLValueName()), {}, this);
                         auto value = lvalue->getRValue()->evaluate(evaluator);
                         if (auto literal = dynamic_cast<ASTNodeLiteral*>(value.get()); literal != nullptr) {
                             evaluator->createVariable(lvalue->getLValueName(), new ASTNodeBuiltinType(literal->getValue().getType()), {}, false, false, true);
