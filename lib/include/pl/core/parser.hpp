@@ -146,6 +146,7 @@ namespace pl::core {
         std::pair<std::unique_ptr<ast::ASTNode>, bool> parseCaseParameters(std::vector<std::unique_ptr<ast::ASTNode>> &condition);
         std::unique_ptr<ast::ASTNode> parseMatchStatement();
         std::unique_ptr<ast::ASTNode> parseWhileStatement();
+        std::unique_ptr<ast::ASTNodeTypeDecl> parseCustomType();
         std::unique_ptr<ast::ASTNodeTypeDecl> parseType();
         std::vector<std::shared_ptr<ast::ASTNode>> parseTemplateList();
         std::shared_ptr<ast::ASTNodeTypeDecl> parseUsingDeclaration();

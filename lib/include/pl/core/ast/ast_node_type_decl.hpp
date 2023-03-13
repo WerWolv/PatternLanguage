@@ -14,8 +14,8 @@ namespace pl::core::ast {
     public:
         explicit ASTNodeTypeDecl(std::string name) : m_forwardDeclared(true), m_valid(false), m_name(std::move(name)) { }
 
-        ASTNodeTypeDecl(std::string name, std::shared_ptr<ASTNode> type, std::optional<std::endian> endian = std::nullopt, bool reference = false)
-            : ASTNode(), m_name(std::move(name)), m_type(std::move(type)), m_endian(endian), m_reference(reference) { }
+        ASTNodeTypeDecl(std::string name, std::shared_ptr<ASTNode> type, std::optional<std::endian> endian = std::nullopt)
+            : ASTNode(), m_name(std::move(name)), m_type(std::move(type)), m_endian(endian) { }
 
         ASTNodeTypeDecl(const ASTNodeTypeDecl &other) : ASTNode(other), Attributable(other) {
             this->m_name                = other.m_name;
@@ -148,6 +148,10 @@ namespace pl::core::ast {
 
         [[nodiscard]] bool isForwardDeclared() const {
             return this->m_forwardDeclared;
+        }
+
+        void setReference(bool reference) {
+            this->m_reference = reference;
         }
 
         [[nodiscard]] bool isReference() const {
