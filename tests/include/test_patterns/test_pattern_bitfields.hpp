@@ -19,6 +19,11 @@ namespace pl::test {
                 bitfieldFields.push_back(create<PatternBitfieldField>("", "d", 0x12, 12, 4, testBitfield.get()));
             }
 
+            for (auto &field : bitfieldFields) {
+                if (auto* bitfieldField = dynamic_cast<PatternBitfieldField*>(field.get()))
+                    bitfieldField->setBitfieldBitSize(4 * 4);
+            }
+
             testBitfield->setFields(std::move(bitfieldFields));
             testBitfield->setEndian(std::endian::big);
 
@@ -37,10 +42,10 @@ namespace pl::test {
 
                 be TestBitfield testBitfield @ 0x12;
 
-                std::assert(testBitfield.a == 0x04, "Field A invalid");
-                std::assert(testBitfield.b == 0x03, "Field B invalid");
-                std::assert(testBitfield.c == 0x0A, "Field C invalid");
-                std::assert(testBitfield.d == 0x00, "Field D invalid");
+                std::assert(testBitfield.a == 0x00, "Field A invalid");
+                std::assert(testBitfield.b == 0x0A, "Field B invalid");
+                std::assert(testBitfield.c == 0x03, "Field C invalid");
+                std::assert(testBitfield.d == 0x04, "Field D invalid");
             )";
         }
     };

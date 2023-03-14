@@ -123,9 +123,10 @@ namespace pl::core::ast {
                 readVariable(evaluator, value, pattern);
                 literal = value;
             } else if (auto bitfieldFieldPattern = dynamic_cast<ptrn::PatternBitfieldField *>(pattern); bitfieldFieldPattern != nullptr) {
-                u64 value = 0;
-                readVariable(evaluator, value, pattern);
-                literal = u128(hlp::extract(bitfieldFieldPattern->getBitOffset() + (bitfieldFieldPattern->getBitSize() - 1), bitfieldFieldPattern->getBitOffset(), value));
+                if (!bitfieldFieldPattern->canReadValue())
+                    pl::core::err::E0010.throwError("Cannot read a little-endian bitfield before all fields are laid out.", {}, this);
+
+                literal = u128(bitfieldFieldPattern->readValue());
             } else {
                 literal = pattern;
             }

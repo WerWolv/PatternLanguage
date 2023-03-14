@@ -45,6 +45,8 @@ namespace pl::core::ast {
             pattern->setPadding(this->isPadding());
             pattern->setVariableName(this->getName());
 
+            evaluator->getBitfieldFieldAddedCallback()(*this, pattern);
+
             return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>({ std::move(pattern) });
         }
 

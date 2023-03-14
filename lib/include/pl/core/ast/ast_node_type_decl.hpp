@@ -99,7 +99,8 @@ namespace pl::core::ast {
                 if (pattern == nullptr)
                     continue;
 
-                pattern->setEndian(evaluator->getDefaultEndian());
+                if (!pattern->hasOverriddenEndian())
+                    pattern->setEndian(evaluator->getDefaultEndian());
 
                 if (!this->m_name.empty())
                     pattern->setTypeName(this->m_name);

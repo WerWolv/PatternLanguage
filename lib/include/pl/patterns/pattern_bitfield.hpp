@@ -14,20 +14,47 @@ namespace pl::ptrn {
             this->m_bitOffset = other.m_bitOffset;
             this->m_bitSize = other.m_bitSize;
             this->m_bitField = other.m_bitField;
+            this->m_bitfieldBitSize = other.m_bitfieldBitSize;
         }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
             return std::unique_ptr<Pattern>(new PatternBitfieldField(*this));
         }
 
+        [[nodiscard]] bool canReadValue() const {
+            return this->getEndian() == std::endian::big || this->getBitfieldBitSize().has_value();
+        }
+
+        [[nodiscard]] u128 readValue() const {
+            size_t offset = 0;
+            u32 bitSize = this->getBitSize();
+            u128 value = 0;
+
+            if (this->getEndian() == std::endian::big) {
+                u8 bitOffset = this->getBitOffset();
+                size_t readSize = (bitOffset + bitSize + 7) / 8;
+                this->getEvaluator()->readData(this->getOffset(), &value, readSize, this->getSection());
+                value = hlp::changeEndianess(value, sizeof(value), std::endian::big);
+
+                offset = (sizeof(value) * 8) - this->getBitOffset() - bitSize;
+            } else {
+                // For little-endian we need to read out the size of the containing bitfield and
+                // then take the chunk of bits from the little end.
+                if (!this->getBitfieldBitSize().has_value())
+                    return 0;
+                size_t byteSize = (this->getBitfieldBitSize().value() + 7) / 8;
+                this->getEvaluator()->readData(this->getOffset(), &value, byteSize, this->getSection());
+                value = hlp::changeEndianess(value, sizeof(value), std::endian::big);
+                offset = ((sizeof(value) * 8) - this->getBitfieldBitSize().value()) + this->getBitOffset();
+            }
+            auto mask = (u128(1) << bitSize) - 1;
+            value = (value >> offset) & mask;
+            value = hlp::changeEndianess(value, (bitSize + 7) / 8, this->getEndian() == std::endian::big ? std::endian::little : std::endian::big);
+            return value;
+        }
+
         [[nodiscard]] core::Token::Literal getValue() const override {
-            std::vector<u8> value(this->m_bitField->getSize(), 0);
-            this->getEvaluator()->readData(this->m_bitField->getOffset(), &value[0], value.size(), this->getSection());
-
-            if (this->m_bitField->getEndian() != std::endian::native)
-                std::reverse(value.begin(), value.end());
-
-            return transformValue(u128(hlp::extract(this->m_bitOffset + (this->m_bitSize - 1), this->m_bitOffset, value)));
+            return transformValue(u128(this->readValue()));
         }
 
         void setBitfield(Pattern *bitField) {
@@ -50,12 +77,20 @@ namespace pl::ptrn {
             return this->m_bitSize;
         }
 
+        void setBitfieldBitSize(size_t size) {
+            m_bitfieldBitSize = size;
+        }
+
+        std::optional<size_t> getBitfieldBitSize() const {
+            return m_bitfieldBitSize;
+        }
+
         [[nodiscard]] bool operator==(const Pattern &other) const override {
             if (!compareCommonProperties<decltype(*this)>(other))
                 return false;
 
             auto &otherBitfieldField = *static_cast<const PatternBitfieldField *>(&other);
-            return this->m_bitOffset == otherBitfieldField.m_bitOffset && this->m_bitSize == otherBitfieldField.m_bitSize;
+            return this->m_bitOffset == otherBitfieldField.m_bitOffset && this->m_bitSize == otherBitfieldField.m_bitSize && this->m_bitfieldBitSize == otherBitfieldField.m_bitfieldBitSize;
         }
 
         void accept(PatternVisitor &v) override {
@@ -80,8 +115,10 @@ namespace pl::ptrn {
 
     private:
         bool m_padding = false;
-        u8 m_bitOffset, m_bitSize;
+        size_t m_bitOffset;
+        u8 m_bitSize;
         Pattern *m_bitField = nullptr;
+        std::optional<size_t> m_bitfieldBitSize;
     };
 
     class PatternBitfield : public Pattern,

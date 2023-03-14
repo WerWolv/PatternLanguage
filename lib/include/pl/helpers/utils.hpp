@@ -42,30 +42,6 @@ namespace pl::hlp {
 
     std::string encodeByteString(const std::vector<u8> &bytes);
 
-    [[nodiscard]] constexpr inline u64 extract(u8 from, u8 to, const pl::unsigned_integral auto &value) {
-        if (from < to) std::swap(from, to);
-
-        using ValueType = std::remove_cvref_t<decltype(value)>;
-        ValueType mask  = (std::numeric_limits<ValueType>::max() >> (((sizeof(value) * 8) - 1) - (from - to))) << to;
-
-        return (value & mask) >> to;
-    }
-
-    [[nodiscard]] inline u64 extract(u32 from, u32 to, const std::vector<u8> &bytes) {
-        u8 index = 0;
-        while (from > 32 && to > 32) {
-            from -= 8;
-            to -= 8;
-            index++;
-        }
-
-        u64 value = 0;
-        std::memcpy(&value, &bytes[index], std::min(sizeof(value), bytes.size() - index));
-        u64 mask = (std::numeric_limits<u64>::max() >> (64 - (from + 1)));
-
-        return (value & mask) >> to;
-    }
-
     [[nodiscard]] constexpr inline i128 signExtend(size_t numBits, i128 value) {
         i128 mask = u128(1) << u128(numBits - 1);
         return (value ^ mask) - mask;
