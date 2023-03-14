@@ -5,9 +5,7 @@
 #include <pl/core/evaluator.hpp>
 #include <pl/patterns/pattern.hpp>
 
-#include <ctime>
-#include <fmt/format.h>
-#include <fmt/chrono.h>
+#include <wolv/hash/crc.hpp>
 
 namespace pl::lib::libstd::hash {
 
@@ -17,36 +15,21 @@ namespace pl::lib::libstd::hash {
 
         api::Namespace nsStdHash = { "builtin", "std", "hash" };
         {
-            /* crc32(pattern, init, poly) */
-            runtime.addFunction(nsStdHash, "crc32", FunctionParameterCount::exactly(3), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
+            /* crc32(pattern, init, poly, xorout, reflect_in, reflect_out) */
+            runtime.addFunction(nsStdHash, "crc32", FunctionParameterCount::exactly(6), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
+                wolv::util::unused(ctx);
+
                 auto pattern = params[0].toPattern();
                 auto init    = params[1].toUnsigned();
                 auto poly    = params[2].toUnsigned();
+                auto xorout  = params[3].toUnsigned();
+                auto reflectIn  = params[4].toUnsigned();
+                auto reflectOut = params[5].toUnsigned();
 
-                // Lookup table generation
-                const auto table = [&] {
-                    std::array<u32, 256> table = { 0 };
+                wolv::hash::Crc<32> crc(poly, init, xorout, reflectIn, reflectOut);
+                crc.process(pattern->getBytes());
 
-                    for (u16 i = 0; i < 256; i++) {
-                        u32 c = i;
-                        for (u8 j = 0; j < 8; j++) {
-                            if (c & 1) c = poly ^ (c >> 1);
-                            else c >>= 1;
-                        }
-                        table[i] = c;
-                    }
-
-                    return table;
-                }();
-
-                u32 crc = init;
-                u8 byte = 0x00;
-                for (u64 i = 0; i < pattern->getSize(); i++) {
-                    ctx->readData(pattern->getOffset() + i, &byte, sizeof(byte), pattern->getSection());
-                    crc = table[(crc ^ byte) & 0xFF] ^ (crc >> 8);
-                }
-
-                return u128(~crc);
+                return u128(crc.getResult());
             });
         }
     }

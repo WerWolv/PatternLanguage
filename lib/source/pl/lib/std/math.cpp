@@ -13,11 +13,11 @@
 namespace pl::lib::libstd::math {
 
     enum class AccumulationOperation {
-        Add,
-        Multiply,
-        Modulo,
-        Min,
-        Max
+        Add 		= 0,
+        Multiply 	= 1,
+        Modulo 		= 2,
+        Min 		= 3,
+        Max 		= 4
     };
 
     void registerFunctions(pl::PatternLanguage &runtime) {
@@ -186,11 +186,11 @@ namespace pl::lib::libstd::math {
 
                     // Accumulate value into result
                     switch (op) {
-                        case AccumulationOperation::Add: result += value; break;
-                        case AccumulationOperation::Multiply: result *= value; break;
-                        case AccumulationOperation::Min: result = std::min(result, value); break;
-                        case AccumulationOperation::Max: result = std::max(result, value); break;
-                        case AccumulationOperation::Modulo: result %= value; break;
+                        case AccumulationOperation::Add:        result += value;                    break;
+                        case AccumulationOperation::Multiply:   result *= value;                    break;
+                        case AccumulationOperation::Min:        result = std::min(result, value);   break;
+                        case AccumulationOperation::Max:        result = std::max(result, value);   break;
+                        case AccumulationOperation::Modulo:     result %= value;                    break;
                     }
                 }
 
