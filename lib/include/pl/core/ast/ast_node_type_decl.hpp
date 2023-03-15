@@ -111,8 +111,9 @@ namespace pl::core::ast {
                         m_currentTemplateParameterType = std::make_unique<ASTNodeBuiltinType>(value.getType());
                         m_currentTemplateParameterType->setSourceLocation(lvalue->getLine(), lvalue->getColumn());
 
-                        evaluator->createVariable(lvalue->getLValueName(), m_currentTemplateParameterType.get(), {}, false, false, true);
-                        evaluator->setVariable(lvalue->getLValueName(), value);
+                        auto variable = evaluator->createVariable(lvalue->getLValueName(), m_currentTemplateParameterType.get(), {}, false, false, true);
+                        if (variable != nullptr)
+                            evaluator->setVariable(variable.get(), value);
 
                         m_currentTemplateParameterType = nullptr;
                     }
