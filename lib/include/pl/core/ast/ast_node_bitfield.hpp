@@ -16,6 +16,8 @@ namespace pl::core::ast {
         ASTNodeBitfield(const ASTNodeBitfield &other) : ASTNode(other), Attributable(other) {
             for (const auto &entry : other.getEntries())
                 this->m_entries.emplace_back(entry->clone());
+
+            this->m_isNested = other.m_isNested;
         }
 
         [[nodiscard]] std::unique_ptr<ASTNode> clone() const override {
@@ -25,10 +27,14 @@ namespace pl::core::ast {
         [[nodiscard]] const std::vector<std::shared_ptr<ASTNode>> &getEntries() const { return this->m_entries; }
         void addEntry(std::unique_ptr<ASTNode> &&entry) { this->m_entries.emplace_back(std::move(entry)); }
 
+        void setNested() {
+            this->m_isNested = true;
+        }
+
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             evaluator->updateRuntime(this);
 
-            auto bitfieldPattern = std::make_shared<ptrn::PatternBitfield>(evaluator, evaluator->dataOffset(), 0);
+            auto bitfieldPattern = std::make_shared<ptrn::PatternBitfield>(evaluator, evaluator->dataOffset(), evaluator->getBitfieldBitOffset(), 0);
 
             bitfieldPattern->setSection(evaluator->getSectionId());
 
@@ -77,19 +83,19 @@ namespace pl::core::ast {
             }
 
             if (potentialPatterns.size() > 0) {
-                auto lastFieldIter = std::find_if(potentialPatterns.rbegin(), potentialPatterns.rend(), [](auto& pattern) {
-                    return dynamic_cast<ptrn::PatternBitfieldField*>(pattern.get()) != nullptr;
+                auto lastMemberIter = std::find_if(potentialPatterns.rbegin(), potentialPatterns.rend(), [](auto& pattern) {
+                    return dynamic_cast<ptrn::PatternBitfieldMember*>(pattern.get()) != nullptr;
                 });
-                if (lastFieldIter != potentialPatterns.rend()) {
-                    auto *lastField = static_cast<ptrn::PatternBitfieldField*>(lastFieldIter->get());
-                    auto totalBitSize = (lastField->getTotalBitOffset() + lastField->getBitSize()) - (bitfieldPattern->getOffset() * 8);
-                    bitfieldPattern->setSize((totalBitSize + 7) / 8);
+                if (lastMemberIter != potentialPatterns.rend()) {
+                    auto *lastMember = static_cast<ptrn::PatternBitfieldMember*>(lastMemberIter->get());
+                    auto totalBitSize = (lastMember->getTotalBitOffset() - bitfieldPattern->getTotalBitOffset()) + lastMember->getBitSize();
+                    bitfieldPattern->setBitSize(totalBitSize);
                 }
 
                 for (auto &pattern : potentialPatterns) {
-                    if (auto bitfieldField = dynamic_cast<ptrn::PatternBitfieldField*>(pattern.get()); bitfieldField != nullptr) {
-                        bitfieldField->setBitfield(bitfieldPattern.get());
-                        if (!bitfieldField->isPadding())
+                    if (auto bitfieldMember = dynamic_cast<ptrn::PatternBitfieldMember*>(pattern.get()); bitfieldMember != nullptr) {
+                        bitfieldMember->setParentBitfield(bitfieldPattern.get());
+                        if (!bitfieldMember->isPadding())
                             fields.push_back(std::move(pattern));
                     }
                 }
@@ -97,17 +103,18 @@ namespace pl::core::ast {
 
             bitfieldPattern->setFields(fields);
 
-            evaluator->dataOffset() += bitfieldPattern->getSize();
-
             applyTypeAttributes(evaluator, this, bitfieldPattern);
 
-            evaluator->resetBitfieldBitOffset();
+            if (!this->m_isNested)
+                evaluator->resetBitfieldBitOffset();
 
             return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(bitfieldPattern));
         }
 
     private:
         std::vector<std::shared_ptr<ASTNode>> m_entries;
+
+        bool m_isNested = false;
     };
 
 }

@@ -4,16 +4,64 @@
 
 namespace pl::ptrn {
 
-    class PatternBitfieldField : public Pattern {
+    class PatternBitfieldMember : public Pattern {
     public:
-        PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, Pattern *bitfieldPattern = nullptr)
-            : Pattern(evaluator, offset, (bitSize + 7) / 8), m_bitOffset(bitOffset), m_bitSize(bitSize), m_bitField(bitfieldPattern) { }
+        using Pattern::Pattern;
 
-        PatternBitfieldField(const PatternBitfieldField &other) : Pattern(other) {
+        virtual void setParentBitfield(PatternBitfieldMember *parent) = 0;
+
+        [[nodiscard]] virtual PatternBitfieldMember const* getParentBitfield() const = 0;
+
+        [[nodiscard]] PatternBitfieldMember const& getTopmostBitfield() const {
+            pl::ptrn::PatternBitfieldMember const* topBitfield = this;
+            while (auto parentBitfield = topBitfield->getParentBitfield())
+                topBitfield = parentBitfield;
+            return *topBitfield;
+        }
+
+        [[nodiscard]] virtual u8 getBitOffset() const = 0;
+
+        virtual void setBitOffset(u8 bitOffset) = 0;
+
+        [[nodiscard]] virtual u64 getBitSize() const = 0;
+
+        [[nodiscard]] u128 getTotalBitOffset(u64 fromByteOffset = 0) const {
+            return ((this->getOffset() - fromByteOffset) << 3) + this->getBitOffset();
+        }
+
+        [[nodiscard]] u8 getBitOffsetForDisplay() const {
+            return this->getTotalBitOffset() - getTopmostBitfield().getTotalBitOffset();
+        }
+
+        [[nodiscard]] virtual bool isPadding() const { return false; }
+
+        [[nodiscard]] u64 getOffsetForSorting() const override {
+            // If this member has no parent, that means we are sorting in a byte-based context.
+            if (this->getParentBitfield() == nullptr)
+                return getOffset();
+
+            return this->getTotalBitOffset();
+        }
+
+        [[nodiscard]] size_t getSizeForSorting() const override {
+            // If this member has no parent, that means we are sorting in a byte-based context.
+            if (this->getParentBitfield() == nullptr)
+                return this->getSize();
+
+            return this->getBitSize();
+        }
+    };
+
+    class PatternBitfieldField : public PatternBitfieldMember {
+    public:
+        PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, PatternBitfieldMember *parentBitfield = nullptr)
+            : PatternBitfieldMember(evaluator, offset, (bitOffset + bitSize + 7) / 8), m_bitOffset(bitOffset), m_bitSize(bitSize), m_parentBitfield(parentBitfield) { }
+
+        PatternBitfieldField(const PatternBitfieldField &other) : PatternBitfieldMember(other) {
             this->m_padding = other.m_padding;
             this->m_bitOffset = other.m_bitOffset;
             this->m_bitSize = other.m_bitSize;
-            this->m_bitField = other.m_bitField;
+            this->m_parentBitfield = other.m_parentBitfield;
         }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
@@ -38,23 +86,19 @@ namespace pl::ptrn {
             return transformValue(u128(this->readValue()));
         }
 
-        void setBitfield(Pattern *bitField) {
-            this->m_bitField = bitField;
+        void setParentBitfield(PatternBitfieldMember *parentBitfield) override {
+            this->m_parentBitfield = parentBitfield;
         }
 
-        Pattern& getBitfield() {
-            return *this->m_bitField;
-        }
-
-        Pattern& getBitfield() const {
-            return *this->m_bitField;
+        PatternBitfieldMember const*getParentBitfield() const override {
+            return this->m_parentBitfield;
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
             return this->m_bitSize == 1 ? "bit" : "bits";
         }
 
-        [[nodiscard]] u8 getBitOffset() const {
+        [[nodiscard]] u8 getBitOffset() const override {
             return this->m_bitOffset;
         }
 
@@ -62,20 +106,8 @@ namespace pl::ptrn {
             this->m_bitOffset = bitOffset;
         }
 
-        [[nodiscard]] u8 getBitSize() const {
+        [[nodiscard]] u64 getBitSize() const override {
             return this->m_bitSize;
-        }
-
-        [[nodiscard]] u128 getTotalBitOffset(u64 fromByte = 0) const {
-            return ((this->getOffset() - fromByte) << 3) + this->getBitOffset();
-        }
-
-        [[nodiscard]] u64 getOffsetForSorting() const override {
-            return getTotalBitOffset();
-        }
-
-        [[nodiscard]] size_t getSizeForSorting() const override {
-            return getBitSize();
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override {
@@ -103,37 +135,59 @@ namespace pl::ptrn {
             return Pattern::formatDisplayValue(result, this->getValue());
         }
 
-        [[nodiscard]] bool isPadding() const { return this->m_padding; }
+        [[nodiscard]] bool isPadding() const override { return this->m_padding; }
         void setPadding(bool padding) { this->m_padding = padding; }
 
     private:
         bool m_padding = false;
         size_t m_bitOffset;
         u8 m_bitSize;
-        Pattern *m_bitField = nullptr;
+        PatternBitfieldMember *m_parentBitfield = nullptr;
     };
 
-    class PatternBitfield : public Pattern,
+    class PatternBitfield : public PatternBitfieldMember,
                             public Inlinable,
                             public Iteratable {
     public:
-        PatternBitfield(core::Evaluator *evaluator, u64 offset, size_t size)
-            : Pattern(evaluator, offset, size) { }
+        PatternBitfield(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize)
+            : PatternBitfieldMember(evaluator, offset, (totalBitSize + 7) / 8), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
 
-        PatternBitfield(const PatternBitfield &other) : Pattern(other) {
+        PatternBitfield(const PatternBitfield &other) : PatternBitfieldMember(other) {
             for (auto &field : other.m_fields)
                 this->m_fields.push_back(field->clone());
+
+            this->m_parentBitfield = other.m_parentBitfield;
+            this->m_firstBitOffset = other.m_firstBitOffset;
+            this->m_totalBitSize = other.m_totalBitSize;
         }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
             return std::unique_ptr<Pattern>(new PatternBitfield(*this));
         }
 
-        void setOffset(u64 offset) override {
-            for (auto &field : this->m_fields)
-                field->setOffset(field->getOffset() - this->getOffset() + offset);
+        void setParentBitfield(PatternBitfieldMember *parentBitfield) override {
+            this->m_parentBitfield = parentBitfield;
+        }
 
-            Pattern::setOffset(offset);
+        PatternBitfieldMember const *getParentBitfield() const override {
+            return this->m_parentBitfield;
+        }
+
+        [[nodiscard]] u8 getBitOffset() const override {
+            return m_firstBitOffset;
+        }
+
+        void setBitOffset(u8 bitOffset) override {
+            this->m_firstBitOffset = bitOffset;
+        }
+
+        void setBitSize(u128 bitSize) {
+            this->m_totalBitSize = bitSize;
+            this->setSize((bitSize + 7) / 8);
+        }
+
+        [[nodiscard]] u64 getBitSize() const override {
+            return this->m_totalBitSize;
         }
 
         void setSection(u64 id) override {
@@ -190,25 +244,16 @@ namespace pl::ptrn {
                 this->m_sortedFields.push_back(field.get());
         }
 
-        [[nodiscard]] size_t getSizeForSorting() const override {
-            if (m_fields.empty())
-                return 0;
-            auto isNonnull = [](auto& pattern) {
-                return dynamic_cast<ptrn::PatternBitfieldField*>(pattern.get()) != nullptr;
-            };
-            auto &lastField = [&]() -> ptrn::PatternBitfieldField& {
-                if (this->getEndian() == std::endian::little)
-                    return static_cast<ptrn::PatternBitfieldField&>(**std::find_if(m_fields.begin(), m_fields.end(), isNonnull));
-                return static_cast<ptrn::PatternBitfieldField&>(**std::find_if(m_fields.rbegin(), m_fields.rend(), isNonnull));
-            }();
-            return lastField.getTotalBitOffset(this->getOffset()) + lastField.getBitSize();
-        }
-
         [[nodiscard]] bool operator==(const Pattern &other) const override {
             if (!compareCommonProperties<decltype(*this)>(other))
                 return false;
 
             auto &otherBitfield = *static_cast<const PatternBitfield *>(&other);
+            if (this->m_firstBitOffset != otherBitfield.m_firstBitOffset)
+                return false;
+            if (this->m_totalBitSize != otherBitfield.m_totalBitSize)
+                return false;
+
             if (this->m_fields.size() != otherBitfield.m_fields.size())
                 return false;
 
@@ -255,15 +300,17 @@ namespace pl::ptrn {
             std::string valueString;
 
             for (const auto &pattern : this->m_fields) {
-                auto field = static_cast<PatternBitfieldField *>(pattern.get());
+                if (auto *field = dynamic_cast<PatternBitfieldField *>(pattern.get()); field != nullptr) {
+                    auto fieldValue = field->getValue().toUnsigned();
 
-                auto fieldValue = field->getValue().toUnsigned();
-
-                if (fieldValue > 0) {
-                    if (field->getBitSize() == 1)
-                        valueString += fmt::format("{} | ", field->getVariableName());
-                    else
-                        valueString += fmt::format("{}({}) | ", field->getVariableName(), field->toString());
+                    if (fieldValue > 0) {
+                        if (field->getBitSize() == 1)
+                            valueString += fmt::format("{} | ", field->getVariableName());
+                        else
+                            valueString += fmt::format("{}({}) | ", field->getVariableName(), field->toString());
+                    }
+                } else if (auto *bitfield = dynamic_cast<PatternBitfield *>(pattern.get()); bitfield != nullptr) {
+                    valueString += fmt::format("{} = {} | ", bitfield->getVariableName(), bitfield->formatDisplayValue());
                 }
             }
 
@@ -310,11 +357,18 @@ namespace pl::ptrn {
                 this->m_sortedFields.push_back(member.get());
 
             std::sort(this->m_sortedFields.begin(), this->m_sortedFields.end(), comparator);
+
+            for (auto &member : this->m_fields)
+                member->sort(comparator);
         }
 
     private:
         std::vector<std::shared_ptr<Pattern>> m_fields;
         std::vector<Pattern *> m_sortedFields;
+
+        PatternBitfieldMember *m_parentBitfield = nullptr;
+        u8 m_firstBitOffset = 0;
+        u64 m_totalBitSize = 0;
     };
 
 }
