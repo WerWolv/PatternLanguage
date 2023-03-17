@@ -65,13 +65,13 @@ namespace pl::core::ast {
                         u128 result = 0;
                         std::memcpy(&result, value.data(), value.size());
 
-                        auto endianAdjustedValue = hlp::changeEndianess(result & hlp::bitmask(Token::getTypeSize(type) * 8), value.size(), typePattern->getEndian());
+                        auto endianAdjustedValue = this->changeEndianess(evaluator, result & hlp::bitmask(Token::getTypeSize(type) * 8), value.size(), typePattern->getEndian());
                         return new ASTNodeLiteral(endianAdjustedValue);
                     } else
                         err::E0004.throwError(fmt::format("Cannot cast value of type 'str' to type '{}'.", Token::getTypeName(type)), {}, this);
                 },
                 [&, this](auto &&value) -> ASTNode * {
-                   auto endianAdjustedValue = hlp::changeEndianess(value, typePattern->getSize(), typePattern->getEndian());
+                   auto endianAdjustedValue = this->changeEndianess(evaluator, value, typePattern->getSize(), typePattern->getEndian());
                    switch (type) {
                        case Token::ValueType::Unsigned8Bit:
                            return new ASTNodeLiteral(u128(u8(endianAdjustedValue)));
@@ -122,6 +122,18 @@ namespace pl::core::ast {
                 },
             },
             value));
+        }
+
+    private:
+        template<typename T>
+        T changeEndianess(Evaluator *evaluator, T value, size_t size, std::endian endian) const {
+            if (endian == evaluator->getDefaultEndian())
+                return value;
+
+            if constexpr (std::endian::native == std::endian::little)
+                return hlp::changeEndianess(value, size, std::endian::big);
+            else
+                return hlp::changeEndianess(value, size, std::endian::little);
         }
 
     private:
