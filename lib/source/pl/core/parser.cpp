@@ -192,12 +192,10 @@ namespace pl::core {
             if (MATCHES(oneOf(tkn::Literal::Identifier))) {
                 auto startToken = this->m_curr;
                 if (op == Token::Operator::SizeOf) {
-                    for (const auto &potentialTypes : getNamespacePrefixedNames(parseNamespaceResolution())) {
-                        if (this->m_types.contains(potentialTypes)) {
-                            this->m_curr = startToken - 1;
-                            result = create<ast::ASTNodeTypeOperator>(op, parseType());
-                            break;
-                        }
+                    auto type = getCustomType(parseNamespaceResolution());
+                    if (type != nullptr) {
+                        parseCustomTypeParameters(type);
+                        result = create<ast::ASTNodeTypeOperator>(op, move(type));
                     }
                 }
 
@@ -895,29 +893,25 @@ namespace pl::core {
 
     /* Type declarations */
 
-    // Identifier
-    std::unique_ptr<ast::ASTNodeTypeDecl> Parser::parseCustomType() {
-        auto baseTypeName = parseNamespaceResolution();
-
-        std::unique_ptr<ast::ASTNodeTypeDecl> foundType = nullptr;
-
+    std::unique_ptr<ast::ASTNodeTypeDecl> Parser::getCustomType(std::string baseTypeName) {
         if (!this->m_currTemplateType.empty())
             for (const auto &templateParameter : this->m_currTemplateType.front()->getTemplateParameters()) {
                 if (auto templateType = dynamic_cast<ast::ASTNodeTypeDecl*>(templateParameter.get()); templateType != nullptr)
                     if (templateType->getName() == baseTypeName)
-                        foundType = create<ast::ASTNodeTypeDecl>("", templateParameter);
+                        return create<ast::ASTNodeTypeDecl>("", templateParameter);
             }
 
-        if (foundType == nullptr)
-            for (const auto &typeName : getNamespacePrefixedNames(baseTypeName)) {
-                if (this->m_types.contains(typeName))
-                    foundType = create<ast::ASTNodeTypeDecl>("", this->m_types[typeName]);
-            }
+        for (const auto &typeName : getNamespacePrefixedNames(baseTypeName)) {
+            if (this->m_types.contains(typeName))
+                return create<ast::ASTNodeTypeDecl>("", this->m_types[typeName]);
+        }
 
-        if (foundType == nullptr)
-            err::P0003.throwError(fmt::format("Type {} has not been declared yet.", baseTypeName), fmt::format("If this type is being declared further down in the code, consider forward declaring it with 'using {};'.", baseTypeName), 1);
+        return nullptr;
+    }
 
-        if (auto actualType = dynamic_cast<ast::ASTNodeTypeDecl*>(foundType->getType().get()); actualType != nullptr)
+    // <Identifier[, Identifier]>
+    void Parser::parseCustomTypeParameters(std::unique_ptr<ast::ASTNodeTypeDecl> &type) {
+        if (auto actualType = dynamic_cast<ast::ASTNodeTypeDecl*>(type->getType().get()); actualType != nullptr)
             if (const auto &templateTypes = actualType->getTemplateParameters(); !templateTypes.empty()) {
                 if (!MATCHES(sequence(tkn::Operator::BoolLessThan)))
                     err::P0002.throwError("Cannot use template type without template parameters.", {}, 1);
@@ -949,10 +943,21 @@ namespace pl::core {
                 if (!MATCHES(sequence(tkn::Operator::BoolGreaterThan)))
                     err::P0002.throwError(fmt::format("Expected '>' to close template list, got {}.", getFormattedToken(0)), {}, 1);
 
-                return std::unique_ptr<ast::ASTNodeTypeDecl>(static_cast<ast::ASTNodeTypeDecl*>(foundType->clone().release()));
+                type = std::unique_ptr<ast::ASTNodeTypeDecl>(static_cast<ast::ASTNodeTypeDecl*>(type->clone().release()));
             }
+    }
 
-        return foundType;
+    // Identifier
+    std::unique_ptr<ast::ASTNodeTypeDecl> Parser::parseCustomType() {
+        auto baseTypeName = parseNamespaceResolution();
+        auto type = getCustomType(baseTypeName);
+
+        if (type == nullptr)
+            err::P0003.throwError(fmt::format("Type {} has not been declared yet.", baseTypeName), fmt::format("If this type is being declared further down in the code, consider forward declaring it with 'using {};'.", baseTypeName), 1);
+
+        parseCustomTypeParameters(type);
+
+        return type;
     }
 
     // [be|le] <Identifier|u8|u16|u24|u32|u48|u64|u96|u128|s8|s16|s24|s32|s48|s64|s96|s128|float|double|str>
