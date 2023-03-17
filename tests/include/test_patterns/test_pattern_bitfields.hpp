@@ -15,13 +15,8 @@ namespace pl::test {
             {
                 bitfieldFields.push_back(create<PatternBitfieldField>("", "a", 0x12, 0, 4, testBitfield.get()));
                 bitfieldFields.push_back(create<PatternBitfieldField>("", "b", 0x12, 4, 4, testBitfield.get()));
-                bitfieldFields.push_back(create<PatternBitfieldField>("", "c", 0x12, 8, 4, testBitfield.get()));
-                bitfieldFields.push_back(create<PatternBitfieldField>("", "d", 0x12, 12, 4, testBitfield.get()));
-            }
-
-            for (auto &field : bitfieldFields) {
-                if (auto* bitfieldField = dynamic_cast<PatternBitfieldField*>(field.get()))
-                    bitfieldField->setBitfieldBitSize(4 * 4);
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "c", 0x13, 0, 4, testBitfield.get()));
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "d", 0x13, 4, 4, testBitfield.get()));
             }
 
             testBitfield->setFields(std::move(bitfieldFields));

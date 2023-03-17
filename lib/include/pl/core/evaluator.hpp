@@ -222,15 +222,23 @@ namespace pl::core {
             return this->m_bitfieldOrder;
         }
 
-        void setBitfieldFieldAddedCallback(std::function<void(const ast::ASTNodeBitfieldField&, std::shared_ptr<ptrn::PatternBitfieldField>)> callback) {
-            this->m_bitfieldFieldAddedCallback = callback;
-        }
-
-        [[nodiscard]] std::function<void(const ast::ASTNodeBitfieldField&, std::shared_ptr<ptrn::PatternBitfieldField>)> getBitfieldFieldAddedCallback() {
-            return this->m_bitfieldFieldAddedCallback;
-        }
-
         u64 &dataOffset() { return this->m_currOffset; }
+
+        u8 getBitfieldBitOffset() { return this->m_bitfieldBitOffset; }
+
+        void addToBitfieldBitOffset(u128 bitSize) {
+            this->dataOffset() += bitSize >> 3;
+            this->m_bitfieldBitOffset += bitSize & 0x7;
+
+            this->dataOffset() += this->m_bitfieldBitOffset >> 3;
+            this->m_bitfieldBitOffset &= 0x7;
+        }
+
+        void resetBitfieldBitOffset() {
+            if (m_bitfieldBitOffset != 0)
+                this->dataOffset()++;
+            this->m_bitfieldBitOffset = 0;
+        }
 
         bool addBuiltinFunction(const std::string &name, api::FunctionParameterCount numParams, std::vector<Token::Literal> defaultParameters, const api::FunctionCallback &function, bool dangerous) {
             const auto [iter, inserted] = this->m_builtinFunctions.insert({
@@ -411,7 +419,7 @@ namespace pl::core {
         std::atomic<DangerousFunctionPermission> m_allowDangerousFunctions = DangerousFunctionPermission::Ask;
         ControlFlowStatement m_currControlFlowStatement = ControlFlowStatement::None;
         std::optional<BitfieldOrder> m_bitfieldOrder;
-        std::function<void(const ast::ASTNodeBitfieldField&, std::shared_ptr<ptrn::PatternBitfieldField>)> m_bitfieldFieldAddedCallback = [](const ast::ASTNodeBitfieldField&, std::shared_ptr<ptrn::PatternBitfieldField>){ };
+        u8 m_bitfieldBitOffset = 0;
 
         std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;
 

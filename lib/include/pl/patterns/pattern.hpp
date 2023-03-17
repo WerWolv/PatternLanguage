@@ -88,12 +88,14 @@ namespace pl::ptrn {
         virtual std::unique_ptr<Pattern> clone() const = 0;
 
         [[nodiscard]] u64 getOffset() const { return this->m_offset; }
+        [[nodiscard]] virtual u64 getOffsetForSorting() const { return this->getOffset(); }
         [[nodiscard]] u32 getHeapAddress() const { return this->getOffset() >> 32; }
         virtual void setOffset(u64 offset) {
             this->m_offset = offset;
         }
 
         [[nodiscard]] size_t getSize() const { return this->m_size; }
+        [[nodiscard]] virtual size_t getSizeForSorting() const { return this->getSize(); }
         void setSize(size_t size) { this->m_size = size; }
 
         [[nodiscard]] std::string getVariableName() const {

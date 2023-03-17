@@ -47,28 +47,15 @@ namespace pl::core::ast {
                 }
             }
 
-            size_t bitOffset = 0x00;
-
             std::vector<std::shared_ptr<ptrn::Pattern>> fields;
             std::vector<std::shared_ptr<ptrn::Pattern>> potentialPatterns;
 
-            auto prevBitfieldFieldAddedCallback = evaluator->getBitfieldFieldAddedCallback();
+            auto prevDefaultEndian = evaluator->getDefaultEndian();
             evaluator->pushScope(bitfieldPattern, potentialPatterns);
-            evaluator->setBitfieldFieldAddedCallback([&](const ast::ASTNodeBitfieldField& node, std::shared_ptr<ptrn::PatternBitfieldField> field) {
-                if (field->getSize() == 0) {
-                    field->setEndian(bitfieldPattern->getEndian());
-                    field->setBitOffset(bitOffset);
-                    field->setSection(evaluator->getSectionId());
-                    bitOffset += field->getBitSize();
-                }
-
-                bitfieldPattern->setSize((bitOffset + 7) / 8);
-
-                applyVariableAttributes(evaluator, &node, field);
-            });
+            evaluator->setDefaultEndian(bitfieldPattern->getEndian());
             ON_SCOPE_EXIT {
+                evaluator->setDefaultEndian(prevDefaultEndian);
                 evaluator->popScope();
-                evaluator->setBitfieldFieldAddedCallback(std::move(prevBitfieldFieldAddedCallback));
             };
 
             for (auto &entry : this->m_entries) {
@@ -89,21 +76,32 @@ namespace pl::core::ast {
                 }
             }
 
-            for (auto &pattern : potentialPatterns) {
-                if (auto bitfieldField = dynamic_cast<ptrn::PatternBitfieldField*>(pattern.get()); bitfieldField != nullptr) {
-                    bitfieldField->setBitfield(bitfieldPattern.get());
-                    bitfieldField->setBitfieldBitSize(bitOffset);
-                    if (!bitfieldField->isPadding())
-                        fields.push_back(std::move(pattern));
+            if (potentialPatterns.size() > 0) {
+                auto lastFieldIter = std::find_if(potentialPatterns.rbegin(), potentialPatterns.rend(), [](auto& pattern) {
+                    return dynamic_cast<ptrn::PatternBitfieldField*>(pattern.get()) != nullptr;
+                });
+                if (lastFieldIter != potentialPatterns.rend()) {
+                    auto *lastField = static_cast<ptrn::PatternBitfieldField*>(lastFieldIter->get());
+                    auto totalBitSize = (lastField->getTotalBitOffset() + lastField->getBitSize()) - (bitfieldPattern->getOffset() * 8);
+                    bitfieldPattern->setSize((totalBitSize + 7) / 8);
+                }
+
+                for (auto &pattern : potentialPatterns) {
+                    if (auto bitfieldField = dynamic_cast<ptrn::PatternBitfieldField*>(pattern.get()); bitfieldField != nullptr) {
+                        bitfieldField->setBitfield(bitfieldPattern.get());
+                        if (!bitfieldField->isPadding())
+                            fields.push_back(std::move(pattern));
+                    }
                 }
             }
 
-            bitfieldPattern->setSize((bitOffset + 7) / 8);
             bitfieldPattern->setFields(fields);
 
             evaluator->dataOffset() += bitfieldPattern->getSize();
 
             applyTypeAttributes(evaluator, this, bitfieldPattern);
+
+            evaluator->resetBitfieldBitOffset();
 
             return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(bitfieldPattern));
         }

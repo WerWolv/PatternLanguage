@@ -7,22 +7,17 @@ namespace pl::ptrn {
     class PatternBitfieldField : public Pattern {
     public:
         PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, Pattern *bitfieldPattern = nullptr)
-            : Pattern(evaluator, offset, 0), m_bitOffset(bitOffset), m_bitSize(bitSize), m_bitField(bitfieldPattern) { }
+            : Pattern(evaluator, offset, (bitSize + 7) / 8), m_bitOffset(bitOffset), m_bitSize(bitSize), m_bitField(bitfieldPattern) { }
 
         PatternBitfieldField(const PatternBitfieldField &other) : Pattern(other) {
             this->m_padding = other.m_padding;
             this->m_bitOffset = other.m_bitOffset;
             this->m_bitSize = other.m_bitSize;
             this->m_bitField = other.m_bitField;
-            this->m_bitfieldBitSize = other.m_bitfieldBitSize;
         }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
             return std::unique_ptr<Pattern>(new PatternBitfieldField(*this));
-        }
-
-        [[nodiscard]] bool canReadValue() const {
-            return this->getEndian() == std::endian::big || this->getBitfieldBitSize().has_value();
         }
 
         [[nodiscard]] u128 readValue() const {
@@ -47,6 +42,14 @@ namespace pl::ptrn {
             this->m_bitField = bitField;
         }
 
+        Pattern& getBitfield() {
+            return *this->m_bitField;
+        }
+
+        Pattern& getBitfield() const {
+            return *this->m_bitField;
+        }
+
         [[nodiscard]] std::string getFormattedName() const override {
             return this->m_bitSize == 1 ? "bit" : "bits";
         }
@@ -63,12 +66,16 @@ namespace pl::ptrn {
             return this->m_bitSize;
         }
 
-        void setBitfieldBitSize(size_t size) {
-            m_bitfieldBitSize = size;
+        [[nodiscard]] u128 getTotalBitOffset(u64 fromByte = 0) const {
+            return ((this->getOffset() - fromByte) << 3) + this->getBitOffset();
         }
 
-        std::optional<size_t> getBitfieldBitSize() const {
-            return m_bitfieldBitSize;
+        [[nodiscard]] u64 getOffsetForSorting() const override {
+            return getTotalBitOffset();
+        }
+
+        [[nodiscard]] size_t getSizeForSorting() const override {
+            return getBitSize();
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override {
@@ -76,7 +83,7 @@ namespace pl::ptrn {
                 return false;
 
             auto &otherBitfieldField = *static_cast<const PatternBitfieldField *>(&other);
-            return this->m_bitOffset == otherBitfieldField.m_bitOffset && this->m_bitSize == otherBitfieldField.m_bitSize && this->m_bitfieldBitSize == otherBitfieldField.m_bitfieldBitSize;
+            return this->m_bitOffset == otherBitfieldField.m_bitOffset && this->m_bitSize == otherBitfieldField.m_bitSize;
         }
 
         void accept(PatternVisitor &v) override {
@@ -104,7 +111,6 @@ namespace pl::ptrn {
         size_t m_bitOffset;
         u8 m_bitSize;
         Pattern *m_bitField = nullptr;
-        std::optional<size_t> m_bitfieldBitSize;
     };
 
     class PatternBitfield : public Pattern,
@@ -177,12 +183,6 @@ namespace pl::ptrn {
         void setFields(std::vector<std::shared_ptr<Pattern>> fields) {
             this->m_fields = std::move(fields);
 
-            for (auto &field : this->m_fields) {
-                field->setSize(this->getSize());
-                field->setColor(this->getColor());
-                field->setEndian(this->getEndian());
-            }
-
             if (!this->m_fields.empty())
                 this->setBaseColor(this->m_fields.front()->getColor());
 
@@ -190,10 +190,18 @@ namespace pl::ptrn {
                 this->m_sortedFields.push_back(field.get());
         }
 
-        void setColor(u32 color) override {
-            Pattern::setColor(color);
-            for (auto &field : this->m_fields)
-                field->setColor(color);
+        [[nodiscard]] size_t getSizeForSorting() const override {
+            if (m_fields.empty())
+                return 0;
+            auto isNonnull = [](auto& pattern) {
+                return dynamic_cast<ptrn::PatternBitfieldField*>(pattern.get()) != nullptr;
+            };
+            auto &lastField = [&]() -> ptrn::PatternBitfieldField& {
+                if (this->getEndian() == std::endian::little)
+                    return static_cast<ptrn::PatternBitfieldField&>(**std::find_if(m_fields.begin(), m_fields.end(), isNonnull));
+                return static_cast<ptrn::PatternBitfieldField&>(**std::find_if(m_fields.rbegin(), m_fields.rend(), isNonnull));
+            }();
+            return lastField.getTotalBitOffset(this->getOffset()) + lastField.getBitSize();
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override {
