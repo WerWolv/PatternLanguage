@@ -18,6 +18,10 @@
 
 #include <wolv/utils/core.hpp>
 
+namespace pl::core {
+    class Evaluator;
+}
+
 namespace pl::hlp {
 
     [[nodiscard]] std::string to_string(u128 value);

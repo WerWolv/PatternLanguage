@@ -240,6 +240,20 @@ namespace pl::core {
             this->m_bitfieldBitOffset = 0;
         }
 
+        [[nodiscard]] u128 readBits(u128 byteOffset, u8 bitOffset, u64 bitSize, u64 section, std::endian endianness) {
+            u128 value = 0;
+
+            size_t readSize = (bitOffset + bitSize + 7) / 8;
+            readSize = std::min(readSize, sizeof(value));
+            this->readData(byteOffset, &value, readSize, section);
+            value = hlp::changeEndianess(value, sizeof(value), endianness);
+
+            size_t offset = endianness == std::endian::little ? bitOffset : (sizeof(value) * 8) - bitOffset - bitSize;
+            auto mask = (u128(1) << bitSize) - 1;
+            value = (value >> offset) & mask;
+            return value;
+        }
+
         bool addBuiltinFunction(const std::string &name, api::FunctionParameterCount numParams, std::vector<Token::Literal> defaultParameters, const api::FunctionCallback &function, bool dangerous) {
             const auto [iter, inserted] = this->m_builtinFunctions.insert({
                 name, {numParams, std::move(defaultParameters), function, dangerous}

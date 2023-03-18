@@ -69,17 +69,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] u128 readValue() const {
-            u128 value = 0;
-
-            size_t readSize = (this->getBitOffset() + this->getBitSize() + 7) / 8;
-            readSize = std::min(readSize, sizeof(value));
-            this->getEvaluator()->readData(this->getOffset(), &value, readSize, this->getSection());
-            value = hlp::changeEndianess(value, sizeof(value), this->getEndian());
-
-            size_t offset = this->getEndian() == std::endian::little ? this->getBitOffset() : (sizeof(value) * 8) - this->getBitOffset() - this->getBitSize();
-            auto mask = (u128(1) << this->getBitSize()) - 1;
-            value = (value >> offset) & mask;
-            return value;
+            return this->getEvaluator()->readBits(this->getOffset(), this->getBitOffset(), this->getBitSize(), this->getSection(), this->getEndian());
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
