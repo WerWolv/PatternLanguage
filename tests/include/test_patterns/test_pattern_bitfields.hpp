@@ -9,7 +9,7 @@ namespace pl::test {
     class TestPatternBitfields : public TestPattern {
     public:
         TestPatternBitfields() : TestPattern("Bitfields") {
-            auto testBitfield = create<PatternBitfield>("TestBitfield", "testBitfield", 0x25, 0, 2 + 3 + (4 * 4));
+            auto testBitfield = create<PatternBitfield>("TestBitfield", "testBitfield", 0x25, 0, 2 + 3 + (4 * 8));
 
             std::vector<std::shared_ptr<Pattern>> bitfieldFields;
             {
@@ -29,6 +29,36 @@ namespace pl::test {
 
                 bitfieldFields.push_back(create<PatternBitfieldField>("", "d", 0x26, 5, 4, testBitfield.get()));
                 bitfieldFields.push_back(create<PatternBitfieldField>("", "e", 0x27, 1, 4, testBitfield.get()));
+
+                auto array = create<PatternBitfieldArray>("NestedBitfield", "f", 0x27, 5, 4 * 4);
+                std::vector<std::shared_ptr<Pattern>> arrayEntries;
+                {
+                    auto array0Bitfield = create<PatternBitfield>("NestedBitfield", "[0]", 0x27, 5, 4 * 2);
+                    std::vector<std::shared_ptr<Pattern>> array0Fields;
+                    {
+                        array0Fields.push_back(create<PatternBitfieldField>("", "nestedA", 0x27, 5, 4, array0Bitfield.get()));
+                        array0Fields.push_back(create<PatternBitfieldField>("", "nestedB", 0x28, 1, 4, array0Bitfield.get()));
+                    }
+                    array0Bitfield->setParentBitfield(array.get());
+                    array0Bitfield->setFields(std::move(array0Fields));
+                    array0Bitfield->setEndian(std::endian::big);
+                    arrayEntries.push_back(move(array0Bitfield));
+
+                    auto array1Bitfield = create<PatternBitfield>("NestedBitfield", "[1]", 0x28, 5, 4 * 2);
+                    std::vector<std::shared_ptr<Pattern>> array1Fields;
+                    {
+                        array1Fields.push_back(create<PatternBitfieldField>("", "nestedA", 0x28, 5, 4, array1Bitfield.get()));
+                        array1Fields.push_back(create<PatternBitfieldField>("", "nestedB", 0x29, 1, 4, array1Bitfield.get()));
+                    }
+                    array1Bitfield->setParentBitfield(array.get());
+                    array1Bitfield->setFields(std::move(array1Fields));
+                    array1Bitfield->setEndian(std::endian::big);
+                    arrayEntries.push_back(move(array1Bitfield));
+                }
+                array->setParentBitfield(testBitfield.get());
+                array->setEntries(std::move(arrayEntries));
+                array->setEndian(std::endian::big);
+                bitfieldFields.push_back(move(array));
             }
 
             testBitfield->setFields(std::move(bitfieldFields));
@@ -51,6 +81,7 @@ namespace pl::test {
                     NestedBitfield c;
                     d : 4;
                     e : 4;
+                    NestedBitfield f[c.nestedA];
                 };
 
                 be TestBitfield testBitfield @ 0x25;
@@ -61,6 +92,10 @@ namespace pl::test {
                 std::assert(testBitfield.c.nestedB == 0x08, "Nested field B invalid");
                 std::assert(testBitfield.d == 0x08, "Field D invalid");
                 std::assert(testBitfield.e == 0x08, "Field E invalid");
+                std::assert(testBitfield.f[0].nestedA == 0x02, "Nested array[0] field A invalid");
+                std::assert(testBitfield.f[0].nestedB == 0x0A, "Nested array[0] field B invalid");
+                std::assert(testBitfield.f[1].nestedA == 0x08, "Nested array[1] field A invalid");
+                std::assert(testBitfield.f[1].nestedB == 0x0F, "Nested array[1] field B invalid");
             )";
         }
     };

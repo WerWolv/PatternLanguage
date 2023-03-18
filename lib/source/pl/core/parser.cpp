@@ -3,6 +3,7 @@
 #include <pl/core/ast/ast_node_array_variable_decl.hpp>
 #include <pl/core/ast/ast_node_attribute.hpp>
 #include <pl/core/ast/ast_node_bitfield.hpp>
+#include <pl/core/ast/ast_node_bitfield_array_variable_decl.hpp>
 #include <pl/core/ast/ast_node_bitfield_field.hpp>
 #include <pl/core/ast/ast_node_builtin_type.hpp>
 #include <pl/core/ast/ast_node_cast.hpp>
@@ -1377,12 +1378,6 @@ namespace pl::core {
                 err::P0002.throwError(fmt::format("Expected a variable name followed by ':' or a bitfield type name, got {}.", name), {}, 1);
             parseCustomTypeParameters(type);
 
-            // (parseType) Identifier
-            if (!MATCHES(sequence(tkn::Literal::Identifier)))
-                err::P0002.throwError(fmt::format("Expected a field name, got {}.", getFormattedToken(0)), {}, 0);
-
-            auto variableName = getValue<Token::Identifier>(-1).get();
-
             ast::ASTNodeTypeDecl *topmostTypeDecl = type.get();
             while (auto *parentTypeDecl = dynamic_cast<ast::ASTNodeTypeDecl*>(topmostTypeDecl->getType().get()))
                 topmostTypeDecl = parentTypeDecl;
@@ -1391,7 +1386,26 @@ namespace pl::core {
             else
                 err::P0003.throwError("Only bitfields can be nested within other bitfields.", {}, 1);
 
-            member = create<ast::ASTNodeVariableDecl>(variableName, move(type));
+            if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Separator::LeftBracket) && sequence<Not>(tkn::Separator::LeftBracket))){
+                // (parseType) Identifier[[(parseMathematicalExpression)|(parseWhileStatement)]];
+                auto fieldName = getValue<Token::Identifier>(-2).get();
+
+                std::unique_ptr<ast::ASTNode> size;
+                if (MATCHES(sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis)))
+                    size = parseWhileStatement();
+                else
+                    size = parseMathematicalExpression();
+
+                if (!MATCHES(sequence(tkn::Separator::RightBracket)))
+                    err::P0002.throwError(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)), {}, 1);
+
+                member = create<ast::ASTNodeBitfieldArrayVariableDecl>(fieldName, move(type), move(size));
+            } else if (MATCHES(sequence(tkn::Literal::Identifier))) {
+                // (parseType) Identifier;
+                auto variableName = getValue<Token::Identifier>(-1).get();
+                member = create<ast::ASTNodeVariableDecl>(variableName, move(type));
+            } else
+                err::P0002.throwError(fmt::format("Expected a variable name, got {}.", getFormattedToken(0)), {}, 0);
         } else if (MATCHES(sequence(tkn::Keyword::If))) {
             if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
                 err::P0002.throwError(fmt::format("Expected '(' after 'if', got {}.", getFormattedToken(0)), {}, 1);
