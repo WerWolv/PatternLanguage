@@ -325,11 +325,17 @@ namespace pl::core {
 
         bool peek(const Token &token, i32 index = 0) {
             if (index >= 0) {
-                while (this->m_curr[0].type == Token::Type::DocComment)
+                while (this->m_curr->type == Token::Type::DocComment) {
+                    if (auto docComment = getDocComment(true); docComment.has_value())
+                        this->addGlobalDocComment(docComment->comment);
                     this->m_curr++;
+                }
             } else {
-                while (this->m_curr[0].type == Token::Type::DocComment)
+                while (this->m_curr->type == Token::Type::DocComment) {
+                    if (auto docComment = getDocComment(true); docComment.has_value())
+                        this->addGlobalDocComment(docComment->comment);
                     this->m_curr--;
+                }
             }
 
             return this->m_curr[index].type == token.type && this->m_curr[index] == token.value;
