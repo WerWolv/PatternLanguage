@@ -1361,7 +1361,7 @@ namespace pl::core {
     }
 
 
-    // [Identifier : (parseMathematicalExpression);|Identifier identifier;|(parseIfStatement)]
+    // [Identifier : (parseMathematicalExpression);|Identifier identifier;|(parseFunctionControlFlowStatement)|(parseIfStatement)]
     std::unique_ptr<ast::ASTNode> Parser::parseBitfieldEntry() {
         std::unique_ptr<ast::ASTNode> member = nullptr;
 
@@ -1454,7 +1454,9 @@ namespace pl::core {
             }
 
             return create<ast::ASTNodeConditionalStatement>(std::move(condition), std::move(trueBody), std::move(falseBody));
-        } else
+        } else if (MATCHES(oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue)))
+            member = parseFunctionControlFlowStatement();
+        else
             err::P0002.throwError("Invalid bitfield member definition.", {}, 0);
 
         if (MATCHES(sequence(tkn::Separator::LeftBracket, tkn::Separator::LeftBracket)))
