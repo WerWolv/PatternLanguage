@@ -26,30 +26,16 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] u128 readValue() const {
-            size_t offset = 0;
-            u32 bitSize = this->getBitSize();
             u128 value = 0;
 
-            if (this->getEndian() == std::endian::big) {
-                u8 bitOffset = this->getBitOffset();
-                size_t readSize = (bitOffset + bitSize + 7) / 8;
-                this->getEvaluator()->readData(this->getOffset(), &value, readSize, this->getSection());
-                value = hlp::changeEndianess(value, sizeof(value), std::endian::big);
+            size_t readSize = (this->getBitOffset() + this->getBitSize() + 7) / 8;
+            readSize = std::min(readSize, sizeof(value));
+            this->getEvaluator()->readData(this->getOffset(), &value, readSize, this->getSection());
+            value = hlp::changeEndianess(value, sizeof(value), this->getEndian());
 
-                offset = (sizeof(value) * 8) - this->getBitOffset() - bitSize;
-            } else {
-                // For little-endian we need to read out the size of the containing bitfield and
-                // then take the chunk of bits from the little end.
-                if (!this->getBitfieldBitSize().has_value())
-                    return 0;
-                size_t byteSize = (this->getBitfieldBitSize().value() + 7) / 8;
-                this->getEvaluator()->readData(this->getOffset(), &value, byteSize, this->getSection());
-                value = hlp::changeEndianess(value, sizeof(value), std::endian::big);
-                offset = ((sizeof(value) * 8) - this->getBitfieldBitSize().value()) + this->getBitOffset();
-            }
-            auto mask = (u128(1) << bitSize) - 1;
+            size_t offset = this->getEndian() == std::endian::little ? this->getBitOffset() : (sizeof(value) * 8) - this->getBitOffset() - this->getBitSize();
+            auto mask = (u128(1) << this->getBitSize()) - 1;
             value = (value >> offset) & mask;
-            value = hlp::changeEndianess(value, (bitSize + 7) / 8, this->getEndian() == std::endian::big ? std::endian::little : std::endian::big);
             return value;
         }
 
