@@ -742,7 +742,7 @@ namespace pl::core {
     /* Control flow */
 
     // if ((parseMathematicalExpression)) { (parseMember) }
-    std::unique_ptr<ast::ASTNode> Parser::parseConditional() {
+    std::unique_ptr<ast::ASTNode> Parser::parseConditional(std::function<std::unique_ptr<ast::ASTNode>()> const& memberParser) {
         if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
             err::P0002.throwError(fmt::format("Expected '(' after 'if', got {}.", getFormattedToken(0)), {}, 1);
 
@@ -751,19 +751,19 @@ namespace pl::core {
 
         if (MATCHES(sequence(tkn::Separator::RightParenthesis, tkn::Separator::LeftBrace))) {
             while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
-                trueBody.push_back(parseMember());
+                trueBody.push_back(memberParser());
             }
         } else if (MATCHES(sequence(tkn::Separator::RightParenthesis))) {
-            trueBody.push_back(parseMember());
+            trueBody.push_back(memberParser());
         } else
             err::P0002.throwError(fmt::format("Expected ')' after if head, got {}.", getFormattedToken(0)), {}, 1);
 
         if (MATCHES(sequence(tkn::Keyword::Else, tkn::Separator::LeftBrace))) {
             while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
-                falseBody.push_back(parseMember());
+                falseBody.push_back(memberParser());
             }
         } else if (MATCHES(sequence(tkn::Keyword::Else))) {
-            falseBody.push_back(parseMember());
+            falseBody.push_back(memberParser());
         }
 
         return create<ast::ASTNodeConditionalStatement>(std::move(condition), std::move(trueBody), std::move(falseBody));
@@ -842,7 +842,7 @@ namespace pl::core {
     }
 
     // match ((parseParameters)) { (parseParameters { (parseMember) })*, default { (parseMember) } }
-    std::unique_ptr<ast::ASTNode> Parser::parseMatchStatement() {
+    std::unique_ptr<ast::ASTNode> Parser::parseMatchStatement(std::function<std::unique_ptr<ast::ASTNode>()> const& memberParser) {
         if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
             err::P0002.throwError(fmt::format("Expected '(' after 'match', got {}.", getFormattedToken(0)), {}, 1);
 
@@ -863,10 +863,10 @@ namespace pl::core {
 
             if (MATCHES(sequence(tkn::Operator::Colon, tkn::Separator::LeftBrace))) {
                 while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
-                    body.push_back(parseMember());
+                    body.push_back(memberParser());
                 }
             } else if (MATCHES(sequence(tkn::Operator::Colon))) {
-                body.push_back(parseMember());
+                body.push_back(memberParser());
             } else
                 err::P0002.throwError(fmt::format("Expected ':' after case condition, got {}.", getFormattedToken(0)), {}, 1);
 
@@ -1228,9 +1228,9 @@ namespace pl::core {
         } else if (MATCHES(sequence(tkn::ValueType::Padding, tkn::Separator::LeftBracket)))
             member = parsePadding();
         else if (MATCHES(sequence(tkn::Keyword::If)))
-            return parseConditional();
-        else if (MATCHES(sequence(tkn::Keyword::Match))) 
-            return parseMatchStatement();
+            return parseConditional([this]() { return parseMember(); });
+        else if (MATCHES(sequence(tkn::Keyword::Match)))
+            return parseMatchStatement([this]() { return parseMember(); });
         else if (MATCHES(oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue)))
             member = parseFunctionControlFlowStatement();
         else
@@ -1361,7 +1361,7 @@ namespace pl::core {
     }
 
 
-    // [Identifier : (parseMathematicalExpression);|Identifier identifier;|(parseFunctionControlFlowStatement)|(parseIfStatement)]
+    // [Identifier : (parseMathematicalExpression);|Identifier identifier;|(parseFunctionControlFlowStatement)|(parseIfStatement)|(parseMatchStatement)]
     std::unique_ptr<ast::ASTNode> Parser::parseBitfieldEntry() {
         std::unique_ptr<ast::ASTNode> member = nullptr;
 
@@ -1429,32 +1429,11 @@ namespace pl::core {
                 member = parseMemberVariable(std::move(type), false, false, variableName);
             } else
                 err::P0002.throwError(fmt::format("Expected a variable name, got {}.", getFormattedToken(0)), {}, 0);
-        } else if (MATCHES(sequence(tkn::Keyword::If))) {
-            if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
-                err::P0002.throwError(fmt::format("Expected '(' after 'if', got {}.", getFormattedToken(0)), {}, 1);
-
-            auto condition = parseMathematicalExpression();
-            std::vector<std::unique_ptr<ast::ASTNode>> trueBody, falseBody;
-
-            if (MATCHES(sequence(tkn::Separator::RightParenthesis, tkn::Separator::LeftBrace))) {
-                while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
-                    trueBody.push_back(parseBitfieldEntry());
-                }
-            } else if (MATCHES(sequence(tkn::Separator::RightParenthesis))) {
-                trueBody.push_back(parseBitfieldEntry());
-            } else
-                err::P0002.throwError(fmt::format("Expected ')' after if head, got {}.", getFormattedToken(0)), {}, 1);
-
-            if (MATCHES(sequence(tkn::Keyword::Else, tkn::Separator::LeftBrace))) {
-                while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
-                    falseBody.push_back(parseBitfieldEntry());
-                }
-            } else if (MATCHES(sequence(tkn::Keyword::Else))) {
-                falseBody.push_back(parseBitfieldEntry());
-            }
-
-            return create<ast::ASTNodeConditionalStatement>(std::move(condition), std::move(trueBody), std::move(falseBody));
-        } else if (MATCHES(oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue)))
+        } else if (MATCHES(sequence(tkn::Keyword::If)))
+            return parseConditional([this]() { return parseBitfieldEntry(); });
+        else if (MATCHES(sequence(tkn::Keyword::Match)))
+            return parseMatchStatement([this]() { return parseBitfieldEntry(); });
+        else if (MATCHES(oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue)))
             member = parseFunctionControlFlowStatement();
         else
             err::P0002.throwError("Invalid bitfield member definition.", {}, 0);
