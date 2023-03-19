@@ -97,6 +97,8 @@ namespace pl::core::ast {
                         bitfieldMember->setParentBitfield(bitfieldPattern.get());
                         if (!bitfieldMember->isPadding())
                             fields.push_back(std::move(pattern));
+                    } else {
+                        fields.push_back(std::move(pattern));
                     }
                 }
             }

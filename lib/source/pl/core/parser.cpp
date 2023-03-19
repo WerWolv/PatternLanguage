@@ -1365,32 +1365,43 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parseBitfieldEntry() {
         std::unique_ptr<ast::ASTNode> member = nullptr;
 
-        if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Operator::Colon))) {
+        if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Operator::Assign))) {
+            auto variableName = getValue<Token::Identifier>(-2).get();
+            member = parseFunctionVariableAssignment(variableName);
+        } else if (MATCHES(sequence(tkn::Literal::Identifier) && oneOf(tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::Star, tkn::Operator::Slash, tkn::Operator::Percent, tkn::Operator::LeftShift, tkn::Operator::RightShift, tkn::Operator::BitOr, tkn::Operator::BitAnd, tkn::Operator::BitXor) && sequence(tkn::Operator::Assign)))
+            member = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(-3).get());
+        else if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Operator::Colon))) {
             auto fieldName = getValue<Token::Identifier>(-2).get();
             member = create<ast::ASTNodeBitfieldField>(fieldName, parseMathematicalExpression());
         } else if (MATCHES(sequence(tkn::ValueType::Padding, tkn::Operator::Colon)))
             member = create<ast::ASTNodeBitfieldField>("$padding$", parseMathematicalExpression());
-        else if (MATCHES(sequence(tkn::Literal::Identifier))) {
+        else if (peek(tkn::Literal::Identifier) || peek(tkn::ValueType::Any)) {
             std::unique_ptr<ast::ASTNodeTypeDecl> type = nullptr;
-            auto originalPosition = m_curr;
-            auto name = parseNamespaceResolution();
 
-            if (MATCHES(sequence(tkn::Separator::LeftParenthesis))) {
-                m_curr = originalPosition;
-                member = parseFunctionCall();
-            } else {
-                auto type = getCustomType(name);
-                if (type == nullptr)
-                    err::P0002.throwError(fmt::format("Expected a variable name followed by ':', a function call or a bitfield type name, got {}.", name), {}, 1);
-                parseCustomTypeParameters(type);
+            if (MATCHES(sequence(tkn::ValueType::Any))) {
+                type = create<ast::ASTNodeTypeDecl>("", create<ast::ASTNodeBuiltinType>(getValue<Token::ValueType>(-1)));
+            } else if (MATCHES(sequence(tkn::Literal::Identifier))) {
+                auto originalPosition = m_curr;
+                auto name = parseNamespaceResolution();
 
-                ast::ASTNodeTypeDecl *topmostTypeDecl = type.get();
-                while (auto *parentTypeDecl = dynamic_cast<ast::ASTNodeTypeDecl*>(topmostTypeDecl->getType().get()))
-                    topmostTypeDecl = parentTypeDecl;
-                if (auto *nestedBitfield = dynamic_cast<ast::ASTNodeBitfield*>(topmostTypeDecl->getType().get()); nestedBitfield != nullptr)
-                    nestedBitfield->setNested();
-                else
-                    err::P0003.throwError("Only bitfields can be nested within other bitfields.", {}, 1);
+                if (MATCHES(sequence(tkn::Separator::LeftParenthesis))) {
+                    m_curr = originalPosition;
+                    member = parseFunctionCall();
+                } else {
+                    type = getCustomType(name);
+
+                    if (type == nullptr)
+                        err::P0002.throwError(fmt::format("Expected a variable name followed by ':', a function call or a bitfield type name, got {}.", getFormattedToken(1)), {}, 1);
+                    parseCustomTypeParameters(type);
+
+                    ast::ASTNodeTypeDecl *topmostTypeDecl = type.get();
+                    while (auto *parentTypeDecl = dynamic_cast<ast::ASTNodeTypeDecl*>(topmostTypeDecl->getType().get()))
+                        topmostTypeDecl = parentTypeDecl;
+                    if (auto *nestedBitfield = dynamic_cast<ast::ASTNodeBitfield*>(topmostTypeDecl->getType().get()); nestedBitfield != nullptr)
+                        nestedBitfield->setNested();
+                    else
+                        err::P0003.throwError("Only bitfields can be nested within other bitfields.", {}, 1);
+                }
             }
 
             if (type == nullptr) {
@@ -1411,8 +1422,11 @@ namespace pl::core {
                 member = create<ast::ASTNodeBitfieldArrayVariableDecl>(fieldName, move(type), move(size));
             } else if (MATCHES(sequence(tkn::Literal::Identifier))) {
                 // (parseType) Identifier;
+                if (MATCHES(sequence(tkn::Operator::At)))
+                    err::P0002.throwError(fmt::format("Placement syntax is invalid within bitfields."), {}, 0);
+
                 auto variableName = getValue<Token::Identifier>(-1).get();
-                member = create<ast::ASTNodeVariableDecl>(variableName, move(type));
+                member = parseMemberVariable(std::move(type), false, false, variableName);
             } else
                 err::P0002.throwError(fmt::format("Expected a variable name, got {}.", getFormattedToken(0)), {}, 0);
         } else if (MATCHES(sequence(tkn::Keyword::If))) {
