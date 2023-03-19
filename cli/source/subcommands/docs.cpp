@@ -74,15 +74,15 @@ namespace pl::cli::sub {
 
         std::string generateTypeDocumentation(const std::string &name, const core::ast::ASTNodeTypeDecl *type) {
             if (auto typeDecl = dynamic_cast<core::ast::ASTNodeTypeDecl*>(type->getType().get())) {
-                return fmt::format("```pat\nusing {}{} = {}{};\n```", name, generateTemplateParams(type), getTypeName(typeDecl), generateAttributes(typeDecl));
+                return fmt::format("```rust\nusing {}{} = {}{};\n```", name, generateTemplateParams(type), getTypeName(typeDecl), generateAttributes(typeDecl));
             } else if (dynamic_cast<core::ast::ASTNodeStruct*>(type->getType().get())) {
-                return fmt::format("```pat\nstruct {}{} {{ ... }}{};\n```", name, generateTemplateParams(type), generateAttributes(type));
+                return fmt::format("```rust\nstruct {}{} {{ ... }}{};\n```", name, generateTemplateParams(type), generateAttributes(type));
             } else if (dynamic_cast<core::ast::ASTNodeUnion*>(type->getType().get())) {
-                return fmt::format("```pat\nunion {}{} {{ ... }}{};\n```", name, generateTemplateParams(type), generateAttributes(type));
+                return fmt::format("```rust\nunion {}{} {{ ... }}{};\n```", name, generateTemplateParams(type), generateAttributes(type));
             } else if (dynamic_cast<core::ast::ASTNodeBitfield*>(type->getType().get())) {
-                return fmt::format("```pat\nbitfield {}{} {{ ... }}{};\n```", name, generateTemplateParams(type), generateAttributes(type));
+                return fmt::format("```rust\nbitfield {}{} {{ ... }}{};\n```", name, generateTemplateParams(type), generateAttributes(type));
             } else if (auto enumDecl = dynamic_cast<core::ast::ASTNodeEnum*>(type->getType().get())) {
-                auto result = fmt::format("```pat\nenum {}{} : {} {{\n", name, generateTemplateParams(type), getTypeName(enumDecl->getUnderlyingType().get()));
+                auto result = fmt::format("```rust\nenum {}{} : {} {{\n", name, generateTemplateParams(type), getTypeName(enumDecl->getUnderlyingType().get()));
                 for (auto &[enumValueName, enumValues] : enumDecl->getEntries()) {
                     result += fmt::format("    {},\n", enumValueName);
                 }
@@ -138,7 +138,7 @@ namespace pl::cli::sub {
             }
 
             // Output documentation
-            std::string documentation = fmt::format("# `{}`\n", patternFilePath.stem().string());
+            std::string documentation = fmt::format("# {}\n", patternFilePath.stem().string());
             {
                 // Add global documentation
                 for (auto comment : runtime.getInternals().parser->getGlobalDocComments()) {
@@ -157,7 +157,7 @@ namespace pl::cli::sub {
                         if (hideImplementationDetails && name.contains("impl::"))
                             continue;
 
-                        sectionContent += fmt::format("### **{}**\n", name);
+                        sectionContent += fmt::format("### {}\n", name);
 
                         for (auto line : wolv::util::splitString(type->getDocComment(), "\n")) {
                             line = wolv::util::trim(line);
@@ -209,7 +209,7 @@ namespace pl::cli::sub {
                             if (hideImplementationDetails && name.contains("impl::"))
                                 continue;
 
-                            sectionContent += fmt::format("### **{}**\n", name);
+                            sectionContent += fmt::format("### {}\n", name);
 
                             for (auto line : wolv::util::splitString(functionDecl->getDocComment(), "\n")) {
                                 line = wolv::util::trim(line);
@@ -242,7 +242,7 @@ namespace pl::cli::sub {
                                 }
                             }
 
-                            sectionContent += "\n```pat\n";
+                            sectionContent += "\n```rust\n";
                             sectionContent += fmt::format("fn {}(", wolv::util::splitString(functionDecl->getName(), "::").back());
 
                             const auto &params = functionDecl->getParams();
