@@ -203,8 +203,11 @@ namespace pl::core {
 
                                 std::replace(content.begin(), content.end(), '\n', ' ');
                                 std::replace(content.begin(), content.end(), '\r', ' ');
+                                
+                                content = wolv::util::trim(content);
 
-                                output += "/*! DOCS IGNORE ON **/ " + content + " /*! DOCS IGNORE OFF **/";
+                                if (!content.empty())
+                                    output += "/*! DOCS IGNORE ON **/ " + content + " /*! DOCS IGNORE OFF **/";
                             }
                         } else if (getDirective("define")) {
                             auto defineName = getDirectiveValue();
