@@ -1371,22 +1371,31 @@ namespace pl::core {
         } else if (MATCHES(sequence(tkn::ValueType::Padding, tkn::Operator::Colon)))
             member = create<ast::ASTNodeBitfieldField>("$padding$", parseMathematicalExpression());
         else if (MATCHES(sequence(tkn::Literal::Identifier))) {
+            std::unique_ptr<ast::ASTNodeTypeDecl> type = nullptr;
+            auto originalPosition = m_curr;
             auto name = parseNamespaceResolution();
 
-            auto type = getCustomType(name);
-            if (type == nullptr)
-                err::P0002.throwError(fmt::format("Expected a variable name followed by ':' or a bitfield type name, got {}.", name), {}, 1);
-            parseCustomTypeParameters(type);
+            if (MATCHES(sequence(tkn::Separator::LeftParenthesis))) {
+                m_curr = originalPosition;
+                member = parseFunctionCall();
+            } else {
+                auto type = getCustomType(name);
+                if (type == nullptr)
+                    err::P0002.throwError(fmt::format("Expected a variable name followed by ':', a function call or a bitfield type name, got {}.", name), {}, 1);
+                parseCustomTypeParameters(type);
 
-            ast::ASTNodeTypeDecl *topmostTypeDecl = type.get();
-            while (auto *parentTypeDecl = dynamic_cast<ast::ASTNodeTypeDecl*>(topmostTypeDecl->getType().get()))
-                topmostTypeDecl = parentTypeDecl;
-            if (auto *nestedBitfield = dynamic_cast<ast::ASTNodeBitfield*>(topmostTypeDecl->getType().get()); nestedBitfield != nullptr)
-                nestedBitfield->setNested();
-            else
-                err::P0003.throwError("Only bitfields can be nested within other bitfields.", {}, 1);
+                ast::ASTNodeTypeDecl *topmostTypeDecl = type.get();
+                while (auto *parentTypeDecl = dynamic_cast<ast::ASTNodeTypeDecl*>(topmostTypeDecl->getType().get()))
+                    topmostTypeDecl = parentTypeDecl;
+                if (auto *nestedBitfield = dynamic_cast<ast::ASTNodeBitfield*>(topmostTypeDecl->getType().get()); nestedBitfield != nullptr)
+                    nestedBitfield->setNested();
+                else
+                    err::P0003.throwError("Only bitfields can be nested within other bitfields.", {}, 1);
+            }
 
-            if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Separator::LeftBracket) && sequence<Not>(tkn::Separator::LeftBracket))){
+            if (type == nullptr) {
+                // We called a function, do no more parsing.
+            } else if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Separator::LeftBracket) && sequence<Not>(tkn::Separator::LeftBracket))){
                 // (parseType) Identifier[[(parseMathematicalExpression)|(parseWhileStatement)]];
                 auto fieldName = getValue<Token::Identifier>(-2).get();
 
