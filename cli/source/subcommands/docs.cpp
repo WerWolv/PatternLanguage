@@ -18,14 +18,27 @@ namespace pl::cli::sub {
 
     namespace {
 
+        std::string getTypeEndian(const core::ast::ASTNodeTypeDecl *typeDecl) {
+            auto endian = typeDecl->getEndian();
+
+            if (!endian.has_value())
+                return "";
+            else if (endian == std::endian::little)
+                return "le";
+            else if (endian == std::endian::big)
+                return "be";
+            else
+                return "";
+        }
+
         std::string getTypeName(const core::ast::ASTNode *type) {
             if (auto builtinType = dynamic_cast<const core::ast::ASTNodeBuiltinType*>(type))
                 return core::Token::getTypeName(builtinType->getType());
             else if (auto typeDecl = dynamic_cast<const core::ast::ASTNodeTypeDecl*>(type)) {
                 if (typeDecl->getName().empty())
-                    return getTypeName(typeDecl->getType().get());
+                    return getTypeEndian(typeDecl) + " " + getTypeName(typeDecl->getType().get());
                 else
-                    return typeDecl->getName();
+                    return getTypeEndian(typeDecl) + " " + typeDecl->getName();
             } else {
                 return "???";
             }
