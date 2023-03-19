@@ -146,7 +146,8 @@ namespace pl::cli::sub {
                     if (comment.starts_with('*'))
                         comment = comment.substr(1);
 
-                    documentation += fmt::format("**{}**\n", wolv::util::trim(comment));
+                    for (const auto &line : wolv::util::splitString(comment, "\n"))
+                        documentation += fmt::format("{}\n", wolv::util::trim(line));
                 }
 
                 {
@@ -157,7 +158,7 @@ namespace pl::cli::sub {
                         if (hideImplementationDetails && name.contains("impl::"))
                             continue;
 
-                        sectionContent += fmt::format("### {}\n", name);
+                        sectionContent += fmt::format("### `{}`\n", name);
 
                         for (auto line : wolv::util::splitString(type->getDocComment(), "\n")) {
                             line = wolv::util::trim(line);
@@ -169,7 +170,7 @@ namespace pl::cli::sub {
                                 line = line.substr(1);
 
                                 if (line.starts_with("tparam ")) {
-                                    line = line.substr(5);
+                                    line = line.substr(6);
                                     line = wolv::util::trim(line);
 
                                     if (line.empty())
@@ -209,7 +210,7 @@ namespace pl::cli::sub {
                             if (hideImplementationDetails && name.contains("impl::"))
                                 continue;
 
-                            sectionContent += fmt::format("### {}\n", name);
+                            sectionContent += fmt::format("### `{}`\n", name);
 
                             for (auto line : wolv::util::splitString(functionDecl->getDocComment(), "\n")) {
                                 line = wolv::util::trim(line);

@@ -1597,9 +1597,8 @@ namespace pl::core {
         std::shared_ptr<ast::ASTNode> statement;
         bool requiresSemicolon = true;
 
-        if (auto docComment = getDocComment(); docComment.has_value()) {
-            if (docComment->global)
-                this->addGlobalDocComment(docComment->comment);
+        if (auto docComment = getDocComment(true); docComment.has_value()) {
+            this->addGlobalDocComment(docComment->comment);
         }
 
         if (MATCHES(sequence(tkn::Keyword::Using, tkn::Literal::Identifier) && (peek(tkn::Operator::Assign) || peek(tkn::Operator::BoolLessThan))))
@@ -1651,9 +1650,8 @@ namespace pl::core {
         if (!statement)
             return { };
 
-        if (auto docComment = getDocComment(); docComment.has_value()) {
-            if (!docComment->global)
-                statement->setDocComment(docComment->comment);
+        if (auto docComment = getDocComment(false); docComment.has_value()) {
+            statement->setDocComment(docComment->comment);
         }
         statement->setShouldDocument(this->m_ignoreDocsCount == 0);
 

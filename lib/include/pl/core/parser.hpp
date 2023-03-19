@@ -335,12 +335,15 @@ namespace pl::core {
             return this->m_curr[index].type == token.type && this->m_curr[index] == token.value;
         }
 
-        std::optional<Token::DocComment> getDocComment() {
+        std::optional<Token::DocComment> getDocComment(bool global) {
             auto token = this->m_curr;
 
             auto commentProcessGuard = SCOPE_GUARD {
                 this->m_processedDocComments.push_back(token);
             };
+
+            if (token != this->m_startToken)
+                token--;
 
             while (true) {
                 if (token->type == Token::Type::DocComment) {
@@ -348,6 +351,8 @@ namespace pl::core {
                         return std::nullopt;
 
                     auto content = std::get<Token::DocComment>(token->value);
+                    if (content.global != global)
+                        return std::nullopt;
 
                     auto trimmed = wolv::util::trim(content.comment);
                     if (trimmed.starts_with("DOCS IGNORE ON")) {
