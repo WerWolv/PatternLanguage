@@ -183,6 +183,8 @@ namespace pl::core {
                 return "str";
             case ValueType::Boolean:
                 return "bool";
+            case ValueType::Auto:
+                return "auto";
             default:
                 return "???";
         }

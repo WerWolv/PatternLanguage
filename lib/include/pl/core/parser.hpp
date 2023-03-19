@@ -45,7 +45,8 @@ namespace pl::core {
         std::vector<std::vector<std::string>> m_currNamespace;
 
         std::vector<std::string> m_globalDocComments;
-        bool m_ignoreDocs = false;
+        i32 m_ignoreDocsCount = 0;
+        std::vector<TokenIter> m_processedDocComments;
 
         void addGlobalDocComment(const std::string &comment) {
             this->m_globalDocComments.push_back(comment);
@@ -337,20 +338,29 @@ namespace pl::core {
         std::optional<Token::DocComment> getDocComment() {
             auto token = this->m_curr;
 
+            auto commentProcessGuard = SCOPE_GUARD {
+                this->m_processedDocComments.push_back(token);
+            };
+
             while (true) {
-                if (token[0].type == Token::Type::DocComment) {
-                    auto content = std::get<Token::DocComment>(token[0].value);
+                if (token->type == Token::Type::DocComment) {
+                    if (std::find(this->m_processedDocComments.begin(), this->m_processedDocComments.end(), token) != this->m_processedDocComments.end())
+                        return std::nullopt;
+
+                    auto content = std::get<Token::DocComment>(token->value);
 
                     auto trimmed = wolv::util::trim(content.comment);
                     if (trimmed.starts_with("DOCS IGNORE ON")) {
-                        this->m_ignoreDocs = true;
+                        this->m_ignoreDocsCount += 1;
                         return std::nullopt;
                     } else if (trimmed.starts_with("DOCS IGNORE OFF")) {
-                        this->m_ignoreDocs = false;
+                        if (this->m_ignoreDocsCount == 0)
+                            err::P0002.throwError("Unmatched DOCS IGNORE OFF without previous DOCS IGNORE ON", "", 0);
+                        this->m_ignoreDocsCount -= 1;
                         return std::nullopt;
                     }
 
-                    if (this->m_ignoreDocs)
+                    if (this->m_ignoreDocsCount > 0)
                         return std::nullopt;
                     else
                         return content;
@@ -361,6 +371,8 @@ namespace pl::core {
                 else
                     break;
             }
+
+            commentProcessGuard.release();
 
             return std::nullopt;
         }

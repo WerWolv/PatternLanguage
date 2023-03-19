@@ -1655,7 +1655,7 @@ namespace pl::core {
             if (!docComment->global)
                 statement->setDocComment(docComment->comment);
         }
-        statement->setShouldDocument(!this->m_ignoreDocs);
+        statement->setShouldDocument(this->m_ignoreDocsCount == 0);
 
         return hlp::moveToVector(std::move(statement));
     }
