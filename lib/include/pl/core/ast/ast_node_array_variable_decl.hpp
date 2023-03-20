@@ -92,8 +92,7 @@ namespace pl::core::ast {
                 err::E0001.throwError("Invalid type used in array variable declaration.", { }, this);
             }
 
-            if (this->m_placementSection != nullptr)
-                pattern->setSection(evaluator->getSectionId());
+            pattern->setSection(evaluator->getSectionId());
 
             applyVariableAttributes(evaluator, this, pattern);
 

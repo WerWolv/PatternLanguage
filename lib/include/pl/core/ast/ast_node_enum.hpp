@@ -28,6 +28,8 @@ namespace pl::core::ast {
 
             auto pattern = std::make_shared<ptrn::PatternEnum>(evaluator, evaluator->dataOffset(), 0);
 
+            pattern->setSection(evaluator->getSectionId());
+
             std::vector<ptrn::PatternEnum::EnumValue> enumEntries;
             for (const auto &[name, expr] : this->m_entries) {
                 auto &[min, max] = expr;

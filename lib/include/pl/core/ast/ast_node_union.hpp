@@ -30,6 +30,8 @@ namespace pl::core::ast {
             std::vector<std::shared_ptr<ptrn::Pattern>> memberPatterns;
             u64 startOffset = evaluator->dataOffset();
 
+            pattern->setSection(evaluator->getSectionId());
+
             evaluator->pushScope(pattern, memberPatterns);
             ON_SCOPE_EXIT {
                 evaluator->popScope();
@@ -40,6 +42,7 @@ namespace pl::core::ast {
 
                 for (auto &memberPattern : member->createPatterns(evaluator)) {
                     size = std::max(memberPattern->getSize(), size);
+                    memberPattern->setSection(evaluator->getSectionId());
                     memberPatterns.push_back(std::move(memberPattern));
                 }
                 pattern->setSize(size);

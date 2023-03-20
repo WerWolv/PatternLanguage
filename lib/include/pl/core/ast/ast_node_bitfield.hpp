@@ -29,6 +29,9 @@ namespace pl::core::ast {
             evaluator->updateRuntime(this);
 
             auto bitfieldPattern = std::make_shared<ptrn::PatternBitfield>(evaluator, evaluator->dataOffset(), 0);
+
+            bitfieldPattern->setSection(evaluator->getSectionId());
+
             if (this->hasAttribute("left_to_right", false))
                 bitfieldPattern->setEndian(std::endian::big);
             else if (this->hasAttribute("right_to_left", false))
@@ -65,7 +68,7 @@ namespace pl::core::ast {
             });
             ON_SCOPE_EXIT {
                 evaluator->popScope();
-                evaluator->setBitfieldFieldAddedCallback(move(prevBitfieldFieldAddedCallback));
+                evaluator->setBitfieldFieldAddedCallback(std::move(prevBitfieldFieldAddedCallback));
             };
 
             for (auto &entry : this->m_entries) {

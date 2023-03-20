@@ -1682,6 +1682,7 @@ namespace pl::core {
         this->m_types.clear();
         this->m_currTemplateType.clear();
         this->m_matchedOptionals.clear();
+        this->m_processedDocComments.clear();
 
         this->m_currNamespace.clear();
         this->m_currNamespace.emplace_back();
