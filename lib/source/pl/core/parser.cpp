@@ -192,12 +192,10 @@ namespace pl::core {
             if (MATCHES(oneOf(tkn::Literal::Identifier))) {
                 auto startToken = this->m_curr;
                 if (op == Token::Operator::SizeOf) {
-                    for (const auto &potentialTypes : getNamespacePrefixedNames(parseNamespaceResolution())) {
-                        if (this->m_types.contains(potentialTypes)) {
-                            this->m_curr = startToken - 1;
-                            result = create<ast::ASTNodeTypeOperator>(op, parseType());
-                            break;
-                        }
+                    auto type = getCustomType(parseNamespaceResolution());
+                    if (type != nullptr) {
+                        parseCustomTypeParameters(type);
+                        result = create<ast::ASTNodeTypeOperator>(op, move(type));
                     }
                 }
 
@@ -895,78 +893,97 @@ namespace pl::core {
 
     /* Type declarations */
 
+    std::unique_ptr<ast::ASTNodeTypeDecl> Parser::getCustomType(std::string baseTypeName) {
+        if (!this->m_currTemplateType.empty())
+            for (const auto &templateParameter : this->m_currTemplateType.front()->getTemplateParameters()) {
+                if (auto templateType = dynamic_cast<ast::ASTNodeTypeDecl*>(templateParameter.get()); templateType != nullptr)
+                    if (templateType->getName() == baseTypeName)
+                        return create<ast::ASTNodeTypeDecl>("", templateParameter);
+            }
+
+        for (const auto &typeName : getNamespacePrefixedNames(baseTypeName)) {
+            if (this->m_types.contains(typeName))
+                return create<ast::ASTNodeTypeDecl>("", this->m_types[typeName]);
+        }
+
+        return nullptr;
+    }
+
+    // <Identifier[, Identifier]>
+    void Parser::parseCustomTypeParameters(std::unique_ptr<ast::ASTNodeTypeDecl> &type) {
+        if (auto actualType = dynamic_cast<ast::ASTNodeTypeDecl*>(type->getType().get()); actualType != nullptr)
+            if (const auto &templateTypes = actualType->getTemplateParameters(); !templateTypes.empty()) {
+                if (!MATCHES(sequence(tkn::Operator::BoolLessThan)))
+                    err::P0002.throwError("Cannot use template type without template parameters.", {}, 1);
+
+                u32 index = 0;
+                do {
+                    if (index >= templateTypes.size())
+                        err::P0002.throwError(fmt::format("Provided more template parameters than expected. Type only has {} parameters", templateTypes.size()), {}, 1);
+
+                    auto parameter = templateTypes[index];
+                    if (auto type = dynamic_cast<ast::ASTNodeTypeDecl*>(parameter.get()); type != nullptr) {
+                        auto newType = parseType();
+                        if (newType->isForwardDeclared())
+                            err::P0002.throwError("Cannot use forward declared type as template parameter.", {}, 1);
+
+                        type->setType(std::move(newType), true);
+                        type->setName("");
+                    } else if (auto value = dynamic_cast<ast::ASTNodeLValueAssignment*>(parameter.get()); value != nullptr) {
+                        value->setRValue(parseMathematicalExpression(true));
+                    } else
+                        err::P0002.throwError("Invalid template parameter type.", {}, 1);
+
+                    index++;
+                } while (MATCHES(sequence(tkn::Separator::Comma)));
+
+                if (index < templateTypes.size())
+                    err::P0002.throwError(fmt::format("Not enough template parameters provided, expected {} parameters.", templateTypes.size()), {}, 1);
+
+                if (!MATCHES(sequence(tkn::Operator::BoolGreaterThan)))
+                    err::P0002.throwError(fmt::format("Expected '>' to close template list, got {}.", getFormattedToken(0)), {}, 1);
+
+                type = std::unique_ptr<ast::ASTNodeTypeDecl>(static_cast<ast::ASTNodeTypeDecl*>(type->clone().release()));
+            }
+    }
+
+    // Identifier
+    std::unique_ptr<ast::ASTNodeTypeDecl> Parser::parseCustomType() {
+        auto baseTypeName = parseNamespaceResolution();
+        auto type = getCustomType(baseTypeName);
+
+        if (type == nullptr)
+            err::P0003.throwError(fmt::format("Type {} has not been declared yet.", baseTypeName), fmt::format("If this type is being declared further down in the code, consider forward declaring it with 'using {};'.", baseTypeName), 1);
+
+        parseCustomTypeParameters(type);
+
+        return type;
+    }
+
     // [be|le] <Identifier|u8|u16|u24|u32|u48|u64|u96|u128|s8|s16|s24|s32|s48|s64|s96|s128|float|double|str>
     std::unique_ptr<ast::ASTNodeTypeDecl> Parser::parseType() {
-        std::optional<std::endian> endian;
-
         bool reference = MATCHES(sequence(tkn::Keyword::Reference));
 
+        std::optional<std::endian> endian;
         if (MATCHES(sequence(tkn::Keyword::LittleEndian)))
             endian = std::endian::little;
         else if (MATCHES(sequence(tkn::Keyword::BigEndian)))
             endian = std::endian::big;
 
+        std::unique_ptr<ast::ASTNodeTypeDecl> result = nullptr;
         if (MATCHES(sequence(tkn::Literal::Identifier))) {    // Custom type
-            auto baseTypeName = parseNamespaceResolution();
-
-            std::unique_ptr<ast::ASTNodeTypeDecl> foundType = nullptr;
-
-            if (!this->m_currTemplateType.empty())
-                for (const auto &templateParameter : this->m_currTemplateType.front()->getTemplateParameters()) {
-                    if (auto templateType = dynamic_cast<ast::ASTNodeTypeDecl*>(templateParameter.get()); templateType != nullptr)
-                        if (templateType->getName() == baseTypeName)
-                            foundType = create<ast::ASTNodeTypeDecl>("", templateParameter, endian, reference);
-                }
-
-            if (foundType == nullptr)
-                for (const auto &typeName : getNamespacePrefixedNames(baseTypeName)) {
-                    if (this->m_types.contains(typeName))
-                        foundType = create<ast::ASTNodeTypeDecl>("", this->m_types[typeName], endian, reference);
-                }
-
-            if (foundType == nullptr)
-                err::P0003.throwError(fmt::format("Type {} has not been declared yet.", baseTypeName), fmt::format("If this type is being declared further down in the code, consider forward declaring it with 'using {};'.", baseTypeName), 1);
-
-            if (auto actualType = dynamic_cast<ast::ASTNodeTypeDecl*>(foundType->getType().get()); actualType != nullptr)
-                if (const auto &templateTypes = actualType->getTemplateParameters(); !templateTypes.empty()) {
-                    if (!MATCHES(sequence(tkn::Operator::BoolLessThan)))
-                        err::P0002.throwError("Cannot use template type without template parameters.", {}, 1);
-
-                    u32 index = 0;
-                    do {
-                        if (index >= templateTypes.size())
-                            err::P0002.throwError(fmt::format("Provided more template parameters than expected. Type only has {} parameters", templateTypes.size()), {}, 1);
-
-                        auto parameter = templateTypes[index];
-                        if (auto type = dynamic_cast<ast::ASTNodeTypeDecl*>(parameter.get()); type != nullptr) {
-                            auto newType = parseType();
-                            if (newType->isForwardDeclared())
-                                err::P0002.throwError("Cannot use forward declared type as template parameter.", {}, 1);
-
-                            type->setType(std::move(newType), true);
-                            type->setName("");
-                        } else if (auto value = dynamic_cast<ast::ASTNodeLValueAssignment*>(parameter.get()); value != nullptr) {
-                            value->setRValue(parseMathematicalExpression(true));
-                        } else
-                            err::P0002.throwError("Invalid template parameter type.", {}, 1);
-
-                        index++;
-                    } while (MATCHES(sequence(tkn::Separator::Comma)));
-
-                    if (!MATCHES(sequence(tkn::Operator::BoolGreaterThan)))
-                        err::P0002.throwError(fmt::format("Expected '>' to close template list, got {}.", getFormattedToken(0)), {}, 1);
-
-                    return std::unique_ptr<ast::ASTNodeTypeDecl>(static_cast<ast::ASTNodeTypeDecl*>(foundType->clone().release()));
-                }
-
-            return foundType;
+            result = parseCustomType();
         } else if (MATCHES(sequence(tkn::ValueType::Any))) {    // Builtin type
             auto type = getValue<Token::ValueType>(-1);
-
-            return create<ast::ASTNodeTypeDecl>("", create<ast::ASTNodeBuiltinType>(type), endian, reference);
+            result = create<ast::ASTNodeTypeDecl>("", create<ast::ASTNodeBuiltinType>(type));
         } else {
             err::P0002.throwError(fmt::format("Invalid type. Expected built-in type or custom type name, got {}.", getFormattedToken(0)), {}, 1);
         }
+
+        result->setReference(reference);
+        if (endian.has_value())
+            result->setEndian(endian.value());
+        return result;
     }
 
     // <(parseType), ...>
@@ -1240,25 +1257,22 @@ namespace pl::core {
 
         typeDecl->setTemplateParameters(this->parseTemplateList());
 
-        if (MATCHES(sequence(tkn::Operator::Colon, tkn::Literal::Identifier))) {
+        this->m_currTemplateType.push_back(typeDecl);
+
+        if (MATCHES(sequence(tkn::Operator::Colon))) {
             // Inheritance
-
             do {
-                auto inheritedTypeName = getValue<Token::Identifier>(-1).get();
-                if (!this->m_types.contains(inheritedTypeName))
-                    err::P0003.throwError(fmt::format("Cannot inherit from unknown type {}.", typeName), fmt::format("If this type is being declared further down in the code, consider forward declaring it with 'using {};'.", typeName), 1);
-
-                structNode->addInheritance(this->m_types[inheritedTypeName]->clone());
-            } while (MATCHES(sequence(tkn::Separator::Comma, tkn::Literal::Identifier)));
-
-        } else if (MATCHES(sequence(tkn::Operator::Colon, tkn::ValueType::Any))) {
-            err::P0003.throwError("Cannot inherit from built-in type.", {}, 1);
+                if (MATCHES(sequence(tkn::ValueType::Any)))
+                    err::P0002.throwError("Cannot inherit from built-in type.", {}, 1);
+                if (!MATCHES(sequence(tkn::Literal::Identifier)))
+                    err::P0002.throwError(fmt::format("Expected type to inherit from, got {}.", getFormattedToken(0)), {}, 0);
+                structNode->addInheritance(parseCustomType());
+            } while (MATCHES(sequence(tkn::Separator::Comma)));
         }
 
         if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
             err::P0002.throwError(fmt::format("Expected '{{' after struct declaration, got {}.", getFormattedToken(0)), {}, 1);
 
-        this->m_currTemplateType.push_back(typeDecl);
         while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
             structNode->addMember(parseMember());
         }

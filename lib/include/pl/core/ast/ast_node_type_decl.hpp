@@ -14,8 +14,8 @@ namespace pl::core::ast {
     public:
         explicit ASTNodeTypeDecl(std::string name) : m_forwardDeclared(true), m_valid(false), m_name(std::move(name)) { }
 
-        ASTNodeTypeDecl(std::string name, std::shared_ptr<ASTNode> type, std::optional<std::endian> endian = std::nullopt, bool reference = false)
-            : ASTNode(), m_name(std::move(name)), m_type(std::move(type)), m_endian(endian), m_reference(reference) { }
+        ASTNodeTypeDecl(std::string name, std::shared_ptr<ASTNode> type, std::optional<std::endian> endian = std::nullopt)
+            : ASTNode(), m_name(std::move(name)), m_type(std::move(type)), m_endian(endian) { }
 
         ASTNodeTypeDecl(const ASTNodeTypeDecl &other) : ASTNode(other), Attributable(other) {
             this->m_name                = other.m_name;
@@ -76,15 +76,46 @@ namespace pl::core::ast {
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             evaluator->updateRuntime(this);
 
-            evaluator->pushTemplateParameters();
-            ON_SCOPE_EXIT { evaluator->popTemplateParameters(); };
+            std::vector<std::unique_ptr<ASTNodeLiteral>> templateParamLiterals(this->m_templateParameters.size());
 
-            for (const auto &templateParameter : this->m_templateParameters) {
+            // Get template parameter values before pushing a new template parameter scope so that variables from the parent scope are used before being overwritten.
+            for (size_t i = 0; i < this->m_templateParameters.size(); i++) {
+                auto &templateParameter = this->m_templateParameters[i];
                 if (auto lvalue = dynamic_cast<ASTNodeLValueAssignment *>(templateParameter.get())) {
+                    if (!lvalue->getRValue())
+                        err::E0003.throwError(fmt::format("No value set for non-type template parameter {}. This is a bug.", lvalue->getLValueName()), {}, this);
                     auto value = lvalue->getRValue()->evaluate(evaluator);
-                    if (auto literal = dynamic_cast<ASTNodeLiteral*>(value.get()); literal != nullptr) {
-                        evaluator->createVariable(lvalue->getLValueName(), new ASTNodeBuiltinType(literal->getValue().getType()), {}, false, false, true);
-                        evaluator->setVariable(lvalue->getLValueName(), literal->getValue());
+                    if (auto literal = dynamic_cast<ASTNodeLiteral*>(value.release()))
+                        templateParamLiterals[i] = std::unique_ptr<ASTNodeLiteral>(literal);
+                    else
+                        err::E0003.throwError(fmt::format("Template parameter {} is not a literal. This is a bug.", lvalue->getLValueName()), {}, this);
+                }
+            }
+
+            evaluator->pushTemplateParameters();
+            ON_SCOPE_EXIT {
+                evaluator->popTemplateParameters();
+            };
+
+            {
+                evaluator->pushSectionId(ptrn::Pattern::HeapSectionId);
+                ON_SCOPE_EXIT {
+                    evaluator->popSectionId();
+                };
+
+                for (size_t i = 0; i < this->m_templateParameters.size(); i++) {
+                    auto &templateParameter = this->m_templateParameters[i];
+                    if (auto lvalue = dynamic_cast<ASTNodeLValueAssignment *>(templateParameter.get())) {
+                        auto value = templateParamLiterals[i]->getValue();
+
+                        m_currentTemplateParameterType = std::make_unique<ASTNodeBuiltinType>(value.getType());
+                        m_currentTemplateParameterType->setSourceLocation(lvalue->getLine(), lvalue->getColumn());
+
+                        auto variable = evaluator->createVariable(lvalue->getLValueName(), m_currentTemplateParameterType.get(), {}, false, false, true);
+                        if (variable != nullptr)
+                            evaluator->setVariable(variable.get(), value);
+
+                        m_currentTemplateParameterType = nullptr;
                     }
                 }
             }
@@ -141,6 +172,10 @@ namespace pl::core::ast {
             return this->m_forwardDeclared;
         }
 
+        void setReference(bool reference) {
+            this->m_reference = reference;
+        }
+
         [[nodiscard]] bool isReference() const {
             return this->m_reference;
         }
@@ -181,6 +216,8 @@ namespace pl::core::ast {
         std::optional<std::endian> m_endian;
         std::vector<std::shared_ptr<ASTNode>> m_templateParameters;
         bool m_reference = false;
+
+        mutable std::unique_ptr<ASTNodeBuiltinType> m_currentTemplateParameterType;
     };
 
 }

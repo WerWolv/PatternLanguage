@@ -93,24 +93,22 @@ namespace pl::core {
         variables.push_back(std::unique_ptr<ptrn::Pattern>(pattern));
     }
 
-    void Evaluator::createVariable(const std::string &name, ast::ASTNode *type, const std::optional<Token::Literal> &value, bool outVariable, bool reference, bool templateVariable, bool constant) {
+    std::shared_ptr<ptrn::Pattern> Evaluator::createVariable(const std::string &name, ast::ASTNode *type, const std::optional<Token::Literal> &value, bool outVariable, bool reference, bool templateVariable, bool constant) {
         // A variable named _ gets treated as "don't care"
         if (name == "_")
-            return;
+            return nullptr;
 
-        {
+        if (templateVariable) {
+            std::erase_if(this->m_templateParameters.back(), [&](const auto &var) {
+                return var->getVariableName() == name;
+            });
+        } else {
             auto &currScope = this->getScope(0);
             for (auto &variable : *currScope.scope) {
                 if (variable->getVariableName() == name) {
                     err::E0003.throwError(fmt::format("Variable with name '{}' already exists in this scope.", name), {}, type);
                 }
             }
-        }
-
-        if (templateVariable) {
-            std::erase_if(this->m_templateParameters.back(), [&](const auto &var) {
-                return var->getVariableName() == name;
-            });
         }
 
         auto sectionId = this->getSectionId();
@@ -122,8 +120,10 @@ namespace pl::core {
             if (sectionId == ptrn::Pattern::PatternLocalSectionId) {
                 patternLocalAddress = this->m_patternLocalStorage.empty() ? 0 : this->m_patternLocalStorage.rbegin()->first + 1;
                 this->m_patternLocalStorage.insert({ patternLocalAddress, { } });
-            } else {
+            } else if (sectionId == ptrn::Pattern::HeapSectionId) {
                 this->getHeap().emplace_back();
+            } else {
+                err::E0001.throwError(fmt::format("Attempted to place a variable into section 0x{:X}.", sectionId), {}, type);
             }
         }
 
@@ -189,9 +189,10 @@ namespace pl::core {
             this->getConsole().log(LogConsole::Level::Debug, fmt::format("Creating local variable '{} {}' at heap address 0x{:X}.", pattern->getTypeName(), pattern->getVariableName(), pattern->getOffset()));
 
         if (templateVariable)
-            this->m_templateParameters.back().push_back(std::move(pattern));
+            this->m_templateParameters.back().push_back(pattern);
         else
-            this->getScope(0).scope->push_back(std::move(pattern));
+            this->getScope(0).scope->push_back(pattern);
+        return pattern;
     }
 
     template<typename T>
