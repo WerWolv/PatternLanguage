@@ -32,7 +32,7 @@ namespace pl::core::ast {
         [[nodiscard]] std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override {
             evaluator->updateRuntime(this);
 
-            u128 result = 0x00;
+            u128 result;
             if (this->m_providerOperation) {
                 switch (this->getOperator()) {
                     case Token::Operator::AddressOf:
@@ -45,6 +45,9 @@ namespace pl::core::ast {
                         err::E0001.throwError("Invalid type operation.", {}, this);
                 }
             } else {
+                auto offset = evaluator->dataOffset();
+                ON_SCOPE_EXIT { evaluator->dataOffset() = offset; };
+
                 auto patterns = this->m_expression->createPatterns(evaluator);
                 if (patterns.empty())
                     err::E0005.throwError("'auto' can only be used with parameters.", { }, this);
