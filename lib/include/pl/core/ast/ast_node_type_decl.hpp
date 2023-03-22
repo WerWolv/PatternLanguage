@@ -114,8 +114,6 @@ namespace pl::core::ast {
                         auto variable = evaluator->createVariable(lvalue->getLValueName(), m_currentTemplateParameterType.get(), value, false, false, true);
                         if (variable != nullptr)
                             evaluator->setVariable(variable.get(), value);
-
-                        m_currentTemplateParameterType = nullptr;
                     }
                 }
             }
