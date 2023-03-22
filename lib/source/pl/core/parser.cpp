@@ -1455,7 +1455,8 @@ namespace pl::core {
     std::shared_ptr<ast::ASTNodeTypeDecl> Parser::parseBitfield() {
         std::string typeName = getValue<Token::Identifier>(-1).get();
 
-        auto typeDecl     = addType(typeName, create<ast::ASTNodeBitfield>());
+        auto typeDecl = addType(typeName, create<ast::ASTNodeBitfield>());
+        typeDecl->setTemplateParameters(this->parseTemplateList());
         auto bitfieldNode = static_cast<ast::ASTNodeBitfield *>(typeDecl->getType().get());
 
         if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
