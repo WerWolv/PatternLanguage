@@ -108,10 +108,10 @@ namespace pl::core::ast {
                     if (auto lvalue = dynamic_cast<ASTNodeLValueAssignment *>(templateParameter.get())) {
                         auto value = templateParamLiterals[i]->getValue();
 
-                        m_currentTemplateParameterType = std::make_unique<ASTNodeBuiltinType>(value.getType());
+                        // Allow the evaluator to throw an error at the correct source location.
                         m_currentTemplateParameterType->setSourceLocation(lvalue->getLine(), lvalue->getColumn());
 
-                        auto variable = evaluator->createVariable(lvalue->getLValueName(), m_currentTemplateParameterType.get(), {}, false, false, true);
+                        auto variable = evaluator->createVariable(lvalue->getLValueName(), m_currentTemplateParameterType.get(), value, false, false, true);
                         if (variable != nullptr)
                             evaluator->setVariable(variable.get(), value);
 
@@ -217,7 +217,7 @@ namespace pl::core::ast {
         std::vector<std::shared_ptr<ASTNode>> m_templateParameters;
         bool m_reference = false;
 
-        mutable std::unique_ptr<ASTNodeBuiltinType> m_currentTemplateParameterType;
+        mutable std::unique_ptr<ASTNodeBuiltinType> m_currentTemplateParameterType = std::make_unique<ASTNodeBuiltinType>(Token::ValueType::Auto);
     };
 
 }
