@@ -1125,25 +1125,10 @@ namespace pl::core {
             return create<ast::ASTNodeArrayVariableDecl>(name, type, std::move(size), nullptr, nullptr, constant);
     }
 
-    std::unique_ptr<ast::ASTNodeTypeDecl> Parser::parsePointerSizeType() {
-        auto sizeType = parseType();
-
-        auto builtinType = dynamic_cast<ast::ASTNodeBuiltinType *>(sizeType->getType().get());
-
-        if (builtinType == nullptr || !Token::isInteger(builtinType->getType()))
-            err::P0009.throwError("Pointer size needs to be a built-in type.", {}, 1);
-
-        if (Token::getTypeSize(builtinType->getType()) > 8) {
-            err::P0009.throwError("Pointer size cannot be larger than 8 bytes.", {}, 1);
-        }
-
-        return sizeType;
-    }
-
     // (parseType) *Identifier : (parseType)
     std::unique_ptr<ast::ASTNode> Parser::parseMemberPointerVariable(const std::shared_ptr<ast::ASTNodeTypeDecl> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
-        auto sizeType = parsePointerSizeType();
+        auto sizeType = parseType();
 
         if (MATCHES(sequence(tkn::Operator::At)))
             return create<ast::ASTNodePointerVariableDecl>(name, type, std::move(sizeType), parseMathematicalExpression());
@@ -1170,7 +1155,7 @@ namespace pl::core {
             err::P0002.throwError(fmt::format("Expected ':' after pointer definition, got {}.", getFormattedToken(0)), "A pointer requires a integral type to specify its own size.", 1);
         }
 
-        auto sizeType = parsePointerSizeType();
+        auto sizeType = parseType();
         auto arrayType = createShared<ast::ASTNodeArrayVariableDecl>("", type, std::move(size));
 
         if (MATCHES(sequence(tkn::Operator::At)))
@@ -1511,7 +1496,7 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parsePointerVariablePlacement(const std::shared_ptr<ast::ASTNodeTypeDecl> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
 
-        auto sizeType = parsePointerSizeType();
+        auto sizeType = parseType();
 
         if (!MATCHES(sequence(tkn::Operator::At)))
             err::P0002.throwError(fmt::format("Expected '@' after pointer placement, got {}.", getFormattedToken(0)), {}, 1);
@@ -1545,7 +1530,7 @@ namespace pl::core {
             err::P0002.throwError(fmt::format("Expected ':' at end of pointer declaration, got {}.", getFormattedToken(0)), {}, 1);
         }
 
-        auto sizeType = parsePointerSizeType();
+        auto sizeType = parseType();
 
         if (!MATCHES(sequence(tkn::Operator::At)))
             err::P0002.throwError(fmt::format("Expected '@' after array placement, got {}.", getFormattedToken(0)), {}, 1);

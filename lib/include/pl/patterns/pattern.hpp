@@ -214,7 +214,8 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] virtual core::Token::Literal getValue() const {
-            return this->transformValue(u128());
+            auto clone = this->clone();
+            return this->transformValue(clone.get());
         }
 
         [[nodiscard]] virtual std::vector<std::pair<u64, Pattern*>> getChildren() {

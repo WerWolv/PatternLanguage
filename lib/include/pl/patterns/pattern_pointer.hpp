@@ -25,15 +25,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
-            i128 data = 0;
-            this->getEvaluator()->readData(this->getOffset(), &data, this->getSize(), this->getSection());
-            data = hlp::changeEndianess(data, this->getSize(), this->getEndian());
-
-            if (this->m_signed) {
-                return hlp::signExtend(this->getSize() * 8, data);
-            }
-
-            return transformValue(data);
+            return transformValue(this->m_pointerType->getValue());
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
@@ -89,7 +81,6 @@ namespace pl::ptrn {
             if (pattern->hasOverriddenEndian())
                 Pattern::setEndian(pattern->getEndian());
             this->m_pointerType = std::move(pattern);
-            this->m_signed = dynamic_cast<const PatternSigned *>(this->m_pointerType.get()) != nullptr;
         }
 
         const std::shared_ptr<Pattern>& getPointerType() const {
@@ -108,10 +99,6 @@ namespace pl::ptrn {
             return this->m_pointedAt;
         }
 
-        [[nodiscard]] bool isSigned() const {
-            return this->m_signed;
-        }
-
         void setColor(u32 color) override {
             Pattern::setColor(color);
             if (this->m_pointedAt != nullptr) {
@@ -125,7 +112,6 @@ namespace pl::ptrn {
 
                 return otherPointer->m_pointedAtAddress == this->m_pointedAtAddress &&
                        otherPointer->m_pointerBase == this->m_pointerBase &&
-                       otherPointer->m_signed == this->m_signed &&
                        *otherPointer->m_pointerType == *this->m_pointerType &&
                        *otherPointer->m_pointedAt == *this->m_pointedAt;
             }
@@ -171,7 +157,6 @@ namespace pl::ptrn {
         std::shared_ptr<Pattern> m_pointerType;
         i128 m_pointedAtAddress = 0;
         u64 m_pointerBase = 0;
-        bool m_signed = false;
     };
 
 }
