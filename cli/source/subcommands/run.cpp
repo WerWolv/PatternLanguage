@@ -44,7 +44,7 @@ namespace pl::cli::sub {
 
             runtime.setIncludePaths(includePaths);
 
-            auto data = wolv::io::File(inputFilePath, wolv::io::File::Mode::Read).readBytes();
+            auto data = wolv::io::File(inputFilePath, wolv::io::File::Mode::Read).readVector();
             runtime.setDataSource(baseAddress, data.size(), [&](u64 address, void *buffer, size_t size) {
                 if (address + size > data.size())
                     std::memset(buffer, 0x00, size);

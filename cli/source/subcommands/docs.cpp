@@ -290,7 +290,7 @@ namespace pl::cli::sub {
 
             wolv::io::fs::createDirectories(outputFilePath.parent_path());
             wolv::io::File outputFile(outputFilePath, wolv::io::File::Mode::Create);
-            outputFile.write(documentation);
+            outputFile.writeString(documentation);
         });
     }
 

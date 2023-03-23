@@ -81,7 +81,7 @@ namespace pl::lib::libstd::file {
                 if (!openFiles.contains(file))
                     throwInvalidFileError();
 
-                auto buffer = openFiles[file].readBytes(size);
+                auto buffer = openFiles[file].readVector(size);
 
                 return std::string(buffer.begin(), buffer.end());
             });
@@ -94,7 +94,7 @@ namespace pl::lib::libstd::file {
                 if (!openFiles.contains(file))
                     throwInvalidFileError();
 
-                openFiles[file].write(data);
+                openFiles[file].writeString(data);
 
                 return std::nullopt;
             });
