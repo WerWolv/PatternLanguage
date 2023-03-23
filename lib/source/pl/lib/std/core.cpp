@@ -61,7 +61,7 @@ namespace pl::lib::libstd::core {
             });
 
             /* set_display_name(pattern, name) */
-            runtime.addFunction(nsStdCore, "set_dislpay_name", FunctionParameterCount::exactly(2), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
+            runtime.addFunction(nsStdCore, "set_display_name", FunctionParameterCount::exactly(2), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 auto pattern = params[0].toPattern();
                 auto name = params[1].toString(false);
 
