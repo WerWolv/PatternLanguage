@@ -117,7 +117,7 @@ namespace pl::cli::sub {
                 std::exit(EXIT_FAILURE);
             }
 
-            outputFile.writeString(result);
+            outputFile.writeVector(result);
         });
     }
 
