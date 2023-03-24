@@ -9,7 +9,7 @@ namespace pl::gen::fmt {
         void visit(pl::ptrn::PatternArrayDynamic& pattern)  override { formatArray(&pattern);       }
         void visit(pl::ptrn::PatternArrayStatic& pattern)   override { formatArray(&pattern);       }
         void visit(pl::ptrn::PatternBitfieldField& pattern) override { formatValue(&pattern);       }
-        void visit(pl::ptrn::PatternBitfieldArray& pattern) override { formatArray(&pattern);      }
+        void visit(pl::ptrn::PatternBitfieldArray& pattern) override { formatArray(&pattern);       }
         void visit(pl::ptrn::PatternBitfield& pattern)      override { formatObject(&pattern);      }
         void visit(pl::ptrn::PatternBoolean& pattern)       override { formatValue(&pattern);       }
         void visit(pl::ptrn::PatternCharacter& pattern)     override { formatString(&pattern);      }

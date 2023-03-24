@@ -3,7 +3,6 @@
 #include <codecvt>
 
 #include <fmt/format.h>
-#include <pl/core/evaluator.hpp>
 
 namespace pl::hlp {
 

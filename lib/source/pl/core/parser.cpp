@@ -742,7 +742,7 @@ namespace pl::core {
     /* Control flow */
 
     // if ((parseMathematicalExpression)) { (parseMember) }
-    std::unique_ptr<ast::ASTNode> Parser::parseConditional(std::function<std::unique_ptr<ast::ASTNode>()> const& memberParser) {
+    std::unique_ptr<ast::ASTNode> Parser::parseConditional(const std::function<std::unique_ptr<ast::ASTNode>()> &memberParser) {
         if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
             err::P0002.throwError(fmt::format("Expected '(' after 'if', got {}.", getFormattedToken(0)), {}, 1);
 
@@ -842,7 +842,7 @@ namespace pl::core {
     }
 
     // match ((parseParameters)) { (parseParameters { (parseMember) })*, default { (parseMember) } }
-    std::unique_ptr<ast::ASTNode> Parser::parseMatchStatement(std::function<std::unique_ptr<ast::ASTNode>()> const& memberParser) {
+    std::unique_ptr<ast::ASTNode> Parser::parseMatchStatement(const std::function<std::unique_ptr<ast::ASTNode>()> &memberParser) {
         if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
             err::P0002.throwError(fmt::format("Expected '(' after 'match', got {}.", getFormattedToken(0)), {}, 1);
 
