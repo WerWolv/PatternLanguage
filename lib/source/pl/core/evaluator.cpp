@@ -169,8 +169,8 @@ namespace pl::core {
                 pattern->setOffset(heapAddress << 32);
                 this->getHeap()[heapAddress].resize(pattern->getSize());
             } else if (sectionId == ptrn::Pattern::PatternLocalSectionId) {
-                pattern->setSection(sectionId);
                 pattern->setOffset(u64(patternLocalAddress) << 32);
+                pattern->setSection(sectionId);
                 this->m_patternLocalStorage[patternLocalAddress].data.resize(pattern->getSize());
             }
         }
