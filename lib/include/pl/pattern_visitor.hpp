@@ -8,6 +8,7 @@ namespace pl {
         class PatternArrayStatic;
         class PatternBitfield;
         class PatternBitfieldField;
+        class PatternBitfieldArray;
         class PatternBoolean;
         class PatternCharacter;
         class PatternEnum;
@@ -31,6 +32,7 @@ namespace pl {
         virtual void visit(ptrn::PatternArrayStatic& pattern) = 0;
         virtual void visit(ptrn::PatternBitfield& pattern) = 0;
         virtual void visit(ptrn::PatternBitfieldField& pattern) = 0;
+        virtual void visit(ptrn::PatternBitfieldArray& pattern) = 0;
         virtual void visit(ptrn::PatternBoolean& pattern) = 0;
         virtual void visit(ptrn::PatternCharacter& pattern) = 0;
         virtual void visit(ptrn::PatternEnum& pattern) = 0;
