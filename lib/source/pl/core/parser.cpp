@@ -549,10 +549,10 @@ namespace pl::core {
         else if (MATCHES(oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue)))
             statement = parseFunctionControlFlowStatement();
         else if (MATCHES(sequence(tkn::Keyword::If))) {
-            statement      = parseFunctionConditional();
+            statement      = parseConditional([&]() { return parseFunctionStatement(); });
             needsSemicolon = false;
         } else if (MATCHES(sequence(tkn::Keyword::Match))) {
-            statement      = parseFunctionMatch();
+            statement      = parseMatchStatement([&]() { return parseFunctionStatement(); });
             needsSemicolon = false;
         } else if (MATCHES(sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis))) {
             statement      = parseFunctionWhileLoop();
@@ -631,70 +631,18 @@ namespace pl::core {
             err::P0002.throwError("Return value can only be passed to a 'return' statement.", {}, 1);
     }
 
-    std::vector<std::unique_ptr<ast::ASTNode>> Parser::parseStatementBody() {
+    std::vector<std::unique_ptr<ast::ASTNode>> Parser::parseStatementBody(const std::function<std::unique_ptr<ast::ASTNode>()> &memberParser) {
         std::vector<std::unique_ptr<ast::ASTNode>> body;
 
         if (MATCHES(sequence(tkn::Separator::LeftBrace))) {
             while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
-                body.push_back(parseFunctionStatement());
+                body.push_back(memberParser());
             }
         } else {
-            body.push_back(parseFunctionStatement());
+            body.push_back(memberParser());
         }
 
         return body;
-    }
-
-    std::unique_ptr<ast::ASTNode> Parser::parseFunctionConditional() {
-        if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
-            err::P0002.throwError(fmt::format("Expected '(' after 'if', got {}.", getFormattedToken(0)), {}, 1);
-
-        auto condition = parseMathematicalExpression();
-        std::vector<std::unique_ptr<ast::ASTNode>> trueBody, falseBody;
-
-        if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
-            err::P0002.throwError(fmt::format("Expected ')' at end of if head, got {}.", getFormattedToken(0)), {}, 1);
-
-        trueBody = parseStatementBody();
-
-        if (MATCHES(sequence(tkn::Keyword::Else)))
-            falseBody = parseStatementBody();
-
-        return create<ast::ASTNodeConditionalStatement>(std::move(condition), std::move(trueBody), std::move(falseBody));
-    }
-
-    std::unique_ptr<ast::ASTNode> Parser::parseFunctionMatch() {
-        if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
-            err::P0002.throwError(fmt::format("Expected '(' after 'match', got {}.", getFormattedToken(0)), {}, 1);
-
-        auto condition = parseParameters();
-
-        if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
-            err::P0002.throwError(fmt::format("Expected '{{' after match head, got {}.", getFormattedToken(0)), {}, 1);
-
-        std::vector<ast::MatchCase> cases;
-        std::optional<ast::MatchCase> defaultCase;
-
-        while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
-            if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
-                err::P0002.throwError(fmt::format("Expected '(', got {}.", getFormattedToken(0)), {}, 1);
-
-            auto [caseCondition, isDefault] = parseCaseParameters(condition);
-            if (!MATCHES(sequence(tkn::Operator::Colon)))
-                err::P0002.throwError(fmt::format("Expected ':', got {}.", getFormattedToken(0)), {}, 1);
-
-            auto body = parseStatementBody();
-
-            if (isDefault)
-                defaultCase = ast::MatchCase(std::move(caseCondition), std::move(body));
-            else
-                cases.emplace_back(std::move(caseCondition), std::move(body));
-
-            if (MATCHES(sequence(tkn::Separator::RightBrace)))
-                break;
-        }
-
-        return create<ast::ASTNodeMatchStatement>(std::move(cases), std::move(defaultCase));
     }
 
     std::unique_ptr<ast::ASTNode> Parser::parseFunctionWhileLoop() {
@@ -704,7 +652,7 @@ namespace pl::core {
         if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
             err::P0002.throwError(fmt::format("Expected ')' at end of while head, got {}.", getFormattedToken(0)), {}, 1);
 
-        body = parseStatementBody();
+        body = parseStatementBody([&]() { return parseFunctionStatement(); });
 
         return create<ast::ASTNodeWhileStatement>(std::move(condition), std::move(body));
     }
@@ -728,7 +676,7 @@ namespace pl::core {
         if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
             err::P0002.throwError(fmt::format("Expected ')' at end of for loop head, got {}.", getFormattedToken(0)), {}, 1);
 
-        body = parseStatementBody();
+        body = parseStatementBody([&]() { return parseFunctionStatement(); });
 
         std::vector<std::unique_ptr<ast::ASTNode>> compoundStatement;
         {
@@ -747,24 +695,15 @@ namespace pl::core {
             err::P0002.throwError(fmt::format("Expected '(' after 'if', got {}.", getFormattedToken(0)), {}, 1);
 
         auto condition = parseMathematicalExpression();
-        std::vector<std::unique_ptr<ast::ASTNode>> trueBody, falseBody;
 
-        if (MATCHES(sequence(tkn::Separator::RightParenthesis, tkn::Separator::LeftBrace))) {
-            while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
-                trueBody.push_back(memberParser());
-            }
-        } else if (MATCHES(sequence(tkn::Separator::RightParenthesis))) {
-            trueBody.push_back(memberParser());
-        } else
+        if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
             err::P0002.throwError(fmt::format("Expected ')' after if head, got {}.", getFormattedToken(0)), {}, 1);
 
-        if (MATCHES(sequence(tkn::Keyword::Else, tkn::Separator::LeftBrace))) {
-            while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
-                falseBody.push_back(memberParser());
-            }
-        } else if (MATCHES(sequence(tkn::Keyword::Else))) {
-            falseBody.push_back(memberParser());
-        }
+        auto trueBody = parseStatementBody(memberParser);
+
+        std::vector<std::unique_ptr<ast::ASTNode>> falseBody;
+        if (MATCHES(sequence(tkn::Keyword::Else)))
+            falseBody = parseStatementBody(memberParser);
 
         return create<ast::ASTNodeConditionalStatement>(std::move(condition), std::move(trueBody), std::move(falseBody));
     }
@@ -859,16 +798,11 @@ namespace pl::core {
                 err::P0002.throwError(fmt::format("Expected '(', got {}.", getFormattedToken(0)), {}, 1);
 
             auto [caseCondition, isDefault] = parseCaseParameters(condition);
-            std::vector<std::unique_ptr<ast::ASTNode>> body;
 
-            if (MATCHES(sequence(tkn::Operator::Colon, tkn::Separator::LeftBrace))) {
-                while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
-                    body.push_back(memberParser());
-                }
-            } else if (MATCHES(sequence(tkn::Operator::Colon))) {
-                body.push_back(memberParser());
-            } else
+            if (!MATCHES(sequence(tkn::Operator::Colon)))
                 err::P0002.throwError(fmt::format("Expected ':' after case condition, got {}.", getFormattedToken(0)), {}, 1);
+
+            auto body = parseStatementBody(memberParser);
 
             if (isDefault)
                 defaultCase = ast::MatchCase(std::move(caseCondition), std::move(body));
