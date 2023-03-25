@@ -708,36 +708,34 @@ namespace pl::core {
         return create<ast::ASTNodeConditionalStatement>(std::move(condition), std::move(trueBody), std::move(falseBody));
     }
 
-    std::pair<std::unique_ptr<ast::ASTNode>, bool> Parser::parseCaseParameters(std::vector<std::unique_ptr<ast::ASTNode>> &condition) {
-        std::vector<std::unique_ptr<ast::ASTNode>> compiledConditions;
+    std::pair<std::unique_ptr<ast::ASTNode>, bool> Parser::parseCaseParameters(std::vector<std::unique_ptr<ast::ASTNode>> &matchParameters) {
+        std::unique_ptr<pl::core::ast::ASTNode> condition = nullptr;
 
         size_t caseIndex = 0;
         bool isDefault = true;
         while (!MATCHES(sequence(tkn::Separator::RightParenthesis))) {
-            if (caseIndex > condition.size() - 1) {
+            if (caseIndex >= matchParameters.size()) {
                 err::P0002.throwError("Size of case parameters bigger than size of match condition.", {}, 1);
             }
+
+            std::unique_ptr<pl::core::ast::ASTNode> currentCondition = nullptr;
             if (MATCHES(sequence(tkn::Keyword::Underscore))) {
                 // if '_' is found, act as wildcard, push literal(true)
-                compiledConditions.push_back(std::make_unique<ast::ASTNodeLiteral>(true));
+                currentCondition = std::make_unique<ast::ASTNodeLiteral>(true);
             } else {
                 isDefault = false;
-                auto &param = condition[caseIndex];
+                auto &param = matchParameters[caseIndex];
                 auto first = parseMathematicalExpression(false, true);
                 if (peek(tkn::Operator::BitOr)) {
                     // check for multiple options
                     // a | b | c should compile to
                     // param == a || param == b || param == c
-                    std::vector<std::unique_ptr<ast::ASTNode>> options;
-                    while (MATCHES(sequence(tkn::Operator::BitOr))) {
-                        options.push_back(parseMathematicalExpression(false, true));
-                    }
                     auto cond = create<ast::ASTNodeMathematicalExpression>(param->clone(), std::move(first), Token::Operator::BoolEqual);
-                    for (auto &option : options) {
-                        auto eq = create<ast::ASTNodeMathematicalExpression>(param->clone(), std::move(option), Token::Operator::BoolEqual);
+                    while (MATCHES(sequence(tkn::Operator::BitOr))) {
+                        auto eq = create<ast::ASTNodeMathematicalExpression>(param->clone(), parseMathematicalExpression(false, true), Token::Operator::BoolEqual);
                         cond = create<ast::ASTNodeMathematicalExpression>(std::move(cond), std::move(eq), Token::Operator::BoolOr);
                     }
-                    compiledConditions.push_back(std::move(cond));
+                    currentCondition = std::move(cond);
                 } else if (MATCHES(sequence(tkn::Separator::Dot, tkn::Separator::Dot, tkn::Separator::Dot))) {
                     // range a ... b should compile to
                     // param >= a && param <= b
@@ -745,12 +743,19 @@ namespace pl::core {
                     auto cond = create<ast::ASTNodeMathematicalExpression>(param->clone(), std::move(first), Token::Operator::BoolGreaterThanOrEqual);
                     auto cond2 = create<ast::ASTNodeMathematicalExpression>(param->clone(), std::move(last), Token::Operator::BoolLessThanOrEqual);
                     cond = create<ast::ASTNodeMathematicalExpression>(std::move(cond), std::move(cond2), Token::Operator::BoolAnd);
-                    compiledConditions.push_back(std::move(cond));
+                    currentCondition = std::move(cond);
                 } else {
                     // else just compile to param == a
                     auto cond = create<ast::ASTNodeMathematicalExpression>(param->clone(), std::move(first), Token::Operator::BoolEqual);
-                    compiledConditions.push_back(std::move(cond));
+                    currentCondition = std::move(cond);
                 }
+            }
+
+            if (condition == nullptr) {
+                condition = std::move(currentCondition);
+            } else {
+                condition = create<ast::ASTNodeMathematicalExpression>(
+                        std::move(condition), std::move(currentCondition), Token::Operator::BoolAnd);
             }
 
             caseIndex++;
@@ -762,22 +767,11 @@ namespace pl::core {
                 err::P0002.throwError(fmt::format("Expected ',' in-between parameters, got {}.", getFormattedToken(0)), {}, 1);
         }
 
-        if (compiledConditions.empty()) {
-            err::P0002.throwError("No parameters found in case statement.", {}, 1);
-        }
-
-        if (caseIndex != condition.size()) {
+        if (caseIndex != matchParameters.size()) {
             err::P0002.throwError("Size of case parameters smaller than size of match condition.", {}, 1);
         }
 
-        // make multi expressions into single expression
-        auto cond = std::move(compiledConditions[0]);
-        for (size_t condIndex = 1; condIndex < compiledConditions.size(); condIndex++) {
-            cond = create<ast::ASTNodeMathematicalExpression>(
-                    std::move(cond), std::move(compiledConditions[condIndex]), Token::Operator::BoolAnd);
-        }
-
-        return {std::move(cond), isDefault};
+        return {std::move(condition), isDefault};
     }
 
     // match ((parseParameters)) { (parseParameters { (parseMember) })*, default { (parseMember) } }
