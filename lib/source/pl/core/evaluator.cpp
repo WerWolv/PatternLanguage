@@ -591,13 +591,13 @@ namespace pl::core {
         this->m_sectionId = 1;
         this->m_outVariables.clear();
 
+        this->m_customFunctions.clear();
+        this->m_patterns.clear();
+
         this->m_scopes.clear();
         this->m_heap.clear();
         this->m_patternLocalStorage.clear();
         this->m_templateParameters.clear();
-
-        this->m_customFunctions.clear();
-        this->m_patterns.clear();
 
         this->m_mainResult.reset();
         this->m_colorIndex = 0;
@@ -779,6 +779,8 @@ namespace pl::core {
                 auto &[key, data] = *it;
 
                 data.referenceCount++;
+            } else {
+                err::E0001.throwError(fmt::format("Attempted to add a reference to deleted variable named '{}'.", pattern->getVariableName()));
             }
         }
     }
@@ -793,6 +795,8 @@ namespace pl::core {
                 data.referenceCount--;
                 if (data.referenceCount == 0)
                     this->m_patternLocalStorage.erase(it);
+            } else {
+                err::E0001.throwError(fmt::format("Double free of variable named '{}'.", pattern->getVariableName()));
             }
         }
     }
