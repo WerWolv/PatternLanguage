@@ -771,6 +771,14 @@ namespace pl::core {
             err::P0002.throwError("Size of case parameters smaller than size of match condition.", {}, 1);
         }
 
+        if (MATCHES(sequence(tkn::Keyword::If, tkn::Separator::LeftParenthesis))) {
+            auto extraCondition = parseMathematicalExpression();
+            condition = create<ast::ASTNodeMathematicalExpression>(
+                    std::move(condition), std::move(extraCondition), Token::Operator::BoolAnd);
+            if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
+                err::P0002.throwError(fmt::format("Expected ')' at end of 'if' statement, got {}.", getFormattedToken(0)), {}, 1);
+        }
+
         return {std::move(condition), isDefault};
     }
 
