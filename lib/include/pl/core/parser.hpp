@@ -173,6 +173,8 @@ namespace pl::core {
         std::vector<std::shared_ptr<ast::ASTNode>> parseNamespace();
         std::vector<std::shared_ptr<ast::ASTNode>> parseStatements();
 
+        std::optional<Token::DocComment> parseDocComment(bool global);
+
         std::shared_ptr<ast::ASTNodeTypeDecl> addType(const std::string &name, std::unique_ptr<ast::ASTNode> &&node, std::optional<std::endian> endian = std::nullopt);
 
         std::vector<std::shared_ptr<ast::ASTNode>> parseTillToken(const Token &endToken) {
@@ -328,66 +330,19 @@ namespace pl::core {
         bool peek(const Token &token, i32 index = 0) {
             if (index >= 0) {
                 while (this->m_curr->type == Token::Type::DocComment) {
-                    if (auto docComment = getDocComment(true); docComment.has_value())
+                    if (auto docComment = parseDocComment(true); docComment.has_value())
                         this->addGlobalDocComment(docComment->comment);
                     this->m_curr++;
                 }
             } else {
                 while (this->m_curr->type == Token::Type::DocComment) {
-                    if (auto docComment = getDocComment(true); docComment.has_value())
+                    if (auto docComment = parseDocComment(true); docComment.has_value())
                         this->addGlobalDocComment(docComment->comment);
                     this->m_curr--;
                 }
             }
 
             return this->m_curr[index].type == token.type && this->m_curr[index] == token.value;
-        }
-
-        std::optional<Token::DocComment> getDocComment(bool global) {
-            auto token = this->m_curr;
-
-            auto commentProcessGuard = SCOPE_GUARD {
-                this->m_processedDocComments.push_back(token);
-            };
-
-            if (token != this->m_startToken)
-                token--;
-
-            while (true) {
-                if (token->type == Token::Type::DocComment) {
-                    if (std::find(this->m_processedDocComments.begin(), this->m_processedDocComments.end(), token) != this->m_processedDocComments.end())
-                        return std::nullopt;
-
-                    auto content = std::get<Token::DocComment>(token->value);
-                    if (content.global != global)
-                        return std::nullopt;
-
-                    auto trimmed = wolv::util::trim(content.comment);
-                    if (trimmed.starts_with("DOCS IGNORE ON")) {
-                        this->m_ignoreDocsCount += 1;
-                        return std::nullopt;
-                    } else if (trimmed.starts_with("DOCS IGNORE OFF")) {
-                        if (this->m_ignoreDocsCount == 0)
-                            err::P0002.throwError("Unmatched DOCS IGNORE OFF without previous DOCS IGNORE ON", "", 0);
-                        this->m_ignoreDocsCount -= 1;
-                        return std::nullopt;
-                    }
-
-                    if (this->m_ignoreDocsCount > 0)
-                        return std::nullopt;
-                    else
-                        return content;
-                }
-
-                if (token > this->m_startToken)
-                    token--;
-                else
-                    break;
-            }
-
-            commentProcessGuard.release();
-
-            return std::nullopt;
         }
     };
 

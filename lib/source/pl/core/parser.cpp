@@ -196,7 +196,7 @@ namespace pl::core {
                     auto type = getCustomType(parseNamespaceResolution());
                     if (type != nullptr) {
                         parseCustomTypeParameters(type);
-                        result = create<ast::ASTNodeTypeOperator>(op, move(type));
+                        result = create<ast::ASTNodeTypeOperator>(op, std::move(type));
                     }
                 }
 
@@ -923,13 +923,13 @@ namespace pl::core {
                         err::P0002.throwError(fmt::format("Provided more template parameters than expected. Type only has {} parameters", templateTypes.size()), {}, 1);
 
                     auto parameter = templateTypes[index];
-                    if (auto type = dynamic_cast<ast::ASTNodeTypeDecl*>(parameter.get()); type != nullptr) {
+                    if (auto typeDecl = dynamic_cast<ast::ASTNodeTypeDecl*>(parameter.get()); typeDecl != nullptr) {
                         auto newType = parseType();
                         if (newType->isForwardDeclared())
                             err::P0002.throwError("Cannot use forward declared type as template parameter.", {}, 1);
 
-                        type->setType(std::move(newType), true);
-                        type->setName("");
+                        typeDecl->setType(std::move(newType), true);
+                        typeDecl->setName("");
                     } else if (auto value = dynamic_cast<ast::ASTNodeLValueAssignment*>(parameter.get()); value != nullptr) {
                         value->setRValue(parseMathematicalExpression(true));
                     } else
@@ -1642,7 +1642,7 @@ namespace pl::core {
         std::shared_ptr<ast::ASTNode> statement;
         bool requiresSemicolon = true;
 
-        if (auto docComment = getDocComment(true); docComment.has_value())
+        if (auto docComment = parseDocComment(true); docComment.has_value())
             this->addGlobalDocComment(docComment->comment);
 
         if (MATCHES(sequence(tkn::Keyword::Using, tkn::Literal::Identifier) && (peek(tkn::Operator::Assign) || peek(tkn::Operator::BoolLessThan))))
@@ -1687,17 +1687,17 @@ namespace pl::core {
         if (requiresSemicolon && !MATCHES(sequence(tkn::Separator::Semicolon)))
             err::P0002.throwError(fmt::format("Expected ';' at end of statement, got {}.", getFormattedToken(0)), {}, 1);
 
+        if (auto docComment = parseDocComment(false); docComment.has_value()) {
+            statement->setDocComment(docComment->comment);
+        }
+        statement->setShouldDocument(this->m_ignoreDocsCount == 0);
+
         // Consume superfluous semicolons
         while (MATCHES(sequence(tkn::Separator::Semicolon)))
             ;
 
         if (!statement)
             return { };
-
-        if (auto docComment = getDocComment(false); docComment.has_value()) {
-            statement->setDocComment(docComment->comment);
-        }
-        statement->setShouldDocument(this->m_ignoreDocsCount == 0);
 
         return hlp::moveToVector(std::move(statement));
     }
@@ -1718,6 +1718,54 @@ namespace pl::core {
 
             return typeDecl;
         }
+    }
+
+    std::optional<Token::DocComment> Parser::parseDocComment(bool global) {
+        auto token = this->m_curr;
+
+        auto commentProcessGuard = SCOPE_GUARD {
+            if (global)
+                this->m_processedDocComments.push_back(token);
+        };
+
+        if (token > this->m_startToken)
+            token--;
+
+        while (true) {
+            if (token->type == Token::Type::DocComment) {
+                if (std::find(this->m_processedDocComments.begin(), this->m_processedDocComments.end(), token) != this->m_processedDocComments.end())
+                    return std::nullopt;
+
+                auto content = std::get<Token::DocComment>(token->value);
+                if (content.global != global)
+                    return std::nullopt;
+
+                auto trimmed = wolv::util::trim(content.comment);
+                if (trimmed.starts_with("DOCS IGNORE ON")) {
+                    this->m_ignoreDocsCount += 1;
+                    return std::nullopt;
+                } else if (trimmed.starts_with("DOCS IGNORE OFF")) {
+                    if (this->m_ignoreDocsCount == 0)
+                        err::P0002.throwError("Unmatched DOCS IGNORE OFF without previous DOCS IGNORE ON", "", 0);
+                    this->m_ignoreDocsCount -= 1;
+                    return std::nullopt;
+                }
+
+                if (this->m_ignoreDocsCount > 0)
+                    return std::nullopt;
+                else
+                    return content;
+            }
+
+            if (token > this->m_startToken)
+                token--;
+            else
+                break;
+        }
+
+        commentProcessGuard.release();
+
+        return std::nullopt;
     }
 
     // <(parseNamespace)...> EndOfProgram

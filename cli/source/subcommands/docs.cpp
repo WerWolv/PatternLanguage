@@ -24,9 +24,9 @@ namespace pl::cli::sub {
             if (!endian.has_value())
                 return "";
             else if (endian == std::endian::little)
-                return "le";
+                return "le ";
             else if (endian == std::endian::big)
-                return "be";
+                return "be ";
             else
                 return "";
         }
@@ -36,9 +36,9 @@ namespace pl::cli::sub {
                 return core::Token::getTypeName(builtinType->getType());
             else if (auto typeDecl = dynamic_cast<const core::ast::ASTNodeTypeDecl*>(type)) {
                 if (typeDecl->getName().empty())
-                    return getTypeEndian(typeDecl) + " " + getTypeName(typeDecl->getType().get());
+                    return getTypeEndian(typeDecl) + getTypeName(typeDecl->getType().get());
                 else
-                    return getTypeEndian(typeDecl) + " " + typeDecl->getName();
+                    return getTypeEndian(typeDecl) + typeDecl->getName();
             } else {
                 return "???";
             }
@@ -275,7 +275,7 @@ namespace pl::cli::sub {
                                 sectionContent.pop_back();
                             }
 
-                            sectionContent += ");\n```\n";
+                            sectionContent += ");\n```\n\n";
                         }
 
                         skip_function:;
