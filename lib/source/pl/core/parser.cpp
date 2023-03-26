@@ -1445,7 +1445,7 @@ namespace pl::core {
         auto bitfieldNode = static_cast<ast::ASTNodeBitfield *>(typeDecl->getType().get());
 
         if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
-            err::P0002.throwError(fmt::format("Expected '{{' after bitfield declaration, got {}.", getFormattedToken(0)), {}, 1);
+            err::P0002.throwError(fmt::format("Expected '{{' after bitfield declaration, got {}.", getFormattedToken(0)), {}, 0);
 
         while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
             bitfieldNode->addEntry(this->parseBitfieldEntry());
