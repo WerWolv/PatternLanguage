@@ -725,30 +725,30 @@ namespace pl::core {
             } else {
                 isDefault = false;
                 auto &param = matchParameters[caseIndex];
-                auto first = parseMathematicalExpression(false, true);
-                if (peek(tkn::Operator::BitOr)) {
-                    // check for multiple options
-                    // a | b | c should compile to
-                    // param == a || param == b || param == c
-                    auto cond = create<ast::ASTNodeMathematicalExpression>(param->clone(), std::move(first), Token::Operator::BoolEqual);
-                    while (MATCHES(sequence(tkn::Operator::BitOr))) {
-                        auto eq = create<ast::ASTNodeMathematicalExpression>(param->clone(), parseMathematicalExpression(false, true), Token::Operator::BoolEqual);
-                        cond = create<ast::ASTNodeMathematicalExpression>(std::move(cond), std::move(eq), Token::Operator::BoolOr);
+
+                do {
+                    auto first = parseMathematicalExpression(false, true);
+                    auto nextCondition = [&]() {
+                        if (MATCHES(sequence(tkn::Separator::Dot, tkn::Separator::Dot, tkn::Separator::Dot))) {
+                            // range a ... b should compile to
+                            // param >= a && param <= b
+                            auto last = parseMathematicalExpression(false, true);
+                            auto firstCondition = create<ast::ASTNodeMathematicalExpression>(param->clone(), std::move(first), Token::Operator::BoolGreaterThanOrEqual);
+                            auto lastCondition = create<ast::ASTNodeMathematicalExpression>(param->clone(), std::move(last), Token::Operator::BoolLessThanOrEqual);
+                            return create<ast::ASTNodeMathematicalExpression>(std::move(firstCondition), std::move(lastCondition), Token::Operator::BoolAnd);
+                        } else {
+                            // else just compile to param == a
+                            return create<ast::ASTNodeMathematicalExpression>(param->clone(), std::move(first), Token::Operator::BoolEqual);
+                        }
+                    }();
+
+                    if (currentCondition == nullptr) {
+                        currentCondition = std::move(nextCondition);
+                    } else {
+                        // we've matched a previous |, add a
+                        currentCondition = create<ast::ASTNodeMathematicalExpression>(std::move(currentCondition), std::move(nextCondition), Token::Operator::BoolOr);
                     }
-                    currentCondition = std::move(cond);
-                } else if (MATCHES(sequence(tkn::Separator::Dot, tkn::Separator::Dot, tkn::Separator::Dot))) {
-                    // range a ... b should compile to
-                    // param >= a && param <= b
-                    auto last = parseMathematicalExpression();
-                    auto cond = create<ast::ASTNodeMathematicalExpression>(param->clone(), std::move(first), Token::Operator::BoolGreaterThanOrEqual);
-                    auto cond2 = create<ast::ASTNodeMathematicalExpression>(param->clone(), std::move(last), Token::Operator::BoolLessThanOrEqual);
-                    cond = create<ast::ASTNodeMathematicalExpression>(std::move(cond), std::move(cond2), Token::Operator::BoolAnd);
-                    currentCondition = std::move(cond);
-                } else {
-                    // else just compile to param == a
-                    auto cond = create<ast::ASTNodeMathematicalExpression>(param->clone(), std::move(first), Token::Operator::BoolEqual);
-                    currentCondition = std::move(cond);
-                }
+                } while (MATCHES(sequence(tkn::Operator::BitOr)));
             }
 
             if (condition == nullptr) {
