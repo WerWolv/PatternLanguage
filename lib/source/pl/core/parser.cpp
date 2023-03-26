@@ -1687,6 +1687,9 @@ namespace pl::core {
         if (requiresSemicolon && !MATCHES(sequence(tkn::Separator::Semicolon)))
             err::P0002.throwError(fmt::format("Expected ';' at end of statement, got {}.", getFormattedToken(0)), {}, 1);
 
+        if (statement == nullptr)
+            return { };
+
         if (auto docComment = parseDocComment(false); docComment.has_value()) {
             statement->setDocComment(docComment->comment);
         }
@@ -1695,9 +1698,6 @@ namespace pl::core {
         // Consume superfluous semicolons
         while (MATCHES(sequence(tkn::Separator::Semicolon)))
             ;
-
-        if (!statement)
-            return { };
 
         return hlp::moveToVector(std::move(statement));
     }
