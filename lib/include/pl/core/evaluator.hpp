@@ -43,11 +43,6 @@ namespace pl::core {
         Return
     };
 
-    enum class BitfieldOrder {
-        RightToLeft,
-        LeftToRight
-    };
-
     class Evaluator {
     public:
         Evaluator() = default;
@@ -214,19 +209,15 @@ namespace pl::core {
             return this->m_loopLimit;
         }
 
-        void setBitfieldOrder(std::optional<BitfieldOrder> order) {
-            this->m_bitfieldOrder = order;
-        }
-
-        [[nodiscard]] std::optional<BitfieldOrder> getBitfieldOrder() {
-            return this->m_bitfieldOrder;
-        }
-
         u64 &dataOffset() { return this->m_currOffset; }
 
-        u8 getBitfieldBitOffset() { return this->m_bitfieldBitOffset; }
+        void setBitfieldReversed(bool reversed) { this->m_bitfieldIsReversed = reversed; }
 
-        void addToBitfieldBitOffset(u128 bitSize) {
+        [[nodiscard]] bool isBitfieldReversed() const { return this->m_bitfieldIsReversed; }
+
+        u8 getBitfieldBitOffset() const { return this->m_bitfieldBitOffset; }
+
+        void incrementBitfieldBitOffset(i128 bitSize) {
             this->dataOffset() += bitSize >> 3;
             this->m_bitfieldBitOffset += bitSize & 0x7;
 
@@ -432,8 +423,8 @@ namespace pl::core {
         std::function<void()> m_breakpointHitCallback = []{ };
         std::atomic<DangerousFunctionPermission> m_allowDangerousFunctions = DangerousFunctionPermission::Ask;
         ControlFlowStatement m_currControlFlowStatement = ControlFlowStatement::None;
-        std::optional<BitfieldOrder> m_bitfieldOrder;
-        u8 m_bitfieldBitOffset = 0;
+        bool m_bitfieldIsReversed = false;
+        i8 m_bitfieldBitOffset = 0;
 
         std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;
 

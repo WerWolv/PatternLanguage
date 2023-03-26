@@ -35,10 +35,21 @@ namespace pl::ptrn {
 
         [[nodiscard]] virtual bool isPadding() const { return false; }
 
+        [[nodiscard]] virtual bool isReversed() const { return false; }
+
+        virtual void setReversed(bool reversed) { wolv::util::unused(reversed); }
+
         [[nodiscard]] u64 getOffsetForSorting() const override {
             // If this member has no parent, that means we are sorting in a byte-based context.
-            if (this->getParentBitfield() == nullptr)
+            auto *parent = this->getParentBitfield();
+            if (parent == nullptr)
                 return getOffset();
+
+            if (parent->isReversed()) {
+                auto parentOffset = parent->getTotalBitOffset();
+                auto parentSize = parent->getBitSize();
+                return parentOffset + parentSize - ((this->getTotalBitOffset() - parentOffset) + this->getBitSize());
+            }
 
             return this->getTotalBitOffset();
         }
@@ -180,6 +191,14 @@ namespace pl::ptrn {
 
         [[nodiscard]] u64 getBitSize() const override {
             return this->m_totalBitSize;
+        }
+
+        [[nodiscard]] bool isReversed() const override {
+            return this->m_reversed;
+        }
+
+        void setReversed(bool reversed) override {
+            this->m_reversed = reversed;
         }
 
         void setColor(u32 color) override {
@@ -363,6 +382,7 @@ namespace pl::ptrn {
         u8 m_firstBitOffset = 0;
         u128 m_totalBitSize = 0;
         PatternBitfieldMember *m_parentBitfield = nullptr;
+        bool m_reversed = false;
     };
 
     class PatternBitfield : public PatternBitfieldMember,
@@ -408,6 +428,14 @@ namespace pl::ptrn {
 
         [[nodiscard]] u64 getBitSize() const override {
             return this->m_totalBitSize;
+        }
+
+        [[nodiscard]] bool isReversed() const override {
+            return this->m_reversed;
+        }
+
+        void setReversed(bool reversed) override {
+            this->m_reversed = reversed;
         }
 
         void setSection(u64 id) override {
@@ -589,6 +617,7 @@ namespace pl::ptrn {
         PatternBitfieldMember *m_parentBitfield = nullptr;
         u8 m_firstBitOffset = 0;
         u64 m_totalBitSize = 0;
+        bool m_reversed = false;
     };
 
 }

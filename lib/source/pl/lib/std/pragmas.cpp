@@ -2,6 +2,7 @@
 
 #include <pl/core/validator.hpp>
 #include <pl/core/evaluator.hpp>
+#include <pl/core/errors/preprocessor_errors.hpp>
 
 using namespace pl;
 
@@ -70,16 +71,9 @@ namespace pl::lib::libstd {
             return true;
         });
 
-        runtime.addPragma("bitfield_order", [](pl::PatternLanguage &runtime, const std::string &value) {
-            if (value == "left_to_right") {
-                runtime.getInternals().evaluator->setBitfieldOrder(pl::core::BitfieldOrder::LeftToRight);
-                return true;
-            } else if (value == "right_to_left") {
-                runtime.getInternals().evaluator->setBitfieldOrder(pl::core::BitfieldOrder::RightToLeft);
-                return true;
-            } else {
-                return false;
-            }
+        runtime.addPragma("bitfield_order", [](pl::PatternLanguage &, const std::string &) -> bool {
+            core::err::M0006.throwError("Pragma 'bitfield_order' is unsupported.",
+                "Bitfield order can be overridden on a field declaration with the `be` or `le` keywords.");
         });
 
         runtime.addPragma("debug", [](pl::PatternLanguage &runtime, const std::string &value) {
