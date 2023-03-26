@@ -75,31 +75,31 @@ namespace pl::core::ast {
                     err::E0005.throwError(fmt::format("Cannot place variable '{}' at out of bounds address 0x{:08X}", this->m_name, evaluator->dataOffset()), { }, this);
             }
 
-            auto patterns = this->m_type->createPatterns(evaluator);
-            if (patterns.empty())
-                err::E0005.throwError("'auto' can only be used with parameters.", { }, this);
-
-            auto &pattern = patterns.front();
-            if (this->m_placementOffset != nullptr && dynamic_cast<ptrn::PatternString*>(pattern.get()) != nullptr)
-                err::E0005.throwError(fmt::format("Variables of type 'str' cannot be placed in memory.", this->m_name), { }, this);
-
-            pattern->setVariableName(this->m_name);
-
-            if (this->m_placementSection != nullptr)
-                pattern->setSection(evaluator->getSectionId());
-
-            applyVariableAttributes(evaluator, this, pattern);
-
-
-            if (this->m_placementOffset != nullptr && !evaluator->isGlobalScope()) {
-                evaluator->dataOffset() = startOffset;
-            }
-
             if (evaluator->getSectionId() == ptrn::Pattern::PatternLocalSectionId) {
                 evaluator->dataOffset() = startOffset;
                 this->execute(evaluator);
                 return { };
             } else {
+                auto patterns = this->m_type->createPatterns(evaluator);
+                if (patterns.empty())
+                    err::E0005.throwError("'auto' can only be used with parameters.", { }, this);
+
+                auto &pattern = patterns.front();
+                if (this->m_placementOffset != nullptr && dynamic_cast<ptrn::PatternString*>(pattern.get()) != nullptr)
+                    err::E0005.throwError(fmt::format("Variables of type 'str' cannot be placed in memory.", this->m_name), { }, this);
+
+                pattern->setVariableName(this->m_name);
+
+                if (this->m_placementSection != nullptr)
+                    pattern->setSection(evaluator->getSectionId());
+
+                applyVariableAttributes(evaluator, this, pattern);
+
+
+                if (this->m_placementOffset != nullptr && !evaluator->isGlobalScope()) {
+                    evaluator->dataOffset() = startOffset;
+                }
+
                 return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
             }
         }

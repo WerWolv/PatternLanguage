@@ -91,7 +91,13 @@ namespace pl::ptrn {
         [[nodiscard]] virtual u64 getOffsetForSorting() const { return this->getOffset(); }
         [[nodiscard]] u32 getHeapAddress() const { return this->getOffset() >> 32; }
         virtual void setOffset(u64 offset) {
-            this->m_offset = offset;
+            if (this->m_offset != offset) {
+                if (this->m_evaluator)
+                    this->m_evaluator->patternDestroyed(this);
+                this->m_offset = offset;
+                if (this->m_evaluator)
+                    this->m_evaluator->patternCreated(this);
+            }
         }
 
         [[nodiscard]] size_t getSize() const { return this->m_size; }
@@ -267,9 +273,9 @@ namespace pl::ptrn {
         virtual void setLocal(bool local) {
             if (local) {
                 this->setEndian(std::endian::native);
-                this->m_section = HeapSectionId;
+                this->setSection(HeapSectionId);
             } else {
-                this->m_section = MainSectionId;
+                this->setSection(MainSectionId);
             }
         }
 
@@ -290,7 +296,13 @@ namespace pl::ptrn {
         }
 
         virtual void setSection(u64 id) {
-            this->m_section = id;
+            if (this->m_section != id) {
+                if (this->m_evaluator)
+                    this->m_evaluator->patternDestroyed(this);
+                this->m_section = id;
+                if (this->m_evaluator)
+                    this->m_evaluator->patternCreated(this);
+            }
         }
 
         [[nodiscard]] u64 getSection() const {
