@@ -339,9 +339,9 @@ namespace pl::ptrn {
 
         virtual std::vector<u8> getBytesOf(const core::Token::Literal &value) const {
             auto bytes = value.toBytes();
+            bytes.resize(this->getSize());
             if (this->getEndian() == std::endian::big)
                 std::reverse(bytes.begin(), bytes.end());
-            bytes.resize(this->getSize());
 
             return bytes;
         }
