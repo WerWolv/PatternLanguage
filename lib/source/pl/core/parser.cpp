@@ -1301,9 +1301,12 @@ namespace pl::core {
             member = parseFunctionVariableAssignment(variableName);
         } else if (auto identifierOffset = parseCompoundAssignment(tkn::Literal::Identifier); identifierOffset.has_value())
             member = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(*identifierOffset).get());
-        else if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Operator::Colon))) {
+        else if (MATCHES(optional(tkn::Keyword::Unsigned) && sequence(tkn::Literal::Identifier, tkn::Operator::Colon))) {
             auto fieldName = getValue<Token::Identifier>(-2).get();
             member = create<ast::ASTNodeBitfieldField>(fieldName, parseMathematicalExpression());
+        } else if (MATCHES(sequence(tkn::Keyword::Signed, tkn::Literal::Identifier, tkn::Operator::Colon))) {
+            auto fieldName = getValue<Token::Identifier>(-2).get();
+            member = create<ast::ASTNodeBitfieldFieldSigned>(fieldName, parseMathematicalExpression());
         } else if (MATCHES(sequence(tkn::ValueType::Padding, tkn::Operator::Colon)))
             member = create<ast::ASTNodeBitfieldField>("$padding$", parseMathematicalExpression());
         else if (peek(tkn::Literal::Identifier) || peek(tkn::ValueType::Any)) {
@@ -1322,7 +1325,7 @@ namespace pl::core {
                     type = getCustomType(name);
 
                     if (type == nullptr)
-                        err::P0002.throwError(fmt::format("Expected a variable name followed by ':', a function call or a bitfield type name, got {}.", getFormattedToken(1)), {}, 1);
+                        err::P0002.throwError(fmt::format("Expected a variable name followed by ':', a function call or a bitfield type name, got '{}'.", name), {}, 1);
                     parseCustomTypeParameters(type);
 
                     ast::ASTNodeTypeDecl *topmostTypeDecl = type.get();

@@ -486,6 +486,10 @@ namespace pl::core {
                         addToken(tkn::Keyword::Enum);
                     else if (identifier == "bitfield")
                         addToken(tkn::Keyword::Bitfield);
+                    else if (identifier == "unsigned")
+                        addToken(tkn::Keyword::Unsigned);
+                    else if (identifier == "signed")
+                        addToken(tkn::Keyword::Signed);
                     else if (identifier == "be")
                         addToken(tkn::Keyword::BigEndian);
                     else if (identifier == "le")

@@ -201,6 +201,8 @@ namespace pl::core {
                                       case Enum: return "enum";
                                       case Match: return "match";
                                       case Bitfield: return "bitfield";
+                                      case Unsigned: return "unsigned";
+                                      case Signed: return "signed";
                                       case LittleEndian: return "le";
                                       case BigEndian: return "be";
                                       case If: return "if";

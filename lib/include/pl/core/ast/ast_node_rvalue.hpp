@@ -122,8 +122,10 @@ namespace pl::core::ast {
                 std::string value;
                 readVariable(evaluator, value, pattern);
                 literal = value;
+            } else if (auto bitfieldFieldPatternSigned = dynamic_cast<ptrn::PatternBitfieldFieldSigned *>(pattern); bitfieldFieldPatternSigned != nullptr) {
+                literal = hlp::signExtend(bitfieldFieldPatternSigned->getBitSize(), bitfieldFieldPatternSigned->readValue());
             } else if (auto bitfieldFieldPattern = dynamic_cast<ptrn::PatternBitfieldField *>(pattern); bitfieldFieldPattern != nullptr) {
-                literal = u128(bitfieldFieldPattern->readValue());
+                literal = bitfieldFieldPattern->readValue();
             } else {
                 literal = pattern;
             }

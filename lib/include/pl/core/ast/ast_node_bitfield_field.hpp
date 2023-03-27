@@ -27,6 +27,10 @@ namespace pl::core::ast {
 
         [[nodiscard]] bool isPadding() const { return this->getName() == "$padding$"; }
 
+        [[nodiscard]] virtual std::shared_ptr<ptrn::PatternBitfieldField> createBitfield(Evaluator *evaluator, u64 byteOffset, u8 bitOffset, u8 bitSize) const {
+            return std::make_shared<ptrn::PatternBitfieldField>(evaluator, byteOffset, bitOffset, bitSize);
+        }
+
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             evaluator->updateRuntime(this);
 
@@ -44,9 +48,9 @@ namespace pl::core::ast {
             std::shared_ptr<ptrn::PatternBitfieldField> pattern;
             if (evaluator->isBitfieldReversed()) {
                 evaluator->incrementBitfieldBitOffset(-bitSize);
-                pattern = std::make_shared<ptrn::PatternBitfieldField>(evaluator, evaluator->dataOffset(), evaluator->getBitfieldBitOffset(), bitSize);
+                pattern = this->createBitfield(evaluator, evaluator->dataOffset(), evaluator->getBitfieldBitOffset(), bitSize);
             } else {
-                pattern = std::make_shared<ptrn::PatternBitfieldField>(evaluator, evaluator->dataOffset(), evaluator->getBitfieldBitOffset(), bitSize);
+                pattern = this->createBitfield(evaluator, evaluator->dataOffset(), evaluator->getBitfieldBitOffset(), bitSize);
                 evaluator->incrementBitfieldBitOffset(bitSize);
             }
             pattern->setPadding(this->isPadding());
@@ -63,6 +67,15 @@ namespace pl::core::ast {
     private:
         std::string m_name;
         std::unique_ptr<ASTNode> m_size;
+    };
+
+    class ASTNodeBitfieldFieldSigned : public ASTNodeBitfieldField {
+    public:
+        using ASTNodeBitfieldField::ASTNodeBitfieldField;
+
+        [[nodiscard]] std::shared_ptr<ptrn::PatternBitfieldField> createBitfield(Evaluator *evaluator, u64 byteOffset, u8 bitOffset, u8 bitSize) const override {
+            return std::make_shared<ptrn::PatternBitfieldFieldSigned>(evaluator, byteOffset, bitOffset, bitSize);
+        }
     };
 
 }

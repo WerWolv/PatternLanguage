@@ -84,7 +84,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
-            return transformValue(u128(this->readValue()));
+            return transformValue(this->readValue());
         }
 
         void setParentBitfield(PatternBitfieldMember *parentBitfield) override {
@@ -125,15 +125,13 @@ namespace pl::ptrn {
 
         std::string formatDisplayValue() override {
             auto literal = this->getValue();
-            auto value =this->getValue().toUnsigned();
-
-            return Pattern::formatDisplayValue(fmt::format("{0} (0x{1:X})", value, value), literal);
+            auto value = literal.toUnsigned();
+            return Pattern::formatDisplayValue(fmt::format("{} (0x{:X})", value, value), literal);
         }
 
         [[nodiscard]] std::string toString() const override {
-            auto result = fmt::format("{}", this->getValue().toUnsigned());
-
-            return Pattern::formatDisplayValue(result, this->getValue());
+            auto value = this->readValue();
+            return Pattern::formatDisplayValue(fmt::format("{}", value), value);
         }
 
         [[nodiscard]] bool isPadding() const override { return this->m_padding; }
@@ -144,6 +142,30 @@ namespace pl::ptrn {
         size_t m_bitOffset;
         u8 m_bitSize;
         PatternBitfieldMember *m_parentBitfield = nullptr;
+    };
+
+    class PatternBitfieldFieldSigned : public PatternBitfieldField {
+    public:
+        using PatternBitfieldField::PatternBitfieldField;
+
+        [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
+            return std::unique_ptr<Pattern>(new PatternBitfieldFieldSigned(*this));
+        }
+
+        [[nodiscard]] core::Token::Literal getValue() const override {
+            return transformValue(hlp::signExtend(this->getBitSize(), this->readValue()));
+        }
+
+        std::string formatDisplayValue() override {
+            auto rawValue = this->readValue();
+            auto value = hlp::signExtend(this->getBitSize(), rawValue);
+            return Pattern::formatDisplayValue(fmt::format("{} (0x{:X})", value, rawValue), value);
+        }
+
+        [[nodiscard]] std::string toString() const override {
+            auto result = fmt::format("{}", this->getValue().toSigned());
+            return Pattern::formatDisplayValue(result, this->getValue());
+        }
     };
 
     class PatternBitfieldArray : public PatternBitfieldMember,

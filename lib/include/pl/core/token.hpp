@@ -41,6 +41,8 @@ namespace pl::core {
             Using,
             Enum,
             Bitfield,
+            Unsigned,
+            Signed,
             LittleEndian,
             BigEndian,
             If,
@@ -241,6 +243,8 @@ namespace pl::core {
             const auto Union        = createToken(core::Token::Type::Keyword, Token::Keyword::Union);
             const auto Function     = createToken(core::Token::Type::Keyword, Token::Keyword::Function);
             const auto Bitfield     = createToken(core::Token::Type::Keyword, Token::Keyword::Bitfield);
+            const auto Unsigned     = createToken(core::Token::Type::Keyword, Token::Keyword::Unsigned);
+            const auto Signed       = createToken(core::Token::Type::Keyword, Token::Keyword::Signed);
             const auto LittleEndian = createToken(core::Token::Type::Keyword, Token::Keyword::LittleEndian);
             const auto BigEndian    = createToken(core::Token::Type::Keyword, Token::Keyword::BigEndian);
             const auto Parent       = createToken(core::Token::Type::Keyword, Token::Keyword::Parent);
