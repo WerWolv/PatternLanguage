@@ -267,7 +267,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] bool isSealed() const {
-            return this->hasAttribute("sealed");
+            return this->hasAttribute("sealed") || this->getVisibility() == Visibility::Hidden;
         }
 
         virtual void setLocal(bool local) {
