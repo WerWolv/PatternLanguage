@@ -1404,7 +1404,7 @@ namespace pl::core {
                 if (!MATCHES(sequence(tkn::Separator::RightBracket)))
                     err::P0002.throwError(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)), {}, 1);
 
-                member = create<ast::ASTNodeBitfieldArrayVariableDecl>(fieldName, move(type), move(size));
+                member = create<ast::ASTNodeBitfieldArrayVariableDecl>(fieldName, std::move(type), std::move(size));
             } else if (MATCHES(sequence(tkn::Literal::Identifier))) {
                 // (parseType) Identifier;
                 if (MATCHES(sequence(tkn::Operator::At)))
