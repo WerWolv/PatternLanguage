@@ -16,6 +16,7 @@ namespace pl::lib::libstd {
     namespace time      { void registerFunctions(pl::PatternLanguage &runtime); }
     namespace core      { void registerFunctions(pl::PatternLanguage &runtime); }
     namespace hash      { void registerFunctions(pl::PatternLanguage &runtime); }
+    namespace random    { void registerFunctions(pl::PatternLanguage &runtime); }
 
     inline void registerFunctions(pl::PatternLanguage &runtime) {
         registerPragmas(runtime);
@@ -28,6 +29,7 @@ namespace pl::lib::libstd {
         time::registerFunctions(runtime);
         core::registerFunctions(runtime);
         hash::registerFunctions(runtime);
+        random::registerFunctions(runtime);
     }
 
 }
