@@ -112,91 +112,87 @@ namespace pl::core::ast {
                 }
             };
 
-            if (this->m_size != nullptr) {
-                auto sizeNode = this->m_size->evaluate(evaluator);
-                std::variant<u128, ASTNodeWhileStatement *> boundsCondition;
-
-                if (auto literalNode = dynamic_cast<ASTNodeLiteral *>(sizeNode.get()); literalNode != nullptr) {
-                    boundsCondition = std::visit(wolv::util::overloaded {
-                        [this](const std::string &) -> u128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
-                        [this](ptrn::Pattern *pattern) -> u128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
-                        [](auto &&size) -> u128 { return size; }
-                    }, literalNode->getValue());
-                } else if (auto whileStatement = dynamic_cast<ASTNodeWhileStatement *>(sizeNode.get()); whileStatement != nullptr) {
-                    boundsCondition = whileStatement;
-                } else {
-                    err::E0001.throwError(fmt::format("Unexpected type of bitfield array size node."), {}, this);
-                }
-
-                auto limit = evaluator->getArrayLimit();
-                auto checkLimit = [&](auto count) {
-                    if (count > limit)
-                        err::E0007.throwError(fmt::format("Bitfield array grew past set limit of {}", limit), "If this is intended, try increasing the limit using '#pragma array_limit <new_limit>'.", this);
-                };
-
-                if (std::holds_alternative<u128>(boundsCondition))
-                    checkLimit(std::get<u128>(boundsCondition));
-
-                u128 dataIndex = 0;
-
-                auto checkCondition = [&]() {
-                    if (std::holds_alternative<u128>(boundsCondition))
-                        return dataIndex < std::get<u128>(boundsCondition);
-
-                    checkLimit(entryIndex);
-                    return std::get<ASTNodeWhileStatement *>(boundsCondition)->evaluateCondition(evaluator);
-                };
-
-                while (checkCondition()) {
-                    evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
-
-                    evaluator->setCurrentArrayIndex(entryIndex);
-
-                    auto patterns = this->m_type->createPatterns(evaluator);
-                    size_t patternCount = patterns.size();
-
-                    if (arrayPattern->getSection() == ptrn::Pattern::MainSectionId)
-                        if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
-                            err::E0004.throwError("Bitfield array expanded past end of the data.", fmt::format("Entry {} exceeded data by {} bytes.", dataIndex, evaluator->getReadOffset() - evaluator->getDataSize()), this);
-
-                    auto ctrlFlow = evaluator->getCurrentControlFlowStatement();
-                    evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
-
-                    if (ctrlFlow == ControlFlowStatement::Continue) {
-                        entryIndex -= patternCount;
-                        continue;
-                    }
-
-                    if (!patterns.empty())
-                        addEntries(std::move(patterns));
-
-                    if (ctrlFlow == ControlFlowStatement::Break || ctrlFlow == ControlFlowStatement::Return)
-                        break;
-
-                    dataIndex++;
-                }
-            } else {
+            if (this->m_size == nullptr)
                 err::E0001.throwError(fmt::format("Bitfield array was created with no size."), {}, this);
+
+            auto sizeNode = this->m_size->evaluate(evaluator);
+            std::variant<u128, ASTNodeWhileStatement *> boundsCondition;
+
+            if (auto literalNode = dynamic_cast<ASTNodeLiteral *>(sizeNode.get()); literalNode != nullptr) {
+                boundsCondition = std::visit(wolv::util::overloaded {
+                    [this](const std::string &) -> u128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
+                    [this](ptrn::Pattern *pattern) -> u128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
+                    [](auto &&size) -> u128 { return size; }
+                }, literalNode->getValue());
+            } else if (auto whileStatement = dynamic_cast<ASTNodeWhileStatement *>(sizeNode.get()); whileStatement != nullptr) {
+                boundsCondition = whileStatement;
+            } else {
+                err::E0001.throwError(fmt::format("Unexpected type of bitfield array size node."), {}, this);
             }
 
-            if (!entries.empty()) {
-                auto lastField = std::find_if(entries.rbegin(), entries.rend(), [](auto& pattern) {
-                    return dynamic_cast<ptrn::PatternBitfieldMember *>(pattern.get()) != nullptr;
-                });
+            auto limit = evaluator->getArrayLimit();
+            auto checkLimit = [&](auto count) {
+                if (count > limit)
+                    err::E0007.throwError(fmt::format("Bitfield array grew past set limit of {}", limit), "If this is intended, try increasing the limit using '#pragma array_limit <new_limit>'.", this);
+            };
 
-                if (lastField != entries.rend()) {
-                    auto &lastBitfieldMember = static_cast<ptrn::PatternBitfieldMember &>(*lastField->get());
-                    auto totalBitSize = (lastBitfieldMember.getTotalBitOffset() + lastBitfieldMember.getBitSize()) - arrayPattern->getTotalBitOffset();
-                    arrayPattern->setBitSize(totalBitSize);
+            if (std::holds_alternative<u128>(boundsCondition))
+                checkLimit(std::get<u128>(boundsCondition));
 
-                    for (auto &pattern : entries) {
-                        if (auto bitfieldMember = dynamic_cast<ptrn::PatternBitfieldMember*>(pattern.get()); bitfieldMember != nullptr)
-                            bitfieldMember->setParentBitfield(arrayPattern.get());
-                    }
+            u128 dataIndex = 0;
 
-                    arrayPattern->setEntries(std::move(entries));
+            auto checkCondition = [&]() {
+                if (std::holds_alternative<u128>(boundsCondition))
+                    return dataIndex < std::get<u128>(boundsCondition);
+
+                checkLimit(entryIndex);
+                return std::get<ASTNodeWhileStatement *>(boundsCondition)->evaluateCondition(evaluator);
+            };
+
+            auto initialPosition = evaluator->getBitwiseReadOffset();
+
+            while (checkCondition()) {
+                evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
+
+                evaluator->setCurrentArrayIndex(entryIndex);
+
+                auto patterns = this->m_type->createPatterns(evaluator);
+                size_t patternCount = patterns.size();
+
+                if (arrayPattern->getSection() == ptrn::Pattern::MainSectionId)
+                    if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
+                        err::E0004.throwError("Bitfield array expanded past end of the data.", fmt::format("Entry {} exceeded data by {} bytes.", dataIndex, evaluator->getReadOffset() - evaluator->getDataSize()), this);
+
+                auto ctrlFlow = evaluator->getCurrentControlFlowStatement();
+                evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
+
+                if (ctrlFlow == ControlFlowStatement::Continue) {
+                    entryIndex -= patternCount;
+                    continue;
                 }
+
+                if (!patterns.empty())
+                    addEntries(std::move(patterns));
+
+                if (ctrlFlow == ControlFlowStatement::Break || ctrlFlow == ControlFlowStatement::Return)
+                    break;
+
+                dataIndex++;
             }
+
+            auto endPosition = evaluator->getBitwiseReadOffset();
+            auto startOffset = (initialPosition.byteOffset * 8) + initialPosition.bitOffset;
+            auto endOffset = (endPosition.byteOffset * 8) + endPosition.bitOffset;
+            auto totalBitSize = startOffset > endOffset ? startOffset - endOffset : endOffset - startOffset;
+
+            arrayPattern->setBitSize(totalBitSize);
+
+            for (auto &pattern : entries) {
+                if (auto bitfieldMember = dynamic_cast<ptrn::PatternBitfieldMember*>(pattern.get()); bitfieldMember != nullptr)
+                    bitfieldMember->setParentBitfield(arrayPattern.get());
+            }
+
+            arrayPattern->setEntries(std::move(entries));
 
             if (arrayPattern->getEntryCount() > 0)
                 arrayPattern->setTypeName(arrayPattern->getEntry(0)->getTypeName());
