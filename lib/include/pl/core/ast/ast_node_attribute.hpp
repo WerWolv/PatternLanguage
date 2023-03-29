@@ -293,9 +293,12 @@ namespace pl::core::ast {
         if (attributable == nullptr)
             err::E0008.throwError("Attributes cannot be applied to this statement.", {}, node);
 
-        auto endOffset          = evaluator->dataOffset();
-        evaluator->dataOffset() = pattern->getOffset();
-        ON_SCOPE_EXIT { evaluator->dataOffset() = endOffset; };
+        auto endOffset = evaluator->getBitwiseReadOffset();
+        evaluator->setReadOffset(pattern->getOffset());
+        ON_SCOPE_EXIT {
+            if (!attributable->hasAttribute("no_unique_address", false))
+                evaluator->setBitwiseReadOffset(endOffset);
+        };
 
         auto thisScope = evaluator->getScope(0).scope;
         evaluator->pushScope(pattern, *thisScope);
@@ -319,10 +322,6 @@ namespace pl::core::ast {
 
         if (const auto &arguments = attributable->getAttributeArguments("comment"); arguments.size() == 1) {
             pattern->setComment(getAttributeValueAsString(arguments.front(), evaluator));
-        }
-
-        if (attributable->hasAttribute("no_unique_address", false)) {
-            endOffset -= pattern->getSize();
         }
     }
 

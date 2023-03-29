@@ -46,13 +46,8 @@ namespace pl::core::ast {
             }, literal->getValue());
 
             std::shared_ptr<ptrn::PatternBitfieldField> pattern;
-            if (evaluator->isBitfieldReversed()) {
-                evaluator->incrementBitfieldBitOffset(-bitSize);
-                pattern = this->createBitfield(evaluator, evaluator->dataOffset(), evaluator->getBitfieldBitOffset(), bitSize);
-            } else {
-                pattern = this->createBitfield(evaluator, evaluator->dataOffset(), evaluator->getBitfieldBitOffset(), bitSize);
-                evaluator->incrementBitfieldBitOffset(bitSize);
-            }
+            auto position = evaluator->getBitwiseReadOffsetAndIncrement(bitSize);
+            pattern = this->createBitfield(evaluator, position.byteOffset, position.bitOffset, bitSize);
             pattern->setPadding(this->isPadding());
             pattern->setVariableName(this->getName());
 

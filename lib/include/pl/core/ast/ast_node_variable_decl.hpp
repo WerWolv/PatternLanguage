@@ -42,7 +42,7 @@ namespace pl::core::ast {
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             evaluator->updateRuntime(this);
 
-            u64 startOffset = evaluator->dataOffset();
+            auto startOffset = evaluator->getBitwiseReadOffset();
 
             auto scopeGuard = SCOPE_GUARD {
                 evaluator->popSectionId();
@@ -65,18 +65,18 @@ namespace pl::core::ast {
                 if (offset == nullptr)
                     err::E0002.throwError("Void expression used in placement expression.", { }, this);
 
-                evaluator->dataOffset() = std::visit(wolv::util::overloaded {
+                evaluator->setReadOffset(std::visit(wolv::util::overloaded {
                     [this](const std::string &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
                     [this](ptrn::Pattern *) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
                     [](auto &&offset) -> u64 { return offset; } },
-                offset->getValue());
+                offset->getValue()));
 
-                if (evaluator->dataOffset() < evaluator->getDataBaseAddress() || evaluator->dataOffset() > evaluator->getDataBaseAddress() + evaluator->getDataSize())
-                    err::E0005.throwError(fmt::format("Cannot place variable '{}' at out of bounds address 0x{:08X}", this->m_name, evaluator->dataOffset()), { }, this);
+                if (evaluator->getReadOffset() < evaluator->getDataBaseAddress() || evaluator->getReadOffset() > evaluator->getDataBaseAddress() + evaluator->getDataSize())
+                    err::E0005.throwError(fmt::format("Cannot place variable '{}' at out of bounds address 0x{:08X}", this->m_name, evaluator->getReadOffset()), { }, this);
             }
 
             if (evaluator->getSectionId() == ptrn::Pattern::PatternLocalSectionId || evaluator->getSectionId() == ptrn::Pattern::HeapSectionId) {
-                evaluator->dataOffset() = startOffset;
+                evaluator->setBitwiseReadOffset(startOffset);
                 this->execute(evaluator);
                 return { };
             } else {
@@ -95,9 +95,8 @@ namespace pl::core::ast {
 
                 applyVariableAttributes(evaluator, this, pattern);
 
-
                 if (this->m_placementOffset != nullptr && !evaluator->isGlobalScope()) {
-                    evaluator->dataOffset() = startOffset;
+                    evaluator->setBitwiseReadOffset(startOffset);
                 }
 
                 return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));

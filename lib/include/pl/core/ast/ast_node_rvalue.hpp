@@ -52,7 +52,7 @@ namespace pl::core::ast {
 
             if (this->getPath().size() == 1) {
                 if (auto name = std::get_if<std::string>(&this->getPath().front()); name != nullptr) {
-                    if (*name == "$") return std::unique_ptr<ASTNode>(new ASTNodeLiteral(u128(evaluator->dataOffset())));
+                    if (*name == "$") return std::unique_ptr<ASTNode>(new ASTNodeLiteral(u128(evaluator->getReadOffset())));
                     else if (*name == "null") return std::unique_ptr<ASTNode>(new ASTNodeLiteral(new ptrn::PatternPadding(evaluator, 0, 0)));
 
                     auto parameterPack = evaluator->getScope(0).parameterPack;

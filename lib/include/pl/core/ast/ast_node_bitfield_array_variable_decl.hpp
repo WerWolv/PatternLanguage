@@ -36,7 +36,7 @@ namespace pl::core::ast {
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             evaluator->updateRuntime(this);
 
-            auto startOffset = evaluator->dataOffset();
+            auto startOffset = evaluator->getBitwiseReadOffset();
 
             auto type = this->m_type->evaluate(evaluator);
 
@@ -51,7 +51,7 @@ namespace pl::core::ast {
             applyVariableAttributes(evaluator, this, pattern);
 
             if (evaluator->getSectionId() == ptrn::Pattern::PatternLocalSectionId) {
-                evaluator->dataOffset() = startOffset;
+                evaluator->setBitwiseReadOffset(startOffset);
                 this->execute(evaluator);
                 return { };
             } else {
@@ -85,10 +85,11 @@ namespace pl::core::ast {
                     evaluator->clearCurrentArrayIndex();
             };
 
-            auto arrayPattern = std::make_unique<ptrn::PatternBitfieldArray>(evaluator, evaluator->dataOffset(), evaluator->getBitfieldBitOffset(), 0);
+            auto position = evaluator->getBitwiseReadOffset();
+            auto arrayPattern = std::make_unique<ptrn::PatternBitfieldArray>(evaluator, position.byteOffset, position.bitOffset, 0);
             arrayPattern->setVariableName(this->m_name);
             arrayPattern->setSection(evaluator->getSectionId());
-            arrayPattern->setReversed(evaluator->isBitfieldReversed());
+            arrayPattern->setReversed(evaluator->readOrderIsReversed());
 
             std::vector<std::shared_ptr<ptrn::Pattern>> entries;
 
@@ -155,8 +156,8 @@ namespace pl::core::ast {
                     size_t patternCount = patterns.size();
 
                     if (arrayPattern->getSection() == ptrn::Pattern::MainSectionId)
-                        if ((evaluator->dataOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
-                            err::E0004.throwError("Bitfield array expanded past end of the data.", fmt::format("Entry {} exceeded data by {} bytes.", dataIndex, evaluator->dataOffset() - evaluator->getDataSize()), this);
+                        if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
+                            err::E0004.throwError("Bitfield array expanded past end of the data.", fmt::format("Entry {} exceeded data by {} bytes.", dataIndex, evaluator->getReadOffset() - evaluator->getDataSize()), this);
 
                     auto ctrlFlow = evaluator->getCurrentControlFlowStatement();
                     evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);

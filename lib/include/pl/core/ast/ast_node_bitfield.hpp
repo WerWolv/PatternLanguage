@@ -21,8 +21,6 @@ namespace pl::core::ast {
         ASTNodeBitfield(const ASTNodeBitfield &other) : ASTNode(other), Attributable(other) {
             for (const auto &entry : other.getEntries())
                 this->m_entries.emplace_back(entry->clone());
-
-            this->m_isNested = other.m_isNested;
         }
 
         [[nodiscard]] std::unique_ptr<ASTNode> clone() const override {
@@ -32,18 +30,15 @@ namespace pl::core::ast {
         [[nodiscard]] const std::vector<std::shared_ptr<ASTNode>> &getEntries() const { return this->m_entries; }
         void addEntry(std::unique_ptr<ASTNode> &&entry) { this->m_entries.emplace_back(std::move(entry)); }
 
-        void setNested() {
-            this->m_isNested = true;
-        }
-
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             evaluator->updateRuntime(this);
 
-            auto bitfieldPattern = std::make_shared<ptrn::PatternBitfield>(evaluator, evaluator->dataOffset(), evaluator->getBitfieldBitOffset(), 0);
+            auto position = evaluator->getBitwiseReadOffset();
+            auto bitfieldPattern = std::make_shared<ptrn::PatternBitfield>(evaluator, position.byteOffset, position.bitOffset, 0);
 
             bitfieldPattern->setSection(evaluator->getSectionId());
 
-            bool prevReversed = evaluator->isBitfieldReversed();
+            bool prevReversed = evaluator->readOrderIsReversed();
             bool didReverse = false;
             u128 fixedSize = 0;
 
@@ -94,8 +89,8 @@ namespace pl::core::ast {
                     || (order == BitfieldOrder::LeastToMostSignificant && bitfieldPattern->getEndian() == std::endian::big);
                 if (prevReversed != shouldBeReversed) {
                     didReverse = true;
-                    evaluator->incrementBitfieldBitOffset(shouldBeReversed ? size : -size);
-                    evaluator->setBitfieldReversed(shouldBeReversed);
+                    wolv::util::unused(evaluator->getBitwiseReadOffsetAndIncrement(size));
+                    evaluator->setReadOrderReversed(shouldBeReversed);
                 }
 
                 fixedSize = size;
@@ -109,8 +104,7 @@ namespace pl::core::ast {
                 evaluator->popScope();
             };
 
-            auto initialByteOffset = evaluator->dataOffset();
-            auto initialBitOffset = evaluator->getBitfieldBitOffset();
+            auto initialPosition = evaluator->getBitwiseReadOffset();
 
             for (auto &entry : this->m_entries) {
                 auto patterns = entry->createPatterns(evaluator);
@@ -130,14 +124,15 @@ namespace pl::core::ast {
                 }
             }
 
-            auto startOffset = (initialByteOffset * 8) + initialBitOffset;
-            auto endOffset = (evaluator->dataOffset() * 8) + evaluator->getBitfieldBitOffset();
+            auto endPosition = evaluator->getBitwiseReadOffset();
+            auto startOffset = (initialPosition.byteOffset * 8) + initialPosition.bitOffset;
+            auto endOffset = (endPosition.byteOffset * 8) + endPosition.bitOffset;
             auto totalBitSize = startOffset > endOffset ? startOffset - endOffset : endOffset - startOffset;
             if (fixedSize > 0) {
                 if (totalBitSize > fixedSize)
                     err::E0005.throwError("Bitfield's fields exceeded the attribute-allotted size.", {}, this);
                 if (didReverse)
-                    evaluator->incrementBitfieldBitOffset(totalBitSize);
+                    evaluator->setBitwiseReadOffset(initialPosition);
                 totalBitSize = fixedSize;
             }
             bitfieldPattern->setBitSize(totalBitSize);
@@ -152,22 +147,18 @@ namespace pl::core::ast {
                 }
             }
 
-            bitfieldPattern->setReversed(evaluator->isBitfieldReversed());
+            bitfieldPattern->setReversed(evaluator->readOrderIsReversed());
             bitfieldPattern->setFields(fields);
 
             applyTypeAttributes(evaluator, this, bitfieldPattern);
 
-            if (!this->m_isNested)
-                evaluator->resetBitfieldBitOffset();
-            evaluator->setBitfieldReversed(prevReversed);
+            evaluator->setReadOrderReversed(prevReversed);
 
             return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(bitfieldPattern));
         }
 
     private:
         std::vector<std::shared_ptr<ASTNode>> m_entries;
-
-        bool m_isNested = false;
     };
 
 }

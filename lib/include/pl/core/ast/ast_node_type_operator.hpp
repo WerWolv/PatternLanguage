@@ -45,10 +45,10 @@ namespace pl::core::ast {
                         err::E0001.throwError("Invalid type operation.", {}, this);
                 }
             } else {
-                auto offset = evaluator->dataOffset();
+                auto offset = evaluator->getBitwiseReadOffset();
                 evaluator->pushSectionId(ptrn::Pattern::InstantiationSectionId);
                 ON_SCOPE_EXIT {
-                    evaluator->dataOffset() = offset;
+                    evaluator->setBitwiseReadOffset(offset);
                     evaluator->popSectionId();
                 };
 

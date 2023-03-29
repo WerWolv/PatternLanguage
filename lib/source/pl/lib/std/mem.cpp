@@ -131,7 +131,7 @@ namespace pl::lib::libstd::mem {
             /* current_bit_offset() */
             runtime.addFunction(nsStdMem, "current_bit_offset", FunctionParameterCount::none(), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 wolv::util::unused(params);
-                return u128(ctx->getBitfieldBitOffset());
+                return u128(ctx->getBitwiseReadOffset().bitOffset);
             });
 
             /* read_bits(byteOffset, bitOffset, bitSize) */

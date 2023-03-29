@@ -39,13 +39,9 @@ namespace pl::ptrn {
 
         virtual void setReversed(bool reversed) { wolv::util::unused(reversed); }
 
-        [[nodiscard]] u64 getOffsetForSorting() const override {
-            // If this member has no parent, that means we are sorting in a byte-based context.
+        [[nodiscard]] u128 getOffsetForSorting() const override {
             auto *parent = this->getParentBitfield();
-            if (parent == nullptr)
-                return getOffset();
-
-            if (parent->isReversed()) {
+            if (parent != nullptr && parent->isReversed()) {
                 auto parentOffset = parent->getTotalBitOffset();
                 auto parentSize = parent->getBitSize();
                 return parentOffset + parentSize - ((this->getTotalBitOffset() - parentOffset) + this->getBitSize());
@@ -54,11 +50,7 @@ namespace pl::ptrn {
             return this->getTotalBitOffset();
         }
 
-        [[nodiscard]] size_t getSizeForSorting() const override {
-            // If this member has no parent, that means we are sorting in a byte-based context.
-            if (this->getParentBitfield() == nullptr)
-                return this->getSize();
-
+        [[nodiscard]] u128 getSizeForSorting() const override {
             return this->getBitSize();
         }
     };

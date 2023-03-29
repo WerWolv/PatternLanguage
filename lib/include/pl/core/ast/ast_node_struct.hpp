@@ -26,9 +26,10 @@ namespace pl::core::ast {
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             evaluator->updateRuntime(this);
 
-            auto pattern = std::make_shared<ptrn::PatternStruct>(evaluator, evaluator->dataOffset(), 0);
+            evaluator->alignToByte();
+            auto pattern = std::make_shared<ptrn::PatternStruct>(evaluator, evaluator->getReadOffset(), 0);
 
-            u64 startOffset = evaluator->dataOffset();
+            auto startOffset = evaluator->getReadOffset();
             std::vector<std::shared_ptr<ptrn::Pattern>> memberPatterns;
 
             pattern->setSection(evaluator->getSectionId());
@@ -36,6 +37,7 @@ namespace pl::core::ast {
             evaluator->pushScope(pattern, memberPatterns);
             ON_SCOPE_EXIT {
                 evaluator->popScope();
+                evaluator->alignToByte();
             };
 
             for (auto &inheritance : this->m_inheritance) {
@@ -49,16 +51,17 @@ namespace pl::core::ast {
                     for (auto &member : structPattern->getEntries()) {
                         memberPatterns.push_back(member);
                     }
-                    pattern->setSize(evaluator->dataOffset() - startOffset);
+                    pattern->setSize(evaluator->getReadOffset() - startOffset);
                 }
             }
 
             for (auto &member : this->m_members) {
+                evaluator->alignToByte();
                 for (auto &memberPattern : member->createPatterns(evaluator)) {
                     memberPattern->setSection(evaluator->getSectionId());
                     memberPatterns.push_back(std::move(memberPattern));
                 }
-                pattern->setSize(evaluator->dataOffset() - startOffset);
+                pattern->setSize(evaluator->getReadOffset() - startOffset);
 
                 if (!evaluator->getCurrentArrayIndex().has_value()) {
                     if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
@@ -69,7 +72,7 @@ namespace pl::core::ast {
                     } else if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Continue) {
                         evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
                         memberPatterns.clear();
-                        evaluator->dataOffset() = startOffset;
+                        evaluator->setReadOffset(startOffset);
                         break;
                     }
                 }

@@ -71,12 +71,12 @@ namespace pl::core::ast {
             evaluator->addCustomFunction(this->m_name, paramCount, evaluatedDefaultParams, [this](Evaluator *ctx, const std::vector<Token::Literal> &params) -> std::optional<Token::Literal> {
                 std::vector<std::shared_ptr<ptrn::Pattern>> variables;
 
-                auto startOffset = ctx->dataOffset();
+                auto startOffset = ctx->getBitwiseReadOffset();
                 ctx->pushScope(nullptr, variables);
                 ctx->pushSectionId(ptrn::Pattern::HeapSectionId);
                 ON_SCOPE_EXIT {
                     ctx->popScope();
-                    ctx->dataOffset() = startOffset;
+                    ctx->setBitwiseReadOffset(startOffset);
                     ctx->popSectionId();
                 };
 

@@ -1327,14 +1327,6 @@ namespace pl::core {
                     if (type == nullptr)
                         err::P0002.throwError(fmt::format("Expected a variable name followed by ':', a function call or a bitfield type name, got '{}'.", name), {}, 1);
                     parseCustomTypeParameters(type);
-
-                    ast::ASTNodeTypeDecl *topmostTypeDecl = type.get();
-                    while (auto *parentTypeDecl = dynamic_cast<ast::ASTNodeTypeDecl*>(topmostTypeDecl->getType().get()))
-                        topmostTypeDecl = parentTypeDecl;
-                    if (auto *nestedBitfield = dynamic_cast<ast::ASTNodeBitfield*>(topmostTypeDecl->getType().get()); nestedBitfield != nullptr)
-                        nestedBitfield->setNested();
-                    else
-                        err::P0003.throwError("Only bitfields can be nested within other bitfields.", {}, 1);
                 }
             }
 

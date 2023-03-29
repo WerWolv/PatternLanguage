@@ -24,11 +24,12 @@ namespace pl::core::ast {
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             evaluator->updateRuntime(this);
 
-            auto pattern = std::make_shared<ptrn::PatternUnion>(evaluator, evaluator->dataOffset(), 0);
+            evaluator->alignToByte();
+            auto pattern = std::make_shared<ptrn::PatternUnion>(evaluator, evaluator->getReadOffset(), 0);
 
             size_t size = 0;
             std::vector<std::shared_ptr<ptrn::Pattern>> memberPatterns;
-            u64 startOffset = evaluator->dataOffset();
+            u64 startOffset = evaluator->getReadOffset();
 
             pattern->setSection(evaluator->getSectionId());
 
@@ -38,7 +39,7 @@ namespace pl::core::ast {
             };
 
             for (auto &member : this->m_members) {
-                evaluator->dataOffset() = startOffset;
+                evaluator->setReadOffset(startOffset);
 
                 for (auto &memberPattern : member->createPatterns(evaluator)) {
                     size = std::max(memberPattern->getSize(), size);
@@ -56,13 +57,13 @@ namespace pl::core::ast {
                     } else if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Continue) {
                         evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
                         memberPatterns.clear();
-                        evaluator->dataOffset() = startOffset;
+                        evaluator->setReadOffset(startOffset);
                         break;
                     }
                 }
             }
 
-            evaluator->dataOffset() = startOffset + size;
+            evaluator->setReadOffset(startOffset + size);
             pattern->setMembers(memberPatterns);
 
             applyTypeAttributes(evaluator, this, pattern);
