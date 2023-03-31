@@ -501,7 +501,7 @@ namespace pl::core {
 
             auto heapAddress = (address >> 32);
             auto storageAddress = address & 0xFFFF'FFFF;
-            if (heapAddress < patternLocal.size()) {
+            if (patternLocal.contains(heapAddress)) {
                 auto &storage = patternLocal[heapAddress].data;
 
                 if (storageAddress + size > storage.size()) {
