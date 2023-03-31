@@ -100,8 +100,10 @@ namespace pl::core::ast {
                 bitfieldEnum->setTypeName(patternEnum->getTypeName());
                 bitfieldEnum->setEnumValues(patternEnum->getEnumValues());
                 result = std::move(bitfieldEnum);
+            } else if (dynamic_cast<ptrn::PatternBoolean*>(pattern.get()) != nullptr) {
+                result = std::make_shared<ptrn::PatternBitfieldFieldBoolean>(evaluator, byteOffset, bitOffset, bitSize);
             } else {
-                err::E0004.throwError("Can only use enums as sized bitfield fields.", {}, this);
+                err::E0004.throwError("Can only use enums or bools as sized bitfield fields.", {}, this);
             }
             return result;
         }

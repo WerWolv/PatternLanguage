@@ -150,6 +150,36 @@ namespace pl::ptrn {
         }
     };
 
+    class PatternBitfieldFieldBoolean : public PatternBitfieldField {
+    public:
+        using PatternBitfieldField::PatternBitfieldField;
+
+        [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
+            return std::unique_ptr<Pattern>(new PatternBitfieldFieldBoolean(*this));
+        }
+
+        [[nodiscard]] core::Token::Literal getValue() const override {
+            return transformValue(this->readValue());
+        }
+
+        [[nodiscard]] std::string getFormattedName() const override {
+            return "bool";
+        }
+
+        std::string formatDisplayValue() override {
+            switch (this->getValue().toUnsigned()) {
+                case 0: return "false";
+                case 1: return "true";
+                default: return "true*";
+            }
+        }
+
+        [[nodiscard]] std::string toString() const override {
+            auto value = this->getValue();
+            return Pattern::formatDisplayValue(fmt::format("{}", value.toBoolean() ? "true" : "false"), value);
+        }
+    };
+
     class PatternBitfieldFieldEnum : public PatternBitfieldField {
     public:
         using PatternBitfieldField::PatternBitfieldField;
