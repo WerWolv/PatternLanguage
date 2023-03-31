@@ -1649,8 +1649,8 @@ namespace pl::core {
     }
 
     std::optional<Token::Identifier> Parser::parseCompoundAssignment(const Token &token) {
-        constexpr static std::array SingleTokens = { tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::Star, tkn::Operator::Slash, tkn::Operator::Percent, tkn::Operator::BitOr, tkn::Operator::BitAnd, tkn::Operator::BitXor };
-        constexpr static std::array DoubleTokens = { tkn::Operator::BoolLessThan, tkn::Operator::BoolGreaterThan };
+        const static std::array SingleTokens = { tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::Star, tkn::Operator::Slash, tkn::Operator::Percent, tkn::Operator::BitOr, tkn::Operator::BitAnd, tkn::Operator::BitXor };
+        const static std::array DoubleTokens = { tkn::Operator::BoolLessThan, tkn::Operator::BoolGreaterThan };
 
         for (auto &singleToken : SingleTokens) {
             if (MATCHES(sequence(token, singleToken, tkn::Operator::Assign)))
