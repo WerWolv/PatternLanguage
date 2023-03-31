@@ -26,12 +26,11 @@ namespace pl::lib::libstd::random {
         FisherF = 8,
         StudentT = 9,
         LogNormal = 10,
-        Discrete = 11,
-        Bernoulli = 12,
-        Binomial = 13,
-        NegativeBinomial = 14,
-        Geometric = 15,
-        Poisson = 16
+        Bernoulli = 11,
+        Binomial = 12,
+        NegativeBinomial = 13,
+        Geometric = 14,
+        Poisson = 15
     };
 
     void registerFunctions(pl::PatternLanguage &runtime) {
@@ -80,8 +79,6 @@ namespace pl::lib::libstd::random {
                         return std::student_t_distribution<double>(params[1].toFloatingPoint())(random);
                     case LogNormal:
                         return std::lognormal_distribution<double>(params[1].toFloatingPoint(), params[2].toFloatingPoint())(random);
-                    case Discrete:
-                        return std::discrete_distribution<i128>(params[1].toUnsigned(), params[2].toUnsigned())(random);
                     case Bernoulli:
                         return std::bernoulli_distribution(params[1].toFloatingPoint())(random);
                     case Binomial:
