@@ -555,8 +555,8 @@ namespace pl::core {
             statement = parseFunctionVariableAssignment(getValue<Token::Identifier>(-2).get());
         else if (MATCHES(sequence(tkn::Operator::Dollar, tkn::Operator::Assign)))
             statement = parseFunctionVariableAssignment("$");
-        else if (auto identifier = parseCompoundAssignment(tkn::Literal::Identifier); identifier.has_value())
-            statement = parseFunctionVariableCompoundAssignment(identifier->get());
+        else if (auto identifierOffset = parseCompoundAssignment(tkn::Literal::Identifier); identifierOffset.has_value())
+            statement = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(*identifierOffset).get());
         else if (parseCompoundAssignment(tkn::Operator::Dollar).has_value())
             statement = parseFunctionVariableCompoundAssignment("$");
         else if (MATCHES(oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue)))
@@ -1121,8 +1121,8 @@ namespace pl::core {
             member = parseFunctionVariableCompoundAssignment("$");
         else if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Operator::Assign)))
             member = parseFunctionVariableAssignment(getValue<Token::Identifier>(-2).get());
-        else if (auto identifier = parseCompoundAssignment(tkn::Literal::Identifier); identifier.has_value())
-            member = parseFunctionVariableCompoundAssignment(identifier->get());
+        else if (auto identifierOffset = parseCompoundAssignment(tkn::Literal::Identifier); identifierOffset.has_value())
+            member = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(*identifierOffset).get());
         else if (peek(tkn::Keyword::BigEndian) || peek(tkn::Keyword::LittleEndian) || peek(tkn::ValueType::Any) || peek(tkn::Literal::Identifier)) {
             // Some kind of variable definition
 
@@ -1299,8 +1299,8 @@ namespace pl::core {
         if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Operator::Assign))) {
             auto variableName = getValue<Token::Identifier>(-2).get();
             member = parseFunctionVariableAssignment(variableName);
-        } else if (auto identifier = parseCompoundAssignment(tkn::Literal::Identifier); identifier.has_value())
-            member = parseFunctionVariableCompoundAssignment(identifier->get());
+        } else if (auto identifierOffset = parseCompoundAssignment(tkn::Literal::Identifier); identifierOffset.has_value())
+            member = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(*identifierOffset).get());
         else if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Operator::Colon))) {
             auto fieldName = getValue<Token::Identifier>(-2).get();
             member = create<ast::ASTNodeBitfieldField>(fieldName, parseMathematicalExpression());
@@ -1591,7 +1591,13 @@ namespace pl::core {
         if (auto docComment = parseDocComment(true); docComment.has_value())
             this->addGlobalDocComment(docComment->comment);
 
-        if (MATCHES(sequence(tkn::Keyword::Using, tkn::Literal::Identifier) && (peek(tkn::Operator::Assign) || peek(tkn::Operator::BoolLessThan))))
+        if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Operator::Assign)))
+            statement = parseFunctionVariableAssignment(getValue<Token::Identifier>(-2).get());
+        else if (MATCHES(sequence(tkn::Operator::Dollar, tkn::Operator::Assign)))
+            statement = parseFunctionVariableAssignment("$");
+        else if (auto identifierOffset = parseCompoundAssignment(tkn::Literal::Identifier); identifierOffset.has_value())
+            statement = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(*identifierOffset).get());
+        else if (MATCHES(sequence(tkn::Keyword::Using, tkn::Literal::Identifier) && (peek(tkn::Operator::Assign) || peek(tkn::Operator::BoolLessThan))))
             statement = parseUsingDeclaration();
         else if (MATCHES(sequence(tkn::Keyword::Using, tkn::Literal::Identifier)))
             parseForwardDeclaration();
@@ -1648,18 +1654,18 @@ namespace pl::core {
         return hlp::moveToVector(std::move(statement));
     }
 
-    std::optional<Token::Identifier> Parser::parseCompoundAssignment(const Token &token) {
+    std::optional<i32> Parser::parseCompoundAssignment(const Token &token) {
         const static std::array SingleTokens = { tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::Star, tkn::Operator::Slash, tkn::Operator::Percent, tkn::Operator::BitOr, tkn::Operator::BitAnd, tkn::Operator::BitXor };
         const static std::array DoubleTokens = { tkn::Operator::BoolLessThan, tkn::Operator::BoolGreaterThan };
 
         for (auto &singleToken : SingleTokens) {
             if (MATCHES(sequence(token, singleToken, tkn::Operator::Assign)))
-                return getValue<Token::Identifier>(-3);
+                return -3;
         }
 
         for (auto &doubleTokens : DoubleTokens) {
             if (MATCHES(sequence(token, doubleTokens, doubleTokens, tkn::Operator::Assign)))
-                return getValue<Token::Identifier>(-4);
+                return -4;
         }
 
         return std::nullopt;

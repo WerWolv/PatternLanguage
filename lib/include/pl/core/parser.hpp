@@ -171,7 +171,7 @@ namespace pl::core {
         std::vector<std::shared_ptr<ast::ASTNode>> parseNamespace();
         std::vector<std::shared_ptr<ast::ASTNode>> parseStatements();
 
-        std::optional<Token::Identifier> parseCompoundAssignment(const Token &token);
+        std::optional<i32> parseCompoundAssignment(const Token &token);
 
         std::optional<Token::DocComment> parseDocComment(bool global);
 
