@@ -262,6 +262,8 @@ namespace pl::core::ast {
                 outputPattern->setEndian(templatePattern->getEndian());
             outputPattern->setTypeName(templatePattern->getTypeName());
             outputPattern->setSize(templatePattern->getSize() * entryCount);
+            if (evaluator->readOrderIsReversed())
+                outputPattern->setAbsoluteOffset(evaluator->getReadOffset());
             outputPattern->setSection(templatePattern->getSection());
 
             evaluator->setReadOffset(startOffset + outputPattern->getSize());

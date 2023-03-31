@@ -183,9 +183,14 @@ namespace pl::core::ast {
             auto endPosition = evaluator->getBitwiseReadOffset();
             auto startOffset = (initialPosition.byteOffset * 8) + initialPosition.bitOffset;
             auto endOffset = (endPosition.byteOffset * 8) + endPosition.bitOffset;
-            auto totalBitSize = startOffset > endOffset ? startOffset - endOffset : endOffset - startOffset;
 
-            arrayPattern->setBitSize(totalBitSize);
+            if (startOffset < endOffset) {
+                arrayPattern->setBitSize(endOffset - startOffset);
+            } else {
+                arrayPattern->setAbsoluteOffset(endPosition.byteOffset);
+                arrayPattern->setBitOffset(endPosition.bitOffset);
+                arrayPattern->setBitSize(startOffset - endOffset);
+            }
 
             for (auto &pattern : entries) {
                 if (auto bitfieldMember = dynamic_cast<ptrn::PatternBitfieldMember*>(pattern.get()); bitfieldMember != nullptr)

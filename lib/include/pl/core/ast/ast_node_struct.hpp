@@ -40,6 +40,11 @@ namespace pl::core::ast {
                 evaluator->alignToByte();
             };
 
+            auto setSize = [&]() {
+                auto currentOffset = evaluator->getReadOffset();
+                pattern->setSize(currentOffset > startOffset ? currentOffset - startOffset : startOffset - currentOffset);
+            };
+
             for (auto &inheritance : this->m_inheritance) {
                 if (evaluator->getCurrentControlFlowStatement() != ControlFlowStatement::None)
                     break;
@@ -51,7 +56,7 @@ namespace pl::core::ast {
                     for (auto &member : structPattern->getEntries()) {
                         memberPatterns.push_back(member);
                     }
-                    pattern->setSize(evaluator->getReadOffset() - startOffset);
+                    setSize();
                 }
             }
 
@@ -61,7 +66,7 @@ namespace pl::core::ast {
                     memberPattern->setSection(evaluator->getSectionId());
                     memberPatterns.push_back(std::move(memberPattern));
                 }
-                pattern->setSize(evaluator->getReadOffset() - startOffset);
+                setSize();
 
                 if (!evaluator->getCurrentArrayIndex().has_value()) {
                     if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
@@ -79,6 +84,9 @@ namespace pl::core::ast {
             }
 
             pattern->setMembers(memberPatterns);
+
+            if (evaluator->readOrderIsReversed())
+                pattern->setAbsoluteOffset(evaluator->getReadOffset());
 
             applyTypeAttributes(evaluator, this, pattern);
 

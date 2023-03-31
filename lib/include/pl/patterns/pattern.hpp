@@ -91,7 +91,7 @@ namespace pl::ptrn {
         [[nodiscard]] u64 getOffset() const { return this->m_offset; }
         [[nodiscard]] virtual u128 getOffsetForSorting() const { return this->getOffset() << 3; }
         [[nodiscard]] u32 getHeapAddress() const { return this->getOffset() >> 32; }
-        virtual void setOffset(u64 offset) {
+        void setAbsoluteOffset(u64 offset) {
             if (this->m_offset != offset) {
                 if (this->m_evaluator)
                     this->m_evaluator->patternDestroyed(this);
@@ -99,6 +99,9 @@ namespace pl::ptrn {
                 if (this->m_evaluator)
                     this->m_evaluator->patternCreated(this);
             }
+        }
+        virtual void setOffset(u64 offset) {
+            setAbsoluteOffset(offset);
         }
 
         [[nodiscard]] size_t getSize() const { return this->m_size; }

@@ -39,7 +39,7 @@ namespace pl::core::ast {
             bitfieldPattern->setSection(evaluator->getSectionId());
 
             bool prevReversed = evaluator->readOrderIsReversed();
-            bool didReverse = false;
+            bool reversedChanged = false;
             u128 fixedSize = 0;
 
             {
@@ -88,7 +88,7 @@ namespace pl::core::ast {
                 bool shouldBeReversed = (order == BitfieldOrder::MostToLeastSignificant && bitfieldPattern->getEndian() == std::endian::little)
                     || (order == BitfieldOrder::LeastToMostSignificant && bitfieldPattern->getEndian() == std::endian::big);
                 if (prevReversed != shouldBeReversed) {
-                    didReverse = true;
+                    reversedChanged = true;
                     wolv::util::unused(evaluator->getBitwiseReadOffsetAndIncrement(size));
                     evaluator->setReadOrderReversed(shouldBeReversed);
                 }
@@ -105,9 +105,22 @@ namespace pl::core::ast {
             };
 
             auto initialPosition = evaluator->getBitwiseReadOffset();
+            auto setSize = [&](ASTNode *node) {
+                auto endPosition = evaluator->getBitwiseReadOffset();
+                auto startOffset = (initialPosition.byteOffset * 8) + initialPosition.bitOffset;
+                auto endOffset = (endPosition.byteOffset * 8) + endPosition.bitOffset;
+                auto totalBitSize = startOffset > endOffset ? startOffset - endOffset : endOffset - startOffset;
+                if (fixedSize > 0) {
+                    if (totalBitSize > fixedSize)
+                        err::E0005.throwError("Bitfield's fields exceeded the attribute-allotted size.", {}, node);
+                    totalBitSize = fixedSize;
+                }
+                bitfieldPattern->setBitSize(totalBitSize);
+            };
 
             for (auto &entry : this->m_entries) {
                 auto patterns = entry->createPatterns(evaluator);
+                setSize(entry.get());
                 std::move(patterns.begin(), patterns.end(), std::back_inserter(potentialPatterns));
 
                 if (!evaluator->getCurrentArrayIndex().has_value()) {
@@ -124,20 +137,7 @@ namespace pl::core::ast {
                 }
             }
 
-            auto endPosition = evaluator->getBitwiseReadOffset();
-            auto startOffset = (initialPosition.byteOffset * 8) + initialPosition.bitOffset;
-            auto endOffset = (endPosition.byteOffset * 8) + endPosition.bitOffset;
-            auto totalBitSize = startOffset > endOffset ? startOffset - endOffset : endOffset - startOffset;
-            if (fixedSize > 0) {
-                if (totalBitSize > fixedSize)
-                    err::E0005.throwError("Bitfield's fields exceeded the attribute-allotted size.", {}, this);
-                if (didReverse)
-                    evaluator->setBitwiseReadOffset(initialPosition);
-                totalBitSize = fixedSize;
-            }
-            bitfieldPattern->setBitSize(totalBitSize);
-
-          for (auto &pattern : potentialPatterns) {
+            for (auto &pattern : potentialPatterns) {
                 if (auto bitfieldMember = dynamic_cast<ptrn::PatternBitfieldMember*>(pattern.get()); bitfieldMember != nullptr) {
                     bitfieldMember->setParentBitfield(bitfieldPattern.get());
                     if (!bitfieldMember->isPadding())
@@ -148,6 +148,8 @@ namespace pl::core::ast {
             }
 
             bitfieldPattern->setReversed(evaluator->readOrderIsReversed());
+            if (reversedChanged)
+                evaluator->setBitwiseReadOffset(initialPosition);
             bitfieldPattern->setFields(fields);
 
             applyTypeAttributes(evaluator, this, bitfieldPattern);

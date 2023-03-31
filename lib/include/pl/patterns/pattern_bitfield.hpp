@@ -35,18 +35,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] virtual bool isPadding() const { return false; }
 
-        [[nodiscard]] virtual bool isReversed() const { return false; }
-
-        virtual void setReversed(bool reversed) { wolv::util::unused(reversed); }
-
         [[nodiscard]] u128 getOffsetForSorting() const override {
-            auto *parent = this->getParentBitfield();
-            if (parent != nullptr && parent->isReversed()) {
-                auto parentOffset = parent->getTotalBitOffset();
-                auto parentSize = parent->getBitSize();
-                return parentOffset + parentSize - ((this->getTotalBitOffset() - parentOffset) + this->getBitSize());
-            }
-
             return this->getTotalBitOffset();
         }
 
@@ -207,11 +196,11 @@ namespace pl::ptrn {
             return this->m_totalBitSize;
         }
 
-        [[nodiscard]] bool isReversed() const override {
+        [[nodiscard]] bool isReversed() const {
             return this->m_reversed;
         }
 
-        void setReversed(bool reversed) override {
+        void setReversed(bool reversed) {
             this->m_reversed = reversed;
         }
 
@@ -281,6 +270,13 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getEntries() override {
             return this->m_entries;
+        }
+
+        void setOffset(u64 offset) override {
+            for (auto &member : this->m_entries)
+                member->setOffset(member->getOffset() - this->getOffset() + offset);
+
+            PatternBitfieldMember::setOffset(offset);
         }
 
         void forEachEntry(u64 start, u64 end, const std::function<void(u64, Pattern*)>& fn) override {
@@ -388,6 +384,8 @@ namespace pl::ptrn {
                 this->m_sortedEntries.push_back(member.get());
 
             std::sort(this->m_sortedEntries.begin(), this->m_sortedEntries.end(), comparator);
+            if (this->isReversed())
+                std::reverse(this->m_sortedEntries.begin(), this->m_sortedEntries.end());
 
             for (auto &member : this->m_entries)
                 member->sort(comparator);
@@ -447,11 +445,11 @@ namespace pl::ptrn {
             return this->m_totalBitSize;
         }
 
-        [[nodiscard]] bool isReversed() const override {
+        [[nodiscard]] bool isReversed() const {
             return this->m_reversed;
         }
 
-        void setReversed(bool reversed) override {
+        void setReversed(bool reversed) {
             this->m_reversed = reversed;
         }
 
@@ -496,10 +494,6 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string getFormattedName() const override {
             return "bitfield " + Pattern::getTypeName();
-        }
-
-        [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getEntries() override {
-            return this->m_fields;
         }
 
         void setFields(std::vector<std::shared_ptr<Pattern>> fields) {
@@ -608,6 +602,17 @@ namespace pl::ptrn {
             return this->m_fields.size();
         }
 
+        [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getEntries() override {
+            return this->m_fields;
+        }
+
+        void setOffset(u64 offset) override {
+            for (auto &member : this->m_fields)
+                member->setOffset(member->getOffset() - this->getOffset() + offset);
+
+            PatternBitfieldMember::setOffset(offset);
+        }
+
         void forEachEntry(u64 start, u64 end, const std::function<void (u64, Pattern *)> &fn) override {
             if (this->isSealed())
                 return;
@@ -625,6 +630,8 @@ namespace pl::ptrn {
                 this->m_sortedFields.push_back(member.get());
 
             std::sort(this->m_sortedFields.begin(), this->m_sortedFields.end(), comparator);
+            if (this->isReversed())
+                std::reverse(this->m_sortedFields.begin(), this->m_sortedFields.end());
 
             for (auto &member : this->m_fields)
                 member->sort(comparator);
