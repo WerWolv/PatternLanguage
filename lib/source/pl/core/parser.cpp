@@ -286,9 +286,14 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parseShiftExpression() {
         auto node = this->parseAdditiveExpression();
 
-        while (MATCHES(variant(tkn::Operator::LeftShift, tkn::Operator::RightShift))) {
-            auto op = getValue<Token::Operator>(-1);
-            node    = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseAdditiveExpression(), op);
+        while (true) {
+            if (MATCHES(sequence(tkn::Operator::BoolGreaterThan, tkn::Operator::BoolGreaterThan))) {
+                node    = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseAdditiveExpression(), Token::Operator::RightShift);
+            } else if (MATCHES(sequence(tkn::Operator::BoolLessThan, tkn::Operator::BoolLessThan))) {
+                node    = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseAdditiveExpression(), Token::Operator::LeftShift);
+            } else {
+                break;
+            }
         }
 
         return node;
@@ -336,9 +341,17 @@ namespace pl::core {
         if (inTemplate && peek(tkn::Operator::BoolGreaterThan))
             return node;
 
-        while (MATCHES(sequence(tkn::Operator::BoolGreaterThan) || sequence(tkn::Operator::BoolLessThan) || sequence(tkn::Operator::BoolGreaterThanOrEqual) || sequence(tkn::Operator::BoolLessThanOrEqual))) {
-            auto op = getValue<Token::Operator>(-1);
-            node    = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryOrExpression(inMatchRange), op);
+        while (true) {
+            if (MATCHES(sequence(tkn::Operator::BoolGreaterThan, tkn::Operator::Assign)))
+                node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryOrExpression(inMatchRange), Token::Operator::BoolGreaterThanOrEqual);
+            else if (MATCHES(sequence(tkn::Operator::BoolLessThan, tkn::Operator::Assign)))
+                node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryOrExpression(inMatchRange), Token::Operator::BoolLessThanOrEqual);
+            else if (MATCHES(sequence(tkn::Operator::BoolGreaterThan)))
+                node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryOrExpression(inMatchRange), Token::Operator::BoolGreaterThan);
+            else if (MATCHES(sequence(tkn::Operator::BoolLessThan)))
+                node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryOrExpression(inMatchRange), Token::Operator::BoolLessThan);
+            else
+                break;
         }
 
         return node;
@@ -542,9 +555,9 @@ namespace pl::core {
             statement = parseFunctionVariableAssignment(getValue<Token::Identifier>(-2).get());
         else if (MATCHES(sequence(tkn::Operator::Dollar, tkn::Operator::Assign)))
             statement = parseFunctionVariableAssignment("$");
-        else if (MATCHES(oneOf(tkn::Literal::Identifier) && oneOf(tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::Star, tkn::Operator::Slash, tkn::Operator::Percent, tkn::Operator::LeftShift, tkn::Operator::RightShift, tkn::Operator::BitOr, tkn::Operator::BitAnd, tkn::Operator::BitXor) && sequence(tkn::Operator::Assign)))
-            statement = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(-3).get());
-        else if (MATCHES(oneOf(tkn::Operator::Dollar) && oneOf(tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::Star, tkn::Operator::Slash, tkn::Operator::Percent, tkn::Operator::LeftShift, tkn::Operator::RightShift, tkn::Operator::BitOr, tkn::Operator::BitAnd, tkn::Operator::BitXor) && sequence(tkn::Operator::Assign)))
+        else if (auto identifier = parseCompoundAssignment(tkn::Literal::Identifier); identifier.has_value())
+            statement = parseFunctionVariableCompoundAssignment(identifier->get());
+        else if (parseCompoundAssignment(tkn::Operator::Dollar).has_value())
             statement = parseFunctionVariableCompoundAssignment("$");
         else if (MATCHES(oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue)))
             statement = parseFunctionControlFlowStatement();
@@ -605,7 +618,12 @@ namespace pl::core {
     }
 
     std::unique_ptr<ast::ASTNode> Parser::parseFunctionVariableCompoundAssignment(const std::string &lvalue) {
-        const auto &op = getValue<Token::Operator>(-2);
+        auto op = getValue<Token::Operator>(-2);
+
+        if (op == Token::Operator::BoolLessThan)
+            op = Token::Operator::LeftShift;
+        else if (op == Token::Operator::BoolGreaterThan)
+            op = Token::Operator::RightShift;
 
         auto rvalue = this->parseMathematicalExpression();
 
@@ -1099,12 +1117,12 @@ namespace pl::core {
 
         if (MATCHES(sequence(tkn::Operator::Dollar, tkn::Operator::Assign)))
             member = parseFunctionVariableAssignment("$");
-        else if (MATCHES(sequence(tkn::Operator::Dollar) && oneOf(tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::Star, tkn::Operator::Slash, tkn::Operator::Percent, tkn::Operator::LeftShift, tkn::Operator::RightShift, tkn::Operator::BitOr, tkn::Operator::BitAnd, tkn::Operator::BitXor) && sequence(tkn::Operator::Assign)))
+        else if (parseCompoundAssignment(tkn::Operator::Dollar).has_value())
             member = parseFunctionVariableCompoundAssignment("$");
         else if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Operator::Assign)))
             member = parseFunctionVariableAssignment(getValue<Token::Identifier>(-2).get());
-        else if (MATCHES(sequence(tkn::Literal::Identifier) && oneOf(tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::Star, tkn::Operator::Slash, tkn::Operator::Percent, tkn::Operator::LeftShift, tkn::Operator::RightShift, tkn::Operator::BitOr, tkn::Operator::BitAnd, tkn::Operator::BitXor) && sequence(tkn::Operator::Assign)))
-            member = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(-3).get());
+        else if (auto identifier = parseCompoundAssignment(tkn::Literal::Identifier); identifier.has_value())
+            member = parseFunctionVariableCompoundAssignment(identifier->get());
         else if (peek(tkn::Keyword::BigEndian) || peek(tkn::Keyword::LittleEndian) || peek(tkn::ValueType::Any) || peek(tkn::Literal::Identifier)) {
             // Some kind of variable definition
 
@@ -1281,8 +1299,8 @@ namespace pl::core {
         if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Operator::Assign))) {
             auto variableName = getValue<Token::Identifier>(-2).get();
             member = parseFunctionVariableAssignment(variableName);
-        } else if (MATCHES(sequence(tkn::Literal::Identifier) && oneOf(tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::Star, tkn::Operator::Slash, tkn::Operator::Percent, tkn::Operator::LeftShift, tkn::Operator::RightShift, tkn::Operator::BitOr, tkn::Operator::BitAnd, tkn::Operator::BitXor) && sequence(tkn::Operator::Assign)))
-            member = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(-3).get());
+        } else if (auto identifier = parseCompoundAssignment(tkn::Literal::Identifier); identifier.has_value())
+            member = parseFunctionVariableCompoundAssignment(identifier->get());
         else if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Operator::Colon))) {
             auto fieldName = getValue<Token::Identifier>(-2).get();
             member = create<ast::ASTNodeBitfieldField>(fieldName, parseMathematicalExpression());
@@ -1628,6 +1646,23 @@ namespace pl::core {
             ;
 
         return hlp::moveToVector(std::move(statement));
+    }
+
+    std::optional<Token::Identifier> Parser::parseCompoundAssignment(const Token &token) {
+        constexpr static std::array SingleTokens = { tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::Star, tkn::Operator::Slash, tkn::Operator::Percent, tkn::Operator::BitOr, tkn::Operator::BitAnd, tkn::Operator::BitXor };
+        constexpr static std::array DoubleTokens = { tkn::Operator::BoolLessThan, tkn::Operator::BoolGreaterThan };
+
+        for (auto &singleToken : SingleTokens) {
+            if (MATCHES(sequence(token, singleToken, tkn::Operator::Assign)))
+                return getValue<Token::Identifier>(-3);
+        }
+
+        for (auto &doubleTokens : DoubleTokens) {
+            if (MATCHES(sequence(token, doubleTokens, doubleTokens, tkn::Operator::Assign)))
+                return getValue<Token::Identifier>(-4);
+        }
+
+        return std::nullopt;
     }
 
     std::shared_ptr<ast::ASTNodeTypeDecl> Parser::addType(const std::string &name, std::unique_ptr<ast::ASTNode> &&node, std::optional<std::endian> endian) {

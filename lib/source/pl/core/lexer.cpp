@@ -345,12 +345,6 @@ namespace pl::core {
                 } else if (code.substr(offset, 2) == "!=") {
                     addToken(tkn::Operator::BoolNotEqual);
                     offset += 2;
-                } else if (code.substr(offset, 2) == ">=") {
-                    addToken(tkn::Operator::BoolGreaterThanOrEqual);
-                    offset += 2;
-                } else if (code.substr(offset, 2) == "<=") {
-                    addToken(tkn::Operator::BoolLessThanOrEqual);
-                    offset += 2;
                 } else if (code.substr(offset, 2) == "&&") {
                     addToken(tkn::Operator::BoolAnd);
                     offset += 2;
@@ -424,12 +418,6 @@ namespace pl::core {
                 } else if (c == '%') {
                     addToken(tkn::Operator::Percent);
                     offset += 1;
-                } else if (code.substr(offset, 2) == "<<") {
-                    addToken(tkn::Operator::LeftShift);
-                    offset += 2;
-                } else if (code.substr(offset, 2) == ">>") {
-                    addToken(tkn::Operator::RightShift);
-                    offset += 2;
                 } else if (c == '>') {
                     addToken(tkn::Operator::BoolGreaterThan);
                     offset += 1;
