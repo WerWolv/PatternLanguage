@@ -611,6 +611,9 @@ namespace pl::core {
         this->m_aborted = false;
         this->m_evaluated = false;
 
+        this->m_bitfieldIsReversed = false;
+        this->m_bitfieldBitOffset = 0;
+
         if (this->m_allowDangerousFunctions == DangerousFunctionPermission::Deny)
             this->m_allowDangerousFunctions = DangerousFunctionPermission::Ask;
 

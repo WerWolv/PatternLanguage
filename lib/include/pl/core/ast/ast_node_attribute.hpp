@@ -64,6 +64,15 @@ namespace pl::core::ast {
             return this->m_attributes;
         }
 
+        [[nodiscard]] ASTNodeAttribute *getAttributeByName(const std::string &key) const {
+            auto it = std::find_if(this->getAttributes().begin(), this->getAttributes().end(), [&](const std::unique_ptr<ASTNodeAttribute> &attribute) {
+                return attribute->getAttribute() == key;
+            });
+            if (it == this->getAttributes().end())
+                return nullptr;
+            return it->get();
+        }
+
         [[nodiscard]] bool hasAttribute(const std::string &key, bool needsParameter) const {
             return std::any_of(this->m_attributes.begin(), this->m_attributes.end(), [&](const std::unique_ptr<ASTNodeAttribute> &attribute) {
                 if (attribute->getAttribute() == key) {
@@ -80,16 +89,12 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] const std::vector<std::unique_ptr<ASTNode>>& getAttributeArguments(const std::string &key) const {
-            auto attribute = std::find_if(this->m_attributes.begin(), this->m_attributes.end(), [&](const std::unique_ptr<ASTNodeAttribute> &attribute) {
-                return attribute->getAttribute() == key;
-            });
-
-            if (attribute != this->m_attributes.end())
-                return (*attribute)->getArguments();
-            else {
+            auto *attribute = this->getAttributeByName(key);
+            if (attribute == nullptr) {
                 static std::vector<std::unique_ptr<ASTNode>> empty;
                 return empty;
             }
+            return attribute->getArguments();
         }
 
         [[nodiscard]] std::shared_ptr<ASTNode> getFirstAttributeValue(const std::vector<std::string> &keys) const {

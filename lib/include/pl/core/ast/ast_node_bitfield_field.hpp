@@ -41,12 +41,18 @@ namespace pl::core::ast {
                     [](auto &&offset) -> u8 { return static_cast<u8>(offset); }
             }, literal->getValue());
 
-            auto pattern = std::make_shared<ptrn::PatternBitfieldField>(evaluator, evaluator->dataOffset(), evaluator->getBitfieldBitOffset(), bitSize);
+            std::shared_ptr<ptrn::PatternBitfieldField> pattern;
+            if (evaluator->isBitfieldReversed()) {
+                evaluator->incrementBitfieldBitOffset(-bitSize);
+                pattern = std::make_shared<ptrn::PatternBitfieldField>(evaluator, evaluator->dataOffset(), evaluator->getBitfieldBitOffset(), bitSize);
+            } else {
+                pattern = std::make_shared<ptrn::PatternBitfieldField>(evaluator, evaluator->dataOffset(), evaluator->getBitfieldBitOffset(), bitSize);
+                evaluator->incrementBitfieldBitOffset(bitSize);
+            }
             pattern->setPadding(this->isPadding());
             pattern->setVariableName(this->getName());
 
             pattern->setEndian(evaluator->getDefaultEndian());
-            evaluator->addToBitfieldBitOffset(bitSize);
             pattern->setSection(evaluator->getSectionId());
 
             applyVariableAttributes(evaluator, this, pattern);

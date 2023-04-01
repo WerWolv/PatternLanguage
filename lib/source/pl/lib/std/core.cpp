@@ -101,41 +101,6 @@ namespace pl::lib::libstd::core {
                 return std::nullopt;
             });
 
-            /* set_bitfield_order(order) */
-            runtime.addFunction(nsStdCore, "set_bitfield_order", FunctionParameterCount::exactly(1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto endian = params[0].toUnsigned();
-
-                switch (endian) {
-                    case 0:
-                        ctx->setBitfieldOrder(pl::core::BitfieldOrder::LeftToRight);
-                        break;
-                    case 1:
-                        ctx->setBitfieldOrder(pl::core::BitfieldOrder::RightToLeft);
-                        break;
-                    case 2:
-                        ctx->setBitfieldOrder({});
-                        break;
-                    default:
-                        err::E0012.throwError("Invalid endian value.", "Try one of the values in the std::core::BitfieldOrder enum.");
-                }
-
-                return std::nullopt;
-            });
-
-            /* get_bitfield_order() -> order */
-            runtime.addFunction(nsStdCore, "get_bitfield_order", FunctionParameterCount::none(), [](Evaluator *ctx, auto) -> std::optional<Token::Literal> {
-                if (ctx->getBitfieldOrder().has_value()) {
-                    switch (ctx->getBitfieldOrder().value()) {
-                        case pl::core::BitfieldOrder::LeftToRight:
-                            return 0;
-                        case pl::core::BitfieldOrder::RightToLeft:
-                            return 1;
-                    }
-                }
-
-                return 2;
-            });
-
             /* array_index() -> index */
             runtime.addFunction(nsStdCore, "array_index", FunctionParameterCount::none(), [](Evaluator *ctx, auto) -> std::optional<Token::Literal> {
                 auto index = ctx->getCurrentArrayIndex();

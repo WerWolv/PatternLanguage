@@ -88,6 +88,7 @@ namespace pl::core::ast {
             auto arrayPattern = std::make_unique<ptrn::PatternBitfieldArray>(evaluator, evaluator->dataOffset(), evaluator->getBitfieldBitOffset(), 0);
             arrayPattern->setVariableName(this->m_name);
             arrayPattern->setSection(evaluator->getSectionId());
+            arrayPattern->setReversed(evaluator->isBitfieldReversed());
 
             std::vector<std::shared_ptr<ptrn::Pattern>> entries;
 
