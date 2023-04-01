@@ -15,6 +15,20 @@ namespace pl::core::ast {
             this->m_type  = other.m_type->clone();
         }
 
+    private:
+        template<typename T>
+        T changeEndianess(Evaluator *evaluator, T value, size_t size, std::endian endian) const {
+            if (endian == evaluator->getDefaultEndian())
+                return value;
+
+            if constexpr (std::endian::native == std::endian::little)
+                return hlp::changeEndianess(value, size, std::endian::big);
+            else
+                return hlp::changeEndianess(value, size, std::endian::little);
+        }
+
+    public:
+
         [[nodiscard]] std::unique_ptr<ASTNode> clone() const override {
             return std::unique_ptr<ASTNode>(new ASTNodeCast(*this));
         }
@@ -122,18 +136,6 @@ namespace pl::core::ast {
                 },
             },
             value));
-        }
-
-    private:
-        template<typename T>
-        T changeEndianess(Evaluator *evaluator, T value, size_t size, std::endian endian) const {
-            if (endian == evaluator->getDefaultEndian())
-                return value;
-
-            if constexpr (std::endian::native == std::endian::little)
-                return hlp::changeEndianess(value, size, std::endian::big);
-            else
-                return hlp::changeEndianess(value, size, std::endian::little);
         }
 
     private:

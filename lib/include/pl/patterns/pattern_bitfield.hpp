@@ -103,7 +103,7 @@ namespace pl::ptrn {
             return this->m_bitOffset;
         }
 
-        void setBitOffset(u8 bitOffset) {
+        void setBitOffset(u8 bitOffset) override {
             this->m_bitOffset = bitOffset;
         }
 

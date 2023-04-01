@@ -222,138 +222,138 @@ namespace pl::core {
 
     namespace tkn {
 
-        constexpr inline Token createToken(const core::Token::Type type, const core::Token::ValueTypes &value) {
+        inline Token createToken(const core::Token::Type type, const core::Token::ValueTypes &value) {
             return { type, value, 1, 1 };
         }
 
         namespace Keyword {
 
-            constexpr auto If           = createToken(core::Token::Type::Keyword, Token::Keyword::If);
-            constexpr auto Else         = createToken(core::Token::Type::Keyword, Token::Keyword::Else);
-            constexpr auto While        = createToken(core::Token::Type::Keyword, Token::Keyword::While);
-            constexpr auto For          = createToken(core::Token::Type::Keyword, Token::Keyword::For);
-            constexpr auto Match        = createToken(core::Token::Type::Keyword, Token::Keyword::Match);
-            constexpr auto Return       = createToken(core::Token::Type::Keyword, Token::Keyword::Return);
-            constexpr auto Break        = createToken(core::Token::Type::Keyword, Token::Keyword::Break);
-            constexpr auto Continue     = createToken(core::Token::Type::Keyword, Token::Keyword::Continue);
-            constexpr auto Struct       = createToken(core::Token::Type::Keyword, Token::Keyword::Struct);
-            constexpr auto Enum         = createToken(core::Token::Type::Keyword, Token::Keyword::Enum);
-            constexpr auto Union        = createToken(core::Token::Type::Keyword, Token::Keyword::Union);
-            constexpr auto Function     = createToken(core::Token::Type::Keyword, Token::Keyword::Function);
-            constexpr auto Bitfield     = createToken(core::Token::Type::Keyword, Token::Keyword::Bitfield);
-            constexpr auto LittleEndian = createToken(core::Token::Type::Keyword, Token::Keyword::LittleEndian);
-            constexpr auto BigEndian    = createToken(core::Token::Type::Keyword, Token::Keyword::BigEndian);
-            constexpr auto Parent       = createToken(core::Token::Type::Keyword, Token::Keyword::Parent);
-            constexpr auto Namespace    = createToken(core::Token::Type::Keyword, Token::Keyword::Namespace);
-            constexpr auto Using        = createToken(core::Token::Type::Keyword, Token::Keyword::Using);
-            constexpr auto This         = createToken(core::Token::Type::Keyword, Token::Keyword::This);
-            constexpr auto In           = createToken(core::Token::Type::Keyword, Token::Keyword::In);
-            constexpr auto Out          = createToken(core::Token::Type::Keyword, Token::Keyword::Out);
-            constexpr auto Reference    = createToken(core::Token::Type::Keyword, Token::Keyword::Reference);
-            constexpr auto Null         = createToken(core::Token::Type::Keyword, Token::Keyword::Null);
-            constexpr auto Const        = createToken(core::Token::Type::Keyword, Token::Keyword::Const);
-            constexpr auto Underscore   = createToken(core::Token::Type::Keyword, Token::Keyword::Underscore);
+            const auto If           = createToken(core::Token::Type::Keyword, Token::Keyword::If);
+            const auto Else         = createToken(core::Token::Type::Keyword, Token::Keyword::Else);
+            const auto While        = createToken(core::Token::Type::Keyword, Token::Keyword::While);
+            const auto For          = createToken(core::Token::Type::Keyword, Token::Keyword::For);
+            const auto Match        = createToken(core::Token::Type::Keyword, Token::Keyword::Match);
+            const auto Return       = createToken(core::Token::Type::Keyword, Token::Keyword::Return);
+            const auto Break        = createToken(core::Token::Type::Keyword, Token::Keyword::Break);
+            const auto Continue     = createToken(core::Token::Type::Keyword, Token::Keyword::Continue);
+            const auto Struct       = createToken(core::Token::Type::Keyword, Token::Keyword::Struct);
+            const auto Enum         = createToken(core::Token::Type::Keyword, Token::Keyword::Enum);
+            const auto Union        = createToken(core::Token::Type::Keyword, Token::Keyword::Union);
+            const auto Function     = createToken(core::Token::Type::Keyword, Token::Keyword::Function);
+            const auto Bitfield     = createToken(core::Token::Type::Keyword, Token::Keyword::Bitfield);
+            const auto LittleEndian = createToken(core::Token::Type::Keyword, Token::Keyword::LittleEndian);
+            const auto BigEndian    = createToken(core::Token::Type::Keyword, Token::Keyword::BigEndian);
+            const auto Parent       = createToken(core::Token::Type::Keyword, Token::Keyword::Parent);
+            const auto Namespace    = createToken(core::Token::Type::Keyword, Token::Keyword::Namespace);
+            const auto Using        = createToken(core::Token::Type::Keyword, Token::Keyword::Using);
+            const auto This         = createToken(core::Token::Type::Keyword, Token::Keyword::This);
+            const auto In           = createToken(core::Token::Type::Keyword, Token::Keyword::In);
+            const auto Out          = createToken(core::Token::Type::Keyword, Token::Keyword::Out);
+            const auto Reference    = createToken(core::Token::Type::Keyword, Token::Keyword::Reference);
+            const auto Null         = createToken(core::Token::Type::Keyword, Token::Keyword::Null);
+            const auto Const        = createToken(core::Token::Type::Keyword, Token::Keyword::Const);
+            const auto Underscore   = createToken(core::Token::Type::Keyword, Token::Keyword::Underscore);
 
         }
 
         namespace Literal {
 
-            constexpr auto IdentifierValue   = [](const std::string &name = { }) -> Token           { return createToken(core::Token::Type::Identifier, Token::Identifier(name)); };
-            constexpr auto NumericValue      = [](const Token::Literal &value = { }) -> Token       { return createToken(core::Token::Type::Integer, value); };
-            constexpr auto StringValue       = [](const std::string &value = { }) -> Token          { return createToken(core::Token::Type::String, Token::Literal(value)); };
-            constexpr auto DocComment        = [](bool global, const std::string &value) -> Token   { return { core::Token::Type::DocComment, Token::DocComment { global, value }, 1, 1 }; };
+            const auto IdentifierValue   = [](const std::string &name = { }) -> Token           { return createToken(core::Token::Type::Identifier, Token::Identifier(name)); };
+            const auto NumericValue      = [](const Token::Literal &value = { }) -> Token       { return createToken(core::Token::Type::Integer, value); };
+            const auto StringValue       = [](const std::string &value = { }) -> Token          { return createToken(core::Token::Type::String, Token::Literal(value)); };
+            const auto DocComment        = [](bool global, const std::string &value) -> Token   { return { core::Token::Type::DocComment, Token::DocComment { global, value }, 1, 1 }; };
 
-            constexpr auto Identifier = createToken(core::Token::Type::Identifier, { });
-            constexpr auto Numeric = createToken(core::Token::Type::Integer, { });
-            constexpr auto String = createToken(core::Token::Type::String, { });
+            const auto Identifier = createToken(core::Token::Type::Identifier, { });
+            const auto Numeric = createToken(core::Token::Type::Integer, { });
+            const auto String = createToken(core::Token::Type::String, { });
 
         }
 
         namespace Operator {
 
-            constexpr auto Plus                     = createToken(core::Token::Type::Operator, Token::Operator::Plus);
-            constexpr auto Minus                    = createToken(core::Token::Type::Operator, Token::Operator::Minus);
-            constexpr auto Star                     = createToken(core::Token::Type::Operator, Token::Operator::Star);
-            constexpr auto Slash                    = createToken(core::Token::Type::Operator, Token::Operator::Slash);
-            constexpr auto Percent                  = createToken(core::Token::Type::Operator, Token::Operator::Percent);
-            constexpr auto LeftShift                = createToken(core::Token::Type::Operator, Token::Operator::LeftShift);
-            constexpr auto RightShift               = createToken(core::Token::Type::Operator, Token::Operator::RightShift);
-            constexpr auto BitAnd                   = createToken(core::Token::Type::Operator, Token::Operator::BitAnd);
-            constexpr auto BitOr                    = createToken(core::Token::Type::Operator, Token::Operator::BitOr);
-            constexpr auto BitXor                   = createToken(core::Token::Type::Operator, Token::Operator::BitXor);
-            constexpr auto BitNot                   = createToken(core::Token::Type::Operator, Token::Operator::BitNot);
-            constexpr auto BoolEqual                = createToken(core::Token::Type::Operator, Token::Operator::BoolEqual);
-            constexpr auto BoolNotEqual             = createToken(core::Token::Type::Operator, Token::Operator::BoolNotEqual);
-            constexpr auto BoolLessThan             = createToken(core::Token::Type::Operator, Token::Operator::BoolLessThan);
-            constexpr auto BoolGreaterThan          = createToken(core::Token::Type::Operator, Token::Operator::BoolGreaterThan);
-            constexpr auto BoolLessThanOrEqual      = createToken(core::Token::Type::Operator, Token::Operator::BoolLessThanOrEqual);
-            constexpr auto BoolGreaterThanOrEqual   = createToken(core::Token::Type::Operator, Token::Operator::BoolGreaterThanOrEqual);
-            constexpr auto BoolAnd                  = createToken(core::Token::Type::Operator, Token::Operator::BoolAnd);
-            constexpr auto BoolOr                   = createToken(core::Token::Type::Operator, Token::Operator::BoolOr);
-            constexpr auto BoolNot                  = createToken(core::Token::Type::Operator, Token::Operator::BoolNot);
-            constexpr auto BoolXor                  = createToken(core::Token::Type::Operator, Token::Operator::BoolXor);
-            constexpr auto Dollar                   = createToken(core::Token::Type::Operator, Token::Operator::Dollar);
-            constexpr auto Colon                    = createToken(core::Token::Type::Operator, Token::Operator::Colon);
-            constexpr auto ScopeResolution          = createToken(core::Token::Type::Operator, Token::Operator::ScopeResolution);
-            constexpr auto TernaryConditional       = createToken(core::Token::Type::Operator, Token::Operator::TernaryConditional);
-            constexpr auto AddressOf                = createToken(core::Token::Type::Operator, Token::Operator::AddressOf);
-            constexpr auto SizeOf                   = createToken(core::Token::Type::Operator, Token::Operator::SizeOf);
-            constexpr auto At                       = createToken(core::Token::Type::Operator, Token::Operator::At);
-            constexpr auto Assign                   = createToken(core::Token::Type::Operator, Token::Operator::Assign);
+            const auto Plus                     = createToken(core::Token::Type::Operator, Token::Operator::Plus);
+            const auto Minus                    = createToken(core::Token::Type::Operator, Token::Operator::Minus);
+            const auto Star                     = createToken(core::Token::Type::Operator, Token::Operator::Star);
+            const auto Slash                    = createToken(core::Token::Type::Operator, Token::Operator::Slash);
+            const auto Percent                  = createToken(core::Token::Type::Operator, Token::Operator::Percent);
+            const auto LeftShift                = createToken(core::Token::Type::Operator, Token::Operator::LeftShift);
+            const auto RightShift               = createToken(core::Token::Type::Operator, Token::Operator::RightShift);
+            const auto BitAnd                   = createToken(core::Token::Type::Operator, Token::Operator::BitAnd);
+            const auto BitOr                    = createToken(core::Token::Type::Operator, Token::Operator::BitOr);
+            const auto BitXor                   = createToken(core::Token::Type::Operator, Token::Operator::BitXor);
+            const auto BitNot                   = createToken(core::Token::Type::Operator, Token::Operator::BitNot);
+            const auto BoolEqual                = createToken(core::Token::Type::Operator, Token::Operator::BoolEqual);
+            const auto BoolNotEqual             = createToken(core::Token::Type::Operator, Token::Operator::BoolNotEqual);
+            const auto BoolLessThan             = createToken(core::Token::Type::Operator, Token::Operator::BoolLessThan);
+            const auto BoolGreaterThan          = createToken(core::Token::Type::Operator, Token::Operator::BoolGreaterThan);
+            const auto BoolLessThanOrEqual      = createToken(core::Token::Type::Operator, Token::Operator::BoolLessThanOrEqual);
+            const auto BoolGreaterThanOrEqual   = createToken(core::Token::Type::Operator, Token::Operator::BoolGreaterThanOrEqual);
+            const auto BoolAnd                  = createToken(core::Token::Type::Operator, Token::Operator::BoolAnd);
+            const auto BoolOr                   = createToken(core::Token::Type::Operator, Token::Operator::BoolOr);
+            const auto BoolNot                  = createToken(core::Token::Type::Operator, Token::Operator::BoolNot);
+            const auto BoolXor                  = createToken(core::Token::Type::Operator, Token::Operator::BoolXor);
+            const auto Dollar                   = createToken(core::Token::Type::Operator, Token::Operator::Dollar);
+            const auto Colon                    = createToken(core::Token::Type::Operator, Token::Operator::Colon);
+            const auto ScopeResolution          = createToken(core::Token::Type::Operator, Token::Operator::ScopeResolution);
+            const auto TernaryConditional       = createToken(core::Token::Type::Operator, Token::Operator::TernaryConditional);
+            const auto AddressOf                = createToken(core::Token::Type::Operator, Token::Operator::AddressOf);
+            const auto SizeOf                   = createToken(core::Token::Type::Operator, Token::Operator::SizeOf);
+            const auto At                       = createToken(core::Token::Type::Operator, Token::Operator::At);
+            const auto Assign                   = createToken(core::Token::Type::Operator, Token::Operator::Assign);
 
         }
 
         namespace ValueType {
 
-            constexpr auto CustomType       = createToken(core::Token::Type::ValueType, Token::ValueType::CustomType);
-            constexpr auto Padding          = createToken(core::Token::Type::ValueType, Token::ValueType::Padding);
-            constexpr auto Unsigned         = createToken(core::Token::Type::ValueType, Token::ValueType::Unsigned);
-            constexpr auto Signed           = createToken(core::Token::Type::ValueType, Token::ValueType::Signed);
-            constexpr auto FloatingPoint    = createToken(core::Token::Type::ValueType, Token::ValueType::FloatingPoint);
-            constexpr auto Auto             = createToken(core::Token::Type::ValueType, Token::ValueType::Auto);
-            constexpr auto Any              = createToken(core::Token::Type::ValueType, Token::ValueType::Any);
+            const auto CustomType       = createToken(core::Token::Type::ValueType, Token::ValueType::CustomType);
+            const auto Padding          = createToken(core::Token::Type::ValueType, Token::ValueType::Padding);
+            const auto Unsigned         = createToken(core::Token::Type::ValueType, Token::ValueType::Unsigned);
+            const auto Signed           = createToken(core::Token::Type::ValueType, Token::ValueType::Signed);
+            const auto FloatingPoint    = createToken(core::Token::Type::ValueType, Token::ValueType::FloatingPoint);
+            const auto Auto             = createToken(core::Token::Type::ValueType, Token::ValueType::Auto);
+            const auto Any              = createToken(core::Token::Type::ValueType, Token::ValueType::Any);
 
-            constexpr auto Unsigned8Bit     = createToken(core::Token::Type::ValueType, Token::ValueType::Unsigned8Bit);
-            constexpr auto Unsigned16Bit    = createToken(core::Token::Type::ValueType, Token::ValueType::Unsigned16Bit);
-            constexpr auto Unsigned24Bit    = createToken(core::Token::Type::ValueType, Token::ValueType::Unsigned24Bit);
-            constexpr auto Unsigned32Bit    = createToken(core::Token::Type::ValueType, Token::ValueType::Unsigned32Bit);
-            constexpr auto Unsigned48Bit    = createToken(core::Token::Type::ValueType, Token::ValueType::Unsigned48Bit);
-            constexpr auto Unsigned64Bit    = createToken(core::Token::Type::ValueType, Token::ValueType::Unsigned64Bit);
-            constexpr auto Unsigned96Bit    = createToken(core::Token::Type::ValueType, Token::ValueType::Unsigned96Bit);
-            constexpr auto Unsigned128Bit   = createToken(core::Token::Type::ValueType, Token::ValueType::Unsigned128Bit);
+            const auto Unsigned8Bit     = createToken(core::Token::Type::ValueType, Token::ValueType::Unsigned8Bit);
+            const auto Unsigned16Bit    = createToken(core::Token::Type::ValueType, Token::ValueType::Unsigned16Bit);
+            const auto Unsigned24Bit    = createToken(core::Token::Type::ValueType, Token::ValueType::Unsigned24Bit);
+            const auto Unsigned32Bit    = createToken(core::Token::Type::ValueType, Token::ValueType::Unsigned32Bit);
+            const auto Unsigned48Bit    = createToken(core::Token::Type::ValueType, Token::ValueType::Unsigned48Bit);
+            const auto Unsigned64Bit    = createToken(core::Token::Type::ValueType, Token::ValueType::Unsigned64Bit);
+            const auto Unsigned96Bit    = createToken(core::Token::Type::ValueType, Token::ValueType::Unsigned96Bit);
+            const auto Unsigned128Bit   = createToken(core::Token::Type::ValueType, Token::ValueType::Unsigned128Bit);
 
-            constexpr auto Signed8Bit       = createToken(core::Token::Type::ValueType, Token::ValueType::Signed8Bit);
-            constexpr auto Signed16Bit      = createToken(core::Token::Type::ValueType, Token::ValueType::Signed16Bit);
-            constexpr auto Signed24Bit      = createToken(core::Token::Type::ValueType, Token::ValueType::Signed24Bit);
-            constexpr auto Signed32Bit      = createToken(core::Token::Type::ValueType, Token::ValueType::Signed32Bit);
-            constexpr auto Signed48Bit      = createToken(core::Token::Type::ValueType, Token::ValueType::Signed48Bit);
-            constexpr auto Signed64Bit      = createToken(core::Token::Type::ValueType, Token::ValueType::Signed64Bit);
-            constexpr auto Signed96Bit      = createToken(core::Token::Type::ValueType, Token::ValueType::Signed96Bit);
-            constexpr auto Signed128Bit     = createToken(core::Token::Type::ValueType, Token::ValueType::Signed128Bit);
+            const auto Signed8Bit       = createToken(core::Token::Type::ValueType, Token::ValueType::Signed8Bit);
+            const auto Signed16Bit      = createToken(core::Token::Type::ValueType, Token::ValueType::Signed16Bit);
+            const auto Signed24Bit      = createToken(core::Token::Type::ValueType, Token::ValueType::Signed24Bit);
+            const auto Signed32Bit      = createToken(core::Token::Type::ValueType, Token::ValueType::Signed32Bit);
+            const auto Signed48Bit      = createToken(core::Token::Type::ValueType, Token::ValueType::Signed48Bit);
+            const auto Signed64Bit      = createToken(core::Token::Type::ValueType, Token::ValueType::Signed64Bit);
+            const auto Signed96Bit      = createToken(core::Token::Type::ValueType, Token::ValueType::Signed96Bit);
+            const auto Signed128Bit     = createToken(core::Token::Type::ValueType, Token::ValueType::Signed128Bit);
 
-            constexpr auto Float            = createToken(core::Token::Type::ValueType, Token::ValueType::Float);
-            constexpr auto Double           = createToken(core::Token::Type::ValueType, Token::ValueType::Double);
+            const auto Float            = createToken(core::Token::Type::ValueType, Token::ValueType::Float);
+            const auto Double           = createToken(core::Token::Type::ValueType, Token::ValueType::Double);
 
-            constexpr auto Boolean          = createToken(core::Token::Type::ValueType, Token::ValueType::Boolean);
+            const auto Boolean          = createToken(core::Token::Type::ValueType, Token::ValueType::Boolean);
 
-            constexpr auto Character        = createToken(core::Token::Type::ValueType, Token::ValueType::Character);
-            constexpr auto Character16      = createToken(core::Token::Type::ValueType, Token::ValueType::Character16);
-            constexpr auto String           = createToken(core::Token::Type::ValueType, Token::ValueType::String);
+            const auto Character        = createToken(core::Token::Type::ValueType, Token::ValueType::Character);
+            const auto Character16      = createToken(core::Token::Type::ValueType, Token::ValueType::Character16);
+            const auto String           = createToken(core::Token::Type::ValueType, Token::ValueType::String);
 
         }
 
         namespace Separator {
 
-            constexpr auto Comma            = createToken(core::Token::Type::Separator, Token::Separator::Comma);
-            constexpr auto LeftParenthesis  = createToken(core::Token::Type::Separator, Token::Separator::LeftParenthesis);
-            constexpr auto RightParenthesis = createToken(core::Token::Type::Separator, Token::Separator::RightParenthesis);
-            constexpr auto LeftBracket      = createToken(core::Token::Type::Separator, Token::Separator::LeftBracket);
-            constexpr auto RightBracket     = createToken(core::Token::Type::Separator, Token::Separator::RightBracket);
-            constexpr auto LeftBrace        = createToken(core::Token::Type::Separator, Token::Separator::LeftBrace);
-            constexpr auto RightBrace       = createToken(core::Token::Type::Separator, Token::Separator::RightBrace);
-            constexpr auto Dot              = createToken(core::Token::Type::Separator, Token::Separator::Dot);
-            constexpr auto Semicolon        = createToken(core::Token::Type::Separator, Token::Separator::Semicolon);
-            constexpr auto EndOfProgram     = createToken(core::Token::Type::Separator, Token::Separator::EndOfProgram);
+            const auto Comma            = createToken(core::Token::Type::Separator, Token::Separator::Comma);
+            const auto LeftParenthesis  = createToken(core::Token::Type::Separator, Token::Separator::LeftParenthesis);
+            const auto RightParenthesis = createToken(core::Token::Type::Separator, Token::Separator::RightParenthesis);
+            const auto LeftBracket      = createToken(core::Token::Type::Separator, Token::Separator::LeftBracket);
+            const auto RightBracket     = createToken(core::Token::Type::Separator, Token::Separator::RightBracket);
+            const auto LeftBrace        = createToken(core::Token::Type::Separator, Token::Separator::LeftBrace);
+            const auto RightBrace       = createToken(core::Token::Type::Separator, Token::Separator::RightBrace);
+            const auto Dot              = createToken(core::Token::Type::Separator, Token::Separator::Dot);
+            const auto Semicolon        = createToken(core::Token::Type::Separator, Token::Separator::Semicolon);
+            const auto EndOfProgram     = createToken(core::Token::Type::Separator, Token::Separator::EndOfProgram);
 
         }
 
