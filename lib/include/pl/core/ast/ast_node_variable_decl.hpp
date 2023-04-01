@@ -75,7 +75,7 @@ namespace pl::core::ast {
                     err::E0005.throwError(fmt::format("Cannot place variable '{}' at out of bounds address 0x{:08X}", this->m_name, evaluator->dataOffset()), { }, this);
             }
 
-            if (evaluator->getSectionId() == ptrn::Pattern::PatternLocalSectionId) {
+            if (evaluator->getSectionId() == ptrn::Pattern::PatternLocalSectionId || evaluator->getSectionId() == ptrn::Pattern::HeapSectionId) {
                 evaluator->dataOffset() = startOffset;
                 this->execute(evaluator);
                 return { };

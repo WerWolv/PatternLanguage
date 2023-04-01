@@ -348,10 +348,17 @@ namespace pl::core {
             bool heapSection = pattern->getSection() == ptrn::Pattern::HeapSectionId;
             bool patternLocalSection = pattern->getSection() == ptrn::Pattern::PatternLocalSectionId;
             auto &storage = [&, this]() -> auto& {
-                if (heapSection)
-                    return this->getHeap()[pattern->getHeapAddress()];
+                if (heapSection) {
+                    if (auto &heap = this->getHeap(); heap.size() > pattern->getHeapAddress())
+                        return heap[pattern->getHeapAddress()];
+                    else
+                        err::E0011.throwError(fmt::format("Tried accessing out of bounds heap cell {}. This is a bug.", pattern->getHeapAddress()));
+                }
                 else if (patternLocalSection)
-                    return this->m_patternLocalStorage[pattern->getHeapAddress()].data;
+                    if (auto &patternLocal = this->m_patternLocalStorage; patternLocal.size() > pattern->getHeapAddress())
+                        return this->m_patternLocalStorage[pattern->getHeapAddress()].data;
+                    else
+                        err::E0011.throwError(fmt::format("Tried accessing out of bounds pattern local cell {}. This is a bug.", pattern->getHeapAddress()));
                 else
                     return this->getSection(pattern->getSection());
             }();

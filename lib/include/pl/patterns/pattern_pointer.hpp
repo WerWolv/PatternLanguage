@@ -44,6 +44,9 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::vector<std::pair<u64, Pattern*>> getChildren() override {
+            if (this->getVisibility() == Visibility::HighlightHidden)
+                return { };
+
             auto children = this->m_pointedAt->getChildren();
             children.emplace_back(this->getOffset(), this);
             return children;

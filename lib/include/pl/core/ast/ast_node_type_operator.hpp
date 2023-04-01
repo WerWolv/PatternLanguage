@@ -46,7 +46,11 @@ namespace pl::core::ast {
                 }
             } else {
                 auto offset = evaluator->dataOffset();
-                ON_SCOPE_EXIT { evaluator->dataOffset() = offset; };
+                evaluator->pushSectionId(ptrn::Pattern::InstantiationSectionId);
+                ON_SCOPE_EXIT {
+                    evaluator->dataOffset() = offset;
+                    evaluator->popSectionId();
+                };
 
                 auto patterns = this->m_expression->createPatterns(evaluator);
                 if (patterns.empty())

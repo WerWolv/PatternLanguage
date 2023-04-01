@@ -142,13 +142,13 @@ namespace pl::core::ast {
             }
             bitfieldPattern->setBitSize(totalBitSize);
 
-            for (auto &pattern : potentialPatterns) {
+          for (auto &pattern : potentialPatterns) {
                 if (auto bitfieldMember = dynamic_cast<ptrn::PatternBitfieldMember*>(pattern.get()); bitfieldMember != nullptr) {
                     bitfieldMember->setParentBitfield(bitfieldPattern.get());
                     if (!bitfieldMember->isPadding())
-                        fields.push_back(std::move(pattern));
+                        fields.push_back(pattern);
                 } else {
-                    fields.push_back(std::move(pattern));
+                    fields.push_back(pattern);
                 }
             }
 

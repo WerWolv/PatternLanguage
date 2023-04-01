@@ -151,69 +151,6 @@ namespace pl::lib::libstd::math {
                 return std::atanh(params[0].toFloatingPoint());
             });
 
-
-            static std::random_device randomDevice;
-            static std::mt19937_64 random(randomDevice());
-
-            random.seed(std::chrono::system_clock::now().time_since_epoch().count());
-
-            api::Namespace nsStdMathRandom = { "builtin", "std", "math", "random" };
-
-            /* set_seed(seed) */
-            runtime.addFunction(nsStdMathRandom, "set_seed", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
-                random.seed(params[0].toUnsigned());
-                return {};
-            });
-
-            /* random(type, param1, param2) */
-            runtime.addFunction(nsStdMathRandom, "generate", FunctionParameterCount::exactly(3), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
-                auto type = params[0].toUnsigned();
-
-                switch (type) {
-                    case 0: /* Uniform */
-                        return std::uniform_int_distribution<i128>(params[1].toUnsigned(), params[2].toUnsigned())(random);
-                    case 1: /* Normal */
-                        return std::normal_distribution<double>(params[1].toFloatingPoint(), params[2].toFloatingPoint())(random);
-                    case 2: /* Exponential */
-                        return std::exponential_distribution<double>(params[1].toFloatingPoint())(random);
-                    case 3: /* Gamma */
-                        return std::gamma_distribution<double>(params[1].toFloatingPoint(), params[2].toFloatingPoint())(random);
-                    case 4: /* Weibull */
-                        return std::weibull_distribution<double>(params[1].toFloatingPoint(), params[2].toFloatingPoint())(random);
-                    case 5: /* Extreme Value */
-                        return std::extreme_value_distribution<double>(params[1].toFloatingPoint(), params[2].toFloatingPoint())(random);
-                    case 6: /* Chi Squared */
-                        return std::chi_squared_distribution<double>(params[1].toFloatingPoint())(random);
-                    case 7: /* Cauchy */
-                        return std::cauchy_distribution<double>(params[1].toFloatingPoint(), params[2].toFloatingPoint())(random);
-                    case 8: /* Fisher F */
-                        return std::fisher_f_distribution<double>(params[1].toFloatingPoint(), params[2].toFloatingPoint())(random);
-                    case 9: /* Student t */
-                        return std::student_t_distribution<double>(params[1].toFloatingPoint())(random);
-                    case 10: /* Lognormal */
-                        return std::lognormal_distribution<double>(params[1].toFloatingPoint(), params[2].toFloatingPoint())(random);
-                    case 11: /* Discrete */
-                        return std::discrete_distribution<i128>(params[1].toUnsigned(), params[2].toUnsigned())(random);
-                    case 12: /* Bernoulli */
-                        return std::bernoulli_distribution(params[1].toFloatingPoint())(random);
-                    case 13: /* Binomial */
-                        return std::binomial_distribution<i128>(params[1].toUnsigned(), params[2].toFloatingPoint())(random);
-                    case 14: /* Negative Binomial */
-                        return std::negative_binomial_distribution<i128>(params[1].toUnsigned(), params[2].toFloatingPoint())(random);
-                    case 15: /* Geometric */
-                        return std::geometric_distribution<i128>(params[1].toFloatingPoint())(random);
-                    case 16: /* Poisson */
-                        return std::poisson_distribution<i128>(params[1].toFloatingPoint())(random);
-                    case 17: /* Discrete */
-                        return std::discrete_distribution<i128>(params[1].toUnsigned(), params[2].toUnsigned())(random);
-                    default:
-                        err::E0003.throwError("Invalid random type");
-
-
-
-                }
-            });
-
             /* accumulate(start, end, size, section, operation = Add, endian = Native) */
             runtime.addFunction(nsStdMath, "accumulate", FunctionParameterCount::between(4, 6), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 auto start      = params[0].toUnsigned();

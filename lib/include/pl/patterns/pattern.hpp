@@ -45,6 +45,7 @@ namespace pl::ptrn {
         constexpr static u64 MainSectionId          = 0x0000'0000'0000'0000;
         constexpr static u64 HeapSectionId          = 0xFFFF'FFFF'FFFF'FFFF;
         constexpr static u64 PatternLocalSectionId  = 0xFFFF'FFFF'FFFF'FFFE;
+        constexpr static u64 InstantiationSectionId = 0xFFFF'FFFF'FFFF'FFFD;
 
         Pattern(core::Evaluator *evaluator, u64 offset, size_t size)
             : m_evaluator(evaluator), m_offset(offset), m_size(size) {
@@ -267,7 +268,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] bool isSealed() const {
-            return this->hasAttribute("sealed");
+            return this->hasAttribute("sealed") || this->getVisibility() == Visibility::Hidden;
         }
 
         virtual void setLocal(bool local) {

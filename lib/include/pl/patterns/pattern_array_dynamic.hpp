@@ -59,6 +59,9 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::vector<std::pair<u64, Pattern*>> getChildren() override {
+            if (this->getVisibility() == Visibility::HighlightHidden)
+                return { };
+
             std::vector<std::pair<u64, Pattern*>> result;
 
             for (const auto &entry : this->m_entries) {
