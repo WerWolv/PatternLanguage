@@ -298,10 +298,20 @@ namespace pl::core {
             // If the variable is being set to a pattern, adjust its layout to the real layout as it potentially contains dynamically sized members
             std::visit(wolv::util::overloaded {
                 [&](ptrn::Pattern * const value) {
-                    variablePattern = value->clone();
+                    if (value->getTypeName() != variablePattern->getTypeName())
+                        err::E0004.throwError(fmt::format("Cannot cast from type '{}' to type '{}'.", value->getTypeName(), variablePattern->getTypeName()));
+
+                    auto reference = variablePattern->isReference();
+                    auto offset = variablePattern->getOffset();
+                    auto section = variablePattern->getSection();
+
+                    // Keep the old variable until the new one is refcounted so we don't delete storage.
+                    auto oldVariable = std::exchange(variablePattern, value->clone());
 
                     variablePattern->setVariableName(name);
-                    variablePattern->setReference(true);
+                    variablePattern->setReference(reference);
+                    variablePattern->setOffset(offset);
+                    variablePattern->setSection(section);
                 },
                 [&](const std::string &value) {
                     if (dynamic_cast<ptrn::PatternString*>(variablePattern.get()) != nullptr)
