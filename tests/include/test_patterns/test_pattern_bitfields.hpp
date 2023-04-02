@@ -100,4 +100,56 @@ namespace pl::test {
         }
     };
 
+    class TestPatternReversedBitfields : public TestPattern {
+    public:
+        TestPatternReversedBitfields() : TestPattern("ReversedBitfields") {
+            auto testBitfield = create<PatternBitfield>("Test", "test", 0x02, 0, 16);
+
+            std::vector<std::shared_ptr<Pattern>> bitfieldFields;
+            {
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag0", 0x03, 7, 1, testBitfield.get()));
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag1", 0x03, 6, 1, testBitfield.get()));
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag2", 0x03, 5, 1, testBitfield.get()));
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag3", 0x03, 4, 1, testBitfield.get()));
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag4", 0x03, 3, 1, testBitfield.get()));
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag5", 0x03, 2, 1, testBitfield.get()));
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "enumerated", 0x02, 4, 6, testBitfield.get()));
+            }
+
+            testBitfield->setFields(std::move(bitfieldFields));
+            testBitfield->setEndian(std::endian::big);
+            testBitfield->setReversed(true);
+            testBitfield->addAttribute("bitfield_order", { 1, 16 });
+
+            addPattern(std::move(testBitfield));
+        }
+        ~TestPatternReversedBitfields() override = default;
+
+        [[nodiscard]] std::string getSourceCode() const override {
+            return R"(
+                #pragma endian big
+
+                bitfield Test {
+                    flag0 : 1;
+                    flag1 : 1;
+                    flag2 : 1;
+                    flag3 : 1;
+                    flag4 : 1;
+                    flag5 : 1;
+                    enumerated : 6;
+                } [[bitfield_order(1, 16)]];
+
+                Test test @ 2;
+
+                std::assert(test.flag0 == 1, "flag0 was invalid");
+                std::assert(test.flag1 == 1, "flag1 was invalid");
+                std::assert(test.flag2 == 1, "flag2 was invalid");
+                std::assert(test.flag3 == 0, "flag3 was invalid");
+                std::assert(test.flag4 == 0, "flag4 was invalid");
+                std::assert(test.flag5 == 0, "flag5 was invalid");
+                std::assert(test.enumerated == 0x39, "enumerated was invalid");
+            )";
+        }
+    };
+
 }
