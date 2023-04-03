@@ -2,6 +2,7 @@
 
 #include <pl/core/ast/ast_node.hpp>
 #include <pl/core/ast/ast_node_attribute.hpp>
+#include <pl/core/ast/ast_node_type_decl.hpp>
 
 #include <pl/patterns/pattern_bitfield.hpp>
 
@@ -71,6 +72,42 @@ namespace pl::core::ast {
         [[nodiscard]] std::shared_ptr<ptrn::PatternBitfieldField> createBitfield(Evaluator *evaluator, u64 byteOffset, u8 bitOffset, u8 bitSize) const override {
             return std::make_shared<ptrn::PatternBitfieldFieldSigned>(evaluator, byteOffset, bitOffset, bitSize);
         }
+    };
+
+    class ASTNodeBitfieldFieldSizedType : public ASTNodeBitfieldField {
+    public:
+        ASTNodeBitfieldFieldSizedType(std::string name, std::unique_ptr<ASTNodeTypeDecl> &&type, std::unique_ptr<ASTNode> &&size)
+            : ASTNodeBitfieldField(std::move(name), std::move(size)), m_type(std::move(type)) { }
+
+        ASTNodeBitfieldFieldSizedType(const ASTNodeBitfieldFieldSizedType &other) : ASTNodeBitfieldField(other) {
+            this->m_type = std::unique_ptr<ASTNodeTypeDecl>(static_cast<ASTNodeTypeDecl*>(other.m_type->clone().release()));
+        }
+
+        [[nodiscard]] std::unique_ptr<ASTNode> clone() const override {
+            return std::unique_ptr<ASTNode>(new ASTNodeBitfieldFieldSizedType(*this));
+        }
+
+        [[nodiscard]] std::shared_ptr<ptrn::PatternBitfieldField> createBitfield(Evaluator *evaluator, u64 byteOffset, u8 bitOffset, u8 bitSize) const override {
+            auto originalPosition = evaluator->getBitwiseReadOffset();
+            evaluator->setBitwiseReadOffset(byteOffset, bitOffset);
+            auto patterns = m_type->createPatterns(evaluator);
+            auto &pattern = patterns[0];
+            std::shared_ptr<ptrn::PatternBitfieldField> result = nullptr;
+            evaluator->setBitwiseReadOffset(originalPosition);
+
+            if (auto *patternEnum = dynamic_cast<ptrn::PatternEnum*>(pattern.get()); patternEnum != nullptr) {
+                auto bitfieldEnum = std::make_unique<ptrn::PatternBitfieldFieldEnum>(evaluator, byteOffset, bitOffset, bitSize);
+                bitfieldEnum->setTypeName(patternEnum->getTypeName());
+                bitfieldEnum->setEnumValues(patternEnum->getEnumValues());
+                result = std::move(bitfieldEnum);
+            } else {
+                err::E0004.throwError("Can only use enums as sized bitfield fields.", {}, this);
+            }
+            return result;
+        }
+
+    private:
+        std::unique_ptr<ASTNodeTypeDecl> m_type;
     };
 
 }

@@ -1352,7 +1352,11 @@ namespace pl::core {
                     err::P0002.throwError(fmt::format("Placement syntax is invalid within bitfields."), {}, 0);
 
                 auto variableName = getValue<Token::Identifier>(-1).get();
-                member = parseMemberVariable(std::move(type), false, false, variableName);
+
+                if (MATCHES(sequence(tkn::Operator::Colon)))
+                    member = create<ast::ASTNodeBitfieldFieldSizedType>(variableName, std::move(type), parseMathematicalExpression());
+                else
+                    member = parseMemberVariable(std::move(type), false, false, variableName);
             } else
                 err::P0002.throwError(fmt::format("Expected a variable name, got {}.", getFormattedToken(0)), {}, 0);
         } else if (MATCHES(sequence(tkn::Keyword::If)))

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pl/patterns/pattern.hpp>
+#include <pl/patterns/pattern_enum.hpp>
 
 namespace pl::ptrn {
 
@@ -147,6 +148,53 @@ namespace pl::ptrn {
             auto result = fmt::format("{}", this->getValue().toSigned());
             return Pattern::formatDisplayValue(result, this->getValue());
         }
+    };
+
+    class PatternBitfieldFieldEnum : public PatternBitfieldField {
+    public:
+        using PatternBitfieldField::PatternBitfieldField;
+
+        void setEnumValues(const std::vector<PatternEnum::EnumValue> &enumValues) {
+            this->m_enumValues = enumValues;
+        }
+
+        const auto& getEnumValues() const {
+            return this->m_enumValues;
+        }
+
+        [[nodiscard]] bool operator==(const Pattern &other) const override {
+            if (!compareCommonProperties<decltype(*this)>(other))
+                return false;
+
+            auto &otherEnum = *static_cast<const PatternBitfieldFieldEnum *>(&other);
+            if (this->m_enumValues.size() != otherEnum.m_enumValues.size())
+                return false;
+
+            for (u64 i = 0; i < this->m_enumValues.size(); i++) {
+                if (this->m_enumValues[i] != otherEnum.m_enumValues[i])
+                    return false;
+            }
+
+            return true;
+        }
+
+        [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
+            return std::unique_ptr<Pattern>(new PatternBitfieldFieldEnum(*this));
+        }
+
+        std::string formatDisplayValue() override {
+            auto value = this->readValue();
+            auto enumName = PatternEnum::getEnumName(this->getTypeName(), value, this->getEnumValues());
+            return Pattern::formatDisplayValue(fmt::format("{} (0x{:X})", enumName, value), value);
+        }
+
+        [[nodiscard]] std::string toString() const override {
+            auto enumName = PatternEnum::getEnumName(this->getTypeName(), this->readValue(), this->getEnumValues());
+            return Pattern::formatDisplayValue(enumName, this->getValue());
+        }
+
+    private:
+        std::vector<PatternEnum::EnumValue> m_enumValues;
     };
 
     class PatternBitfieldArray : public PatternBitfieldMember,
@@ -571,6 +619,8 @@ namespace pl::ptrn {
                         else
                             valueString += fmt::format("{}({}) | ", field->getVariableName(), field->toString());
                     }
+                } else if (auto *member = dynamic_cast<PatternBitfieldMember *>(pattern.get()); member != nullptr) {
+                    valueString += fmt::format("{} = {} | ", member->getVariableName(), member->toString());
                 } else if (auto *bitfield = dynamic_cast<PatternBitfield *>(pattern.get()); bitfield != nullptr) {
                     valueString += fmt::format("{} = {} | ", bitfield->getVariableName(), bitfield->formatDisplayValue());
                 }

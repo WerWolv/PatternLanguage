@@ -113,7 +113,14 @@ namespace pl::test {
                 bitfieldFields.push_back(create<PatternBitfieldField>("", "flag3", 0x03, 4, 1, testBitfield.get()));
                 bitfieldFields.push_back(create<PatternBitfieldField>("", "flag4", 0x03, 3, 1, testBitfield.get()));
                 bitfieldFields.push_back(create<PatternBitfieldField>("", "flag5", 0x03, 2, 1, testBitfield.get()));
-                bitfieldFields.push_back(create<PatternBitfieldField>("", "enumerated", 0x02, 4, 6, testBitfield.get()));
+
+                auto enumField = create<PatternBitfieldFieldEnum>("Enum", "enumerated", 0x02, 4, 6, testBitfield.get());
+                std::vector<PatternEnum::EnumValue> values;
+                {
+                    values.push_back({ 0x39, 0x39, "A" });
+                }
+                enumField->setEnumValues(std::move(values));
+                bitfieldFields.push_back(std::move(enumField));
             }
 
             testBitfield->setFields(std::move(bitfieldFields));
@@ -129,6 +136,10 @@ namespace pl::test {
             return R"(
                 #pragma endian big
 
+                enum Enum : u8 {
+                    A = 0x39,
+                };
+
                 bitfield Test {
                     flag0 : 1;
                     flag1 : 1;
@@ -136,7 +147,7 @@ namespace pl::test {
                     flag3 : 1;
                     flag4 : 1;
                     flag5 : 1;
-                    enumerated : 6;
+                    Enum enumerated : 6;
                 } [[bitfield_order(1, 16)]];
 
                 Test test @ 2;
@@ -147,7 +158,7 @@ namespace pl::test {
                 std::assert(test.flag3 == 0, "flag3 was invalid");
                 std::assert(test.flag4 == 0, "flag4 was invalid");
                 std::assert(test.flag5 == 0, "flag5 was invalid");
-                std::assert(test.enumerated == 0x39, "enumerated was invalid");
+                std::assert(test.enumerated == Enum::A, "enumerated was invalid");
             )";
         }
     };
