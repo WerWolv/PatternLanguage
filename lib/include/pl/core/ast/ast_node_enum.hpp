@@ -26,7 +26,14 @@ namespace pl::core::ast {
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             evaluator->updateRuntime(this);
 
-            auto pattern = std::make_shared<ptrn::PatternEnum>(evaluator, evaluator->dataOffset(), 0);
+            evaluator->alignToByte();
+
+            const auto nodes = this->m_underlyingType->createPatterns(evaluator);
+            if (nodes.empty())
+                err::E0005.throwError("'auto' can only be used with parameters.", { }, this);
+            auto &underlying = nodes.front();
+
+            auto pattern = std::make_shared<ptrn::PatternEnum>(evaluator, underlying->getOffset(), 0);
 
             pattern->setSection(evaluator->getSectionId());
 
@@ -55,11 +62,6 @@ namespace pl::core::ast {
             }
 
             pattern->setEnumValues(enumEntries);
-
-            const auto nodes = this->m_underlyingType->createPatterns(evaluator);
-            if (nodes.empty())
-                err::E0005.throwError("'auto' can only be used with parameters.", { }, this);
-            auto &underlying = nodes.front();
 
             pattern->setSize(underlying->getSize());
             pattern->setEndian(underlying->getEndian());

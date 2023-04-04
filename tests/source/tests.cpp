@@ -30,6 +30,7 @@ std::array Tests = {
     TEST(SucceedingAssert),
     TEST(FailingAssert),
     TEST(Bitfields),
+    TEST(ReversedBitfields),
     TEST(Math),
     TEST(Matching),
     TEST(RValues),

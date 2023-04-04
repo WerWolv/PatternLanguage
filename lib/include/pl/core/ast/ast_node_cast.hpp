@@ -36,8 +36,8 @@ namespace pl::core::ast {
         [[nodiscard]] std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override {
             evaluator->updateRuntime(this);
 
-            auto startOffset = evaluator->dataOffset();
-            ON_SCOPE_EXIT { evaluator->dataOffset() = startOffset; };
+            auto startOffset = evaluator->getBitwiseReadOffset();
+            ON_SCOPE_EXIT { evaluator->setBitwiseReadOffset(startOffset); };
 
             auto evaluatedValue = this->m_value->evaluate(evaluator);
             auto evaluatedType  = this->m_type->evaluate(evaluator);

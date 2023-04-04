@@ -89,9 +89,9 @@ namespace pl::ptrn {
         virtual std::unique_ptr<Pattern> clone() const = 0;
 
         [[nodiscard]] u64 getOffset() const { return this->m_offset; }
-        [[nodiscard]] virtual u64 getOffsetForSorting() const { return this->getOffset(); }
+        [[nodiscard]] virtual u128 getOffsetForSorting() const { return this->getOffset() << 3; }
         [[nodiscard]] u32 getHeapAddress() const { return this->getOffset() >> 32; }
-        virtual void setOffset(u64 offset) {
+        void setAbsoluteOffset(u64 offset) {
             if (this->m_offset != offset) {
                 if (this->m_evaluator)
                     this->m_evaluator->patternDestroyed(this);
@@ -100,9 +100,12 @@ namespace pl::ptrn {
                     this->m_evaluator->patternCreated(this);
             }
         }
+        virtual void setOffset(u64 offset) {
+            setAbsoluteOffset(offset);
+        }
 
         [[nodiscard]] size_t getSize() const { return this->m_size; }
-        [[nodiscard]] virtual size_t getSizeForSorting() const { return this->getSize(); }
+        [[nodiscard]] virtual u128 getSizeForSorting() const { return this->getSize() << 3; }
         void setSize(size_t size) { this->m_size = size; }
 
         [[nodiscard]] std::string getVariableName() const {
@@ -198,15 +201,14 @@ namespace pl::ptrn {
                 return *this->m_cachedDisplayValue;
 
             try {
-                auto &currOffset = this->m_evaluator->dataOffset();
-                auto startOffset = currOffset;
-                currOffset = this->getOffset();
+                auto startOffset = this->m_evaluator->getReadOffset();
+                this->m_evaluator->setReadOffset(this->getOffset());
 
                 auto savedScope = this->m_evaluator->getScope(0);
 
                 ON_SCOPE_EXIT {
                     this->m_evaluator->getScope(0) = savedScope;
-                    currOffset = startOffset;
+                    this->m_evaluator->setReadOffset(startOffset);
                 };
 
                 return this->formatDisplayValue();

@@ -52,7 +52,7 @@ namespace pl::core::ast {
 
             if (this->getPath().size() == 1) {
                 if (auto name = std::get_if<std::string>(&this->getPath().front()); name != nullptr) {
-                    if (*name == "$") return std::unique_ptr<ASTNode>(new ASTNodeLiteral(u128(evaluator->dataOffset())));
+                    if (*name == "$") return std::unique_ptr<ASTNode>(new ASTNodeLiteral(u128(evaluator->getReadOffset())));
                     else if (*name == "null") return std::unique_ptr<ASTNode>(new ASTNodeLiteral(new ptrn::PatternPadding(evaluator, 0, 0)));
 
                     auto parameterPack = evaluator->getScope(0).parameterPack;
@@ -122,8 +122,12 @@ namespace pl::core::ast {
                 std::string value;
                 readVariable(evaluator, value, pattern);
                 literal = value;
+            } else if (auto bitfieldFieldPatternBoolean = dynamic_cast<ptrn::PatternBitfieldFieldBoolean *>(pattern); bitfieldFieldPatternBoolean != nullptr) {
+                literal = bool(bitfieldFieldPatternBoolean->readValue());
+            } else if (auto bitfieldFieldPatternSigned = dynamic_cast<ptrn::PatternBitfieldFieldSigned *>(pattern); bitfieldFieldPatternSigned != nullptr) {
+                literal = hlp::signExtend(bitfieldFieldPatternSigned->getBitSize(), bitfieldFieldPatternSigned->readValue());
             } else if (auto bitfieldFieldPattern = dynamic_cast<ptrn::PatternBitfieldField *>(pattern); bitfieldFieldPattern != nullptr) {
-                literal = u128(bitfieldFieldPattern->readValue());
+                literal = bitfieldFieldPattern->readValue();
             } else {
                 literal = pattern;
             }

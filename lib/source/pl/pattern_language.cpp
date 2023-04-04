@@ -121,7 +121,7 @@ namespace pl {
             this->m_currAST = std::move(ast.value());
         }
 
-        evaluator->dataOffset() = this->m_startAddress.value_or(evaluator->getDataBaseAddress());
+        evaluator->setReadOffset(this->m_startAddress.value_or(evaluator->getDataBaseAddress()));
 
 
         if (!evaluator->evaluate(code, this->m_currAST)) {

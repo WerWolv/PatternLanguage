@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pl/patterns/pattern.hpp>
+#include <pl/patterns/pattern_enum.hpp>
 
 namespace pl::ptrn {
 
@@ -35,30 +36,11 @@ namespace pl::ptrn {
 
         [[nodiscard]] virtual bool isPadding() const { return false; }
 
-        [[nodiscard]] virtual bool isReversed() const { return false; }
-
-        virtual void setReversed(bool reversed) { wolv::util::unused(reversed); }
-
-        [[nodiscard]] u64 getOffsetForSorting() const override {
-            // If this member has no parent, that means we are sorting in a byte-based context.
-            auto *parent = this->getParentBitfield();
-            if (parent == nullptr)
-                return getOffset();
-
-            if (parent->isReversed()) {
-                auto parentOffset = parent->getTotalBitOffset();
-                auto parentSize = parent->getBitSize();
-                return parentOffset + parentSize - ((this->getTotalBitOffset() - parentOffset) + this->getBitSize());
-            }
-
+        [[nodiscard]] u128 getOffsetForSorting() const override {
             return this->getTotalBitOffset();
         }
 
-        [[nodiscard]] size_t getSizeForSorting() const override {
-            // If this member has no parent, that means we are sorting in a byte-based context.
-            if (this->getParentBitfield() == nullptr)
-                return this->getSize();
-
+        [[nodiscard]] u128 getSizeForSorting() const override {
             return this->getBitSize();
         }
     };
@@ -84,7 +66,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
-            return transformValue(u128(this->readValue()));
+            return transformValue(this->readValue());
         }
 
         void setParentBitfield(PatternBitfieldMember *parentBitfield) override {
@@ -125,15 +107,13 @@ namespace pl::ptrn {
 
         std::string formatDisplayValue() override {
             auto literal = this->getValue();
-            auto value =this->getValue().toUnsigned();
-
-            return Pattern::formatDisplayValue(fmt::format("{0} (0x{1:X})", value, value), literal);
+            auto value = literal.toUnsigned();
+            return Pattern::formatDisplayValue(fmt::format("{} (0x{:X})", value, value), literal);
         }
 
         [[nodiscard]] std::string toString() const override {
-            auto result = fmt::format("{}", this->getValue().toUnsigned());
-
-            return Pattern::formatDisplayValue(result, this->getValue());
+            auto value = this->readValue();
+            return Pattern::formatDisplayValue(fmt::format("{}", value), value);
         }
 
         [[nodiscard]] bool isPadding() const override { return this->m_padding; }
@@ -144,6 +124,107 @@ namespace pl::ptrn {
         size_t m_bitOffset;
         u8 m_bitSize;
         PatternBitfieldMember *m_parentBitfield = nullptr;
+    };
+
+    class PatternBitfieldFieldSigned : public PatternBitfieldField {
+    public:
+        using PatternBitfieldField::PatternBitfieldField;
+
+        [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
+            return std::unique_ptr<Pattern>(new PatternBitfieldFieldSigned(*this));
+        }
+
+        [[nodiscard]] core::Token::Literal getValue() const override {
+            return transformValue(hlp::signExtend(this->getBitSize(), this->readValue()));
+        }
+
+        std::string formatDisplayValue() override {
+            auto rawValue = this->readValue();
+            auto value = hlp::signExtend(this->getBitSize(), rawValue);
+            return Pattern::formatDisplayValue(fmt::format("{} (0x{:X})", value, rawValue), value);
+        }
+
+        [[nodiscard]] std::string toString() const override {
+            auto result = fmt::format("{}", this->getValue().toSigned());
+            return Pattern::formatDisplayValue(result, this->getValue());
+        }
+    };
+
+    class PatternBitfieldFieldBoolean : public PatternBitfieldField {
+    public:
+        using PatternBitfieldField::PatternBitfieldField;
+
+        [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
+            return std::unique_ptr<Pattern>(new PatternBitfieldFieldBoolean(*this));
+        }
+
+        [[nodiscard]] core::Token::Literal getValue() const override {
+            return transformValue(this->readValue());
+        }
+
+        [[nodiscard]] std::string getFormattedName() const override {
+            return "bool";
+        }
+
+        std::string formatDisplayValue() override {
+            switch (this->getValue().toUnsigned()) {
+                case 0: return "false";
+                case 1: return "true";
+                default: return "true*";
+            }
+        }
+
+        [[nodiscard]] std::string toString() const override {
+            auto value = this->getValue();
+            return Pattern::formatDisplayValue(fmt::format("{}", value.toBoolean() ? "true" : "false"), value);
+        }
+    };
+
+    class PatternBitfieldFieldEnum : public PatternBitfieldField {
+    public:
+        using PatternBitfieldField::PatternBitfieldField;
+
+        void setEnumValues(const std::vector<PatternEnum::EnumValue> &enumValues) {
+            this->m_enumValues = enumValues;
+        }
+
+        const auto& getEnumValues() const {
+            return this->m_enumValues;
+        }
+
+        [[nodiscard]] bool operator==(const Pattern &other) const override {
+            if (!compareCommonProperties<decltype(*this)>(other))
+                return false;
+
+            auto &otherEnum = *static_cast<const PatternBitfieldFieldEnum *>(&other);
+            if (this->m_enumValues.size() != otherEnum.m_enumValues.size())
+                return false;
+
+            for (u64 i = 0; i < this->m_enumValues.size(); i++) {
+                if (this->m_enumValues[i] != otherEnum.m_enumValues[i])
+                    return false;
+            }
+
+            return true;
+        }
+
+        [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
+            return std::unique_ptr<Pattern>(new PatternBitfieldFieldEnum(*this));
+        }
+
+        std::string formatDisplayValue() override {
+            auto value = this->readValue();
+            auto enumName = PatternEnum::getEnumName(this->getTypeName(), value, this->getEnumValues());
+            return Pattern::formatDisplayValue(fmt::format("{} (0x{:X})", enumName, value), value);
+        }
+
+        [[nodiscard]] std::string toString() const override {
+            auto enumName = PatternEnum::getEnumName(this->getTypeName(), this->readValue(), this->getEnumValues());
+            return Pattern::formatDisplayValue(enumName, this->getValue());
+        }
+
+    private:
+        std::vector<PatternEnum::EnumValue> m_enumValues;
     };
 
     class PatternBitfieldArray : public PatternBitfieldMember,
@@ -193,11 +274,11 @@ namespace pl::ptrn {
             return this->m_totalBitSize;
         }
 
-        [[nodiscard]] bool isReversed() const override {
+        [[nodiscard]] bool isReversed() const {
             return this->m_reversed;
         }
 
-        void setReversed(bool reversed) override {
+        void setReversed(bool reversed) {
             this->m_reversed = reversed;
         }
 
@@ -267,6 +348,13 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getEntries() override {
             return this->m_entries;
+        }
+
+        void setOffset(u64 offset) override {
+            for (auto &member : this->m_entries)
+                member->setOffset(member->getOffset() - this->getOffset() + offset);
+
+            PatternBitfieldMember::setOffset(offset);
         }
 
         void forEachEntry(u64 start, u64 end, const std::function<void(u64, Pattern*)>& fn) override {
@@ -374,6 +462,8 @@ namespace pl::ptrn {
                 this->m_sortedEntries.push_back(member.get());
 
             std::sort(this->m_sortedEntries.begin(), this->m_sortedEntries.end(), comparator);
+            if (this->isReversed())
+                std::reverse(this->m_sortedEntries.begin(), this->m_sortedEntries.end());
 
             for (auto &member : this->m_entries)
                 member->sort(comparator);
@@ -433,11 +523,11 @@ namespace pl::ptrn {
             return this->m_totalBitSize;
         }
 
-        [[nodiscard]] bool isReversed() const override {
+        [[nodiscard]] bool isReversed() const {
             return this->m_reversed;
         }
 
-        void setReversed(bool reversed) override {
+        void setReversed(bool reversed) {
             this->m_reversed = reversed;
         }
 
@@ -482,10 +572,6 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string getFormattedName() const override {
             return "bitfield " + Pattern::getTypeName();
-        }
-
-        [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getEntries() override {
-            return this->m_fields;
         }
 
         void setFields(std::vector<std::shared_ptr<Pattern>> fields) {
@@ -563,6 +649,8 @@ namespace pl::ptrn {
                         else
                             valueString += fmt::format("{}({}) | ", field->getVariableName(), field->toString());
                     }
+                } else if (auto *member = dynamic_cast<PatternBitfieldMember *>(pattern.get()); member != nullptr) {
+                    valueString += fmt::format("{} = {} | ", member->getVariableName(), member->toString());
                 } else if (auto *bitfield = dynamic_cast<PatternBitfield *>(pattern.get()); bitfield != nullptr) {
                     valueString += fmt::format("{} = {} | ", bitfield->getVariableName(), bitfield->formatDisplayValue());
                 }
@@ -594,6 +682,17 @@ namespace pl::ptrn {
             return this->m_fields.size();
         }
 
+        [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getEntries() override {
+            return this->m_fields;
+        }
+
+        void setOffset(u64 offset) override {
+            for (auto &member : this->m_fields)
+                member->setOffset(member->getOffset() - this->getOffset() + offset);
+
+            PatternBitfieldMember::setOffset(offset);
+        }
+
         void forEachEntry(u64 start, u64 end, const std::function<void (u64, Pattern *)> &fn) override {
             if (this->isSealed())
                 return;
@@ -611,6 +710,8 @@ namespace pl::ptrn {
                 this->m_sortedFields.push_back(member.get());
 
             std::sort(this->m_sortedFields.begin(), this->m_sortedFields.end(), comparator);
+            if (this->isReversed())
+                std::reverse(this->m_sortedFields.begin(), this->m_sortedFields.end());
 
             for (auto &member : this->m_fields)
                 member->sort(comparator);

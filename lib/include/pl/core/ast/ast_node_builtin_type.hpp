@@ -27,10 +27,8 @@ namespace pl::core::ast {
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             evaluator->updateRuntime(this);
 
-            auto offset = evaluator->dataOffset();
             auto size   = Token::getTypeSize(this->m_type);
-
-            evaluator->dataOffset() += size;
+            auto offset = evaluator->getReadOffsetAndIncrement(size);
 
             std::unique_ptr<ptrn::Pattern> pattern;
             if (Token::isUnsigned(this->m_type))

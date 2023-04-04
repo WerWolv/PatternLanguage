@@ -46,7 +46,7 @@ namespace pl::core::ast {
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             evaluator->updateRuntime(this);
 
-            auto startOffset = evaluator->dataOffset();
+            auto startOffset = evaluator->getBitwiseReadOffset();
 
             auto scopeGuard = SCOPE_GUARD {
                 evaluator->popSectionId();
@@ -69,11 +69,11 @@ namespace pl::core::ast {
                 if (offset == nullptr)
                     err::E0010.throwError("Cannot use void expression as placement offset.", {}, this);
 
-                evaluator->dataOffset() = std::visit(wolv::util::overloaded {
+                evaluator->setReadOffset(std::visit(wolv::util::overloaded {
                     [this](const std::string &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
                     [this](ptrn::Pattern *) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
                     [](auto &&offset) -> u64 { return offset; }
-                }, offset->getValue());
+                }, offset->getValue()));
             }
 
             auto type = this->m_type->evaluate(evaluator);
@@ -97,11 +97,11 @@ namespace pl::core::ast {
             applyVariableAttributes(evaluator, this, pattern);
 
             if (this->m_placementOffset != nullptr && !evaluator->isGlobalScope()) {
-                evaluator->dataOffset() = startOffset;
+                evaluator->setBitwiseReadOffset(startOffset);
             }
 
             if (evaluator->getSectionId() == ptrn::Pattern::PatternLocalSectionId) {
-                evaluator->dataOffset() = startOffset;
+                evaluator->setBitwiseReadOffset(startOffset);
                 this->execute(evaluator);
                 return { };
             } else {
@@ -180,7 +180,8 @@ namespace pl::core::ast {
         bool m_constant;
 
         std::unique_ptr<ptrn::Pattern> createStaticArray(Evaluator *evaluator) const {
-            u64 startOffset = evaluator->dataOffset();
+            evaluator->alignToByte();
+            auto startOffset = evaluator->getReadOffset();
 
             auto templatePatterns = this->m_type->createPatterns(evaluator);
             if (templatePatterns.empty())
@@ -190,7 +191,7 @@ namespace pl::core::ast {
 
             templatePattern->setSection(evaluator->getSectionId());
 
-            evaluator->dataOffset() = startOffset;
+            evaluator->setReadOffset(startOffset);
 
             i128 entryCount = 0;
 
@@ -206,12 +207,12 @@ namespace pl::core::ast {
                 } else if (auto whileStatement = dynamic_cast<ASTNodeWhileStatement *>(sizeNode.get())) {
                     while (whileStatement->evaluateCondition(evaluator)) {
                         if (templatePattern->getSection() == ptrn::Pattern::MainSectionId)
-                            if ((evaluator->dataOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
+                            if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
                                 err::E0004.throwError("Array expanded past end of the data before termination condition was met.", { }, this);
 
                         evaluator->handleAbort();
                         entryCount++;
-                        evaluator->dataOffset() += templatePattern->getSize();
+                        evaluator->getReadOffsetAndIncrement(templatePattern->getSize());
                     }
                 }
 
@@ -221,11 +222,11 @@ namespace pl::core::ast {
                 std::vector<u8> buffer(templatePattern->getSize());
                 while (true) {
                     if (templatePattern->getSection() == ptrn::Pattern::MainSectionId)
-                        if ((evaluator->dataOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
+                        if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
                             err::E0004.throwError("Array expanded past end of the data before a null-entry was found.", "Try using a while-sized array instead to limit the size of the array.", this);
 
-                    evaluator->readData(evaluator->dataOffset(), buffer.data(), buffer.size(), templatePattern->getSection());
-                    evaluator->dataOffset() += buffer.size();
+                    evaluator->readData(evaluator->getReadOffset(), buffer.data(), buffer.size(), templatePattern->getSection());
+                    evaluator->getReadOffsetAndIncrement(buffer.size());
 
                     entryCount++;
 
@@ -261,12 +262,14 @@ namespace pl::core::ast {
                 outputPattern->setEndian(templatePattern->getEndian());
             outputPattern->setTypeName(templatePattern->getTypeName());
             outputPattern->setSize(templatePattern->getSize() * entryCount);
+            if (evaluator->readOrderIsReversed())
+                outputPattern->setAbsoluteOffset(evaluator->getReadOffset());
             outputPattern->setSection(templatePattern->getSection());
 
-            evaluator->dataOffset() = startOffset + outputPattern->getSize();
+            evaluator->setReadOffset(startOffset + outputPattern->getSize());
 
             if (outputPattern->getSection() == ptrn::Pattern::MainSectionId)
-                if ((evaluator->dataOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
+                if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
                     err::E0004.throwError("Array expanded past end of the data.", { }, this);
 
             return outputPattern;
@@ -281,7 +284,8 @@ namespace pl::core::ast {
                     evaluator->clearCurrentArrayIndex();
             };
 
-            auto arrayPattern = std::make_unique<ptrn::PatternArrayDynamic>(evaluator, evaluator->dataOffset(), 0);
+            evaluator->alignToByte();
+            auto arrayPattern = std::make_unique<ptrn::PatternArrayDynamic>(evaluator, evaluator->getReadOffset(), 0);
             arrayPattern->setVariableName(this->m_name);
             arrayPattern->setSection(evaluator->getSectionId());
 
@@ -336,8 +340,8 @@ namespace pl::core::ast {
                         size_t patternCount = patterns.size();
 
                         if (arrayPattern->getSection() == ptrn::Pattern::MainSectionId)
-                            if ((evaluator->dataOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
-                                err::E0004.throwError("Array expanded past end of the data.", fmt::format("Entry {} exceeded data by {} bytes.", i, evaluator->dataOffset() - evaluator->getDataSize()), this);
+                            if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
+                                err::E0004.throwError("Array expanded past end of the data.", fmt::format("Entry {} exceeded data by {} bytes.", i, evaluator->getReadOffset() - evaluator->getDataSize()), this);
 
                         if (!patterns.empty())
                             addEntries(std::move(patterns));
@@ -366,7 +370,7 @@ namespace pl::core::ast {
                         size_t patternCount = patterns.size();
 
                         if (arrayPattern->getSection() == ptrn::Pattern::MainSectionId)
-                            if ((evaluator->dataOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
+                            if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
                                 err::E0004.throwError("Array expanded past end of the data before termination condition was met.", { }, this);
 
                         if (!patterns.empty())
@@ -400,11 +404,11 @@ namespace pl::core::ast {
                         std::vector<u8> buffer(pattern->getSize());
 
                         if (arrayPattern->getSection() == ptrn::Pattern::MainSectionId)
-                            if ((evaluator->dataOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
+                            if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
                                 err::E0004.throwError("Array expanded past end of the data before a null-entry was found.", "Try using a while-sized array instead to limit the size of the array.", this);
 
                         const auto patternSize = pattern->getSize();
-                        evaluator->readData(evaluator->dataOffset() - patternSize, buffer.data(), buffer.size(), pattern->getSection());
+                        evaluator->readData(evaluator->getReadOffset() - patternSize, buffer.data(), buffer.size(), pattern->getSection());
 
                         addEntries(hlp::moveToVector(std::move(pattern)));
 

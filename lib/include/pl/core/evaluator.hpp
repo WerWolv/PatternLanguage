@@ -43,6 +43,11 @@ namespace pl::core {
         Return
     };
 
+    struct ByteAndBitOffset {
+        u64 byteOffset;
+        u8 bitOffset;
+    };
+
     class Evaluator {
     public:
         Evaluator() = default;
@@ -209,26 +214,67 @@ namespace pl::core {
             return this->m_loopLimit;
         }
 
-        u64 &dataOffset() { return this->m_currOffset; }
-
-        void setBitfieldReversed(bool reversed) { this->m_bitfieldIsReversed = reversed; }
-
-        [[nodiscard]] bool isBitfieldReversed() const { return this->m_bitfieldIsReversed; }
-
-        u8 getBitfieldBitOffset() const { return this->m_bitfieldBitOffset; }
-
-        void incrementBitfieldBitOffset(i128 bitSize) {
-            this->dataOffset() += bitSize >> 3;
-            this->m_bitfieldBitOffset += bitSize & 0x7;
-
-            this->dataOffset() += this->m_bitfieldBitOffset >> 3;
-            this->m_bitfieldBitOffset &= 0x7;
+        void alignToByte() {
+            if (m_currBitOffset != 0 && !readOrderIsReversed()) {
+                this->m_currOffset += 1;
+            }
+            this->m_currBitOffset = 0;
         }
 
-        void resetBitfieldBitOffset() {
-            if (m_bitfieldBitOffset != 0)
-                this->dataOffset()++;
-            this->m_bitfieldBitOffset = 0;
+        u64 getReadOffset() {
+            return this->m_currOffset;
+        }
+
+        u64 getReadOffsetAndIncrement(u64 incrementSize) {
+            alignToByte();
+
+            if (readOrderIsReversed()) {
+                this->m_currOffset -= incrementSize;
+                return this->m_currOffset;
+            }
+
+            auto offset = this->m_currOffset;
+            this->m_currOffset += incrementSize;
+            return offset;
+        }
+
+        void setReadOffset(u64 offset) {
+            this->m_currOffset = offset;
+            this->m_currBitOffset = 0;
+        }
+
+        void setReadOrderReversed(bool reversed) { this->m_readOrderReversed = reversed; }
+
+        [[nodiscard]] bool readOrderIsReversed() const { return this->m_readOrderReversed; }
+
+        ByteAndBitOffset getBitwiseReadOffset() const { return { this->m_currOffset, static_cast<u8>(this->m_currBitOffset) }; }
+
+        [[nodiscard]] ByteAndBitOffset getBitwiseReadOffsetAndIncrement(i128 bitSize) {
+            ByteAndBitOffset readOffsets;
+
+            if (readOrderIsReversed())
+                bitSize = -bitSize;
+            else
+                readOffsets = getBitwiseReadOffset();
+
+            this->m_currOffset += bitSize >> 3;
+            this->m_currBitOffset += bitSize & 0x7;
+
+            this->m_currOffset += this->m_currBitOffset >> 3;
+            this->m_currBitOffset &= 0x7;
+
+            if (readOrderIsReversed())
+                readOffsets = getBitwiseReadOffset();
+            return readOffsets;
+        }
+
+        void setBitwiseReadOffset(u64 byteOffset, u8 bitOffset) {
+            this->m_currOffset = byteOffset;
+            this->m_currBitOffset = bitOffset;
+        }
+
+        void setBitwiseReadOffset(ByteAndBitOffset offset) {
+            setBitwiseReadOffset(offset.byteOffset, offset.bitOffset);
         }
 
         [[nodiscard]] u128 readBits(u128 byteOffset, u8 bitOffset, u64 bitSize, u64 section, std::endian endianness) {
@@ -383,6 +429,8 @@ namespace pl::core {
 
     private:
         u64 m_currOffset = 0x00;
+        i8 m_currBitOffset = 0;
+        bool m_readOrderReversed = false;
 
         bool m_evaluated = false;
         bool m_debugMode = false;
@@ -423,8 +471,6 @@ namespace pl::core {
         std::function<void()> m_breakpointHitCallback = []{ };
         std::atomic<DangerousFunctionPermission> m_allowDangerousFunctions = DangerousFunctionPermission::Ask;
         ControlFlowStatement m_currControlFlowStatement = ControlFlowStatement::None;
-        bool m_bitfieldIsReversed = false;
-        i8 m_bitfieldBitOffset = 0;
 
         std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;
 

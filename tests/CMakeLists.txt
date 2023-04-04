@@ -15,6 +15,7 @@ set(AVAILABLE_TESTS
         SucceedingAssert
         FailingAssert
         Bitfields
+        ReversedBitfields
         Math
         RValues
         Namespaces

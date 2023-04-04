@@ -76,11 +76,11 @@ namespace pl::test {
                 };
 
                 bitfield TestBitfield {
-                    a : 2;
+                    unsigned a : 2;
                     b : 3;
                     NestedBitfield c;
                     d : 4;
-                    e : 4;
+                    signed e : 4;
                     NestedBitfield f[c.nestedA];
                 };
 
@@ -91,11 +91,74 @@ namespace pl::test {
                 std::assert(testBitfield.c.nestedA == 0x02, "Nested field A invalid");
                 std::assert(testBitfield.c.nestedB == 0x08, "Nested field B invalid");
                 std::assert(testBitfield.d == 0x08, "Field D invalid");
-                std::assert(testBitfield.e == 0x08, "Field E invalid");
+                std::assert(testBitfield.e == -8, "Field E invalid");
                 std::assert(testBitfield.f[0].nestedA == 0x02, "Nested array[0] field A invalid");
                 std::assert(testBitfield.f[0].nestedB == 0x0A, "Nested array[0] field B invalid");
                 std::assert(testBitfield.f[1].nestedA == 0x08, "Nested array[1] field A invalid");
                 std::assert(testBitfield.f[1].nestedB == 0x0F, "Nested array[1] field B invalid");
+            )";
+        }
+    };
+
+    class TestPatternReversedBitfields : public TestPattern {
+    public:
+        TestPatternReversedBitfields() : TestPattern("ReversedBitfields") {
+            auto testBitfield = create<PatternBitfield>("Test", "test", 0x02, 0, 16);
+
+            std::vector<std::shared_ptr<Pattern>> bitfieldFields;
+            {
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag0", 0x03, 7, 1, testBitfield.get()));
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag1", 0x03, 6, 1, testBitfield.get()));
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag2", 0x03, 5, 1, testBitfield.get()));
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag3", 0x03, 4, 1, testBitfield.get()));
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag4", 0x03, 3, 1, testBitfield.get()));
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag5", 0x03, 2, 1, testBitfield.get()));
+
+                auto enumField = create<PatternBitfieldFieldEnum>("Enum", "enumerated", 0x02, 4, 6, testBitfield.get());
+                std::vector<PatternEnum::EnumValue> values;
+                {
+                    values.push_back({ 0x39, 0x39, "A" });
+                }
+                enumField->setEnumValues(std::move(values));
+                bitfieldFields.push_back(std::move(enumField));
+            }
+
+            testBitfield->setFields(std::move(bitfieldFields));
+            testBitfield->setEndian(std::endian::big);
+            testBitfield->setReversed(true);
+            testBitfield->addAttribute("bitfield_order", { 1, 16 });
+
+            addPattern(std::move(testBitfield));
+        }
+        ~TestPatternReversedBitfields() override = default;
+
+        [[nodiscard]] std::string getSourceCode() const override {
+            return R"(
+                #pragma endian big
+
+                enum Enum : u8 {
+                    A = 0x39,
+                };
+
+                bitfield Test {
+                    bool flag0 : 1;
+                    bool flag1 : 1;
+                    bool flag2 : 1;
+                    bool flag3 : 1;
+                    bool flag4 : 1;
+                    bool flag5 : 1;
+                    Enum enumerated : 6;
+                } [[bitfield_order(1, 16)]];
+
+                Test test @ 2;
+
+                std::assert(test.flag0 == true, "flag0 was invalid");
+                std::assert(test.flag1 == true, "flag1 was invalid");
+                std::assert(test.flag2 == true, "flag2 was invalid");
+                std::assert(test.flag3 == false, "flag3 was invalid");
+                std::assert(test.flag4 == false, "flag4 was invalid");
+                std::assert(test.flag5 == false, "flag5 was invalid");
+                std::assert(test.enumerated == Enum::A, "enumerated was invalid");
             )";
         }
     };

@@ -71,13 +71,11 @@ namespace pl::ptrn {
             return fmt::format("{} (0x{:0{}X})", this->toString(), value, this->getSize() * 2);
         }
 
-        [[nodiscard]] std::string toString() const override {
-            u128 value = this->getValue().toUnsigned();
-
-            std::string result = this->getTypeName() + "::";
+        static std::string getEnumName(const std::string &typeName, u128 value, const std::vector<EnumValue> &enumValues) {
+            std::string result = typeName + "::";
 
             bool foundValue = false;
-            for (auto &[min, max, name] : this->getEnumValues()) {
+            for (const auto &[min, max, name] : enumValues) {
                 if (value >= min.toUnsigned() && value <= max.toUnsigned()) {
                     result += name;
                     foundValue = true;
@@ -87,8 +85,12 @@ namespace pl::ptrn {
 
             if (!foundValue)
                 result += "???";
+            return result;
+        }
 
-            return Pattern::formatDisplayValue(result, this->clone().get());
+        [[nodiscard]] std::string toString() const override {
+            u128 value = this->getValue().toUnsigned();
+            return Pattern::formatDisplayValue(getEnumName(this->getTypeName(), value, this->m_enumValues), this->clone().get());
         }
 
     private:

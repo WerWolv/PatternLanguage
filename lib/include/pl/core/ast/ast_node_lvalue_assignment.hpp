@@ -53,7 +53,7 @@ namespace pl::core::ast {
 
 
             if (this->getLValueName() == "$")
-                evaluator->dataOffset() = literal->getValue().toUnsigned();
+                evaluator->setReadOffset(literal->getValue().toUnsigned());
             else
                 evaluator->setVariable(this->getLValueName(), literal->getValue());
 

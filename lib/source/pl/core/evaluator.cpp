@@ -50,11 +50,11 @@ namespace pl::core {
             }
         }
 
-        auto startOffset = this->dataOffset();
+        auto startOffset = this->getBitwiseReadOffset();
         auto typePatterns = type->createPatterns(this);
         auto typePattern = std::move(typePatterns.front());
 
-        this->dataOffset() = startOffset;
+        this->setBitwiseReadOffset(startOffset);
 
         auto pattern = new ptrn::PatternArrayDynamic(this, 0, typePattern->getSize() * entryCount);
 
@@ -112,7 +112,7 @@ namespace pl::core {
         }
 
         auto sectionId = this->getSectionId();
-        auto startOffset = this->dataOffset();
+        auto startOffset = this->getBitwiseReadOffset();
 
         auto heapAddress = u64(this->getHeap().size());
         u32 patternLocalAddress = 0;
@@ -133,7 +133,7 @@ namespace pl::core {
         auto typePattern = type->createPatterns(this);
         this->popSectionId();
 
-        this->dataOffset() = startOffset;
+        this->setBitwiseReadOffset(startOffset);
 
         if (typePattern.empty()) {
             // Handle auto variables
@@ -603,6 +603,9 @@ namespace pl::core {
     }
 
     bool Evaluator::evaluate(const std::string &sourceCode, const std::vector<std::shared_ptr<ast::ASTNode>> &ast) {
+        this->m_readOrderReversed = false;
+        this->m_currBitOffset = 0;
+
         this->m_sections.clear();
         this->m_sectionIdStack.clear();
         this->m_sectionId = 1;
@@ -620,9 +623,6 @@ namespace pl::core {
         this->m_colorIndex = 0;
         this->m_aborted = false;
         this->m_evaluated = false;
-
-        this->m_bitfieldIsReversed = false;
-        this->m_bitfieldBitOffset = 0;
 
         if (this->m_allowDangerousFunctions == DangerousFunctionPermission::Deny)
             this->m_allowDangerousFunctions = DangerousFunctionPermission::Ask;
@@ -655,7 +655,7 @@ namespace pl::core {
                     if (node == nullptr)
                         continue;
 
-                    auto startOffset = this->dataOffset();
+                    auto startOffset = this->getBitwiseReadOffset();
 
                     if (dynamic_cast<ast::ASTNodeTypeDecl *>(node) != nullptr) {
                         // Don't create patterns from type declarations
@@ -675,7 +675,7 @@ namespace pl::core {
                                 if (varDeclNode->isInVariable() && this->m_inVariables.contains(name))
                                     this->setVariable(name, this->m_inVariables[name]);
 
-                                this->dataOffset() = startOffset;
+                                this->setBitwiseReadOffset(startOffset);
                             } else {
                                 this->m_patterns.push_back(std::move(pattern));
                             }
@@ -696,7 +696,7 @@ namespace pl::core {
                             if (localVariable) {
                                 wolv::util::unused(arrayVarDeclNode->execute(this));
 
-                                this->dataOffset() = startOffset;
+                                this->setBitwiseReadOffset(startOffset);
                             } else {
                                 this->m_patterns.push_back(std::move(pattern));
                             }

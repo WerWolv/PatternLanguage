@@ -36,7 +36,7 @@ namespace pl::core::ast {
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
             evaluator->updateRuntime(this);
 
-            auto startOffset = evaluator->dataOffset();
+            auto startOffset = evaluator->getBitwiseReadOffset();
 
             auto scopeGuard = SCOPE_GUARD {
                 evaluator->popSectionId();
@@ -59,14 +59,14 @@ namespace pl::core::ast {
                 if (offset == nullptr)
                     err::E0010.throwError("Cannot use void expression as placement offset.", {}, this);
 
-                evaluator->dataOffset() = std::visit(wolv::util::overloaded {
+                evaluator->setReadOffset(std::visit(wolv::util::overloaded {
                     [this](const std::string &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
                     [this](ptrn::Pattern *) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
                     [](auto &&offset) -> u64 { return u64(offset); }
-                }, offset->getValue());
+                }, offset->getValue()));
             }
 
-            auto pointerStartOffset = evaluator->dataOffset();
+            auto pointerStartOffset = evaluator->getReadOffset();
 
             auto sizePatterns = this->m_sizeType->createPatterns(evaluator);
             if (sizePatterns.empty())
@@ -78,17 +78,17 @@ namespace pl::core::ast {
             pattern->setVariableName(this->m_name);
             pattern->setPointerTypePattern(std::move(sizePattern));
 
-            auto pointerEndOffset = evaluator->dataOffset();
+            auto pointerEndOffset = evaluator->getBitwiseReadOffset();
 
             {
                 i128 pointerAddress = pattern->getValue().toSigned();
 
-                evaluator->dataOffset() = pointerStartOffset;
+                evaluator->setReadOffset(pointerStartOffset);
 
                 pattern->setPointedAtAddress(pointerAddress);
                 applyVariableAttributes(evaluator, this, pattern);
 
-                evaluator->dataOffset() = pattern->getPointedAtAddress();
+                evaluator->setReadOffset(pattern->getPointedAtAddress());
 
                 auto pointedAtPatterns = this->m_type->createPatterns(evaluator);
                 if (pointedAtPatterns.empty())
@@ -105,13 +105,13 @@ namespace pl::core::ast {
 
 
             if (this->m_placementOffset != nullptr && !evaluator->isGlobalScope()) {
-                evaluator->dataOffset() = startOffset;
+                evaluator->setBitwiseReadOffset(startOffset);
             } else {
-                evaluator->dataOffset() = pointerEndOffset;
+                evaluator->setBitwiseReadOffset(pointerEndOffset);
             }
 
             if (evaluator->getSectionId() == ptrn::Pattern::PatternLocalSectionId) {
-                evaluator->dataOffset() = startOffset;
+                evaluator->setBitwiseReadOffset(startOffset);
                 this->execute(evaluator);
                 return { };
             } else {
