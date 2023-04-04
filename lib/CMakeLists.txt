@@ -34,7 +34,11 @@ add_library(libpl ${LIBRARY_TYPE}
         source/pl/lib/std/random.cpp
 )
 
-target_compile_options(libpl PRIVATE -Wall -Wextra -Werror -Wpedantic -Wno-unknown-pragmas -Wno-stringop-overread -Wno-stringop-overflow -Wno-array-bounds)
+target_compile_options(libpl PRIVATE -Wall -Wextra -Werror -Wpedantic -Wno-unknown-pragmas -Wno-array-bounds)
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(libpl PRIVATE -Wno-stringop-overread -Wno-stringop-overflow)
+endif ()
 
 target_include_directories(libpl PUBLIC include)
 target_link_libraries(libpl PRIVATE fmt::fmt-header-only)
