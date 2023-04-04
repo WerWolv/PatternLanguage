@@ -12,7 +12,7 @@ namespace pl::gen::fmt {
         void visit(pl::ptrn::PatternBitfieldArray& pattern) override { formatArray(&pattern);       }
         void visit(pl::ptrn::PatternBitfield& pattern)      override { formatObject(&pattern);      }
         void visit(pl::ptrn::PatternBoolean& pattern)       override { formatValue(&pattern);       }
-        void visit(pl::ptrn::PatternCharacter& pattern)     override { formatValue(&pattern);       }
+        void visit(pl::ptrn::PatternCharacter& pattern)     override { formatString(&pattern);      }
         void visit(pl::ptrn::PatternEnum& pattern)          override { formatString(&pattern);      }
         void visit(pl::ptrn::PatternFloat& pattern)         override { formatValue(&pattern);       }
         void visit(pl::ptrn::PatternPadding& pattern)       override { wolv::util::unused(pattern); }
