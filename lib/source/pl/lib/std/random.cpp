@@ -43,7 +43,9 @@ namespace pl::lib::libstd::random {
             static std::random_device randomDevice;
             static std::mt19937_64 random(randomDevice());
 
-            random.seed(std::chrono::system_clock::now().time_since_epoch().count());
+            const auto currentTime = std::chrono::system_clock::now();
+            const auto epoch = currentTime.time_since_epoch();
+            random.seed(epoch.count());
 
             /* set_seed(seed) */
             runtime.addFunction(nsStdRandom, "set_seed", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
