@@ -11,6 +11,7 @@
 #include <pl/helpers/buffered_reader.hpp>
 
 #include <random>
+#include <utility>
 
 namespace pl::lib::libstd::random {
 
@@ -62,6 +63,11 @@ namespace pl::lib::libstd::random {
             runtime.addFunction(nsStdRandom, "generate", FunctionParameterCount::exactly(3), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 auto type = RandomType(params[0].toUnsigned());
 
+                // GCC 12.2.1 seems to have a bug in std::binomial_distribution where some stack variables are not correctly initialized before use.
+                // This disables this warning for now so ImHex can still be built with hardening enabled.
+                // TODO: Remove this once GCC fixed the issue.
+                #pragma GCC diagnostic push
+                #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
                 switch (type) {
                     using enum RandomType;
                     case Uniform:
@@ -99,6 +105,8 @@ namespace pl::lib::libstd::random {
                     default:
                         err::E0003.throwError("Invalid random type");
                 }
+                #pragma GCC diagnostic pop
+
             });
 
         }
