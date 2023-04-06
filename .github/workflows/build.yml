@@ -65,6 +65,10 @@ jobs:
         with:
           submodules: recursive
 
+      - name: ⬇️ Install dependencies
+        run: |
+          brew install llvm
+
       - name: 🛠️ Build
         run: |
           mkdir -p build
