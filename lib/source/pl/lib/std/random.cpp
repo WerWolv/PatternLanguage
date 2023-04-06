@@ -1,9 +1,3 @@
-// GCC 12.2.1 seems to have a bug in std::binomial_distribution where some stack variables are not correctly initialized before use.
-// This disables this warning for now so ImHex can still be built with hardening enabled.
-// TODO: Remove this once GCC fixed the issue.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-
 #include <pl.hpp>
 
 #include <pl/core/token.hpp>
@@ -107,5 +101,3 @@ namespace pl::lib::libstd::random {
     }
 
 }
-
-#pragma GCC diagnostic pop
