@@ -24,6 +24,7 @@
 #include <pl/core/ast/ast_node_scope_resolution.hpp>
 #include <pl/core/ast/ast_node_struct.hpp>
 #include <pl/core/ast/ast_node_ternary_expression.hpp>
+#include <pl/core/ast/ast_node_try_catch_statement.hpp>
 #include <pl/core/ast/ast_node_type_decl.hpp>
 #include <pl/core/ast/ast_node_type_operator.hpp>
 #include <pl/core/ast/ast_node_union.hpp>
@@ -567,6 +568,9 @@ namespace pl::core {
         } else if (MATCHES(sequence(tkn::Keyword::Match))) {
             statement      = parseMatchStatement([&]() { return parseFunctionStatement(); });
             needsSemicolon = false;
+        } else if (MATCHES(sequence(tkn::Keyword::Try, tkn::Separator::LeftBrace))) {
+            statement      = parseTryCatchStatement([&]() { return parseFunctionStatement(); });
+            needsSemicolon = false;
         } else if (MATCHES(sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis))) {
             statement      = parseFunctionWhileLoop();
             needsSemicolon = false;
@@ -826,6 +830,26 @@ namespace pl::core {
         }
 
         return create<ast::ASTNodeMatchStatement>(std::move(cases), std::move(defaultCase));
+    }
+
+    // try { (parseMember) } catch { (parseMember) }
+    std::unique_ptr<ast::ASTNode> Parser::parseTryCatchStatement(const std::function<std::unique_ptr<ast::ASTNode>()> &memberParser) {
+        std::vector<std::unique_ptr<ast::ASTNode>> tryBody, catchBody;
+        while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
+            tryBody.emplace_back(memberParser());
+        }
+
+        if (MATCHES(sequence(tkn::Keyword::Catch))) {
+            if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
+                err::P0002.throwError(fmt::format("Expected '{{' after catch, got {}.", getFormattedToken(0)), {}, 1);
+
+            while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
+                catchBody.emplace_back(memberParser());
+            }
+        }
+
+
+        return create<ast::ASTNodeTryCatchStatement>(std::move(tryBody), std::move(catchBody));
     }
 
     // while ((parseMathematicalExpression))
@@ -1162,6 +1186,8 @@ namespace pl::core {
             return parseConditional([this]() { return parseMember(); });
         else if (MATCHES(sequence(tkn::Keyword::Match)))
             return parseMatchStatement([this]() { return parseMember(); });
+        else if (MATCHES(sequence(tkn::Keyword::Try, tkn::Separator::LeftBrace)))
+            return parseTryCatchStatement([this]() { return parseMember(); });
         else if (MATCHES(oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue)))
             member = parseFunctionControlFlowStatement();
         else
@@ -1363,6 +1389,8 @@ namespace pl::core {
             return parseConditional([this]() { return parseBitfieldEntry(); });
         else if (MATCHES(sequence(tkn::Keyword::Match)))
             return parseMatchStatement([this]() { return parseBitfieldEntry(); });
+        else if (MATCHES(sequence(tkn::Keyword::Try, tkn::Separator::LeftBrace)))
+            return parseTryCatchStatement([this]() { return parseBitfieldEntry(); });
         else if (MATCHES(oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue)))
             member = parseFunctionControlFlowStatement();
         else

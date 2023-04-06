@@ -62,7 +62,9 @@ namespace pl::core {
             Reference,
             Null,
             Const,
-            Underscore
+            Underscore,
+            Try,
+            Catch
         };
 
         enum class Operator {
@@ -257,6 +259,8 @@ namespace pl::core {
             const auto Null         = createToken(core::Token::Type::Keyword, Token::Keyword::Null);
             const auto Const        = createToken(core::Token::Type::Keyword, Token::Keyword::Const);
             const auto Underscore   = createToken(core::Token::Type::Keyword, Token::Keyword::Underscore);
+            const auto Try          = createToken(core::Token::Type::Keyword, Token::Keyword::Try);
+            const auto Catch        = createToken(core::Token::Type::Keyword, Token::Keyword::Catch);
 
         }
 

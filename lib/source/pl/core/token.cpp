@@ -222,6 +222,8 @@ namespace pl::core {
                                       case Null: return "null";
                                       case Const: return "const";
                                       case Underscore: return "_";
+                                      case Try: return "try";
+                                      case Catch: return "catch";
                                   }
 
                                   return "";

@@ -534,6 +534,10 @@ namespace pl::core {
                         addToken(tkn::Keyword::Const);
                     else if (identifier == "_")
                         addToken(tkn::Keyword::Underscore);
+                    else if (identifier == "try")
+                        addToken(tkn::Keyword::Try);
+                    else if (identifier == "catch")
+                        addToken(tkn::Keyword::Catch);
 
                     // Check for built-in types
                     else if (identifier == "u8")
