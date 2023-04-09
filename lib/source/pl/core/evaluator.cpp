@@ -310,8 +310,10 @@ namespace pl::core {
 
                     variablePattern->setVariableName(name);
                     variablePattern->setReference(reference);
-                    variablePattern->setOffset(offset);
-                    variablePattern->setSection(section);
+                    if (!reference) {
+                        variablePattern->setOffset(offset);
+                        variablePattern->setSection(section);
+                    }
                 },
                 [&](const std::string &value) {
                     if (dynamic_cast<ptrn::PatternString*>(variablePattern.get()) != nullptr)
