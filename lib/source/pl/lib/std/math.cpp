@@ -75,6 +75,11 @@ namespace pl::lib::libstd::math {
                 return std::pow(params[0].toFloatingPoint(), params[1].toFloatingPoint());
             });
 
+            /* exp(value) */
+            runtime.addFunction(nsStdMath, "exp", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
+                return std::exp(params[0].toFloatingPoint());
+            });
+
             /* sqrt(value) */
             runtime.addFunction(nsStdMath, "sqrt", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 return std::sqrt(params[0].toFloatingPoint());
