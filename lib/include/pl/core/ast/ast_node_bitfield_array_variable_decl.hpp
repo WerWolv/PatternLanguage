@@ -157,7 +157,6 @@ namespace pl::core::ast {
                 evaluator->setCurrentArrayIndex(entryIndex);
 
                 auto patterns = this->m_type->createPatterns(evaluator);
-                size_t patternCount = patterns.size();
 
                 if (arrayPattern->getSection() == ptrn::Pattern::MainSectionId)
                     if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
@@ -166,8 +165,9 @@ namespace pl::core::ast {
                 auto ctrlFlow = evaluator->getCurrentControlFlowStatement();
                 evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
 
+                dataIndex++;
+
                 if (ctrlFlow == ControlFlowStatement::Continue) {
-                    entryIndex -= patternCount;
                     continue;
                 }
 
@@ -176,8 +176,6 @@ namespace pl::core::ast {
 
                 if (ctrlFlow == ControlFlowStatement::Break || ctrlFlow == ControlFlowStatement::Return)
                     break;
-
-                dataIndex++;
             }
 
             auto endPosition = evaluator->getBitwiseReadOffset();
