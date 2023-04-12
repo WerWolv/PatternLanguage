@@ -68,7 +68,7 @@ namespace pl::ptrn {
 
             for (const auto &entry : this->m_entries) {
                 auto children = entry->getChildren();
-                std::copy(children.begin(), children.end(), std::back_inserter(result));
+                std::move(children.begin(), children.end(), std::back_inserter(result));
             }
 
             return result;

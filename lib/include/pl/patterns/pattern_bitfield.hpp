@@ -73,7 +73,7 @@ namespace pl::ptrn {
             this->m_parentBitfield = parentBitfield;
         }
 
-        PatternBitfieldMember const*getParentBitfield() const override {
+        const PatternBitfieldMember* getParentBitfield() const override {
             return this->m_parentBitfield;
         }
 
@@ -318,7 +318,7 @@ namespace pl::ptrn {
 
             for (const auto &entry : this->m_entries) {
                 auto children = entry->getChildren();
-                std::copy(children.begin(), children.end(), std::back_inserter(result));
+                std::move(children.begin(), children.end(), std::back_inserter(result));
             }
 
             return result;
@@ -550,8 +550,9 @@ namespace pl::ptrn {
             } else {
                 std::vector<std::pair<u64, Pattern*>> result;
 
-                for (const auto &field : this->m_fields) {
-                    result.emplace_back(field->getOffset(), field.get());
+                for (const auto &entry : this->m_fields) {
+                    auto children = entry->getChildren();
+                    std::move(children.begin(), children.end(), std::back_inserter(result));
                 }
 
                 return result;

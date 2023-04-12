@@ -75,7 +75,7 @@ namespace pl::ptrn {
 
                 for (const auto &member : this->m_members) {
                     auto children = member->getChildren();
-                    std::copy(children.begin(), children.end(), std::back_inserter(result));
+                    std::move(children.begin(), children.end(), std::back_inserter(result));
                 }
 
                 return result;

@@ -305,11 +305,12 @@ namespace pl::core {
                     auto offset = variablePattern->getOffset();
                     auto section = variablePattern->getSection();
 
-                    // Keep the old variable until the new one is refcounted so we don't delete storage.
+                    // Keep the old variable until the new one is ref-counted, so we don't delete storage.
                     auto oldVariable = std::exchange(variablePattern, value->clone());
 
                     variablePattern->setVariableName(name);
                     variablePattern->setReference(reference);
+
                     if (!reference) {
                         variablePattern->setOffset(offset);
                         variablePattern->setSection(section);
