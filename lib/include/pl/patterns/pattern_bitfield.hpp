@@ -559,6 +559,13 @@ namespace pl::ptrn {
             }
         }
 
+        void setColor(u32 color) override {
+            Pattern::setColor(color);
+            for (auto &entry : this->m_fields)
+                if (!entry->hasOverriddenColor())
+                    entry->setColor(color);
+        }
+
         void setLocal(bool local) override {
             for (auto &pattern : this->m_fields)
                 pattern->setLocal(local);
