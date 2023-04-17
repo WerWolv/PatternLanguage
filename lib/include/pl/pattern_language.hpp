@@ -109,6 +109,10 @@ namespace pl {
             this->m_cleanupCallbacks.push_back(callback);
         }
 
+        [[nodiscard]] bool arePatternsValid() const {
+            return this->m_patternsValid;
+        }
+
     private:
         void flattenPatterns();
 
@@ -122,7 +126,8 @@ namespace pl {
         std::map<u64, interval_tree::IntervalTree<u64, ptrn::Pattern*>> m_flattenedPatterns;
         std::vector<std::function<void(PatternLanguage&)>> m_cleanupCallbacks;
 
-        bool m_running = false;
+        std::atomic<bool> m_running = false;
+        std::atomic<bool> m_patternsValid = false;
         std::atomic<bool> m_aborted = false;
 
         std::optional<u64> m_startAddress;

@@ -47,7 +47,7 @@ namespace pl {
         this->m_patterns            = std::move(other.m_patterns);
         this->m_flattenedPatterns   = other.m_flattenedPatterns;
 
-        this->m_running             = other.m_running;
+        this->m_running.exchange(other.m_running.load());
     }
 
     std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> PatternLanguage::parseString(const std::string &code) {
@@ -146,6 +146,8 @@ namespace pl {
 
         if (this->m_aborted) {
             this->reset();
+        } else {
+            this->m_patternsValid = true;
         }
 
         return true;
@@ -280,6 +282,7 @@ namespace pl {
         this->m_internals.evaluator->setPatternLimit(0x20000);
         this->m_internals.evaluator->setLoopLimit(0x1000);
         this->m_internals.evaluator->setDebugMode(false);
+        this->m_patternsValid = false;
     }
 
 
