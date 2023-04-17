@@ -538,6 +538,8 @@ namespace pl::core {
                 if (address < this->m_dataBaseAddress + this->m_dataSize)
                     this->m_writerFunction(address, reinterpret_cast<u8*>(buffer), size);
             }
+        } else if (sectionId == ptrn::Pattern::InstantiationSectionId) {
+            err::E0012.throwError("Cannot access data of type that hasn't been placed in memory.");
         } else {
             if (this->m_sections.contains(sectionId)) {
                 auto &section = this->m_sections[sectionId];
@@ -593,6 +595,8 @@ namespace pl::core {
             return this->m_heap.back();
         else if (this->m_sections.contains(id))
             return this->m_sections[id].data;
+        else if (id == ptrn::Pattern::InstantiationSectionId)
+            err::E0012.throwError("Cannot access data of type that hasn't been placed in memory.");
         else
             err::E0011.throwError(fmt::format("Tried accessing a non-existing section with id {}.", id));
     }
