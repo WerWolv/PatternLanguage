@@ -65,7 +65,7 @@ namespace pl::gen::fmt {
         static std::string generateHtml(const PatternLanguage &runtime) {
             std::string rows;
 
-            auto evaluator = runtime.getInternals().evaluator;
+            auto &evaluator = runtime.getInternals().evaluator;
 
             for (u64 i = evaluator->getDataBaseAddress(); i < evaluator->getDataSize(); i += 0x10) {
                 rows += generateRow(i, runtime);

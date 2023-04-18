@@ -15,6 +15,14 @@
 namespace pl {
 
     PatternLanguage::PatternLanguage(bool addLibStd) : m_internals() {
+        this->m_internals = {
+            .preprocessor   = std::make_unique<core::Preprocessor>(),
+            .lexer          = std::make_unique<core::Lexer>(),
+            .parser         = std::make_unique<core::Parser>(),
+            .validator      = std::make_unique<core::Validator>(),
+            .evaluator      = std::make_unique<core::Evaluator>()
+        };
+
         if (addLibStd)
             lib::libstd::registerFunctions(*this);
     }
