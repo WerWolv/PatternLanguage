@@ -609,7 +609,7 @@ namespace pl::core {
         return this->m_sections.size();
     }
 
-    bool Evaluator::evaluate(const std::string &sourceCode, std::vector<std::shared_ptr<ast::ASTNode>> &&ast) {
+    bool Evaluator::evaluate(const std::string &sourceCode, const std::vector<std::shared_ptr<ast::ASTNode>> &ast) {
         this->m_readOrderReversed = false;
         this->m_currBitOffset = 0;
 

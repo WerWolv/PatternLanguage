@@ -109,9 +109,11 @@ namespace pl {
         if (!ast.has_value())
             return false;
 
+        this->m_currAST = std::move(*ast);
+
         evaluator->setReadOffset(this->m_startAddress.value_or(evaluator->getDataBaseAddress()));
 
-        if (!evaluator->evaluate(code, std::move(*ast))) {
+        if (!evaluator->evaluate(code, this->m_currAST)) {
             this->m_currError = evaluator->getConsole().getLastHardError();
             return false;
         }

@@ -52,7 +52,7 @@ namespace pl::core {
     public:
         Evaluator() = default;
 
-        [[nodiscard]] bool evaluate(const std::string &sourceCode, std::vector<std::shared_ptr<ast::ASTNode>> &&ast);
+        [[nodiscard]] bool evaluate(const std::string &sourceCode, const std::vector<std::shared_ptr<ast::ASTNode>> &ast);
 
         [[nodiscard]] const auto &getPatterns() const {
             return this->m_patterns;

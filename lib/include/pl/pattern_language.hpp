@@ -311,6 +311,7 @@ namespace pl {
         std::map<u64, std::vector<std::shared_ptr<ptrn::Pattern>>> m_patterns;
         std::map<u64, interval_tree::IntervalTree<u64, ptrn::Pattern*>> m_flattenedPatterns;
         std::vector<std::function<void(PatternLanguage&)>> m_cleanupCallbacks;
+        std::vector<std::shared_ptr<core::ast::ASTNode>> m_currAST;
 
         std::atomic<bool> m_running = false;
         std::atomic<bool> m_patternsValid = false;
