@@ -14,13 +14,7 @@
 
 namespace pl {
 
-    PatternLanguage::PatternLanguage(bool addLibStd) {
-        this->m_internals.preprocessor  = new core::Preprocessor();
-        this->m_internals.lexer         = new core::Lexer();
-        this->m_internals.parser        = new core::Parser();
-        this->m_internals.validator     = new core::Validator();
-        this->m_internals.evaluator     = new core::Evaluator();
-
+    PatternLanguage::PatternLanguage(bool addLibStd) : m_internals() {
         if (addLibStd)
             lib::libstd::registerFunctions(*this);
     }
@@ -28,21 +22,13 @@ namespace pl {
     PatternLanguage::~PatternLanguage() {
         this->m_patterns.clear();
         this->m_flattenedPatterns.clear();
-        this->m_currAST.clear();
-
-        delete this->m_internals.preprocessor;
-        delete this->m_internals.lexer;
-        delete this->m_internals.parser;
-        delete this->m_internals.validator;
-        delete this->m_internals.evaluator;
     }
 
     PatternLanguage::PatternLanguage(PatternLanguage &&other) noexcept {
-        this->m_internals           = other.m_internals;
+        this->m_internals           = std::move(other.m_internals);
         other.m_internals = { };
 
         this->m_currError           = std::move(other.m_currError);
-        this->m_currAST             = std::move(other.m_currAST);
 
         this->m_patterns            = std::move(other.m_patterns);
         this->m_flattenedPatterns   = other.m_flattenedPatterns;
@@ -111,20 +97,13 @@ namespace pl {
         for (const auto &[name, value] : envVars)
             evaluator->setEnvVariable(name, value);
 
-        this->m_currAST.clear();
-
-        {
-            auto ast = this->parseString(code);
-            if (!ast)
-                return false;
-
-            this->m_currAST = std::move(ast.value());
-        }
+        auto ast = this->parseString(code);
+        if (!ast.has_value())
+            return false;
 
         evaluator->setReadOffset(this->m_startAddress.value_or(evaluator->getDataBaseAddress()));
 
-
-        if (!evaluator->evaluate(code, this->m_currAST)) {
+        if (!evaluator->evaluate(code, std::move(*ast))) {
             this->m_currError = evaluator->getConsole().getLastHardError();
             return false;
         }
@@ -216,10 +195,6 @@ namespace pl {
         this->m_internals.evaluator->setDangerousFunctionCallHandler(std::move(callback));
     }
 
-    const std::vector<std::shared_ptr<core::ast::ASTNode>> &PatternLanguage::getCurrentAST() const {
-        return this->m_currAST;
-    }
-
     [[nodiscard]] std::map<std::string, core::Token::Literal> PatternLanguage::getOutVariables() const {
         return this->m_internals.evaluator->getOutVariables();
     }
@@ -241,13 +216,9 @@ namespace pl {
         return this->m_internals.evaluator->getPatternLimit();
     }
 
-    const std::vector<u8>& PatternLanguage::getSection(u64 id) {
+    const std::vector<u8>& PatternLanguage::getSection(u64 id) const {
         static std::vector<u8> empty;
-        if (id > this->m_internals.evaluator->getSectionCount())
-            return empty;
-        else if (id == ptrn::Pattern::MainSectionId)
-            return empty;
-        else if (id == ptrn::Pattern::HeapSectionId)
+        if (id > this->m_internals.evaluator->getSectionCount() || id == ptrn::Pattern::MainSectionId || id == ptrn::Pattern::HeapSectionId)
             return empty;
         else
             return this->m_internals.evaluator->getSection(id);
@@ -257,7 +228,7 @@ namespace pl {
         return this->m_internals.evaluator->getSections();
     }
 
-    [[nodiscard]] const std::vector<std::shared_ptr<ptrn::Pattern>> &PatternLanguage::getAllPatterns(u64 section) const {
+    [[nodiscard]] const std::vector<std::shared_ptr<ptrn::Pattern>> &PatternLanguage::getPatterns(u64 section) const {
         static const std::vector<std::shared_ptr<pl::ptrn::Pattern>> empty;
         if (this->m_patterns.contains(section))
             return this->m_patterns.at(section);
@@ -269,8 +240,6 @@ namespace pl {
     void PatternLanguage::reset() {
         this->m_patterns.clear();
         this->m_flattenedPatterns.clear();
-
-        this->m_currAST.clear();
 
         this->m_currError.reset();
         this->m_internals.validator->setRecursionDepth(32);

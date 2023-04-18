@@ -73,7 +73,7 @@ int runTests(int argc, char **argv) {
         return failing ? EXIT_SUCCESS : EXIT_FAILURE;
     }
 
-    const auto &evaluatedPatterns = runtime.getAllPatterns();
+    const auto &evaluatedPatterns = runtime.getPatterns();
     const auto &controlPatterns   = currTest->getPatterns();
 
     if (!test->runChecks(evaluatedPatterns)) {

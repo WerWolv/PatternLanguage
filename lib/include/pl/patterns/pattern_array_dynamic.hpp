@@ -5,8 +5,8 @@
 namespace pl::ptrn {
 
     class PatternArrayDynamic : public Pattern,
-                                public Inlinable,
-                                public Iteratable {
+                                public IInlinable,
+                                public IIterable {
     public:
         PatternArrayDynamic(core::Evaluator *evaluator, u64 offset, size_t size)
             : Pattern(evaluator, offset, size) { }

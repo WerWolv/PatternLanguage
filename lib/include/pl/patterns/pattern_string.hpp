@@ -4,7 +4,8 @@
 
 namespace pl::ptrn {
 
-    class PatternString : public Pattern, public Iteratable {
+    class PatternString : public Pattern,
+                          public IIterable {
     public:
         PatternString(core::Evaluator *evaluator, u64 offset, size_t size)
             : Pattern(evaluator, offset, size) { }

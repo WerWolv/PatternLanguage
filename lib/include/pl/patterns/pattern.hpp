@@ -17,7 +17,7 @@ namespace pl::ptrn {
 
     using namespace ::std::literals::string_literals;
 
-    class Inlinable {
+    class IInlinable {
     public:
         [[nodiscard]] bool isInlined() const { return this->m_inlined; }
         void setInlined(bool inlined) { this->m_inlined = inlined; }
@@ -26,7 +26,7 @@ namespace pl::ptrn {
         bool m_inlined = false;
     };
 
-    class Iteratable {
+    class IIterable {
     public:
         [[nodiscard]] virtual std::vector<std::shared_ptr<Pattern>> getEntries() = 0;
         [[nodiscard]] virtual std::shared_ptr<Pattern> getEntry(size_t index) const = 0;
@@ -93,10 +93,10 @@ namespace pl::ptrn {
         [[nodiscard]] u32 getHeapAddress() const { return this->getOffset() >> 32; }
         void setAbsoluteOffset(u64 offset) {
             if (this->m_offset != offset) {
-                if (this->m_evaluator)
+                if (this->m_evaluator != nullptr)
                     this->m_evaluator->patternDestroyed(this);
                 this->m_offset = offset;
-                if (this->m_evaluator)
+                if (this->m_evaluator != nullptr)
                     this->m_evaluator->patternCreated(this);
             }
         }
@@ -300,10 +300,10 @@ namespace pl::ptrn {
 
         virtual void setSection(u64 id) {
             if (this->m_section != id) {
-                if (this->m_evaluator)
+                if (this->m_evaluator != nullptr)
                     this->m_evaluator->patternDestroyed(this);
                 this->m_section = id;
-                if (this->m_evaluator)
+                if (this->m_evaluator != nullptr)
                     this->m_evaluator->patternCreated(this);
             }
         }
@@ -331,7 +331,7 @@ namespace pl::ptrn {
                         [](auto value) { return wolv::util::toContainer<std::vector<u8>>(wolv::util::toBytes(value)); }
                 }, this->getValue());
                 std::copy(bytes.begin(), bytes.end(), std::back_inserter(result));
-            } else if (auto iteratable = dynamic_cast<pl::ptrn::Iteratable*>(this); iteratable != nullptr) {
+            } else if (auto iteratable = dynamic_cast<IIterable*>(this); iteratable != nullptr) {
                 iteratable->forEachEntry(0, iteratable->getEntryCount(), [&](u64, pl::ptrn::Pattern *entry) {
                     const auto children = entry->getChildren();
                     for (const auto &[offset, child] : children) {
@@ -394,8 +394,8 @@ namespace pl::ptrn {
 
             this->m_cachedDisplayValue.reset();
 
-            if (auto *iteratable = dynamic_cast<Iteratable*>(this); iteratable != nullptr) {
-                for (auto &entry : iteratable->getEntries()) {
+            if (auto *iterable = dynamic_cast<IIterable*>(this); iterable != nullptr) {
+                for (auto &entry : iterable->getEntries()) {
                     entry->clearFormatCache();
                 }
             }

@@ -126,7 +126,7 @@ namespace pl::gen::fmt {
             visitor.enableMetaInformation(this->isMetaInformationEnabled());
 
             visitor.pushIndent();
-            for (const auto& pattern : runtime.getAllPatterns()) {
+            for (const auto& pattern : runtime.getPatterns()) {
                 pattern->accept(visitor);
             }
             visitor.popIndent();

@@ -121,7 +121,7 @@ namespace pl::gen::fmt {
             YamlPatternVisitor visitor;
             visitor.enableMetaInformation(this->isMetaInformationEnabled());
 
-            for (const auto& pattern : runtime.getAllPatterns()) {
+            for (const auto& pattern : runtime.getPatterns()) {
                 pattern->accept(visitor);
             }
 

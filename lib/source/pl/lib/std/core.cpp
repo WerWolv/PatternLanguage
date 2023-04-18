@@ -115,7 +115,7 @@ namespace pl::lib::libstd::core {
             runtime.addFunction(nsStdCore, "member_count", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 auto pattern = params[0].toPattern();
 
-                if (auto iteratable = dynamic_cast<ptrn::Iteratable*>(pattern); iteratable != nullptr)
+                if (auto iteratable = dynamic_cast<ptrn::IIterable*>(pattern); iteratable != nullptr)
                     return u128(iteratable->getEntryCount());
                 else
                     return u128(0);
@@ -133,7 +133,7 @@ namespace pl::lib::libstd::core {
                         });
                 };
 
-                if (auto iteratable = dynamic_cast<ptrn::Iteratable*>(pattern); iteratable != nullptr)
+                if (auto iteratable = dynamic_cast<ptrn::IIterable*>(pattern); iteratable != nullptr)
                     return hasMember(iteratable->getEntries());
                 else
                     return false;

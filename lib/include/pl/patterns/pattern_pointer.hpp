@@ -6,7 +6,7 @@
 namespace pl::ptrn {
 
     class PatternPointer : public Pattern,
-                           public Inlinable {
+                           public IInlinable {
     public:
         PatternPointer(core::Evaluator *evaluator, u64 offset, size_t size)
             : Pattern(evaluator, offset, size), m_pointedAt(nullptr), m_pointerType(nullptr) {

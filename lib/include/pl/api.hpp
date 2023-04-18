@@ -19,13 +19,22 @@ namespace pl {
 
 namespace pl::api {
 
+    /**
+     * @brief A pragma handler is a function that is called when a pragma is encountered.
+     */
     using PragmaHandler = std::function<bool(PatternLanguage&, const std::string &)>;
 
+    /**
+     * @brief A type representing a custom section
+     */
     struct Section {
         std::string name;
         std::vector<u8> data;
     };
 
+    /**
+     * @brief Type to pass to function register functions to specify the number of parameters a function takes.
+     */
     struct FunctionParameterCount {
         FunctionParameterCount() = default;
 
@@ -66,9 +75,19 @@ namespace pl::api {
         FunctionParameterCount(u32 min, u32 max) : min(min), max(max) { }
     };
 
+    /**
+     * @brief A type representing a namespace.
+     */
     using Namespace = std::vector<std::string>;
+
+    /**
+     * @brief A function callback called when a function is called.
+     */
     using FunctionCallback  = std::function<std::optional<core::Token::Literal>(core::Evaluator *, const std::vector<core::Token::Literal> &)>;
 
+    /**
+     * @brief A type representing a function.
+     */
     struct Function {
         FunctionParameterCount parameterCount;
         std::vector<core::Token::Literal> defaultParameters;

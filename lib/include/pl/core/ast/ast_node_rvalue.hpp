@@ -231,7 +231,7 @@ namespace pl::core::ast {
                             [this](ptrn::Pattern *pattern) { err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
                             [&, this](auto &&index) {
                                 auto pattern = currPattern.get();
-                                if (auto *iteratable = dynamic_cast<ptrn::Iteratable *>(pattern); iteratable != nullptr) {
+                                if (auto *iteratable = dynamic_cast<ptrn::IIterable *>(pattern); iteratable != nullptr) {
                                     if (size_t(index) >= iteratable->getEntryCount())
                                         core::err::E0006.throwError("Index out of bounds.", fmt::format("Tried to access index {} in array of size {}.", index, iteratable->getEntryCount()), this);
                                     currPattern = iteratable->getEntry(index);
@@ -253,7 +253,7 @@ namespace pl::core::ast {
 
                 auto indexPattern = currPattern.get();
 
-                if (auto iteratable = dynamic_cast<ptrn::Iteratable *>(indexPattern); iteratable != nullptr)
+                if (auto iteratable = dynamic_cast<ptrn::IIterable *>(indexPattern); iteratable != nullptr)
                     searchScope = iteratable->getEntries();
                 else
                     indexable = false;

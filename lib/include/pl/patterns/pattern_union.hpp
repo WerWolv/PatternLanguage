@@ -5,8 +5,8 @@
 namespace pl::ptrn {
 
     class PatternUnion : public Pattern,
-                         public Inlinable,
-                         public Iteratable {
+                         public IInlinable,
+                         public IIterable {
     public:
         PatternUnion(core::Evaluator *evaluator, u64 offset, size_t size)
             : Pattern(evaluator, offset, size) { }

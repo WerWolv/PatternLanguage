@@ -127,7 +127,7 @@ namespace pl::core::ast {
             err::E0008.throwError("Attributes cannot be applied to this statement.", {}, node);
 
         if (attributable->hasAttribute("inline", false)) {
-            auto inlinable = dynamic_cast<ptrn::Inlinable *>(pattern.get());
+            auto inlinable = dynamic_cast<ptrn::IInlinable *>(pattern.get());
 
             if (inlinable == nullptr)
                 err::E0008.throwError("[[inline]] attribute can only be used with nested types.", "Try applying it to a struct, union, bitfield or array instead.", node);

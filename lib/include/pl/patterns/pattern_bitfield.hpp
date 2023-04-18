@@ -228,8 +228,8 @@ namespace pl::ptrn {
     };
 
     class PatternBitfieldArray : public PatternBitfieldMember,
-                                 public Inlinable,
-                                 public Iteratable {
+                                 public IInlinable,
+                                 public IIterable {
     public:
         PatternBitfieldArray(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize)
             : PatternBitfieldMember(evaluator, offset, (totalBitSize + 7) / 8), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
@@ -481,8 +481,8 @@ namespace pl::ptrn {
     };
 
     class PatternBitfield : public PatternBitfieldMember,
-                            public Inlinable,
-                            public Iteratable {
+                            public IInlinable,
+                            public IIterable {
     public:
         PatternBitfield(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize)
             : PatternBitfieldMember(evaluator, offset, (totalBitSize + 7) / 8), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
