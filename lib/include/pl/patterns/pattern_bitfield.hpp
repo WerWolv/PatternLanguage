@@ -20,17 +20,17 @@ namespace pl::ptrn {
             return *topBitfield;
         }
 
-        [[nodiscard]] virtual u8 getBitOffset() const = 0;
+        [[nodiscard]] virtual u128 getBitOffset() const = 0;
 
-        virtual void setBitOffset(u8 bitOffset) = 0;
+        virtual void setBitOffset(u128 bitOffset) = 0;
 
-        [[nodiscard]] virtual u64 getBitSize() const = 0;
+        [[nodiscard]] virtual u128 getBitSize() const = 0;
 
         [[nodiscard]] u128 getTotalBitOffset(u64 fromByteOffset = 0) const {
             return ((this->getOffset() - fromByteOffset) << 3) + this->getBitOffset();
         }
 
-        [[nodiscard]] u8 getBitOffsetForDisplay() const {
+        [[nodiscard]] u128 getBitOffsetForDisplay() const {
             return this->getTotalBitOffset() - getTopmostBitfield().getTotalBitOffset();
         }
 
@@ -81,15 +81,15 @@ namespace pl::ptrn {
             return this->m_bitSize == 1 ? "bit" : "bits";
         }
 
-        [[nodiscard]] u8 getBitOffset() const override {
+        [[nodiscard]] u128 getBitOffset() const override {
             return this->m_bitOffset;
         }
 
-        void setBitOffset(u8 bitOffset) override {
+        void setBitOffset(u128 bitOffset) override {
             this->m_bitOffset = bitOffset;
         }
 
-        [[nodiscard]] u64 getBitSize() const override {
+        [[nodiscard]] u128 getBitSize() const override {
             return this->m_bitSize;
         }
 
@@ -121,8 +121,8 @@ namespace pl::ptrn {
 
     private:
         bool m_padding = false;
-        size_t m_bitOffset;
-        u8 m_bitSize;
+        u128 m_bitOffset;
+        u128 m_bitSize;
         PatternBitfieldMember *m_parentBitfield = nullptr;
     };
 
@@ -231,7 +231,7 @@ namespace pl::ptrn {
                                  public IInlinable,
                                  public IIterable {
     public:
-        PatternBitfieldArray(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize)
+        PatternBitfieldArray(core::Evaluator *evaluator, u64 offset, u64 firstBitOffset, u64 totalBitSize)
             : PatternBitfieldMember(evaluator, offset, (totalBitSize + 7) / 8), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
 
         PatternBitfieldArray(const PatternBitfieldArray &other) : PatternBitfieldMember(other) {
@@ -257,11 +257,11 @@ namespace pl::ptrn {
             return this->m_parentBitfield;
         }
 
-        [[nodiscard]] u8 getBitOffset() const override {
+        [[nodiscard]] u128 getBitOffset() const override {
             return m_firstBitOffset;
         }
 
-        void setBitOffset(u8 bitOffset) override {
+        void setBitOffset(u128 bitOffset) override {
             this->m_firstBitOffset = bitOffset;
         }
 
@@ -270,7 +270,7 @@ namespace pl::ptrn {
             this->setSize((bitSize + 7) / 8);
         }
 
-        [[nodiscard]] u64 getBitSize() const override {
+        [[nodiscard]] u128 getBitSize() const override {
             return this->m_totalBitSize;
         }
 
@@ -474,7 +474,7 @@ namespace pl::ptrn {
     private:
         std::vector<std::shared_ptr<Pattern>> m_entries;
         std::vector<Pattern *> m_sortedEntries;
-        u8 m_firstBitOffset = 0;
+        u128 m_firstBitOffset = 0;
         u128 m_totalBitSize = 0;
         PatternBitfieldMember *m_parentBitfield = nullptr;
         bool m_reversed = false;
@@ -484,7 +484,7 @@ namespace pl::ptrn {
                             public IInlinable,
                             public IIterable {
     public:
-        PatternBitfield(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize)
+        PatternBitfield(core::Evaluator *evaluator, u64 offset, u64 firstBitOffset, u64 totalBitSize)
             : PatternBitfieldMember(evaluator, offset, (totalBitSize + 7) / 8), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
 
         PatternBitfield(const PatternBitfield &other) : PatternBitfieldMember(other) {
@@ -508,11 +508,11 @@ namespace pl::ptrn {
             return this->m_parentBitfield;
         }
 
-        [[nodiscard]] u8 getBitOffset() const override {
+        [[nodiscard]] u128 getBitOffset() const override {
             return m_firstBitOffset;
         }
 
-        void setBitOffset(u8 bitOffset) override {
+        void setBitOffset(u128 bitOffset) override {
             this->m_firstBitOffset = bitOffset;
         }
 
@@ -521,7 +521,7 @@ namespace pl::ptrn {
             this->setSize((bitSize + 7) / 8);
         }
 
-        [[nodiscard]] u64 getBitSize() const override {
+        [[nodiscard]] u128 getBitSize() const override {
             return this->m_totalBitSize;
         }
 
@@ -734,8 +734,8 @@ namespace pl::ptrn {
         std::vector<Pattern *> m_sortedFields;
 
         PatternBitfieldMember *m_parentBitfield = nullptr;
-        u8 m_firstBitOffset = 0;
-        u64 m_totalBitSize = 0;
+        u128 m_firstBitOffset = 0;
+        u128 m_totalBitSize = 0;
         bool m_reversed = false;
     };
 
