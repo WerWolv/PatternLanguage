@@ -490,7 +490,14 @@ namespace pl::core {
         if (size == 0 || buffer == nullptr)
             return;
 
-        if (sectionId == ptrn::Pattern::HeapSectionId) {
+        if (sectionId == ptrn::Pattern::MainSectionId) [[likely]] {
+            if (!write) [[likely]] {
+                this->m_readerFunction(address, reinterpret_cast<u8*>(buffer), size);
+            } else {
+                if (address < this->m_dataBaseAddress + this->m_dataSize)
+                    this->m_writerFunction(address, reinterpret_cast<u8*>(buffer), size);
+            }
+        } else if (sectionId == ptrn::Pattern::HeapSectionId) {
             auto &heap = this->getHeap();
 
             auto heapAddress = (address >> 32);
@@ -528,16 +535,6 @@ namespace pl::core {
             }
             else
                 err::E0011.throwError(fmt::format("Tried accessing out of bounds pattern local storage cell {}. This is a bug.", heapAddress));
-        } else if (sectionId == ptrn::Pattern::MainSectionId) {
-            if (!write) {
-                if (address < this->m_dataBaseAddress + this->m_dataSize)
-                    this->m_readerFunction(address, reinterpret_cast<u8*>(buffer), size);
-                else
-                    std::memset(buffer, 0x00, size);
-            } else {
-                if (address < this->m_dataBaseAddress + this->m_dataSize)
-                    this->m_writerFunction(address, reinterpret_cast<u8*>(buffer), size);
-            }
         } else if (sectionId == ptrn::Pattern::InstantiationSectionId) {
             err::E0012.throwError("Cannot access data of type that hasn't been placed in memory.");
         } else {
