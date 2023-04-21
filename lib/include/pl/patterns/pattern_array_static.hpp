@@ -13,7 +13,6 @@ namespace pl::ptrn {
 
         PatternArrayStatic(const PatternArrayStatic &other) : Pattern(other) {
             this->setEntries(other.getTemplate()->clone(), other.getEntryCount());
-            this->m_formatCache = other.m_formatCache;
         }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
@@ -46,15 +45,7 @@ namespace pl::ptrn {
                 entry->setVariableName(fmt::format("[{0}]", index));
                 entry->setOffset(this->getOffset() + index * this->m_template->getSize());
                 evaluator->setCurrentArrayIndex(index);
-
-                if (this->m_formatCache.contains(index))
-                    entry->setFormatValue(this->m_formatCache[index]);
-                else
-                    entry->clearFormatCache();
-
                 fn(index, entry.get());
-
-                this->m_formatCache[index] = entry->getFormattedValue();
             }
         }
 
@@ -225,8 +216,6 @@ namespace pl::ptrn {
         std::shared_ptr<Pattern> m_template = nullptr;
         mutable std::vector<std::shared_ptr<Pattern>> m_highlightTemplates;
         size_t m_entryCount = 0;
-
-        std::map<u64, std::string> m_formatCache;
     };
 
 }
