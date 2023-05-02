@@ -88,13 +88,27 @@ namespace pl::lib::libstd::file {
 
             /* write(file, data) */
             runtime.addDangerousFunction(nsStdFile, "write", FunctionParameterCount::exactly(2), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
-                const auto file = params[0].toUnsigned();
-                const auto data = params[1].toString(true);
+                const auto fileHandle = params[0].toUnsigned();
+                auto &data = params[1];
 
-                if (!openFiles.contains(file))
+                if (!openFiles.contains(fileHandle))
                     throwInvalidFileError();
 
-                openFiles[file].writeString(data);
+                auto &file = openFiles[fileHandle];
+                std::visit(wolv::util::overloaded {
+                    [&](const auto &) {
+                        err::E0012.throwError(
+                                fmt::format("Cannot write value of type '{}' to file.", Token::getTypeName(data.getType())),
+                                "Only patterns and strings can be written."
+                        );
+                    },
+                    [&](const std::string &value) {
+                        file.writeString(value);
+                    },
+                    [&](ptrn::Pattern *pattern) {
+                        file.writeVector(pattern->getBytes());
+                    },
+                }, data);
 
                 return std::nullopt;
             });
