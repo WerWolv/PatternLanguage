@@ -10,7 +10,7 @@
 #include <vector>
 #include <filesystem>
 
-#include <IntervalTree.h>
+#include <IITree.h>
 
 #include <pl/api.hpp>
 
@@ -309,7 +309,7 @@ namespace pl {
         std::optional<core::err::PatternLanguageError> m_currError;
 
         std::map<u64, std::vector<std::shared_ptr<ptrn::Pattern>>> m_patterns;
-        std::map<u64, interval_tree::IntervalTree<u64, ptrn::Pattern*>> m_flattenedPatterns;
+        std::map<u64, IITree<u64, ptrn::Pattern*>> m_flattenedPatterns;
         std::vector<std::function<void(PatternLanguage&)>> m_cleanupCallbacks;
         std::vector<std::shared_ptr<core::ast::ASTNode>> m_currAST;
 

@@ -9,7 +9,7 @@ option(LIBPL_ENABLE_CLI "Enable building the CLI tool" ON)
 option(LIBPL_ENABLE_EXAMPLE "Enable building the examples" OFF)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-stringop-overflow")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-stringop-overflow -Wno-dangling-reference")
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
 elseif (NOT (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC"))

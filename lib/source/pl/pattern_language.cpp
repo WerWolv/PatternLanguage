@@ -286,14 +286,12 @@ namespace pl {
     }
 
     void PatternLanguage::flattenPatterns() {
-        using Interval = interval_tree::Interval<u64, ptrn::Pattern*>;
 
         for (const auto &[section, patterns] : this->m_patterns) {
-            std::vector<Interval> intervals;
+            IITree<u64, ptrn::Pattern*> intervals;
             for (const auto &pattern : patterns) {
                 auto children = pattern->getChildren();
 
-                intervals.reserve(children.size());
                 for (const auto &[address, child]: children) {
                     if (this->m_aborted)
                         return;
@@ -301,10 +299,11 @@ namespace pl {
                     if (child->getSize() == 0)
                         continue;
 
-                    intervals.emplace_back(address, address + child->getSize() - 1, child);
+                    intervals.add(address, address + child->getSize(), child);
                 }
             }
 
+            intervals.index();
             this->m_flattenedPatterns[section] = std::move(intervals);
         }
     }
@@ -313,13 +312,17 @@ namespace pl {
         if (this->m_flattenedPatterns.empty() || !this->m_flattenedPatterns.contains(section))
             return { };
 
-        auto intervals = this->m_flattenedPatterns.at(section).findOverlapping(address, address);
+        auto &patterns = this->m_flattenedPatterns.at(section);
+
+        std::vector<size_t> indexes;
+        patterns.overlap(address, address, indexes);
 
         std::vector<ptrn::Pattern*> results;
-        std::transform(intervals.begin(), intervals.end(), std::back_inserter(results), [](const auto &interval) {
-            ptrn::Pattern* value = interval.value;
+        std::transform(indexes.begin(), indexes.end(), std::back_inserter(results), [&](const auto &interval) {
+            ptrn::Pattern* value = patterns.data(interval);
+            u64 start = patterns.start(interval);
 
-            value->setOffset(interval.start);
+            value->setOffset(start);
             value->clearFormatCache();
 
             return value;
