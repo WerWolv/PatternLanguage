@@ -26,28 +26,24 @@ namespace pl::core::ast {
             if (this->getFirstOperand() == nullptr || this->getSecondOperand() == nullptr || this->getThirdOperand() == nullptr)
                 err::E0002.throwError("Void expression used in ternary expression.", "If you used a function for one of the operands, make sure it returned a value.", this);
 
-            auto firstNode  = this->getFirstOperand()->evaluate(evaluator);
-            auto secondNode = this->getSecondOperand()->evaluate(evaluator);
-            auto thirdNode  = this->getThirdOperand()->evaluate(evaluator);
+            auto conditionNode  = this->getFirstOperand()->evaluate(evaluator);
 
-            auto *first  = dynamic_cast<ASTNodeLiteral *>(firstNode.get());
-            auto *second = dynamic_cast<ASTNodeLiteral *>(secondNode.get());
-            auto *third  = dynamic_cast<ASTNodeLiteral *>(thirdNode.get());
+            auto *conditionValue  = dynamic_cast<ASTNodeLiteral *>(conditionNode.get());
 
-            if (first == nullptr || second == nullptr || third == nullptr)
+            if (conditionValue == nullptr)
                 err::E0010.throwError("Cannot use void expression in ternary expression.", {}, this);
 
             auto condition = std::visit(wolv::util::overloaded {
                 [](const std::string &value) -> bool { return !value.empty(); },
                 [this](const std::shared_ptr<ptrn::Pattern> &pattern) -> bool { err::E0002.throwError(fmt::format("Cannot cast {} to bool.", pattern->getTypeName()), {}, this); },
                 [](auto &&value) -> bool { return bool(value); }
-            }, first->getValue());
+            }, conditionValue->getValue());
 
-            return std::visit(wolv::util::overloaded {
-                [condition]<typename T, typename U> requires std::convertible_to<T, U> && std::convertible_to<U, T>
-                (const T &second, const U &third) -> std::unique_ptr<ASTNode> { return std::unique_ptr<ASTNode>(new ASTNodeLiteral(condition ? second : third)); },
-                [this](auto &&, auto &&) -> std::unique_ptr<ASTNode> { err::E0002.throwError("Second and third operand in ternary expression have different types.", {}, this); }
-            }, second->getValue(), third->getValue());
+            if (condition) {
+                return this->getSecondOperand()->evaluate(evaluator);
+            } else {
+                return this->getThirdOperand()->evaluate(evaluator);
+            }
         }
 
         [[nodiscard]] const std::unique_ptr<ASTNode> &getFirstOperand() const { return this->m_first; }
