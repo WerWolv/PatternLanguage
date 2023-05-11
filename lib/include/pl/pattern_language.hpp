@@ -10,8 +10,6 @@
 #include <vector>
 #include <filesystem>
 
-#include <IITree.h>
-
 #include <pl/api.hpp>
 
 #include <pl/core/log_console.hpp>
@@ -21,6 +19,7 @@
 #include <pl/helpers/types.hpp>
 
 #include <wolv/io/fs.hpp>
+#include <wolv/container/interval_tree.hpp>
 
 namespace hex::prv {
     class Provider;
@@ -309,7 +308,7 @@ namespace pl {
         std::optional<core::err::PatternLanguageError> m_currError;
 
         std::map<u64, std::vector<std::shared_ptr<ptrn::Pattern>>> m_patterns;
-        std::map<u64, IITree<u64, ptrn::Pattern*>> m_flattenedPatterns;
+        std::map<u64, wolv::container::IntervalTree<ptrn::Pattern*, u64, 5>> m_flattenedPatterns;
         std::vector<std::function<void(PatternLanguage&)>> m_cleanupCallbacks;
         std::vector<std::shared_ptr<core::ast::ASTNode>> m_currAST;
 

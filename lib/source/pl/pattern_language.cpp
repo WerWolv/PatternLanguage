@@ -288,7 +288,7 @@ namespace pl {
     void PatternLanguage::flattenPatterns() {
 
         for (const auto &[section, patterns] : this->m_patterns) {
-            IITree<u64, ptrn::Pattern*> intervals;
+            auto &sectionTree = this->m_flattenedPatterns[section];
             for (const auto &pattern : patterns) {
                 auto children = pattern->getChildren();
 
@@ -299,12 +299,9 @@ namespace pl {
                     if (child->getSize() == 0)
                         continue;
 
-                    intervals.add(address, address + child->getSize(), child);
+                    sectionTree.insert({ address, address + child->getSize() - 1 }, child);
                 }
             }
-
-            intervals.index();
-            this->m_flattenedPatterns[section] = std::move(intervals);
         }
     }
 
@@ -312,17 +309,13 @@ namespace pl {
         if (this->m_flattenedPatterns.empty() || !this->m_flattenedPatterns.contains(section))
             return { };
 
-        auto &patterns = this->m_flattenedPatterns.at(section);
-
-        std::vector<size_t> indexes;
-        patterns.overlap(address, address, indexes);
+        auto intervals = this->m_flattenedPatterns.at(section).overlapping({ address, address });
 
         std::vector<ptrn::Pattern*> results;
-        std::transform(indexes.begin(), indexes.end(), std::back_inserter(results), [&](const auto &interval) {
-            ptrn::Pattern* value = patterns.data(interval);
-            u64 start = patterns.start(interval);
+        std::transform(intervals.begin(), intervals.end(), std::back_inserter(results), [](const auto &interval) {
+            ptrn::Pattern* value = interval.value;
 
-            value->setOffset(start);
+            value->setOffset(interval.interval.start);
             value->clearFormatCache();
 
             return value;

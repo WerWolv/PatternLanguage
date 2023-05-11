@@ -42,7 +42,7 @@ endif ()
 
 target_include_directories(libpl PUBLIC include)
 target_link_libraries(libpl PRIVATE fmt::fmt-header-only)
-target_link_libraries(libpl PUBLIC intervaltree libwolv-io libwolv-utils libwolv-hash)
+target_link_libraries(libpl PUBLIC libwolv-io libwolv-utils libwolv-hash libwolv-containers)
 
 set_property(TARGET libpl PROPERTY POSITION_INDEPENDENT_CODE ON)
 
