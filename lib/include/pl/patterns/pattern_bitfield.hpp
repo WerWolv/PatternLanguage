@@ -655,11 +655,11 @@ namespace pl::ptrn {
                 if (auto *field = dynamic_cast<PatternBitfieldField *>(pattern.get()); field != nullptr) {
                     auto fieldValue = field->getValue().toUnsigned();
 
-                    if (fieldValue > 0) {
-                        if (field->getBitSize() == 1)
+                    if (field->getBitSize() == 1) {
+                        if (fieldValue > 0)
                             valueString += fmt::format("{} | ", field->getVariableName());
-                        else
-                            valueString += fmt::format("{}({}) | ", field->getVariableName(), field->toString());
+                    } else {
+                        valueString += fmt::format("{}({}) | ", field->getVariableName(), field->toString());
                     }
                 } else if (auto *member = dynamic_cast<PatternBitfieldMember *>(pattern.get()); member != nullptr) {
                     valueString += fmt::format("{} = {} | ", member->getVariableName(), member->toString());
