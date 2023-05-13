@@ -16,7 +16,7 @@ namespace pl::core::ast {
         ASTNodePointerVariableDecl(const ASTNodePointerVariableDecl &other) : ASTNode(other), Attributable(other) {
             this->m_name     = other.m_name;
             this->m_type = std::shared_ptr<ASTNodeTypeDecl>(static_cast<ASTNodeTypeDecl*>(other.m_type->clone().release()));
-            this->m_sizeType = other.m_sizeType;
+            this->m_sizeType = std::shared_ptr<ASTNodeTypeDecl>(static_cast<ASTNodeTypeDecl*>(other.m_sizeType->clone().release()));
 
             if (other.m_placementOffset != nullptr)
                 this->m_placementOffset = other.m_placementOffset->clone();
