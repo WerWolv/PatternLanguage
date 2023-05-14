@@ -671,13 +671,11 @@ namespace pl::core {
                         if (localVariable)
                             this->pushSectionId(ptrn::Pattern::HeapSectionId);
 
+
                         for (auto &pattern : varDeclNode->createPatterns(this)) {
                             if (localVariable) {
                                 auto name = pattern->getVariableName();
                                 wolv::util::unused(varDeclNode->execute(this));
-
-                                if (varDeclNode->isInVariable() && this->m_inVariables.contains(name))
-                                    this->setVariable(name, this->m_inVariables[name]);
 
                                 this->setBitwiseReadOffset(startOffset);
                             } else {
@@ -686,6 +684,12 @@ namespace pl::core {
 
                             if (this->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
                                 break;
+                        }
+
+                        {
+                            auto name = varDeclNode->getName();
+                            if (varDeclNode->isInVariable() && this->m_inVariables.contains(name))
+                                this->setVariable(name, this->m_inVariables[name]);
                         }
 
                         if (localVariable)
