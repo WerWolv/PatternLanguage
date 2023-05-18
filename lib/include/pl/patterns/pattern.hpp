@@ -226,7 +226,11 @@ namespace pl::ptrn {
 
         [[nodiscard]] virtual core::Token::Literal getValue() const {
             auto clone = this->clone();
-            return this->transformValue(clone.get());
+
+            auto pattern = clone.get();
+            this->m_evaluator->getScope(0).savedPatterns.push_back(std::move(clone));
+
+            return this->transformValue(pattern);
         }
 
         [[nodiscard]] virtual std::vector<std::pair<u64, Pattern*>> getChildren() {
