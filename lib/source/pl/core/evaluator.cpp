@@ -400,9 +400,7 @@ namespace pl::core {
                     [&](const double &value) {
                         auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
 
-                        storage.resize(pattern->getSize());
-
-                        if (storage.size() == sizeof(float)) {
+                        if (pattern->getSize() == sizeof(float)) {
                             copyToStorage(float(adjustedValue));
                         } else {
                             copyToStorage(adjustedValue);
