@@ -869,12 +869,12 @@ namespace pl::core {
             for (const auto &templateParameter : this->m_currTemplateType.front()->getTemplateParameters()) {
                 if (auto templateType = dynamic_cast<ast::ASTNodeTypeDecl*>(templateParameter.get()); templateType != nullptr)
                     if (templateType->getName() == baseTypeName)
-                        return create<ast::ASTNodeTypeDecl>("", templateParameter);
+                        return create<ast::ASTNodeTypeDecl>("", templateParameter->clone());
             }
 
         for (const auto &typeName : getNamespacePrefixedNames(baseTypeName)) {
             if (this->m_types.contains(typeName))
-                return create<ast::ASTNodeTypeDecl>("", this->m_types[typeName]);
+                return create<ast::ASTNodeTypeDecl>("", this->m_types[typeName]->clone());
         }
 
         return nullptr;
