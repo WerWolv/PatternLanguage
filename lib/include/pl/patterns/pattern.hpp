@@ -368,7 +368,7 @@ namespace pl::ptrn {
             return bytes;
         }
 
-        void setValue(const core::Token::Literal &value) {
+        virtual void setValue(const core::Token::Literal &value) {
             std::vector<u8> result;
 
             const auto &formatterFunctionName = this->getWriteFormatterFunction();

@@ -286,9 +286,29 @@ namespace pl::core {
             value = hlp::changeEndianess(value, sizeof(value), endianness);
 
             size_t offset = endianness == std::endian::little ? bitOffset : (sizeof(value) * 8) - bitOffset - bitSize;
-            auto mask = (u128(1) << bitSize) - 1;
+            auto mask = hlp::bitmask(bitSize);
             value = (value >> offset) & mask;
             return value;
+        }
+
+        void writeBits(u128 byteOffset, u8 bitOffset, u64 bitSize, u64 section, std::endian endianness, u128 value) {
+            size_t writeSize = (bitOffset + bitSize + 7) / 8;
+            writeSize = std::min(writeSize, sizeof(value));
+            value = hlp::changeEndianess(value, sizeof(value), endianness);
+
+            size_t offset = endianness == std::endian::little ? bitOffset : (sizeof(value) * 8) - bitOffset - bitSize;
+            auto mask = hlp::bitmask(bitSize);
+            value = (value & mask) << offset;
+
+            u128 oldValue = 0;
+            this->readData(byteOffset, &oldValue, writeSize, section);
+            oldValue = hlp::changeEndianess(oldValue, sizeof(oldValue), endianness);
+
+            oldValue &= ~(mask << offset);
+            oldValue |= value;
+
+            oldValue = hlp::changeEndianess(oldValue, sizeof(oldValue), endianness);
+            this->writeData(byteOffset, &oldValue, writeSize, section);
         }
 
         bool addBuiltinFunction(const std::string &name, api::FunctionParameterCount numParams, std::vector<Token::Literal> defaultParameters, const api::FunctionCallback &function, bool dangerous) {

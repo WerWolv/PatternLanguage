@@ -119,6 +119,38 @@ namespace pl::ptrn {
         [[nodiscard]] bool isPadding() const override { return this->m_padding; }
         void setPadding(bool padding) { this->m_padding = padding; }
 
+        void setValue(const core::Token::Literal &value) override {
+            std::vector<u8> result;
+
+            const auto &formatterFunctionName = this->getWriteFormatterFunction();
+            if (formatterFunctionName.empty()) {
+                result = this->getBytesOf(value);
+            } else {
+                try {
+                    const auto function = this->getEvaluator()->findFunction(formatterFunctionName);
+                    if (function.has_value()) {
+                        auto formatterResult = function->func(this->getEvaluator(), { value });
+
+                        if (formatterResult.has_value()) {
+                            result = this->getBytesOf(*formatterResult);
+                        }
+                    }
+                } catch (core::err::EvaluatorError::Exception &error) {
+                    wolv::util::unused(error);
+                }
+            }
+
+            if (!result.empty() && result.size() <= sizeof(u128)) {
+                u128 writeValue = 0;
+                std::memcpy(&writeValue, result.data(), result.size());
+
+                this->getEvaluator()->writeBits(this->getOffset(), this->getBitOffset(), this->getBitSize(), this->getSection(), this->getEndian(), writeValue);
+
+                this->clearFormatCache();
+                this->m_parentBitfield->clearFormatCache();
+            }
+        }
+
     private:
         PatternBitfieldMember *m_parentBitfield = nullptr;
 
