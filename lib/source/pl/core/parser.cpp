@@ -864,12 +864,12 @@ namespace pl::core {
 
     /* Type declarations */
 
-    std::unique_ptr<ast::ASTNodeTypeDecl> Parser::getCustomType(std::string baseTypeName) {
+    std::unique_ptr<ast::ASTNodeTypeDecl> Parser::getCustomType(const std::string &baseTypeName) {
         if (!this->m_currTemplateType.empty())
             for (const auto &templateParameter : this->m_currTemplateType.front()->getTemplateParameters()) {
                 if (auto templateType = dynamic_cast<ast::ASTNodeTypeDecl*>(templateParameter.get()); templateType != nullptr)
                     if (templateType->getName() == baseTypeName)
-                        return create<ast::ASTNodeTypeDecl>("", templateParameter->clone());
+                        return create<ast::ASTNodeTypeDecl>("", templateParameter);
             }
 
         for (const auto &typeName : getNamespacePrefixedNames(baseTypeName)) {

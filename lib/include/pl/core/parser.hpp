@@ -146,7 +146,7 @@ namespace pl::core {
         std::unique_ptr<ast::ASTNode> parseMatchStatement(const std::function<std::unique_ptr<ast::ASTNode>()> &memberParser);
         std::unique_ptr<ast::ASTNode> parseTryCatchStatement(const std::function<std::unique_ptr<ast::ASTNode>()> &memberParser);
         std::unique_ptr<ast::ASTNode> parseWhileStatement();
-        std::unique_ptr<ast::ASTNodeTypeDecl> getCustomType(std::string baseTypeName);
+        std::unique_ptr<ast::ASTNodeTypeDecl> getCustomType(const std::string &baseTypeName);
         std::unique_ptr<ast::ASTNodeTypeDecl> parseCustomType();
         void parseCustomTypeParameters(std::unique_ptr<ast::ASTNodeTypeDecl> &type);
         std::unique_ptr<ast::ASTNodeTypeDecl> parseType();
