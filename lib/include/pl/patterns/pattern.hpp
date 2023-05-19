@@ -211,7 +211,10 @@ namespace pl::ptrn {
                     this->m_evaluator->setReadOffset(startOffset);
                 };
 
-                return this->formatDisplayValue();
+                auto result = this->formatDisplayValue();
+                this->m_cachedDisplayValue = std::make_unique<std::string>(result);
+
+                return result;
             } catch(std::exception &e) {
                 this->m_cachedDisplayValue = std::make_unique<std::string>(e.what());
                 return *this->m_cachedDisplayValue;
