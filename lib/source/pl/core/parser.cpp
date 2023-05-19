@@ -873,8 +873,14 @@ namespace pl::core {
             }
 
         for (const auto &typeName : getNamespacePrefixedNames(baseTypeName)) {
-            if (this->m_types.contains(typeName))
-                return create<ast::ASTNodeTypeDecl>("", this->m_types[typeName]->clone());
+            if (this->m_types.contains(typeName)) {
+                auto type = this->m_types[typeName];
+
+                if (type->isValid())
+                    return create<ast::ASTNodeTypeDecl>("", type->clone());
+                else
+                    return create<ast::ASTNodeTypeDecl>("", type);
+            }
         }
 
         return nullptr;
