@@ -876,10 +876,7 @@ namespace pl::core {
             if (this->m_types.contains(typeName)) {
                 auto type = this->m_types[typeName];
 
-                if (type->isValid())
-                    return create<ast::ASTNodeTypeDecl>("", type->clone());
-                else
-                    return create<ast::ASTNodeTypeDecl>("", type);
+                return create<ast::ASTNodeTypeDecl>("", type);
             }
         }
 
@@ -1000,6 +997,10 @@ namespace pl::core {
         this->m_currTemplateType.push_back(type);
         auto replaceType = parseType();
         this->m_currTemplateType.pop_back();
+
+
+        if (auto containedType = dynamic_cast<ast::ASTNodeTypeDecl*>(replaceType.get()); containedType != nullptr && !containedType->isTemplateType())
+            replaceType->setType(containedType->clone());
 
         auto endian = replaceType->getEndian();
         type->setType(std::move(replaceType));
