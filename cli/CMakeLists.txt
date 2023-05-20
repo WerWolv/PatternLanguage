@@ -14,11 +14,14 @@ add_executable(plcli
         source/subcommands/info.cpp
 )
 
-add_subdirectory(../external/cli11 ../external/cli11)
+find_package(CLI11 CONFIG)
+if(NOT CLI11_FOUND)
+    add_subdirectory(../external/cli11 ../external/cli11)
+endif()
 
 target_compile_options(plcli PRIVATE -Wall -Wextra -Werror -Wno-unknown-pragmas)
 target_include_directories(plcli PUBLIC include)
-target_link_libraries(plcli PUBLIC libpl libpl-gen CLI11 fmt::fmt-header-only)
+target_link_libraries(plcli PUBLIC libpl libpl-gen CLI11::CLI11 fmt::fmt-header-only)
 
 if (WIN32)
     set(CMAKE_INSTALL_BINDIR ".")
