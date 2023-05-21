@@ -176,10 +176,12 @@ namespace pl::core::ast {
                     auto name = std::get<std::string>(part);
 
                     if (name == "parent") {
-                        scopeIndex--;
+                        do {
+                            scopeIndex--;
 
-                        if (static_cast<size_t>(std::abs(scopeIndex)) >= evaluator->getScopeCount())
-                            err::E0003.throwError("Cannot access parent of global scope.", {}, this);
+                            if (static_cast<size_t>(std::abs(scopeIndex)) >= evaluator->getScopeCount())
+                                err::E0003.throwError("Cannot access parent of global scope.", {}, this);
+                        } while (evaluator->getScope(scopeIndex).parent == nullptr);
 
                         searchScope     = *evaluator->getScope(scopeIndex).scope;
                         auto currParent = evaluator->getScope(scopeIndex).parent;
