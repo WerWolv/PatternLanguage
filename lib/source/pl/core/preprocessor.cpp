@@ -57,10 +57,9 @@ namespace pl::core {
             while ((allowWhitespace || !std::isblank(code[offset])) && code[offset] != '\n' && code[offset] != '\r') {
                 value += code[offset];
 
-                if (offset >= code.length())
-                    return std::nullopt;
-
                 offset += 1;
+                if (offset >= code.length())
+                    break;
             }
 
             return wolv::util::trim(value);
