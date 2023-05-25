@@ -45,6 +45,8 @@ namespace pl::ptrn {
                 entry->setVariableName(fmt::format("[{0}]", index));
                 entry->setOffset(this->getOffset() + index * this->m_template->getSize());
                 evaluator->setCurrentArrayIndex(index);
+
+                entry->clearFormatCache();
                 fn(index, entry.get());
             }
         }
