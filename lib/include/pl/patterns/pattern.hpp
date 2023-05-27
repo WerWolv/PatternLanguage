@@ -327,6 +327,9 @@ namespace pl::ptrn {
         [[nodiscard]] virtual bool operator==(const Pattern &other) const = 0;
 
         std::vector<u8> getBytes() {
+            if (this->m_cachedBytes != nullptr)
+                return *this->m_cachedBytes;
+
             std::vector<u8> result;
             result.reserve(this->getChildren().size());
 
@@ -356,7 +359,9 @@ namespace pl::ptrn {
                 this->getEvaluator()->readData(this->getOffset(), result.data(), result.size(), this->getSection());
             }
 
-            return result;
+            this->m_cachedBytes = std::make_unique<std::vector<u8>>(std::move(result));
+
+            return *this->m_cachedBytes;
         }
 
         virtual std::vector<u8> getBytesOf(const core::Token::Literal &value) const {
@@ -523,6 +528,7 @@ namespace pl::ptrn {
 
         std::unique_ptr<std::map<std::string, std::vector<core::Token::Literal>>> m_attributes;
         mutable std::unique_ptr<std::string> m_cachedDisplayValue;
+        std::unique_ptr<std::vector<u8>> m_cachedBytes;
 
         std::string m_variableName;
         std::string m_typeName;
