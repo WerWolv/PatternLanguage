@@ -38,7 +38,7 @@ namespace pl::ptrn {
 
             for (u64 i = start; i < this->m_sortedMembers.size() && i < end; i++) {
                 auto pattern = this->m_sortedMembers[i];
-                if (!pattern->isPatternLocal())
+                if (!pattern->isPatternLocal() || pattern->hasAttribute("export"))
                     fn(i, pattern);
             }
         }

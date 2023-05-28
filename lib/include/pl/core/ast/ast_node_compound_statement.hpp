@@ -4,12 +4,12 @@
 
 namespace pl::core::ast {
 
-    class ASTNodeCompoundStatement : public ASTNode {
+    class ASTNodeCompoundStatement : public ASTNode, public Attributable {
     public:
         explicit ASTNodeCompoundStatement(std::vector<std::unique_ptr<ASTNode>> &&statements, bool newScope = false) : m_statements(std::move(statements)), m_newScope(newScope) {
         }
 
-        ASTNodeCompoundStatement(const ASTNodeCompoundStatement &other) : ASTNode(other) {
+        ASTNodeCompoundStatement(const ASTNodeCompoundStatement &other) : ASTNode(other), Attributable(other) {
             for (const auto &statement : other.m_statements) {
                 this->m_statements.push_back(statement->clone());
             }
@@ -71,6 +71,15 @@ namespace pl::core::ast {
             }
 
             return result;
+        }
+
+        void addAttribute(std::unique_ptr<ASTNodeAttribute> &&attribute) override {
+            for (const auto &statement : this->m_statements) {
+                if (auto attributable = dynamic_cast<Attributable*>(statement.get())) {
+                    auto newAttribute = attribute->clone();
+                    attributable->addAttribute(std::unique_ptr<ASTNodeAttribute>(static_cast<ASTNodeAttribute*>(newAttribute.release())));
+                }
+            }
         }
 
     public:

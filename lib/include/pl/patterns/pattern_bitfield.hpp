@@ -406,8 +406,10 @@ namespace pl::ptrn {
 
             for (u64 i = start; i < std::min<u64>(end, this->m_sortedEntries.size()); i++) {
                 evaluator->setCurrentArrayIndex(i);
-                if (!this->m_sortedEntries[i]->isPatternLocal())
-                    fn(i, this->m_sortedEntries[i]);
+
+                auto &entry = this->m_sortedEntries[i];
+                if (!entry->isPatternLocal() || entry->hasAttribute("export"))
+                    fn(i, entry);
             }
         }
 
@@ -745,7 +747,7 @@ namespace pl::ptrn {
 
             for (auto i = start; i < end; i++) {
                 auto pattern = this->m_sortedFields[i];
-                if (!pattern->isPatternLocal())
+                if (!pattern->isPatternLocal() || pattern->hasAttribute("export"))
                     fn(i, pattern);
             }
         }

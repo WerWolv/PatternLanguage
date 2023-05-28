@@ -5,12 +5,12 @@
 
 namespace pl::core::ast {
 
-    class ASTNodeLValueAssignment : public ASTNode {
+    class ASTNodeLValueAssignment : public ASTNode, public Attributable {
     public:
         ASTNodeLValueAssignment(std::string lvalueName, std::unique_ptr<ASTNode> &&rvalue) : m_lvalueName(std::move(lvalueName)), m_rvalue(std::move(rvalue)) {
         }
 
-        ASTNodeLValueAssignment(const ASTNodeLValueAssignment &other) : ASTNode(other) {
+        ASTNodeLValueAssignment(const ASTNodeLValueAssignment &other) : ASTNode(other), Attributable(other) {
             this->m_lvalueName = other.m_lvalueName;
 
             if (other.m_rvalue != nullptr)
@@ -54,8 +54,12 @@ namespace pl::core::ast {
 
             if (this->getLValueName() == "$")
                 evaluator->setReadOffset(literal->getValue().toUnsigned());
-            else
+            else {
+                auto variable = evaluator->getVariableByName(this->getLValueName());
+                applyVariableAttributes(evaluator, this, variable);
+
                 evaluator->setVariable(this->getLValueName(), literal->getValue());
+            }
 
             return {};
         }

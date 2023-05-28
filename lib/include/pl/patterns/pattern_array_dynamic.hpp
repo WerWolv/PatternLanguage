@@ -113,8 +113,10 @@ namespace pl::ptrn {
 
             for (u64 i = start; i < std::min<u64>(end, this->m_entries.size()); i++) {
                 evaluator->setCurrentArrayIndex(i);
-                if (!this->m_entries[i]->isPatternLocal())
-                    fn(i, this->m_entries[i].get());
+
+                auto &entry = this->m_entries[i];
+                if (!entry->isPatternLocal() || entry->hasAttribute("export"))
+                    fn(i, entry.get());
             }
         }
 
