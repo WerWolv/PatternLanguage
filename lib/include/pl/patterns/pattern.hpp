@@ -326,7 +326,7 @@ namespace pl::ptrn {
         [[nodiscard]] virtual bool operator!=(const Pattern &other) const final { return !operator==(other); }
         [[nodiscard]] virtual bool operator==(const Pattern &other) const = 0;
 
-        std::vector<u8> getBytes() {
+        virtual const std::vector<u8>& getBytes() {
             if (this->m_cachedBytes != nullptr)
                 return *this->m_cachedBytes;
 
@@ -409,6 +409,19 @@ namespace pl::ptrn {
             if (auto *iterable = dynamic_cast<IIterable*>(this); iterable != nullptr) {
                 for (auto &entry : iterable->getEntries()) {
                     entry->clearFormatCache();
+                }
+            }
+        }
+
+        void clearByteCache() {
+            if (this->m_cachedBytes == nullptr)
+                return;
+
+            this->m_cachedBytes.reset();
+
+            if (auto *iterable = dynamic_cast<IIterable*>(this); iterable != nullptr) {
+                for (auto &entry : iterable->getEntries()) {
+                    entry->clearByteCache();
                 }
             }
         }
@@ -521,14 +534,16 @@ namespace pl::ptrn {
                    this->m_section == other.m_section;
         }
 
+    protected:
+        mutable std::unique_ptr<std::string> m_cachedDisplayValue;
+        std::unique_ptr<std::vector<u8>> m_cachedBytes;
+
     private:
         friend pl::core::Evaluator;
 
         core::Evaluator *m_evaluator;
 
         std::unique_ptr<std::map<std::string, std::vector<core::Token::Literal>>> m_attributes;
-        mutable std::unique_ptr<std::string> m_cachedDisplayValue;
-        std::unique_ptr<std::vector<u8>> m_cachedBytes;
 
         std::string m_variableName;
         std::string m_typeName;
