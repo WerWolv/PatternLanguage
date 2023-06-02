@@ -189,6 +189,19 @@ namespace pl::ptrn {
             return Pattern::formatDisplayValue("{ ... }", this);
         }
 
+        const std::vector<u8>& getBytes() override {
+            if (this->m_cachedBytes != nullptr)
+                return *this->m_cachedBytes;
+
+            std::vector<u8> result;
+            result.resize(this->getSize());
+            this->getEvaluator()->readData(this->getOffset(), result.data(), result.size(), this->getSection());
+
+            this->m_cachedBytes = std::make_unique<std::vector<u8>>(std::move(result));
+
+            return *this->m_cachedBytes;
+        }
+
     private:
         std::vector<std::shared_ptr<Pattern>> m_members;
         std::vector<Pattern *> m_sortedMembers;

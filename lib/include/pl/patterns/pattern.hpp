@@ -341,19 +341,6 @@ namespace pl::ptrn {
                         [](auto value) { return wolv::util::toContainer<std::vector<u8>>(wolv::util::toBytes(value)); }
                 }, this->getValue());
                 std::copy(bytes.begin(), bytes.end(), std::back_inserter(result));
-            } else if (auto iteratable = dynamic_cast<IIterable*>(this); iteratable != nullptr) {
-                iteratable->forEachEntry(0, iteratable->getEntryCount(), [&](u64, pl::ptrn::Pattern *entry) {
-                    const auto children = entry->getChildren();
-                    for (const auto &[offset, child] : children) {
-                        auto startOffset = child->getOffset();
-
-                        child->setOffset(offset);
-                        ON_SCOPE_EXIT { child->setOffset(startOffset); };
-
-                        auto bytes = child->getBytes();
-                        std::copy(bytes.begin(), bytes.end(), std::back_inserter(result));
-                    }
-                });
             } else {
                 result.resize(this->getSize());
                 this->getEvaluator()->readData(this->getOffset(), result.data(), result.size(), this->getSection());
@@ -407,9 +394,9 @@ namespace pl::ptrn {
             this->m_cachedDisplayValue.reset();
 
             if (auto *iterable = dynamic_cast<IIterable*>(this); iterable != nullptr) {
-                for (auto &entry : iterable->getEntries()) {
-                    entry->clearFormatCache();
-                }
+                iterable->forEachEntry(0, iterable->getEntryCount(), [](u64, Pattern *pattern) {
+                    pattern->clearFormatCache();
+                });
             }
         }
 
@@ -420,9 +407,9 @@ namespace pl::ptrn {
             this->m_cachedBytes.reset();
 
             if (auto *iterable = dynamic_cast<IIterable*>(this); iterable != nullptr) {
-                for (auto &entry : iterable->getEntries()) {
-                    entry->clearByteCache();
-                }
+                iterable->forEachEntry(0, iterable->getEntryCount(), [](u64, Pattern *pattern) {
+                    pattern->clearByteCache();
+                });
             }
         }
 

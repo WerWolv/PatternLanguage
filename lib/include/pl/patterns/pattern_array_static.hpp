@@ -42,11 +42,13 @@ namespace pl::ptrn {
 
             auto &entry = this->m_template;
             for (u64 index = start; index < std::min<u64>(end, this->m_entryCount); index++) {
+                entry->clearFormatCache();
+                entry->clearByteCache();
+
                 entry->setVariableName(fmt::format("[{0}]", index));
                 entry->setOffset(this->getOffset() + index * this->m_template->getSize());
                 evaluator->setCurrentArrayIndex(index);
 
-                entry->clearFormatCache();
                 fn(index, entry.get());
             }
         }
@@ -221,7 +223,6 @@ namespace pl::ptrn {
             std::vector<u8> result;
 
             this->forEachEntry(0, this->getEntryCount(), [&](u64, Pattern *entry) {
-                entry->clearByteCache();
                 auto &bytes = entry->getBytes();
 
                 std::copy(bytes.begin(), bytes.end(), std::back_inserter(result));
