@@ -46,6 +46,10 @@ int main() {
         return 1337;
     });
 
+    patternLanguage.setLogCallback([](auto level, const std::string &message) {
+        printf("[%s] %s\n", LogLevels.at(level).c_str(), message.c_str());
+    });
+
     // Evaluate some pattern language source code
     bool result = patternLanguage.executeString(R"(
         fn main() {
@@ -59,11 +63,6 @@ int main() {
         // If not, print the error string
         auto error = patternLanguage.getError();
         printf("Error: %d:%d %s\n", error->line, error->column, error->message.c_str());
-
-        // Print all log messages
-        for (auto [level, message] : patternLanguage.getConsoleLog()) {
-            printf("[%s] %s\n", LogLevels.at(level).c_str(), message.c_str());
-        }
     }
 
 }

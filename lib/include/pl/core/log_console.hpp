@@ -23,15 +23,14 @@ namespace pl::core {
             Error       = 3
         };
 
-        [[nodiscard]] const auto &getLog() const { return this->m_consoleLog; }
+        using Callback = std::function<void(Level level, const std::string&)>;
 
         void log(Level level, const std::string &message) const {
-            if (u8(level) >= u8(this->m_logLevel))
-                this->m_consoleLog.emplace_back(level, message);
+            if (u8(level) >= u8(this->m_logLevel) && this->m_logCallback)
+                this->m_logCallback(level, message);
         }
 
         void clear() {
-            this->m_consoleLog.clear();
             this->m_lastHardError.reset();
         }
 
@@ -43,10 +42,14 @@ namespace pl::core {
             this->m_logLevel = level;
         }
 
+        void setLogCallback(const Callback &callback) {
+            this->m_logCallback = callback;
+        }
+
     private:
         Level m_logLevel = Level::Info;
 
-        mutable std::vector<std::pair<Level, std::string>> m_consoleLog;
+        Callback m_logCallback;
         std::optional<err::PatternLanguageError> m_lastHardError;
     };
 

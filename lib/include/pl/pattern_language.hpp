@@ -177,10 +177,10 @@ namespace pl {
         void setDangerousFunctionCallHandler(std::function<bool()> callback) const;
 
         /**
-         * @brief Gets the console log output
-         * @return Console log output
+         * @brief Sets the console log callback
+         * @param callback Callback to call
          */
-        [[nodiscard]] const std::vector<std::pair<core::LogConsole::Level, std::string>> &getConsoleLog() const;
+        void setLogCallback(const core::LogConsole::Callback &callback);
 
         /**
          * @brief Gets the error that occurred during the last execution

@@ -210,8 +210,8 @@ namespace pl {
     }
 
 
-    const std::vector<std::pair<core::LogConsole::Level, std::string>> &PatternLanguage::getConsoleLog() const {
-        return this->m_internals.evaluator->getConsole().getLog();
+    void PatternLanguage::setLogCallback(const core::LogConsole::Callback &callback) {
+        this->m_internals.evaluator->getConsole().setLogCallback(callback);
     }
 
     const std::optional<core::err::PatternLanguageError> &PatternLanguage::getError() const {

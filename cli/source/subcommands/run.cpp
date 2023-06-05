@@ -52,33 +52,33 @@ namespace pl::cli::sub {
                     std::memcpy(buffer, data.data() + address, size);
             });
 
+            runtime.setLogCallback([](auto level, const std::string &message) {
+                if (!verbose)
+                    return;
+
+                switch (level) {
+                    using enum pl::core::LogConsole::Level;
+
+                    case Debug:
+                        ::fmt::print("[DEBUG] {}\n", message);
+                        break;
+                    case Info:
+                        ::fmt::print("[INFO]  {}\n", message);
+                        break;
+                    case Warning:
+                        ::fmt::print("[WARN]  {}\n", message);
+                        break;
+                    case Error:
+                        ::fmt::print("[ERROR] {}\n", message);
+                        break;
+                }
+            });
+
             // Execute pattern file
             if (!runtime.executeFile(patternFilePath)) {
                 auto error = runtime.getError().value();
                 fmt::print("Pattern Error: {}:{} -> {}\n", error.line, error.column, error.message);
                 std::exit(EXIT_FAILURE);
-            }
-
-            // Output console log if verbose mode is enabled
-            if (verbose) {
-                for (const auto &[level, message] : runtime.getConsoleLog()) {
-                    switch (level) {
-                        using enum pl::core::LogConsole::Level;
-
-                        case Debug:
-                            ::fmt::print("[DEBUG] {}\n", message);
-                            break;
-                        case Info:
-                            ::fmt::print("[INFO]  {}\n", message);
-                            break;
-                        case Warning:
-                            ::fmt::print("[WARN]  {}\n", message);
-                            break;
-                        case Error:
-                            ::fmt::print("[ERROR] {}\n", message);
-                            break;
-                    }
-                }
             }
         });
     }

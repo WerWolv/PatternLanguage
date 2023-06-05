@@ -55,13 +55,13 @@ int runTests(int argc, char **argv) {
         return std::nullopt;
     });
 
+    runtime.setLogCallback([](auto level, const std::string &message) {
+        fmt::print("{}\n", message);
+    });
+
     auto &test = testPatterns[testName];
 
     auto result = runtime.executeString(test->getSourceCode());
-
-    // Print console log
-    for (auto &[level, message] : runtime.getConsoleLog())
-        fmt::print("{}\n", message);
 
     // Check if compilation succeeded
     if (!result) {

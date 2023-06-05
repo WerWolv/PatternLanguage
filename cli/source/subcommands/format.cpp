@@ -80,29 +80,30 @@ namespace pl::cli::sub {
 
             // Create and configure Pattern Language runtime
             pl::PatternLanguage runtime;
-            pl::cli::executePattern(runtime, inputFile, patternFile, includePaths, defines, allowDangerousFunctions, baseAddress);
 
-            // Output console log if verbose mode is enabled
-            if (verbose) {
-                for (const auto &[level, message] : runtime.getConsoleLog()) {
-                    switch (level) {
-                        using enum pl::core::LogConsole::Level;
+            runtime.setLogCallback([](auto level, const auto &message) {
+                if (!verbose)
+                    return;
 
-                        case Debug:
-                            ::fmt::print("[DEBUG] {}\n", message);
-                            break;
-                        case Info:
-                            ::fmt::print("[INFO]  {}\n", message);
-                            break;
-                        case Warning:
-                            ::fmt::print("[WARN]  {}\n", message);
-                            break;
-                        case Error:
-                            ::fmt::print("[ERROR] {}\n", message);
-                            break;
-                    }
+                switch (level) {
+                    using enum pl::core::LogConsole::Level;
+
+                    case Debug:
+                        ::fmt::print("[DEBUG] {}\n", message);
+                        break;
+                    case Info:
+                        ::fmt::print("[INFO]  {}\n", message);
+                        break;
+                    case Warning:
+                        ::fmt::print("[WARN]  {}\n", message);
+                        break;
+                    case Error:
+                        ::fmt::print("[ERROR] {}\n", message);
+                        break;
                 }
-            }
+            });
+
+            pl::cli::executePattern(runtime, inputFile, patternFile, includePaths, defines, allowDangerousFunctions, baseAddress);
 
             // Set formatter settings
             formatter->enableMetaInformation(metaInformation);
