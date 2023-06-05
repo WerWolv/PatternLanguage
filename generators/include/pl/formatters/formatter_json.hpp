@@ -119,7 +119,7 @@ namespace pl::gen::fmt {
         FormatterJson() : Formatter("json") { }
         ~FormatterJson() override = default;
 
-        [[nodiscard]] std::string getFileExtension() const override { return ".json"; }
+        [[nodiscard]] std::string getFileExtension() const override { return "json"; }
 
         [[nodiscard]] std::vector<u8> format(const PatternLanguage &runtime) override {
             JsonPatternVisitor visitor;

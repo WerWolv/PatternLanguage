@@ -7,7 +7,7 @@ namespace pl::gen::fmt {
         FormatterHtml() : Formatter("html") { }
         ~FormatterHtml() override = default;
 
-        [[nodiscard]] std::string getFileExtension() const override { return ".html"; }
+        [[nodiscard]] std::string getFileExtension() const override { return "html"; }
 
         [[nodiscard]] std::vector<u8> format(const PatternLanguage &runtime) override {
             auto result = generateHtml(runtime);

@@ -61,7 +61,7 @@ namespace pl::cli::sub {
             // If no output path was given, use the input path with the formatter's file extension
             if (outputFilePath.empty()) {
                 outputFilePath = inputFilePath;
-                outputFilePath.replace_extension(formatter->getFileExtension());
+                outputFilePath.replace_extension("." + formatter->getFileExtension());
             }
 
             // Open input file

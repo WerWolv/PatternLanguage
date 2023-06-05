@@ -115,7 +115,7 @@ namespace pl::gen::fmt {
         FormatterYaml() : Formatter("yaml") { }
         ~FormatterYaml() override = default;
 
-        [[nodiscard]] std::string getFileExtension() const override { return ".yml"; }
+        [[nodiscard]] std::string getFileExtension() const override { return "yml"; }
 
         [[nodiscard]] std::vector<u8> format(const PatternLanguage &runtime) override {
             YamlPatternVisitor visitor;
