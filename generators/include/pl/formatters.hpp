@@ -14,10 +14,10 @@ namespace pl::gen::fmt {
             FormatterHtml
     >;
 
-
+    using FormatterArray = std::array<std::unique_ptr<pl::gen::fmt::Formatter>, std::tuple_size_v<Formatters>>;
 
     template<size_t N = 0>
-    auto createFormatters(std::array<std::unique_ptr<pl::gen::fmt::Formatter>, std::tuple_size_v<Formatters>> &&result = {}) {
+    auto createFormatters(FormatterArray &&result = {}) {
         auto formatter = std::unique_ptr<pl::gen::fmt::Formatter>(new typename std::tuple_element<N, Formatters>::type());
 
         result[N] = std::move(formatter);

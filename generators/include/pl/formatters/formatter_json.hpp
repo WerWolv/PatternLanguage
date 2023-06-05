@@ -104,8 +104,8 @@ namespace pl::gen::fmt {
         void formatValue(pl::ptrn::Pattern *pattern) {
             if (auto functionName = pattern->getReadFormatterFunction(); !functionName.empty())
                 formatString(pattern);
-            else
-                addLine(pattern->getVariableName(), ::fmt::format("{},", pattern->toString()));
+            else if (!pattern->isSealed())
+                addLine(pattern->getVariableName(), ::fmt::format("\"{}\",", pattern->toString()));
         }
 
     private:
