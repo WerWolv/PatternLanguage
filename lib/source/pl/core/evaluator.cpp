@@ -9,6 +9,7 @@
 #include <pl/core/ast/ast_node_function_call.hpp>
 #include <pl/core/ast/ast_node_function_definition.hpp>
 #include <pl/core/ast/ast_node_compound_statement.hpp>
+#include <pl/core/ast/ast_node_control_flow_statement.hpp>
 
 #include <pl/patterns/pattern_unsigned.hpp>
 #include <pl/patterns/pattern_struct.hpp>
@@ -228,7 +229,7 @@ namespace pl::core {
                    err::E0004.throwError(fmt::format("Cannot cast from type 'integer' to type '{}'.", pattern->getTypeName()));
             },
             [&](const std::string &value) -> Token::Literal {
-                if (dynamic_cast<const ptrn::PatternUnsigned*>(pattern)) {
+                if (dynamic_cast<const ptrn::PatternUnsigned*>(pattern) != nullptr) {
                     if (value.size() <= pattern->getSize()) {
                         u128 result = 0;
                         std::memcpy(&result, value.data(), value.size());
@@ -236,9 +237,9 @@ namespace pl::core {
                     } else {
                         err::E0004.throwError(fmt::format("String of size {} cannot be packed into integer of size {}", value.size(), pattern->getSize()));
                     }
-                } else if (dynamic_cast<const ptrn::PatternBoolean*>(pattern))
+                } else if (dynamic_cast<const ptrn::PatternBoolean*>(pattern) != nullptr)
                     return !value.empty();
-                else if (dynamic_cast<const ptrn::PatternString*>(pattern))
+                else if (dynamic_cast<const ptrn::PatternString*>(pattern) != nullptr)
                     return value;
                 else
                     err::E0004.throwError(fmt::format("Cannot cast from type 'string' to type '{}'.", pattern->getTypeName()));
@@ -718,6 +719,16 @@ namespace pl::core {
                                 this->m_patterns.push_back(std::move(pattern));
                             }
                         }
+                    } else if (auto controlFlowStatement = dynamic_cast<ast::ASTNodeControlFlowStatement *>(node); controlFlowStatement != nullptr) {
+                        this->pushSectionId(ptrn::Pattern::HeapSectionId);
+                        auto result = node->execute(this);
+                        this->popSectionId();
+
+                        if (result.has_value()) {
+                            this->m_mainResult = result;
+                        }
+
+                        goto stop_evaluation;
                     } else {
                         this->pushSectionId(ptrn::Pattern::HeapSectionId);
                         wolv::util::unused(node->execute(this));
