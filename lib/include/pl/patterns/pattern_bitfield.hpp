@@ -404,12 +404,12 @@ namespace pl::ptrn {
                                   evaluator->clearCurrentArrayIndex();
                           };
 
-            for (u64 i = start; i < std::min<u64>(end, this->m_sortedEntries.size()); i++) {
+            for (u64 i = start; i < std::min<u64>(end, this->m_entries.size()); i++) {
                 evaluator->setCurrentArrayIndex(i);
 
-                auto &entry = this->m_sortedEntries[i];
+                auto &entry = this->m_entries[i];
                 if (!entry->isPatternLocal() || entry->hasAttribute("export"))
-                    fn(i, entry);
+                    fn(i, entry.get());
             }
         }
 
@@ -762,9 +762,9 @@ namespace pl::ptrn {
                 return;
 
             for (auto i = start; i < end; i++) {
-                auto pattern = this->m_sortedFields[i];
+                auto &pattern = this->m_fields[i];
                 if (!pattern->isPatternLocal() || pattern->hasAttribute("export"))
-                    fn(i, pattern);
+                    fn(i, pattern.get());
             }
         }
 
