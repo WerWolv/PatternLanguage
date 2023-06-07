@@ -233,7 +233,7 @@ namespace pl::core::ast {
                             [this](ptrn::Pattern *pattern) { err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
                             [&, this](auto &&index) {
                                 auto pattern = currPattern.get();
-                                if (dynamic_cast<ptrn::PatternArrayStatic *>(pattern) != nullptr || dynamic_cast<ptrn::PatternArrayDynamic *>(pattern) != nullptr || dynamic_cast<ptrn::PatternBitfieldArray *>(pattern) != nullptr) {
+                                if (dynamic_cast<ptrn::PatternArrayStatic *>(pattern) != nullptr || dynamic_cast<ptrn::PatternArrayDynamic *>(pattern) != nullptr || dynamic_cast<ptrn::PatternBitfieldArray *>(pattern) != nullptr || dynamic_cast<ptrn::PatternString *>(pattern) != nullptr) {
                                     auto iteratable = dynamic_cast<ptrn::IIterable *>(pattern);
                                     if (iteratable == nullptr)
                                         err::E0006.throwError(fmt::format("Cannot access non-array type '{}'.", pattern->getTypeName()), {}, this);
