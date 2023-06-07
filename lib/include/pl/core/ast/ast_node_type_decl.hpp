@@ -134,8 +134,8 @@ namespace pl::core::ast {
                 if (!this->m_name.empty())
                     pattern->setTypeName(this->m_name);
 
-                if (auto iteratable = dynamic_cast<ptrn::IIterable *>(pattern.get()); iteratable != nullptr) {
-                    auto scope = iteratable->getEntries();
+                if (auto iterable = dynamic_cast<ptrn::IIterable *>(pattern.get()); iterable != nullptr) {
+                    auto scope = iterable->getEntries();
                     evaluator->pushScope(pattern, scope);
                     applyTypeAttributes(evaluator, this, pattern);
                     evaluator->popScope();

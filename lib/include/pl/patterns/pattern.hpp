@@ -40,6 +40,16 @@ namespace pl::ptrn {
         Hidden
     };
 
+    class IIndexable : public IIterable {
+    public:
+        virtual ~IIndexable() = default;
+
+        using IIterable::getEntries;
+        using IIterable::getEntry;
+        using IIterable::forEachEntry;
+        using IIterable::getEntryCount;
+    };
+
     class Pattern {
     public:
         constexpr static u64 MainSectionId          = 0x0000'0000'0000'0000;

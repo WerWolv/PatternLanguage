@@ -8,7 +8,7 @@
 namespace pl::ptrn {
 
     class PatternWideString : public Pattern,
-                              public IIterable {
+                              public IIndexable {
     public:
         PatternWideString(core::Evaluator *evaluator, u64 offset, size_t size)
             : Pattern(evaluator, offset, size) { }

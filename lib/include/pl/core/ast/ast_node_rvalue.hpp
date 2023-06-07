@@ -149,7 +149,7 @@ namespace pl::core::ast {
             std::vector<std::shared_ptr<ptrn::Pattern>> searchScope;
             std::shared_ptr<ptrn::Pattern> currPattern;
             i32 scopeIndex = 0;
-            bool indexable = true;
+            bool iterable = true;
 
             if (!evaluator->isGlobalScope()) {
                 const auto &globalScope = evaluator->getGlobalScope().scope;
@@ -168,7 +168,7 @@ namespace pl::core::ast {
 
             for (const auto &part : this->getPath()) {
 
-                if (!indexable)
+                if (!iterable)
                     err::E0001.throwError("Member access of a non-iterable type.", "Try using a struct-like object or an array instead.", this);
 
                 if (part.index() == 0) {
@@ -233,14 +233,10 @@ namespace pl::core::ast {
                             [this](ptrn::Pattern *pattern) { err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
                             [&, this](auto &&index) {
                                 auto pattern = currPattern.get();
-                                if (dynamic_cast<ptrn::PatternArrayStatic *>(pattern) != nullptr || dynamic_cast<ptrn::PatternArrayDynamic *>(pattern) != nullptr || dynamic_cast<ptrn::PatternBitfieldArray *>(pattern) != nullptr || dynamic_cast<ptrn::PatternString *>(pattern) != nullptr) {
-                                    auto iteratable = dynamic_cast<ptrn::IIterable *>(pattern);
-                                    if (iteratable == nullptr)
-                                        err::E0006.throwError(fmt::format("Cannot access non-array type '{}'.", pattern->getTypeName()), {}, this);
-
-                                    if (size_t(index) >= iteratable->getEntryCount())
-                                        core::err::E0006.throwError("Index out of bounds.", fmt::format("Tried to access index {} in array of size {}.", index, iteratable->getEntryCount()), this);
-                                    currPattern = iteratable->getEntry(index);
+                                if (auto indexablePattern = dynamic_cast<ptrn::IIndexable *>(pattern); indexablePattern != nullptr) {
+                                    if (size_t(index) >= indexablePattern->getEntryCount())
+                                        core::err::E0006.throwError("Index out of bounds.", fmt::format("Tried to access index {} in array of size {}.", index, indexablePattern->getEntryCount()), this);
+                                    currPattern = indexablePattern->getEntry(index);
                                 } else {
                                     err::E0006.throwError(fmt::format("Cannot access non-array type '{}'.", pattern->getTypeName()), {}, this);
                                 }
@@ -259,10 +255,10 @@ namespace pl::core::ast {
 
                 auto indexPattern = currPattern.get();
 
-                if (auto iteratable = dynamic_cast<ptrn::IIterable *>(indexPattern); iteratable != nullptr)
-                    searchScope = iteratable->getEntries();
+                if (auto iterablePattern = dynamic_cast<ptrn::IIterable *>(indexPattern); iterablePattern != nullptr)
+                    searchScope = iterablePattern->getEntries();
                 else
-                    indexable = false;
+                    iterable = false;
 
             }
 

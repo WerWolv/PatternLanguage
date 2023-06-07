@@ -6,7 +6,7 @@ namespace pl::ptrn {
 
     class PatternArrayStatic : public Pattern,
                                public IInlinable,
-                               public IIterable {
+                               public IIndexable {
     public:
         PatternArrayStatic(core::Evaluator *evaluator, u64 offset, size_t size)
             : Pattern(evaluator, offset, size) { }
