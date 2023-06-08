@@ -58,6 +58,10 @@ namespace pl::core::ast {
                     }
                     setSize();
                 }
+
+                for (const auto &[name, value] : *inheritancePattern->getAttributes()) {
+                    pattern->addAttribute(name, value);
+                }
             }
 
             for (auto &member : this->m_members) {
