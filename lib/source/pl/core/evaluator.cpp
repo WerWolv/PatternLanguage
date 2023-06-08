@@ -253,6 +253,20 @@ namespace pl::core {
         }, literal);
     }
 
+    void Evaluator::changePatternSection(ptrn::Pattern *pattern, u64 section) {
+        for (auto &[address, child] : pattern->getChildren()) {
+            auto childSection = child->getSection();
+            if (childSection == 0 || childSection >= ptrn::Pattern::InstantiationSectionId) {
+                if (pattern->isPatternLocal() && !child->isPatternLocal()) {
+                    auto patternLocalAddress = this->m_patternLocalStorage.empty() ? 0 : this->m_patternLocalStorage.rbegin()->first + 1;
+                    this->m_patternLocalStorage.insert({ patternLocalAddress, { } });
+                }
+
+                child->setSection(section);
+            }
+        }
+    }
+
     std::shared_ptr<ptrn::Pattern>& Evaluator::getVariableByName(const std::string &name) {
         // Search for variable in current scope
         {
@@ -317,11 +331,7 @@ namespace pl::core {
                         variablePattern->setSection(section);
                     }
 
-                    for (auto &[address, child] : variablePattern->getChildren()) {
-                        auto childSection = child->getSection();
-                        if (childSection == 0 || childSection >= ptrn::Pattern::InstantiationSectionId)
-                            child->setSection(variablePattern->getSection());
-                    }
+                    this->changePatternSection(variablePattern.get(), section);
                 },
                 [&](const std::string &value) {
                     if (dynamic_cast<ptrn::PatternString*>(variablePattern.get()) != nullptr)
@@ -353,11 +363,7 @@ namespace pl::core {
                 this->getHeap().emplace_back().resize(pattern->getSize());
             }
         } else {
-            for (auto &[address, child] : pattern->getChildren()) {
-                auto childSection = child->getSection();
-                if (childSection == 0 || childSection >= ptrn::Pattern::InstantiationSectionId)
-                    child->setSection(pattern->getSection());
-            }
+            this->changePatternSection(pattern, pattern->getSection());
         }
 
         if (!pattern->isLocal())

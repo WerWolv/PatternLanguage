@@ -363,6 +363,7 @@ namespace pl::core {
         void setVariable(const std::string &name, const Token::Literal &value);
         void setVariable(ptrn::Pattern *pattern, const Token::Literal &value);
         void setVariableAddress(const std::string &variableName, u64 address, u64 section = 0);
+        void changePatternSection(ptrn::Pattern *pattern, u64 section);
 
         void abort() {
             this->m_aborted = true;
