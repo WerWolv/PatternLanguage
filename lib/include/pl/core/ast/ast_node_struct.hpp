@@ -59,8 +59,10 @@ namespace pl::core::ast {
                     setSize();
                 }
 
-                for (const auto &[name, value] : *inheritancePattern->getAttributes()) {
-                    pattern->addAttribute(name, value);
+                if (const auto &inheritedAttributes = inheritancePattern->getAttributes(); inheritedAttributes != nullptr) {
+                    for (const auto &[name, value] : *inheritedAttributes) {
+                        pattern->addAttribute(name, value);
+                    }
                 }
             }
 
