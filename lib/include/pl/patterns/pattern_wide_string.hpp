@@ -76,6 +76,10 @@ namespace pl::ptrn {
             return { };
         }
 
+        void setEntries(std::vector<std::shared_ptr<Pattern>> &&) override {
+
+        }
+
         std::shared_ptr<Pattern> getEntry(size_t index) const override {
             auto result = std::make_shared<PatternWideCharacter>(this->getEvaluator(), this->getOffset() + index * sizeof(char16_t));
             result->setSection(this->getSection());

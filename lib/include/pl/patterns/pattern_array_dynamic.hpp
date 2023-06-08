@@ -120,7 +120,7 @@ namespace pl::ptrn {
             }
         }
 
-        void setEntries(std::vector<std::shared_ptr<Pattern>> &&entries) {
+        void setEntries(std::vector<std::shared_ptr<Pattern>> &&entries) override {
             this->m_entries = std::move(entries);
 
             for (auto &entry : this->m_entries) {

@@ -97,8 +97,10 @@ namespace pl::core::ast {
                 evaluator->popTemplateParameters();
             };
 
+            std::vector<std::shared_ptr<ptrn::Pattern>> templatePatterns;
+
             {
-                evaluator->pushSectionId(ptrn::Pattern::HeapSectionId);
+                evaluator->pushSectionId(ptrn::Pattern::PatternLocalSectionId);
                 ON_SCOPE_EXIT {
                     evaluator->popSectionId();
                 };
@@ -109,11 +111,13 @@ namespace pl::core::ast {
                         auto value = templateParamLiterals[i]->getValue();
 
                         // Allow the evaluator to throw an error at the correct source location.
-                        m_currentTemplateParameterType->setSourceLocation(lvalue->getLine(), lvalue->getColumn());
+                        this->m_currentTemplateParameterType->setSourceLocation(lvalue->getLine(), lvalue->getColumn());
 
-                        auto variable = evaluator->createVariable(lvalue->getLValueName(), m_currentTemplateParameterType.get(), value, false, false, true);
-                        if (variable != nullptr)
+                        auto variable = evaluator->createVariable(lvalue->getLValueName(), this->m_currentTemplateParameterType.get(), value, false, false, true, true);
+                        if (variable != nullptr) {
                             evaluator->setVariable(variable.get(), value);
+                            templatePatterns.push_back(variable);
+                        }
                     }
                 }
             }
@@ -136,9 +140,14 @@ namespace pl::core::ast {
 
                 if (auto iterable = dynamic_cast<ptrn::IIterable *>(pattern.get()); iterable != nullptr) {
                     auto scope = iterable->getEntries();
+                    std::move(templatePatterns.begin(), templatePatterns.end(), std::back_inserter(scope));
+
                     evaluator->pushScope(pattern, scope);
                     applyTypeAttributes(evaluator, this, pattern);
                     evaluator->popScope();
+
+                    iterable->setEntries(std::move(scope));
+                    templatePatterns.clear();
                 } else {
                     applyTypeAttributes(evaluator, this, pattern);
                 }

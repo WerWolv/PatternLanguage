@@ -413,7 +413,7 @@ namespace pl::ptrn {
             }
         }
 
-        void setEntries(std::vector<std::shared_ptr<Pattern>> &&entries) {
+        void setEntries(std::vector<std::shared_ptr<Pattern>> &&entries) override {
             this->m_entries = std::move(entries);
 
             for (auto &entry : this->m_entries) {
@@ -746,6 +746,10 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getEntries() override {
             return this->m_fields;
+        }
+
+        void setEntries(std::vector<std::shared_ptr<Pattern>> &&entries) override {
+            this->m_fields = std::move(entries);
         }
 
         void setOffset(u64 offset) override {

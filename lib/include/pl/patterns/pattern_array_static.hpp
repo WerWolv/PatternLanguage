@@ -163,6 +163,11 @@ namespace pl::ptrn {
                 highlightTemplate->setBaseColor(this->getColor());
         }
 
+        void setEntries(std::vector<std::shared_ptr<Pattern>> &&entries) override {
+            if (!entries.empty())
+                this->setEntries(entries[0]->clone(), entries.size());
+        }
+
         [[nodiscard]] bool operator==(const Pattern &other) const override {
             if (!compareCommonProperties<decltype(*this)>(other))
                 return false;

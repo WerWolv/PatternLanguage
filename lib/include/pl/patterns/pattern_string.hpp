@@ -22,6 +22,10 @@ namespace pl::ptrn {
             return { };
         }
 
+        void setEntries(std::vector<std::shared_ptr<Pattern>> &&) override {
+
+        }
+
         std::string getValue(size_t size) const {
             if (size == 0)
                 return "";

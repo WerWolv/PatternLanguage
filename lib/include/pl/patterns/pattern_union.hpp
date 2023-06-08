@@ -32,6 +32,14 @@ namespace pl::ptrn {
             return this->m_members;
         }
 
+        void setEntries(std::vector<std::shared_ptr<Pattern>> &&entries) override {
+            this->m_members = std::move(entries);
+            this->m_sortedMembers.clear();
+
+            for (const auto &member : this->m_members)
+                this->m_sortedMembers.push_back(member.get());
+        }
+
         void forEachEntry(u64 start, u64 end, const std::function<void(u64, Pattern*)>& fn) override {
             if (this->isSealed())
                 return;
