@@ -316,6 +316,12 @@ namespace pl::core {
                         variablePattern->setOffset(offset);
                         variablePattern->setSection(section);
                     }
+
+                    for (auto &[address, child] : variablePattern->getChildren()) {
+                        auto childSection = child->getSection();
+                        if (childSection == 0 || childSection >= ptrn::Pattern::InstantiationSectionId)
+                            child->setSection(variablePattern->getSection());
+                    }
                 },
                 [&](const std::string &value) {
                     if (dynamic_cast<ptrn::PatternString*>(variablePattern.get()) != nullptr)
@@ -345,6 +351,12 @@ namespace pl::core {
                 pattern->setLocal(true);
                 pattern->setOffset(u64(this->getHeap().size()) << 32);
                 this->getHeap().emplace_back().resize(pattern->getSize());
+            }
+        } else {
+            for (auto &[address, child] : pattern->getChildren()) {
+                auto childSection = child->getSection();
+                if (childSection == 0 || childSection >= ptrn::Pattern::InstantiationSectionId)
+                    child->setSection(pattern->getSection());
             }
         }
 
