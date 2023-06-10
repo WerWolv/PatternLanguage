@@ -82,7 +82,6 @@ namespace pl::core::ast {
                 auto referencedPattern = std::move(this->createPatterns(evaluator).front());
 
                 pattern = referencedPattern;
-                evaluator->getScope(0).savedPatterns.push_back(std::move(referencedPattern));
             }
 
             Token::Literal literal;

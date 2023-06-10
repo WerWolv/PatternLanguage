@@ -126,7 +126,6 @@ namespace pl::core::ast {
                                     auto &prevScope = ctx->getScope(-1);
                                     auto &currScope = ctx->getScope(0);
 
-                                    prevScope.savedPatterns.push_back(pattern);
                                     prevScope.heapStartSize = currScope.heapStartSize = ctx->getHeap().size();
 
                                     return pattern;

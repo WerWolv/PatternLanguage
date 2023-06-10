@@ -71,7 +71,6 @@ namespace pl::core {
             std::shared_ptr<ptrn::Pattern> parent;
             std::vector<std::shared_ptr<ptrn::Pattern>> *scope;
             std::optional<ParameterPack> parameterPack;
-            std::vector<std::shared_ptr<ptrn::Pattern>> savedPatterns;
             size_t heapStartSize;
         };
 

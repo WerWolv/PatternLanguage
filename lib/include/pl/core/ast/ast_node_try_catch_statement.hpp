@@ -30,7 +30,6 @@ namespace pl::core::ast {
 
             auto startScopeSize = scope.scope->size();
             auto startHeapSize = scope.heapStartSize;
-            auto startSavedPatternSize = scope.savedPatterns.size();
 
 
             try {
@@ -48,7 +47,6 @@ namespace pl::core::ast {
 
                 scope.scope->resize(startScopeSize);
                 scope.heapStartSize = startHeapSize;
-                scope.savedPatterns.resize(startSavedPatternSize);
 
                 for (auto &node : this->m_catchBody) {
                     auto newPatterns = node->createPatterns(evaluator);
@@ -93,7 +91,6 @@ namespace pl::core::ast {
                                     auto &prevScope = evaluator->getScope(-1);
                                     auto &currScope = evaluator->getScope(0);
 
-                                    prevScope.savedPatterns.push_back(pattern);
                                     prevScope.heapStartSize = currScope.heapStartSize = evaluator->getHeap().size();
 
                                     return pattern;
@@ -117,7 +114,6 @@ namespace pl::core::ast {
                                     auto &prevScope = evaluator->getScope(-1);
                                     auto &currScope = evaluator->getScope(0);
 
-                                    prevScope.savedPatterns.push_back(pattern);
                                     prevScope.heapStartSize = currScope.heapStartSize = evaluator->getHeap().size();
 
                                     return pattern;

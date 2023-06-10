@@ -115,6 +115,24 @@ namespace pl::core::ast {
                     return parameters;
                 }()));
 
+            std::vector<std::pair<ptrn::Pattern*, std::string>> variables;
+            ON_SCOPE_EXIT {
+                for (size_t i = 0; i < variables.size(); i++) {
+                    auto &[pattern, name] = variables[i];
+
+                    pattern->setVariableName(name);
+                }
+            };
+
+            for (auto &param : evaluatedParams) {
+                std::visit(wolv::util::overloaded {
+                    [](auto &) {},
+                    [&](std::shared_ptr<ptrn::Pattern> &pattern) {
+                        variables.push_back({ pattern.get(), pattern->getVariableName() });
+                    }
+                }, param);
+            }
+
             auto result = function->func(evaluator, evaluatedParams);
 
             if (result.has_value())

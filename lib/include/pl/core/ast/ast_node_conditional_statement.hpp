@@ -76,7 +76,6 @@ namespace pl::core::ast {
                             auto &prevScope = evaluator->getScope(-1);
                             auto &currScope = evaluator->getScope(0);
 
-                            prevScope.savedPatterns.push_back(pattern);
                             prevScope.heapStartSize = currScope.heapStartSize = evaluator->getHeap().size();
 
                             return pattern;

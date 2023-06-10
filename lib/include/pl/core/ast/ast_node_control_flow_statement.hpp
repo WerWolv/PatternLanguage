@@ -51,10 +51,8 @@ namespace pl::core::ast {
                             return value;
                         },
                         [evaluator](const std::shared_ptr<ptrn::Pattern> &pattern) -> FunctionResult {
-                            auto &prevScope = evaluator->getScope(-1);
                             auto &currScope = evaluator->getScope(0);
 
-                            prevScope.savedPatterns.push_back(pattern);
                             currScope.heapStartSize = evaluator->getHeap().size();
 
                             return pattern;
