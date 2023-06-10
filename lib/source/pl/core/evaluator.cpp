@@ -257,8 +257,8 @@ namespace pl::core {
         for (auto &[address, child] : pattern->getChildren()) {
             auto childSection = child->getSection();
             if (childSection == 0 || childSection >= ptrn::Pattern::InstantiationSectionId) {
-                if (pattern->isPatternLocal() && !child->isPatternLocal()) {
-                    auto patternLocalAddress = this->m_patternLocalStorage.empty() ? 0 : this->m_patternLocalStorage.rbegin()->first + 1;
+                if (!child->isPatternLocal()) {
+                    u32 patternLocalAddress = this->m_patternLocalStorage.empty() ? 0 : this->m_patternLocalStorage.rbegin()->first + 1;
                     this->m_patternLocalStorage.insert({ patternLocalAddress, { } });
                 }
 
@@ -385,9 +385,8 @@ namespace pl::core {
                         return heap[pattern->getHeapAddress()];
                     else
                         err::E0011.throwError(fmt::format("Tried accessing out of bounds heap cell {}. This is a bug.", pattern->getHeapAddress()));
-                }
-                else if (patternLocalSection)
-                    if (auto &patternLocal = this->m_patternLocalStorage; patternLocal.size() > pattern->getHeapAddress())
+                } else if (patternLocalSection)
+                    if (this->m_patternLocalStorage.contains(pattern->getHeapAddress()))
                         return this->m_patternLocalStorage[pattern->getHeapAddress()].data;
                     else
                         err::E0011.throwError(fmt::format("Tried accessing out of bounds pattern local cell {}. This is a bug.", pattern->getHeapAddress()));

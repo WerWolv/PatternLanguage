@@ -115,6 +115,7 @@ namespace pl::core::ast {
 
                         auto variable = evaluator->createVariable(lvalue->getLValueName(), this->m_currentTemplateParameterType.get(), value, false, false, true, true);
                         if (variable != nullptr) {
+                            variable->setInitialized(false);
                             evaluator->setVariable(variable.get(), value);
                             templatePatterns.push_back(variable);
                         }
