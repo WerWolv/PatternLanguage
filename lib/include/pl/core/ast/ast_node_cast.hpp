@@ -57,7 +57,7 @@ namespace pl::core::ast {
             auto value = literal->getValue();
 
             value = std::visit(wolv::util::overloaded {
-                [&](ptrn::Pattern *value) -> Token::Literal {
+                [&](const std::shared_ptr<ptrn::Pattern> &value) -> Token::Literal {
                     if (Token::isInteger(type) && value->getSize() <= Token::getTypeSize(type)) {
                         u128 result = 0;
                         evaluator->readData(value->getOffset(), &result, value->getSize(), value->getSection());
@@ -70,19 +70,26 @@ namespace pl::core::ast {
                 [](auto &value) -> Token::Literal { return value; }
             }, value);
 
-            return std::unique_ptr<ASTNode>(std::visit(wolv::util::overloaded {
-                [&, this](ptrn::Pattern *value) -> ASTNode * { err::E0004.throwError(fmt::format("Cannot cast value of type '{}' to type '{}'.", value->getTypeName(), Token::getTypeName(type)), {}, this); },
-                [&, this](std::string &value) -> ASTNode * {
-                    if (Token::isUnsigned(type)) {
-                        if (value.size() > sizeof(u128))
-                            err::E0004.throwError(fmt::format("Cannot cast value of type 'str' of size {} to type '{}' of size {}.", value.size(), Token::getTypeName(type), Token::getTypeSize(type)), {}, this);
-                        u128 result = 0;
-                        std::memcpy(&result, value.data(), value.size());
+            return castValue(value, type, typePattern, evaluator);
+        }
 
-                        auto endianAdjustedValue = this->changeEndianess(evaluator, result & hlp::bitmask(Token::getTypeSize(type) * 8), value.size(), typePattern->getEndian());
-                        return new ASTNodeLiteral(endianAdjustedValue);
-                    } else
-                        err::E0004.throwError(fmt::format("Cannot cast value of type 'str' to type '{}'.", Token::getTypeName(type)), {}, this);
+    private:
+        std::unique_ptr<ASTNode> castValue(const Token::Literal &literal, Token::ValueType type, const std::shared_ptr<ptrn::Pattern> &typePattern, Evaluator *evaluator) const {
+            return std::unique_ptr<ASTNode>(std::visit(wolv::util::overloaded {
+                [&, this](const std::shared_ptr<ptrn::Pattern> &value) -> ASTNode * {
+                   return castValue(value->getValue(), type, typePattern, evaluator).release();
+                },
+                [&, this](const std::string &value) -> ASTNode * {
+                   if (Token::isUnsigned(type)) {
+                       if (value.size() > sizeof(u128))
+                           err::E0004.throwError(fmt::format("Cannot cast value of type 'str' of size {} to type '{}' of size {}.", value.size(), Token::getTypeName(type), Token::getTypeSize(type)), {}, this);
+                       u128 result = 0;
+                       std::memcpy(&result, value.data(), value.size());
+
+                       auto endianAdjustedValue = this->changeEndianess(evaluator, result & hlp::bitmask(Token::getTypeSize(type) * 8), value.size(), typePattern->getEndian());
+                       return new ASTNodeLiteral(endianAdjustedValue);
+                   } else
+                       err::E0004.throwError(fmt::format("Cannot cast value of type 'str' to type '{}'.", Token::getTypeName(type)), {}, this);
                 },
                 [&, this](auto &&value) -> ASTNode * {
                    auto endianAdjustedValue = this->changeEndianess(evaluator, value, typePattern->getSize(), typePattern->getEndian());
@@ -118,24 +125,24 @@ namespace pl::core::ast {
                        case Token::ValueType::Boolean:
                            return new ASTNodeLiteral(bool(endianAdjustedValue));
                        case Token::ValueType::String:
-                           {
-                               std::string string(sizeof(value), '\x00');
-                               std::memcpy(string.data(), &value, string.size());
+                       {
+                           std::string string(sizeof(value), '\x00');
+                           std::memcpy(string.data(), &value, string.size());
 
-                               // Remove trailing null bytes
-                               string.erase(string.find('\x00'));
+                           // Remove trailing null bytes
+                           string.erase(string.find('\x00'));
 
-                               if (typePattern->getEndian() != std::endian::native)
-                                   std::reverse(string.begin(), string.end());
+                           if (typePattern->getEndian() != std::endian::native)
+                               std::reverse(string.begin(), string.end());
 
-                               return new ASTNodeLiteral(string);
-                           }
+                           return new ASTNodeLiteral(string);
+                       }
                        default:
                            err::E0004.throwError(fmt::format("Cannot cast value of type '{}' to type '{}'.", typePattern->getTypeName(), Token::getTypeName(type)), {}, this);
                    }
                 },
             },
-            value));
+            literal));
         }
 
     private:

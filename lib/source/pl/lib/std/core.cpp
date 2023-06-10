@@ -115,7 +115,7 @@ namespace pl::lib::libstd::core {
             runtime.addFunction(nsStdCore, "member_count", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 auto pattern = params[0].toPattern();
 
-                if (auto iterable = dynamic_cast<ptrn::IIterable*>(pattern); iterable != nullptr)
+                if (auto iterable = dynamic_cast<ptrn::IIterable*>(pattern.get()); iterable != nullptr)
                     return u128(iterable->getEntryCount());
                 else
                     return u128(0);
@@ -133,7 +133,7 @@ namespace pl::lib::libstd::core {
                         });
                 };
 
-                if (auto iterable = dynamic_cast<ptrn::IIterable*>(pattern); iterable != nullptr)
+                if (auto iterable = dynamic_cast<ptrn::IIterable*>(pattern.get()); iterable != nullptr)
                     return hasMember(iterable->getEntries());
                 else
                     return false;
@@ -150,7 +150,7 @@ namespace pl::lib::libstd::core {
             runtime.addFunction(nsStdCore, "is_valid_enum", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 auto pattern = params[0].toPattern();
 
-                if (auto enumPattern = dynamic_cast<ptrn::PatternEnum*>(pattern); enumPattern != nullptr) {
+                if (auto enumPattern = dynamic_cast<ptrn::PatternEnum*>(pattern.get()); enumPattern != nullptr) {
                     auto value = enumPattern->getValue().toUnsigned();
                     for (auto &entry : enumPattern->getEnumValues()) {
                         auto min = entry.min.toUnsigned();

@@ -153,8 +153,8 @@ namespace pl::core {
                 pattern = std::make_shared<ptrn::PatternCharacter>(this, 0);
             else if (auto string = std::get_if<std::string>(&value.value()); string != nullptr)
                 pattern = std::make_shared<ptrn::PatternString>(this, 0, string->size());
-            else if (auto patternValue = std::get_if<ptrn::Pattern *>(&value.value()); patternValue != nullptr)
-                pattern       = (*patternValue)->clone();
+            else if (auto patternValue = std::get_if<std::shared_ptr<ptrn::Pattern>>(&value.value()); patternValue != nullptr)
+                pattern = *patternValue;
             else
                 err::E0003.throwError("Cannot determine type of 'auto' variable.", "Try initializing it directly with a literal.", type);
         } else {
@@ -244,7 +244,7 @@ namespace pl::core {
                 else
                     err::E0004.throwError(fmt::format("Cannot cast from type 'string' to type '{}'.", pattern->getTypeName()));
             },
-            [&](ptrn::Pattern * const value) -> Token::Literal {
+            [&](const std::shared_ptr<ptrn::Pattern>& value) -> Token::Literal {
                 if (value->getTypeName() == pattern->getTypeName())
                     return value;
                 else
@@ -429,7 +429,7 @@ namespace pl::core {
                         pattern->setSize(value.size());
                         copyToStorage(value[0]);
                     },
-                    [&, this](ptrn::Pattern * const value) {
+                    [&, this](const std::shared_ptr<ptrn::Pattern>& value) {
                         if (heapSection || patternLocalSection) {
                             storage.resize(pattern->getSize());
                             this->readData(value->getOffset(), storage.data(), value->getSize(), value->getSection());
@@ -437,7 +437,6 @@ namespace pl::core {
                             storage.resize(pattern->getOffset() + pattern->getSize());
                             this->readData(value->getOffset(), storage.data() + pattern->getOffset(), value->getSize(), value->getSection());
                         }
-
 
                         if (this->isDebugModeEnabled())
                             this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {:02X}.", pattern->getVariableName(), fmt::join(storage, " ")));

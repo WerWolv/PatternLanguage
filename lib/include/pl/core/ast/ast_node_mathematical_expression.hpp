@@ -124,23 +124,23 @@ namespace pl::core::ast {
             };
 
             return std::unique_ptr<ASTNode>(std::visit(wolv::util::overloaded {
-                [&](u128 left, ptrn::Pattern *const &right)                 -> ASTNode * { return handlePatternOperations(left, right->getValue().toUnsigned());        },
-                [&](i128 left, ptrn::Pattern *const &right)                 -> ASTNode * { return handlePatternOperations(left, right->getValue().toSigned());          },
-                [&](double left, ptrn::Pattern *const &right)               -> ASTNode * { return handlePatternOperations(left, right->getValue().toFloatingPoint());   },
-                [&](char left, ptrn::Pattern *const &right)                 -> ASTNode * { return handlePatternOperations(left, right->getValue().toSigned());          },
-                [&](bool left, ptrn::Pattern *const &right)                 -> ASTNode * { return handlePatternOperations(left, right->getValue().toBoolean());         },
-                [&](const std::string &left, ptrn::Pattern *const &right)   -> ASTNode * { return handlePatternOperations(left, right->getValue().toString(true));      },
-                [&](ptrn::Pattern *const &left, u128 right)                 -> ASTNode * { return handlePatternOperations(left->getValue().toUnsigned(), right);        },
-                [&](ptrn::Pattern *const &left, i128 right)                 -> ASTNode * { return handlePatternOperations(left->getValue().toSigned(), right);          },
-                [&](ptrn::Pattern *const &left, double right)               -> ASTNode * { return handlePatternOperations(left->getValue().toFloatingPoint(), right);   },
-                [&](ptrn::Pattern *const &left, char right)                 -> ASTNode * { return handlePatternOperations(left->getValue().toSigned(), right);          },
-                [&](ptrn::Pattern *const &left, bool right)                 -> ASTNode * { return handlePatternOperations(left->getValue().toBoolean(), right);         },
-                [&](ptrn::Pattern *const &left, const std::string &right)   -> ASTNode * { return handlePatternOperations(left->getValue().toString(true), right);      },
+                [&](u128 left, const std::shared_ptr<ptrn::Pattern> &right)                 -> ASTNode * { return handlePatternOperations(left, right->getValue().toUnsigned());        },
+                [&](i128 left, const std::shared_ptr<ptrn::Pattern> &right)                 -> ASTNode * { return handlePatternOperations(left, right->getValue().toSigned());          },
+                [&](double left, const std::shared_ptr<ptrn::Pattern> &right)               -> ASTNode * { return handlePatternOperations(left, right->getValue().toFloatingPoint());   },
+                [&](char left, const std::shared_ptr<ptrn::Pattern> &right)                 -> ASTNode * { return handlePatternOperations(left, right->getValue().toSigned());          },
+                [&](bool left, const std::shared_ptr<ptrn::Pattern> &right)                 -> ASTNode * { return handlePatternOperations(left, right->getValue().toBoolean());         },
+                [&](const std::string &left, const std::shared_ptr<ptrn::Pattern> &right)   -> ASTNode * { return handlePatternOperations(left, right->getValue().toString(true));      },
+                [&](const std::shared_ptr<ptrn::Pattern> &left, u128 right)                 -> ASTNode * { return handlePatternOperations(left->getValue().toUnsigned(), right);        },
+                [&](const std::shared_ptr<ptrn::Pattern> &left, i128 right)                 -> ASTNode * { return handlePatternOperations(left->getValue().toSigned(), right);          },
+                [&](const std::shared_ptr<ptrn::Pattern> &left, double right)               -> ASTNode * { return handlePatternOperations(left->getValue().toFloatingPoint(), right);   },
+                [&](const std::shared_ptr<ptrn::Pattern> &left, char right)                 -> ASTNode * { return handlePatternOperations(left->getValue().toSigned(), right);          },
+                [&](const std::shared_ptr<ptrn::Pattern> &left, bool right)                 -> ASTNode * { return handlePatternOperations(left->getValue().toBoolean(), right);         },
+                [&](const std::shared_ptr<ptrn::Pattern> &left, const std::string &right)   -> ASTNode * { return handlePatternOperations(left->getValue().toString(true), right);      },
                 [&](u128, const std::string &)                              -> ASTNode * { throwInvalidOperandError(); },
                 [&](i128, const std::string &)                              -> ASTNode * { throwInvalidOperandError(); },
                 [&](double, const std::string &)                            -> ASTNode * { throwInvalidOperandError(); },
                 [&](bool, const std::string &)                              -> ASTNode * { throwInvalidOperandError(); },
-                [&, this](ptrn::Pattern *const &left, ptrn::Pattern *const &right) -> ASTNode * {
+                [&, this](const std::shared_ptr<ptrn::Pattern> &left, const std::shared_ptr<ptrn::Pattern> &right) -> ASTNode * {
                     std::vector<u8> leftBytes(left->getSize()), rightBytes(right->getSize());
 
                     evaluator->readData(left->getOffset(), leftBytes.data(), leftBytes.size(), left->getSection());

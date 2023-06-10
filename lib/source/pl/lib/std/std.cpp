@@ -27,7 +27,7 @@ namespace pl::lib::libstd::libstd {
                 auto &param = params[i];
 
                 std::visit(wolv::util::overloaded {
-                    [&](ptrn::Pattern *value) {
+                    [&](const std::shared_ptr<ptrn::Pattern> &value) {
                         formatArgs.push_back(value->toString());
                     },
                     [&](const std::string &value) {

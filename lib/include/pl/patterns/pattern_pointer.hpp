@@ -152,7 +152,7 @@ namespace pl::ptrn {
         [[nodiscard]] std::string toString() const override {
             auto result = this->m_pointedAt->toString();
 
-            return Pattern::formatDisplayValue(result, this->clone().get());
+            return Pattern::formatDisplayValue(result, this->clone());
         }
 
     private:

@@ -451,7 +451,7 @@ namespace pl::ptrn {
 
             result += " ]";
 
-            return Pattern::formatDisplayValue(result, this->clone().get());
+            return Pattern::formatDisplayValue(result, this->clone());
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override {
@@ -491,7 +491,7 @@ namespace pl::ptrn {
         }
 
         std::string formatDisplayValue() override {
-            return PatternBitfieldMember::formatDisplayValue("[ ... ]", this);
+            return PatternBitfieldMember::formatDisplayValue("[ ... ]", this->clone());
         }
 
         void sort(const std::function<bool (const Pattern *, const Pattern *)> &comparator) override {
@@ -689,7 +689,7 @@ namespace pl::ptrn {
 
             result += " }";
 
-            return Pattern::formatDisplayValue(result, this->clone().get());
+            return Pattern::formatDisplayValue(result, this->clone());
         }
 
         std::string formatDisplayValue() override {
@@ -724,7 +724,7 @@ namespace pl::ptrn {
                 valueString.pop_back();
             }
 
-            return Pattern::formatDisplayValue(fmt::format("{{ {} }}", valueString), this);
+            return Pattern::formatDisplayValue(fmt::format("{{ {} }}", valueString), this->clone());
         }
 
         void setEndian(std::endian endian) override {

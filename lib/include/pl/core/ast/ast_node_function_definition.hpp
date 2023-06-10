@@ -122,17 +122,14 @@ namespace pl::core::ast {
                                 [](const auto &value) -> FunctionResult {
                                     return value;
                                 },
-                                [ctx](ptrn::Pattern *pattern) -> FunctionResult {
-                                    auto clonedPattern = pattern->clone();
-                                    auto result = clonedPattern.get();
-
+                                [ctx](const std::shared_ptr<ptrn::Pattern> &pattern) -> FunctionResult {
                                     auto &prevScope = ctx->getScope(-1);
                                     auto &currScope = ctx->getScope(0);
 
-                                    prevScope.savedPatterns.push_back(std::move(clonedPattern));
+                                    prevScope.savedPatterns.push_back(pattern);
                                     prevScope.heapStartSize = currScope.heapStartSize = ctx->getHeap().size();
 
-                                    return result;
+                                    return pattern;
                                 }
                             }, result.value());
                     }

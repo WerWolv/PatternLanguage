@@ -156,7 +156,7 @@ namespace pl::ptrn {
 
             result += " ]";
 
-            return Pattern::formatDisplayValue(result, this->clone().get());
+            return Pattern::formatDisplayValue(result, this->clone());
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override {
@@ -191,7 +191,7 @@ namespace pl::ptrn {
         }
 
         std::string formatDisplayValue() override {
-            return Pattern::formatDisplayValue("[ ... ]", this);
+            return Pattern::formatDisplayValue("[ ... ]", this->clone());
         }
 
         const std::vector<u8>& getBytes() override {

@@ -135,7 +135,7 @@ namespace pl::ptrn {
 
             result += " }";
 
-            return Pattern::formatDisplayValue(result, this->clone().get());
+            return Pattern::formatDisplayValue(result, this->clone());
         }
 
         void setMembers(std::vector<std::shared_ptr<Pattern>> members) {
@@ -195,7 +195,7 @@ namespace pl::ptrn {
         }
 
         std::string formatDisplayValue() override {
-            return Pattern::formatDisplayValue("{ ... }", this);
+            return Pattern::formatDisplayValue("{ ... }", this->clone());
         }
 
         const std::vector<u8>& getBytes() override {

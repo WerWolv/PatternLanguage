@@ -53,7 +53,7 @@ namespace pl::core::ast {
             if (this->getPath().size() == 1) {
                 if (auto name = std::get_if<std::string>(&this->getPath().front()); name != nullptr) {
                     if (*name == "$") return std::unique_ptr<ASTNode>(new ASTNodeLiteral(u128(evaluator->getReadOffset())));
-                    else if (*name == "null") return std::unique_ptr<ASTNode>(new ASTNodeLiteral(new ptrn::PatternPadding(evaluator, 0, 0)));
+                    else if (*name == "null") return std::unique_ptr<ASTNode>(new ASTNodeLiteral(std::make_shared<ptrn::PatternPadding>(evaluator, 0, 0)));
 
                     auto parameterPack = evaluator->getScope(0).parameterPack;
                     if (parameterPack && *name == parameterPack->name)
@@ -77,56 +77,56 @@ namespace pl::core::ast {
                 }
             }
 
-            ptrn::Pattern *pattern = nullptr;
+            std::shared_ptr<ptrn::Pattern> pattern;
             {
                 auto referencedPattern = std::move(this->createPatterns(evaluator).front());
 
-                pattern = referencedPattern.get();
+                pattern = referencedPattern;
                 evaluator->getScope(0).savedPatterns.push_back(std::move(referencedPattern));
             }
 
             Token::Literal literal;
-            if (dynamic_cast<ptrn::PatternUnsigned *>(pattern) != nullptr) {
+            if (dynamic_cast<ptrn::PatternUnsigned *>(pattern.get()) != nullptr) {
                 u128 value = 0;
-                readVariable(evaluator, value, pattern);
+                readVariable(evaluator, value, pattern.get());
                 literal = value;
-            } else if (dynamic_cast<ptrn::PatternSigned *>(pattern) != nullptr) {
+            } else if (dynamic_cast<ptrn::PatternSigned *>(pattern.get()) != nullptr) {
                 i128 value = 0;
-                readVariable(evaluator, value, pattern);
+                readVariable(evaluator, value, pattern.get());
                 value   = hlp::signExtend(pattern->getSize() * 8, value);
                 literal = value;
-            } else if (dynamic_cast<ptrn::PatternFloat *>(pattern) != nullptr) {
+            } else if (dynamic_cast<ptrn::PatternFloat *>(pattern.get()) != nullptr) {
                 if (pattern->getSize() == sizeof(u16)) {
                     u16 value = 0;
-                    readVariable(evaluator, value, pattern);
+                    readVariable(evaluator, value, pattern.get());
                     literal = double(hlp::float16ToFloat32(value));
                 } else if (pattern->getSize() == sizeof(float)) {
                     float value = 0;
-                    readVariable(evaluator, value, pattern);
+                    readVariable(evaluator, value, pattern.get());
                     literal = double(value);
                 } else if (pattern->getSize() == sizeof(double)) {
                     double value = 0;
-                    readVariable(evaluator, value, pattern);
+                    readVariable(evaluator, value, pattern.get());
                     literal = value;
                 } else
                     err::E0001.throwError("Invalid floating point type.");
-            } else if (dynamic_cast<ptrn::PatternCharacter *>(pattern) != nullptr) {
+            } else if (dynamic_cast<ptrn::PatternCharacter *>(pattern.get()) != nullptr) {
                 char value = 0;
-                readVariable(evaluator, value, pattern);
+                readVariable(evaluator, value, pattern.get());
                 literal = value;
-            } else if (dynamic_cast<ptrn::PatternBoolean *>(pattern) != nullptr) {
+            } else if (dynamic_cast<ptrn::PatternBoolean *>(pattern.get()) != nullptr) {
                 bool value = false;
-                readVariable(evaluator, value, pattern);
+                readVariable(evaluator, value, pattern.get());
                 literal = value;
-            } else if (dynamic_cast<ptrn::PatternString *>(pattern) != nullptr) {
+            } else if (dynamic_cast<ptrn::PatternString *>(pattern.get()) != nullptr) {
                 std::string value;
-                readVariable(evaluator, value, pattern);
+                readVariable(evaluator, value, pattern.get());
                 literal = value;
-            } else if (auto bitfieldFieldPatternBoolean = dynamic_cast<ptrn::PatternBitfieldFieldBoolean *>(pattern); bitfieldFieldPatternBoolean != nullptr) {
+            } else if (auto bitfieldFieldPatternBoolean = dynamic_cast<ptrn::PatternBitfieldFieldBoolean *>(pattern.get()); bitfieldFieldPatternBoolean != nullptr) {
                 literal = bool(bitfieldFieldPatternBoolean->readValue());
-            } else if (auto bitfieldFieldPatternSigned = dynamic_cast<ptrn::PatternBitfieldFieldSigned *>(pattern); bitfieldFieldPatternSigned != nullptr) {
+            } else if (auto bitfieldFieldPatternSigned = dynamic_cast<ptrn::PatternBitfieldFieldSigned *>(pattern.get()); bitfieldFieldPatternSigned != nullptr) {
                 literal = hlp::signExtend(bitfieldFieldPatternSigned->getBitSize(), bitfieldFieldPatternSigned->readValue());
-            } else if (auto bitfieldFieldPattern = dynamic_cast<ptrn::PatternBitfieldField *>(pattern); bitfieldFieldPattern != nullptr) {
+            } else if (auto bitfieldFieldPattern = dynamic_cast<ptrn::PatternBitfieldField *>(pattern.get()); bitfieldFieldPattern != nullptr) {
                 literal = bitfieldFieldPattern->readValue();
             } else {
                 literal = pattern;
@@ -230,7 +230,7 @@ namespace pl::core::ast {
 
                     std::visit(wolv::util::overloaded {
                             [this](const std::string &) { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
-                            [this](ptrn::Pattern *pattern) { err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
+                            [this](const std::shared_ptr<ptrn::Pattern> &pattern) { err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
                             [&, this](auto &&index) {
                                 auto pattern = currPattern.get();
                                 if (auto indexablePattern = dynamic_cast<ptrn::IIndexable *>(pattern); indexablePattern != nullptr) {

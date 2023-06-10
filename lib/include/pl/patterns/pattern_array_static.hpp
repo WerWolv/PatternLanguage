@@ -189,7 +189,7 @@ namespace pl::ptrn {
         }
 
         std::string formatDisplayValue() override {
-            return Pattern::formatDisplayValue("[ ... ]", this);
+            return Pattern::formatDisplayValue("[ ... ]", this->clone());
         }
 
         [[nodiscard]] std::string toString() const override {
@@ -218,7 +218,7 @@ namespace pl::ptrn {
 
             result += " ]";
 
-            return Pattern::formatDisplayValue(result, this->clone().get());
+            return Pattern::formatDisplayValue(result, this->clone());
         }
 
         const std::vector<u8>& getBytes() override {

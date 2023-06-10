@@ -164,10 +164,10 @@ namespace pl::core {
             constexpr bool operator==(const DocComment &) const = default;
         };
 
-        struct Literal : public std::variant<char, bool, u128, i128, double, std::string, ptrn::Pattern *> {
+        struct Literal : public std::variant<char, bool, u128, i128, double, std::string, std::shared_ptr<ptrn::Pattern>> {
             using variant::variant;
 
-            [[nodiscard]] ptrn::Pattern* toPattern() const;
+            [[nodiscard]] std::shared_ptr<ptrn::Pattern> toPattern() const;
             [[nodiscard]] u128 toUnsigned() const;
             [[nodiscard]] i128 toSigned() const;
             [[nodiscard]] double toFloatingPoint() const;

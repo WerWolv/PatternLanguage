@@ -42,7 +42,7 @@ namespace pl::core::ast {
 
             u8 bitSize = std::visit(wolv::util::overloaded {
                     [this](const std::string &) -> u8 { err::E0005.throwError("Cannot use string as bitfield field size.", "Try using a integral value instead.", this->m_size.get()); },
-                    [this](ptrn::Pattern *) -> u8 { err::E0005.throwError("Cannot use string as bitfield field size.", "Try using a integral value instead.", this->m_size.get()); },
+                    [this](const std::shared_ptr<ptrn::Pattern>&) -> u8 { err::E0005.throwError("Cannot use string as bitfield field size.", "Try using a integral value instead.", this->m_size.get()); },
                     [](auto &&offset) -> u8 { return static_cast<u8>(offset); }
             }, literal->getValue());
 
