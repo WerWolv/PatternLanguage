@@ -825,6 +825,10 @@ namespace pl::core {
             err::E0007.throwError(fmt::format("Pattern count exceeded set limit of '{}'.", this->getPatternLimit()), "If this is intended, try increasing the limit using '#pragma pattern_limit <new_limit>'.");
         this->m_currPatternCount++;
 
+        // Make sure we don't throw an error if we're already in an error state
+        if (std::uncaught_exceptions() != 0)
+            return;
+
         if (pattern->isPatternLocal()) {
             if (auto it = this->m_patternLocalStorage.find(pattern->getHeapAddress()); it != this->m_patternLocalStorage.end()) {
                 auto &[key, data] = *it;
@@ -838,6 +842,10 @@ namespace pl::core {
 
     void Evaluator::patternDestroyed(ptrn::Pattern *pattern) {
         this->m_currPatternCount--;
+
+        // Make sure we don't throw an error if we're already in an error state
+        if (std::uncaught_exceptions() != 0)
+            return;
 
         if (pattern->isPatternLocal()) {
             if (auto it = this->m_patternLocalStorage.find(pattern->getHeapAddress()); it != this->m_patternLocalStorage.end()) {
