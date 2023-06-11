@@ -77,7 +77,10 @@ namespace pl::core::ast {
         std::unique_ptr<ASTNode> castValue(const Token::Literal &literal, Token::ValueType type, const std::shared_ptr<ptrn::Pattern> &typePattern, Evaluator *evaluator) const {
             return std::unique_ptr<ASTNode>(std::visit(wolv::util::overloaded {
                 [&, this](const std::shared_ptr<ptrn::Pattern> &value) -> ASTNode * {
-                   return castValue(value->getValue(), type, typePattern, evaluator).release();
+                    if (value->hasAttribute("transform"))
+                        return castValue(value->getValue(), type, typePattern, evaluator).release();
+                    else
+                        return new ASTNodeLiteral(value->getValue());
                 },
                 [&, this](const std::string &value) -> ASTNode * {
                    if (Token::isUnsigned(type)) {
