@@ -1,21 +1,15 @@
 #pragma once
 
 #include <pl/core/ast/ast_node.hpp>
-#include <pl/core/ast/ast_node_literal.hpp>
+
+#include <pl/core/ast/ast_node_attribute.hpp>
 
 namespace pl::core::ast {
 
     class ASTNodeLValueAssignment : public ASTNode, public Attributable {
     public:
-        ASTNodeLValueAssignment(std::string lvalueName, std::unique_ptr<ASTNode> &&rvalue) : m_lvalueName(std::move(lvalueName)), m_rvalue(std::move(rvalue)) {
-        }
-
-        ASTNodeLValueAssignment(const ASTNodeLValueAssignment &other) : ASTNode(other), Attributable(other) {
-            this->m_lvalueName = other.m_lvalueName;
-
-            if (other.m_rvalue != nullptr)
-                this->m_rvalue     = other.m_rvalue->clone();
-        }
+        ASTNodeLValueAssignment(std::string lvalueName, std::unique_ptr<ASTNode> &&rvalue);
+        ASTNodeLValueAssignment(const ASTNodeLValueAssignment &other);
 
         [[nodiscard]] std::unique_ptr<ASTNode> clone() const override {
             return std::unique_ptr<ASTNode>(new ASTNodeLValueAssignment(*this));
@@ -37,32 +31,8 @@ namespace pl::core::ast {
             this->m_rvalue = std::move(rvalue);
         }
 
-        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override {
-            this->execute(evaluator);
-
-            return {};
-        }
-
-        FunctionResult execute(Evaluator *evaluator) const override {
-            evaluator->updateRuntime(this);
-
-            const auto node    = this->getRValue()->evaluate(evaluator);
-            const auto literal = dynamic_cast<ASTNodeLiteral *>(node.get());
-            if (literal == nullptr)
-                err::E0010.throwError("Cannot assign void expression to variable.", {}, this);
-
-
-            if (this->getLValueName() == "$")
-                evaluator->setReadOffset(literal->getValue().toUnsigned());
-            else {
-                auto variable = evaluator->getVariableByName(this->getLValueName());
-                applyVariableAttributes(evaluator, this, variable);
-
-                evaluator->setVariable(this->getLValueName(), literal->getValue());
-            }
-
-            return {};
-        }
+        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override;
+        FunctionResult execute(Evaluator *evaluator) const override;
 
     private:
         std::string m_lvalueName;

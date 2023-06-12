@@ -2,6 +2,8 @@
 
 #include <pl/patterns/pattern.hpp>
 
+#include <pl/patterns/pattern_character.hpp>
+
 namespace pl::ptrn {
 
     class PatternString : public Pattern,

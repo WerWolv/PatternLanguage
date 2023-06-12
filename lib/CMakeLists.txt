@@ -14,8 +14,42 @@ endif ()
 add_library(libpl ${LIBRARY_TYPE}
         source/pl/helpers/utils.cpp
 
-        source/pl/core/token.cpp
         source/pl/pattern_language.cpp
+
+        source/pl/core/ast/ast_node.cpp
+        source/pl/core/ast/ast_node_array_variable_decl.cpp
+        source/pl/core/ast/ast_node_attribute.cpp
+        source/pl/core/ast/ast_node_bitfield.cpp
+        source/pl/core/ast/ast_node_bitfield_array_variable_decl.cpp
+        source/pl/core/ast/ast_node_bitfield_field.cpp
+        source/pl/core/ast/ast_node_builtin_type.cpp
+        source/pl/core/ast/ast_node_cast.cpp
+        source/pl/core/ast/ast_node_compound_statement.cpp
+        source/pl/core/ast/ast_node_conditional_statement.cpp
+        source/pl/core/ast/ast_node_control_flow_statement.cpp
+        source/pl/core/ast/ast_node_enum.cpp
+        source/pl/core/ast/ast_node_function_call.cpp
+        source/pl/core/ast/ast_node_function_definition.cpp
+        source/pl/core/ast/ast_node_literal.cpp
+        source/pl/core/ast/ast_node_lvalue_assignment.cpp
+        source/pl/core/ast/ast_node_match_statement.cpp
+        source/pl/core/ast/ast_node_mathematical_expression.cpp
+        source/pl/core/ast/ast_node_multi_variable_decl.cpp
+        source/pl/core/ast/ast_node_parameter_pack.cpp
+        source/pl/core/ast/ast_node_pointer_variable_decl.cpp
+        source/pl/core/ast/ast_node_rvalue.cpp
+        source/pl/core/ast/ast_node_rvalue_assignment.cpp
+        source/pl/core/ast/ast_node_scope_resolution.cpp
+        source/pl/core/ast/ast_node_struct.cpp
+        source/pl/core/ast/ast_node_ternary_expression.cpp
+        source/pl/core/ast/ast_node_try_catch_statement.cpp
+        source/pl/core/ast/ast_node_type_decl.cpp
+        source/pl/core/ast/ast_node_type_operator.cpp
+        source/pl/core/ast/ast_node_union.cpp
+        source/pl/core/ast/ast_node_variable_decl.cpp
+        source/pl/core/ast/ast_node_white_statement.cpp
+
+        source/pl/core/token.cpp
         source/pl/core/evaluator.cpp
         source/pl/core/lexer.cpp
         source/pl/core/parser.cpp

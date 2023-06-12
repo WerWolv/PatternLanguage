@@ -6,12 +6,13 @@
 #include <pl/core/ast/ast_node_variable_decl.hpp>
 #include <pl/core/ast/ast_node_array_variable_decl.hpp>
 #include <pl/core/ast/ast_node_pointer_variable_decl.hpp>
-#include <pl/core/ast/ast_node_function_call.hpp>
 #include <pl/core/ast/ast_node_function_definition.hpp>
 #include <pl/core/ast/ast_node_compound_statement.hpp>
 #include <pl/core/ast/ast_node_control_flow_statement.hpp>
 
 #include <pl/patterns/pattern_unsigned.hpp>
+#include <pl/patterns/pattern_signed.hpp>
+#include <pl/patterns/pattern_enum.hpp>
 #include <pl/patterns/pattern_struct.hpp>
 #include <pl/patterns/pattern_union.hpp>
 #include <pl/patterns/pattern_float.hpp>
@@ -19,6 +20,7 @@
 #include <pl/patterns/pattern_character.hpp>
 #include <pl/patterns/pattern_wide_character.hpp>
 #include <pl/patterns/pattern_string.hpp>
+#include <pl/patterns/pattern_array_dynamic.hpp>
 
 namespace pl::core {
 
@@ -30,6 +32,124 @@ namespace pl::core {
         }
 
         return result;
+    }
+
+    void Evaluator::setDataSource(u64 baseAddress, size_t dataSize, std::function<void(u64, u8*, size_t)> readerFunction, std::optional<std::function<void(u64, const u8*, size_t)>> writerFunction) {
+        this->m_dataBaseAddress = baseAddress;
+        this->m_dataSize = dataSize;
+
+        this->m_readerFunction = std::move(readerFunction);
+        if (writerFunction.has_value()) this->m_writerFunction = std::move(writerFunction.value());
+    }
+
+    void Evaluator::alignToByte() {
+        if (m_currBitOffset != 0 && !isReadOrderReversed()) {
+            this->m_currOffset += 1;
+        }
+        this->m_currBitOffset = 0;
+    }
+
+    u64 Evaluator::getReadOffset() const {
+        return this->m_currOffset;
+    }
+
+    void Evaluator::setReadOffset(u64 offset) {
+        this->m_currOffset = offset;
+        this->m_currBitOffset = 0;
+    }
+
+    [[nodiscard]] ByteAndBitOffset Evaluator::getBitwiseReadOffsetAndIncrement(i128 bitSize) {
+        ByteAndBitOffset readOffsets = {};
+
+        if (isReadOrderReversed())
+            bitSize = -bitSize;
+        else
+            readOffsets = getBitwiseReadOffset();
+
+        this->m_currOffset += bitSize >> 3;
+        this->m_currBitOffset += bitSize & 0x7;
+
+        this->m_currOffset += this->m_currBitOffset >> 3;
+        this->m_currBitOffset &= 0x7;
+
+        if (isReadOrderReversed())
+            readOffsets = getBitwiseReadOffset();
+        return readOffsets;
+    }
+
+    u64 Evaluator::getReadOffsetAndIncrement(u64 incrementSize) {
+        alignToByte();
+
+        if (isReadOrderReversed()) {
+            this->m_currOffset -= incrementSize;
+            return this->m_currOffset;
+        }
+
+        auto offset = this->m_currOffset;
+        this->m_currOffset += incrementSize;
+        return offset;
+    }
+
+    [[nodiscard]] u128 Evaluator::readBits(u128 byteOffset, u8 bitOffset, u64 bitSize, u64 section, std::endian endianness) {
+        u128 value = 0;
+
+        size_t readSize = (bitOffset + bitSize + 7) / 8;
+        readSize = std::min(readSize, sizeof(value));
+        this->readData(byteOffset, &value, readSize, section);
+        value = hlp::changeEndianess(value, sizeof(value), endianness);
+
+        size_t offset = endianness == std::endian::little ? bitOffset : (sizeof(value) * 8) - bitOffset - bitSize;
+        auto mask = hlp::bitmask(bitSize);
+        value = (value >> offset) & mask;
+        return value;
+    }
+
+    void Evaluator::writeBits(u128 byteOffset, u8 bitOffset, u64 bitSize, u64 section, std::endian endianness, u128 value) {
+        size_t writeSize = (bitOffset + bitSize + 7) / 8;
+        writeSize = std::min(writeSize, sizeof(value));
+        value = hlp::changeEndianess(value, sizeof(value), endianness);
+
+        size_t offset = endianness == std::endian::little ? bitOffset : (sizeof(value) * 8) - bitOffset - bitSize;
+        auto mask = hlp::bitmask(bitSize);
+        value = (value & mask) << offset;
+
+        u128 oldValue = 0;
+        this->readData(byteOffset, &oldValue, writeSize, section);
+        oldValue = hlp::changeEndianess(oldValue, sizeof(oldValue), endianness);
+
+        oldValue &= ~(mask << offset);
+        oldValue |= value;
+
+        oldValue = hlp::changeEndianess(oldValue, sizeof(oldValue), endianness);
+        this->writeData(byteOffset, &oldValue, writeSize, section);
+    }
+
+    bool Evaluator::addBuiltinFunction(const std::string &name, api::FunctionParameterCount numParams, std::vector<Token::Literal> defaultParameters, const api::FunctionCallback &function, bool dangerous) {
+        const auto [iter, inserted] = this->m_builtinFunctions.insert({
+            name, {numParams, std::move(defaultParameters), function, dangerous}
+        });
+
+        return inserted;
+    }
+
+    bool Evaluator::addCustomFunction(const std::string &name, api::FunctionParameterCount numParams, std::vector<Token::Literal> defaultParameters, const api::FunctionCallback &function) {
+        const auto [iter, inserted] = this->m_customFunctions.insert({
+            name, {numParams, std::move(defaultParameters), function, false}
+        });
+
+        return inserted;
+    }
+
+    [[nodiscard]] std::optional<api::Function> Evaluator::findFunction(const std::string &name) const {
+        const auto &customFunctions     = this->getCustomFunctions();
+        const auto &builtinFunctions    = this->getBuiltinFunctions();
+
+        if (auto customFunction = customFunctions.find(name); customFunction != customFunctions.end())
+            return customFunction->second;
+        else if (auto builtinFunction = builtinFunctions.find(name); builtinFunction != builtinFunctions.end())
+            return builtinFunction->second;
+        else
+            return std::nullopt;
     }
 
     void Evaluator::createParameterPack(const std::string &name, const std::vector<Token::Literal> &values) {

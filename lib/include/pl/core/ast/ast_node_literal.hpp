@@ -6,8 +6,7 @@ namespace pl::core::ast {
 
     class ASTNodeLiteral : public ASTNode {
     public:
-        explicit ASTNodeLiteral(Token::Literal literal) : ASTNode(), m_literal(std::move(literal)) { }
-
+        explicit ASTNodeLiteral(Token::Literal literal);
         ASTNodeLiteral(const ASTNodeLiteral &) = default;
 
         [[nodiscard]] std::unique_ptr<ASTNode> clone() const override {

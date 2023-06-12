@@ -137,13 +137,7 @@ namespace pl::core {
 
         [[nodiscard]] std::map<std::string, Token::Literal> getOutVariables() const;
 
-        void setDataSource(u64 baseAddress, size_t dataSize, std::function<void(u64, u8*, size_t)> readerFunction, std::optional<std::function<void(u64, const u8*, size_t)>> writerFunction = std::nullopt) {
-            this->m_dataBaseAddress = baseAddress;
-            this->m_dataSize = dataSize;
-
-            this->m_readerFunction = std::move(readerFunction);
-            if (writerFunction.has_value()) this->m_writerFunction = std::move(writerFunction.value());
-        }
+        void setDataSource(u64 baseAddress, size_t dataSize, std::function<void(u64, u8*, size_t)> readerFunction, std::optional<std::function<void(u64, const u8*, size_t)>> writerFunction = std::nullopt);
 
         void setDataBaseAddress(u64 baseAddress) {
             this->m_dataBaseAddress = baseAddress;
@@ -213,59 +207,19 @@ namespace pl::core {
             return this->m_loopLimit;
         }
 
-        void alignToByte() {
-            if (m_currBitOffset != 0 && !readOrderIsReversed()) {
-                this->m_currOffset += 1;
-            }
-            this->m_currBitOffset = 0;
-        }
+        void alignToByte();
+        u64 getReadOffset() const;
+        u64 getReadOffsetAndIncrement(u64 incrementSize);
 
-        u64 getReadOffset() {
-            return this->m_currOffset;
-        }
-
-        u64 getReadOffsetAndIncrement(u64 incrementSize) {
-            alignToByte();
-
-            if (readOrderIsReversed()) {
-                this->m_currOffset -= incrementSize;
-                return this->m_currOffset;
-            }
-
-            auto offset = this->m_currOffset;
-            this->m_currOffset += incrementSize;
-            return offset;
-        }
-
-        void setReadOffset(u64 offset) {
-            this->m_currOffset = offset;
-            this->m_currBitOffset = 0;
-        }
+        void setReadOffset(u64 offset);
 
         void setReadOrderReversed(bool reversed) { this->m_readOrderReversed = reversed; }
 
-        [[nodiscard]] bool readOrderIsReversed() const { return this->m_readOrderReversed; }
+        [[nodiscard]] bool isReadOrderReversed() const { return this->m_readOrderReversed; }
 
         ByteAndBitOffset getBitwiseReadOffset() const { return { this->m_currOffset, static_cast<u8>(this->m_currBitOffset) }; }
 
-        [[nodiscard]] ByteAndBitOffset getBitwiseReadOffsetAndIncrement(i128 bitSize) {
-            ByteAndBitOffset readOffsets;
-
-            if (readOrderIsReversed())
-                bitSize = -bitSize;
-            else
-                readOffsets = getBitwiseReadOffset();
-
-            this->m_currOffset += bitSize >> 3;
-            this->m_currBitOffset += bitSize & 0x7;
-
-            this->m_currOffset += this->m_currBitOffset >> 3;
-            this->m_currBitOffset &= 0x7;
-
-            if (readOrderIsReversed())
-                readOffsets = getBitwiseReadOffset();
-            return readOffsets;
-        }
+        [[nodiscard]] ByteAndBitOffset getBitwiseReadOffsetAndIncrement(i128 bitSize);
 
         void setBitwiseReadOffset(u64 byteOffset, u8 bitOffset) {
             this->m_currOffset = byteOffset;
@@ -276,55 +230,11 @@ namespace pl::core {
             setBitwiseReadOffset(offset.byteOffset, offset.bitOffset);
         }
 
-        [[nodiscard]] u128 readBits(u128 byteOffset, u8 bitOffset, u64 bitSize, u64 section, std::endian endianness) {
-            u128 value = 0;
+        [[nodiscard]] u128 readBits(u128 byteOffset, u8 bitOffset, u64 bitSize, u64 section, std::endian endianness);
+        void writeBits(u128 byteOffset, u8 bitOffset, u64 bitSize, u64 section, std::endian endianness, u128 value);
 
-            size_t readSize = (bitOffset + bitSize + 7) / 8;
-            readSize = std::min(readSize, sizeof(value));
-            this->readData(byteOffset, &value, readSize, section);
-            value = hlp::changeEndianess(value, sizeof(value), endianness);
-
-            size_t offset = endianness == std::endian::little ? bitOffset : (sizeof(value) * 8) - bitOffset - bitSize;
-            auto mask = hlp::bitmask(bitSize);
-            value = (value >> offset) & mask;
-            return value;
-        }
-
-        void writeBits(u128 byteOffset, u8 bitOffset, u64 bitSize, u64 section, std::endian endianness, u128 value) {
-            size_t writeSize = (bitOffset + bitSize + 7) / 8;
-            writeSize = std::min(writeSize, sizeof(value));
-            value = hlp::changeEndianess(value, sizeof(value), endianness);
-
-            size_t offset = endianness == std::endian::little ? bitOffset : (sizeof(value) * 8) - bitOffset - bitSize;
-            auto mask = hlp::bitmask(bitSize);
-            value = (value & mask) << offset;
-
-            u128 oldValue = 0;
-            this->readData(byteOffset, &oldValue, writeSize, section);
-            oldValue = hlp::changeEndianess(oldValue, sizeof(oldValue), endianness);
-
-            oldValue &= ~(mask << offset);
-            oldValue |= value;
-
-            oldValue = hlp::changeEndianess(oldValue, sizeof(oldValue), endianness);
-            this->writeData(byteOffset, &oldValue, writeSize, section);
-        }
-
-        bool addBuiltinFunction(const std::string &name, api::FunctionParameterCount numParams, std::vector<Token::Literal> defaultParameters, const api::FunctionCallback &function, bool dangerous) {
-            const auto [iter, inserted] = this->m_builtinFunctions.insert({
-                name, {numParams, std::move(defaultParameters), function, dangerous}
-            });
-
-            return inserted;
-        }
-
-        bool addCustomFunction(const std::string &name, api::FunctionParameterCount numParams, std::vector<Token::Literal> defaultParameters, const api::FunctionCallback &function) {
-            const auto [iter, inserted] = this->m_customFunctions.insert({
-                name, {numParams, std::move(defaultParameters), function, false}
-            });
-
-            return inserted;
-        }
+        bool addBuiltinFunction(const std::string &name, api::FunctionParameterCount numParams, std::vector<Token::Literal> defaultParameters, const api::FunctionCallback &function, bool dangerous);
+        bool addCustomFunction(const std::string &name, api::FunctionParameterCount numParams, std::vector<Token::Literal> defaultParameters, const api::FunctionCallback &function);
 
         [[nodiscard]] const std::unordered_map<std::string, api::Function> &getBuiltinFunctions() const {
             return this->m_builtinFunctions;
@@ -334,17 +244,7 @@ namespace pl::core {
             return this->m_customFunctions;
         }
 
-        [[nodiscard]] std::optional<api::Function> findFunction(const std::string &name) const {
-            const auto &customFunctions     = this->getCustomFunctions();
-            const auto &builtinFunctions    = this->getBuiltinFunctions();
-
-            if (auto customFunction = customFunctions.find(name); customFunction != customFunctions.end())
-                return customFunction->second;
-            else if (auto builtinFunction = builtinFunctions.find(name); builtinFunction != builtinFunctions.end())
-                return builtinFunction->second;
-            else
-                return std::nullopt;
-        }
+        [[nodiscard]] std::optional<api::Function> findFunction(const std::string &name) const;
 
         [[nodiscard]] std::vector<std::vector<u8>> &getHeap() {
             return this->m_heap;
