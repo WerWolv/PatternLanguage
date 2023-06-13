@@ -82,6 +82,7 @@ namespace pl::ptrn {
             this->m_constant = other.m_constant;
             this->m_variableName = other.m_variableName;
             this->m_typeName = other.m_typeName;
+            this->m_reference = other.m_reference;
 
             if (other.m_cachedDisplayValue != nullptr)
                 this->m_cachedDisplayValue = std::make_unique<std::string>(*other.m_cachedDisplayValue);

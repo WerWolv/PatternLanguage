@@ -587,7 +587,7 @@ namespace pl::ptrn {
 
         void setSection(u64 id) override {
             for (auto &field : this->m_fields)
-                if (field->getSection() == ptrn::Pattern::MainSectionId)
+                if (field->getSection() >= ptrn::Pattern::InstantiationSectionId)
                     field->setSection(id);
 
             Pattern::setSection(id);

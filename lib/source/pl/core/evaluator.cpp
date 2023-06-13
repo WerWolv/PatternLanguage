@@ -250,7 +250,7 @@ namespace pl::core {
 
         std::shared_ptr<ptrn::Pattern> pattern;
 
-        this->pushSectionId(ptrn::Pattern::MainSectionId);
+        this->pushSectionId(ptrn::Pattern::InstantiationSectionId);
         auto typePattern = type->createPatterns(this);
         this->popSectionId();
 
@@ -273,8 +273,9 @@ namespace pl::core {
                 pattern = std::make_shared<ptrn::PatternCharacter>(this, 0);
             else if (auto string = std::get_if<std::string>(&value.value()); string != nullptr)
                 pattern = std::make_shared<ptrn::PatternString>(this, 0, string->size());
-            else if (auto patternValue = std::get_if<std::shared_ptr<ptrn::Pattern>>(&value.value()); patternValue != nullptr)
+            else if (auto patternValue = std::get_if<std::shared_ptr<ptrn::Pattern>>(&value.value()); patternValue != nullptr) {
                 pattern = *patternValue;
+            }
             else
                 err::E0003.throwError("Cannot determine type of 'auto' variable.", "Try initializing it directly with a literal.", type);
         } else {
@@ -473,16 +474,7 @@ namespace pl::core {
             err::E0011.throwError(fmt::format("Cannot modify constant variable '{}'.", pattern->getVariableName()));
         pattern->setInitialized(true);
 
-        if (pattern->isReference()) {
-            if (value.getType() == Token::ValueType::CustomType)
-                return;
-            else {
-                pattern->setReference(false);
-                pattern->setLocal(true);
-                pattern->setOffset(u64(this->getHeap().size()) << 32);
-                this->getHeap().emplace_back().resize(pattern->getSize());
-            }
-        } else {
+        if (!pattern->isReference()) {
             this->changePatternSection(pattern, pattern->getSection());
         }
 
@@ -505,17 +497,18 @@ namespace pl::core {
                         return heap[pattern->getHeapAddress()];
                     else
                         err::E0011.throwError(fmt::format("Tried accessing out of bounds heap cell {}. This is a bug.", pattern->getHeapAddress()));
-                } else if (patternLocalSection)
+                } else if (patternLocalSection) {
                     if (this->m_patternLocalStorage.contains(pattern->getHeapAddress()))
                         return this->m_patternLocalStorage[pattern->getHeapAddress()].data;
                     else
                         err::E0011.throwError(fmt::format("Tried accessing out of bounds pattern local cell {}. This is a bug.", pattern->getHeapAddress()));
-                else
+                } else {
                     return this->getSection(pattern->getSection());
+                }
             }();
 
             auto copyToStorage = [&](const auto &value) {
-                u64 offset = (heapSection || patternLocalSection) ? pattern->getOffset() & 0xFFFF'FFFF : pattern->getOffset();
+                u64 offset = pattern->isPatternLocal() || pattern->getSection() == ptrn::Pattern::HeapSectionId ? pattern->getOffset() & 0xFFFF'FFFF : pattern->getOffset();
 
                 if (storage.size() < offset + pattern->getSize())
                     storage.resize(offset + pattern->getSize());
@@ -526,40 +519,40 @@ namespace pl::core {
             };
 
             std::visit(wolv::util::overloaded {
-                    [&](const auto &value) {
-                        auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
-                        copyToStorage(adjustedValue);
-                    },
-                    [&](const i128 &value) {
-                        auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
-                        adjustedValue = hlp::signExtend(pattern->getSize() * 8, adjustedValue);
-                        copyToStorage(adjustedValue);
-                    },
-                    [&](const double &value) {
-                        auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
+                [&](const auto &value) {
+                    auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
+                    copyToStorage(adjustedValue);
+                },
+                [&](const i128 &value) {
+                    auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
+                    adjustedValue = hlp::signExtend(pattern->getSize() * 8, adjustedValue);
+                    copyToStorage(adjustedValue);
+                },
+                [&](const double &value) {
+                    auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
 
-                        if (pattern->getSize() == sizeof(float)) {
-                            copyToStorage(float(adjustedValue));
-                        } else {
-                            copyToStorage(adjustedValue);
-                        }
-                    },
-                    [&](const std::string &value) {
-                        pattern->setSize(value.size());
-                        copyToStorage(value[0]);
-                    },
-                    [&, this](const std::shared_ptr<ptrn::Pattern>& value) {
-                        if (heapSection || patternLocalSection) {
-                            storage.resize(pattern->getSize());
-                            this->readData(value->getOffset(), storage.data(), value->getSize(), value->getSection());
-                        } else if (storage.size() < pattern->getOffset() + pattern->getSize()) {
-                            storage.resize(pattern->getOffset() + pattern->getSize());
-                            this->readData(value->getOffset(), storage.data() + pattern->getOffset(), value->getSize(), value->getSection());
-                        }
-
-                        if (this->isDebugModeEnabled())
-                            this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {:02X}.", pattern->getVariableName(), fmt::join(storage, " ")));
+                    if (pattern->getSize() == sizeof(float)) {
+                        copyToStorage(float(adjustedValue));
+                    } else {
+                        copyToStorage(adjustedValue);
                     }
+                },
+                [&](const std::string &value) {
+                    pattern->setSize(value.size());
+                    copyToStorage(value[0]);
+                },
+                [&, this](const std::shared_ptr<ptrn::Pattern>& value) {
+                    if (heapSection || patternLocalSection) {
+                        storage.resize(pattern->getSize());
+                        this->readData(value->getOffset(), storage.data(), value->getSize(), value->getSection());
+                    } else if (storage.size() < pattern->getOffset() + pattern->getSize()) {
+                        storage.resize(pattern->getOffset() + pattern->getSize());
+                        this->readData(value->getOffset(), storage.data() + pattern->getOffset(), value->getSize(), value->getSection());
+                    }
+
+                    if (this->isDebugModeEnabled())
+                        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {:02X}.", pattern->getVariableName(), fmt::join(storage, " ")));
+                }
             }, castedValue);
         }
     }

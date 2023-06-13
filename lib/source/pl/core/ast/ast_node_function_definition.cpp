@@ -78,7 +78,14 @@ namespace pl::core::ast {
                 if (auto typeNode = dynamic_cast<ASTNodeTypeDecl *>(type.get()); typeNode != nullptr && typeNode->isReference())
                     reference = true;
 
-                ctx->createVariable(name, type.get(), params[paramIndex], false, reference);
+                auto variable = ctx->createVariable(name, type.get(), params[paramIndex], false, reference);
+
+                if (reference && params[paramIndex].isPattern()) {
+                    auto pattern = params[paramIndex].toPattern();
+                    variable->setSection(pattern->getSection());
+                    variable->setOffset(pattern->getOffset());
+                }
+
                 ctx->setVariable(name, params[paramIndex]);
                 ctx->setCurrentControlFlowStatement(ControlFlowStatement::None);
             }
