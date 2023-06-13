@@ -950,7 +950,7 @@ namespace pl::core {
 
                 data.referenceCount++;
             } else {
-                err::E0001.throwError(fmt::format("Attempted to add a reference to deleted variable named '{}'.", pattern->getVariableName()));
+                this->m_patternLocalStorage[pattern->getHeapAddress()] = { 1, {} };
             }
         }
     }
