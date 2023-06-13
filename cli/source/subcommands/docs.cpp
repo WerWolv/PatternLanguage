@@ -13,6 +13,7 @@
 #include <pl/core/ast/ast_node_struct.hpp>
 #include <pl/core/ast/ast_node_type_decl.hpp>
 #include <pl/core/ast/ast_node_union.hpp>
+#include <pl/core/ast/ast_node_lvalue_assignment.hpp>
 
 namespace pl::cli::sub {
 

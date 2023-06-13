@@ -5,14 +5,6 @@
 #include <CLI/CLI.hpp>
 #include <fmt/format.h>
 
-#include <pl/core/ast/ast_node_array_variable_decl.hpp>
-#include <pl/core/ast/ast_node_bitfield.hpp>
-#include <pl/core/ast/ast_node_enum.hpp>
-#include <pl/core/ast/ast_node_function_definition.hpp>
-#include <pl/core/ast/ast_node_struct.hpp>
-#include <pl/core/ast/ast_node_type_decl.hpp>
-#include <pl/core/ast/ast_node_union.hpp>
-
 namespace pl::cli::sub {
 
     namespace {
