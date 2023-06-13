@@ -476,6 +476,8 @@ namespace pl::core {
 
         if (!pattern->isReference()) {
             this->changePatternSection(pattern, pattern->getSection());
+        } else if (!pattern->isLocal()) {
+            return;
         }
 
         if (!pattern->isLocal())
