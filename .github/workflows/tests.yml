@@ -64,15 +64,15 @@ jobs:
         owner: WerWolv
         event_type: run_tests
 
-    - name: ⚗️ Generate Coverage Report
-      if: ${{ env.DISPATCH_TOKEN != '' }}
-      run: |
-        cd build
-        lcov -d ./lib --gcov-tool /usr/bin/gcov-12 -c -o coverage.info
+    #- name: ⚗️ Generate Coverage Report
+    #  if: ${{ env.DISPATCH_TOKEN != '' }}
+    #  run: |
+    #    cd build
+    #    lcov -d ./lib --gcov-tool /usr/bin/gcov-12 -c -o coverage.info
 
-    - name: ⬆️ Upload Coverage Report
-      if: ${{ env.DISPATCH_TOKEN != '' }}
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: build/coverage.info
+    #- name: ⬆️ Upload Coverage Report
+    #  if: ${{ env.DISPATCH_TOKEN != '' }}
+    #  uses: coverallsapp/github-action@master
+    #  with:
+    #    github-token: ${{ secrets.GITHUB_TOKEN }}
+    #    path-to-lcov: build/coverage.info

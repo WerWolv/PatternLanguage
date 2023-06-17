@@ -1,9 +1,10 @@
 # Pattern Language 
 
 ![Unit Tests](https://img.shields.io/github/actions/workflow/status/WerWolv/PatternLanguage/tests.yml?branch=master&label=Unit%20Tests&style=flat-square)<br>
+<!--
 ![Coverage Status](https://img.shields.io/coveralls/github/WerWolv/PatternLanguage?style=flat-square&label=Library%20Coverage)
 ![Coverage Status](https://img.shields.io/coveralls/github/WerWolv/ImHex-Patterns?style=flat-square&label=Pattern%20Coverage)
-
+-->
 This repository contains the source code for the Pattern Language used by the [ImHex](https://github.com/WerWolv/ImHex) Hex Editor.
 
 **[Documentation](https://imhex.werwolv.net/docs)**
