@@ -317,6 +317,9 @@ namespace pl::ptrn {
         }
 
         virtual void setSection(u64 id) {
+            if (this->m_section == id)
+                return;
+
             if (this->m_section != id) {
                 if (this->m_evaluator != nullptr)
                     this->m_evaluator->patternDestroyed(this);

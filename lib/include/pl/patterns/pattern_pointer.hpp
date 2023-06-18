@@ -53,6 +53,9 @@ namespace pl::ptrn {
         }
 
         void setSection(u64 id) override {
+            if (this->getSection() == id)
+                return;
+
             this->m_pointedAt->setSection(id);
 
             Pattern::setSection(id);

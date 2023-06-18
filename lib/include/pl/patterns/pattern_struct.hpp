@@ -65,6 +65,9 @@ namespace pl::ptrn {
         }
 
         void setSection(u64 id) override {
+            if (this->getSection() == id)
+                return;
+
             for (auto &member : this->m_members)
                 if (member->getSection() >= ptrn::Pattern::InstantiationSectionId)
                     member->setSection(id);

@@ -60,6 +60,9 @@ namespace pl::ptrn {
         }
 
         void setSection(u64 id) override {
+            if (this->getSection() == id)
+                return;
+
             this->m_template->setSection(id);
 
             for (auto &highlightTemplate : this->m_highlightTemplates)
