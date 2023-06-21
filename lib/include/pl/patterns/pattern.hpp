@@ -11,6 +11,7 @@
 #include <wolv/utils/core.hpp>
 #include <wolv/utils/guards.hpp>
 
+#include <concepts>
 #include <string>
 
 namespace pl::ptrn {
@@ -340,24 +341,33 @@ namespace pl::ptrn {
         [[nodiscard]] virtual bool operator!=(const Pattern &other) const final { return !operator==(other); }
         [[nodiscard]] virtual bool operator==(const Pattern &other) const = 0;
 
-        virtual const std::vector<u8>& getBytes() {
+        virtual std::vector<u8> getRawBytes() = 0;
+        const std::vector<u8>& getBytes() {
             if (this->m_cachedBytes != nullptr)
                 return *this->m_cachedBytes;
 
             std::vector<u8> result;
-            result.reserve(this->getChildren().size());
-
             if (!this->getTransformFunction().empty()) {
-                auto bytes = std::visit(wolv::util::overloaded {
-                        [](u128 value) { return hlp::toMinimalBytes(value); },
-                        [](i128 value) { return hlp::toMinimalBytes(value); },
-                        [](Pattern *pattern) { return pattern->getBytes(); },
-                        [](auto value) { return wolv::util::toContainer<std::vector<u8>>(wolv::util::toBytes(value)); }
+                result = std::visit(wolv::util::overloaded {
+                    [this](std::integral auto value) {
+                        auto bytes = hlp::toMinimalBytes(value);
+                        if (this->getEndian() != std::endian::native)
+                            std::reverse(bytes.begin(), bytes.end());
+                        return bytes;
+                    },
+                    [](i128 value) {
+                        return hlp::toMinimalBytes(value);
+                    },
+                    [](Pattern *pattern) { return pattern->getRawBytes(); },
+                    [this](auto value) {
+                        auto bytes = wolv::util::toContainer<std::vector<u8>>(wolv::util::toBytes(value));
+                        if (this->getEndian() != std::endian::native)
+                            std::reverse(bytes.begin(), bytes.end());
+                        return bytes;
+                    }
                 }, this->getValue());
-                std::copy(bytes.begin(), bytes.end(), std::back_inserter(result));
             } else {
-                result.resize(this->getSize());
-                this->getEvaluator()->readData(this->getOffset(), result.data(), result.size(), this->getSection());
+                result = this->getRawBytes();
             }
 
             this->m_cachedBytes = std::make_unique<std::vector<u8>>(std::move(result));

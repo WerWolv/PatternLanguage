@@ -197,10 +197,7 @@ namespace pl::ptrn {
             return Pattern::formatDisplayValue("[ ... ]", this->clone());
         }
 
-        const std::vector<u8>& getBytes() override {
-            if (this->m_cachedBytes != nullptr)
-                return *this->m_cachedBytes;
-
+        std::vector<u8> getRawBytes() override {
             std::vector<u8> result;
 
             this->forEachEntry(0, this->getEntryCount(), [&](u64, pl::ptrn::Pattern *entry) {
@@ -208,9 +205,7 @@ namespace pl::ptrn {
                 std::copy(bytes.begin(), bytes.end(), std::back_inserter(result));
             });
 
-            this->m_cachedBytes = std::make_unique<std::vector<u8>>(std::move(result));
-
-            return *this->m_cachedBytes;
+            return result;
         }
 
     private:

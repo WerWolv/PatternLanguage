@@ -43,6 +43,10 @@ namespace pl::ptrn {
         [[nodiscard]] u128 getSizeForSorting() const override {
             return this->getBitSize();
         }
+
+        std::vector<u8> getRawBytes() override {
+            return { };
+        }
     };
 
     class PatternBitfieldField : public PatternBitfieldMember {
@@ -510,20 +514,15 @@ namespace pl::ptrn {
                 member->sort(comparator);
         }
 
-        const std::vector<u8>& getBytes() override {
-            if (this->m_cachedBytes != nullptr)
-                return *this->m_cachedBytes;
-
+        std::vector<u8> getRawBytes() override {
             std::vector<u8> result;
+            result.resize(this->getSize());
 
-            this->forEachEntry(0, this->getEntryCount(), [&](u64, pl::ptrn::Pattern *entry) {
-                auto bytes = entry->getBytes();
-                std::copy(bytes.begin(), bytes.end(), std::back_inserter(result));
-            });
+            this->getEvaluator()->readData(this->getOffset(), result.data(), result.size(), this->getSection());
+            if (this->getEndian() != std::endian::native)
+                std::reverse(result.begin(), result.end());
 
-            this->m_cachedBytes = std::make_unique<std::vector<u8>>(std::move(result));
-
-            return *this->m_cachedBytes;
+            return result;
         }
 
     private:
@@ -791,20 +790,15 @@ namespace pl::ptrn {
                 member->sort(comparator);
         }
 
-        const std::vector<u8>& getBytes() override {
-            if (this->m_cachedBytes != nullptr)
-                return *this->m_cachedBytes;
-
+        std::vector<u8> getRawBytes() override {
             std::vector<u8> result;
+            result.resize(this->getSize());
 
-            this->forEachEntry(0, this->getEntryCount(), [&](u64, pl::ptrn::Pattern *entry) {
-                auto bytes = entry->getBytes();
-                std::copy(bytes.begin(), bytes.end(), std::back_inserter(result));
-            });
+            this->getEvaluator()->readData(this->getOffset(), result.data(), result.size(), this->getSection());
+            if (this->getEndian() != std::endian::native)
+                std::reverse(result.begin(), result.end());
 
-            this->m_cachedBytes = std::make_unique<std::vector<u8>>(std::move(result));
-
-            return *this->m_cachedBytes;
+            return result;
         }
 
     private:

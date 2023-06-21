@@ -93,6 +93,17 @@ namespace pl::ptrn {
             return Pattern::formatDisplayValue(getEnumName(this->getTypeName(), value, this->m_enumValues), this->clone());
         }
 
+        std::vector<u8> getRawBytes() override {
+            std::vector<u8> result;
+            result.resize(this->getSize());
+
+            this->getEvaluator()->readData(this->getOffset(), result.data(), result.size(), this->getSection());
+            if (this->getEndian() != std::endian::native)
+                std::reverse(result.begin(), result.end());
+
+            return result;
+        }
+
     private:
         std::vector<EnumValue> m_enumValues;
     };

@@ -45,6 +45,17 @@ namespace pl::ptrn {
         std::string formatDisplayValue() override {
             return Pattern::formatDisplayValue(fmt::format("'{0}'", this->toString()), this->getValue());
         }
+
+        std::vector<u8> getRawBytes() override {
+            std::vector<u8> result;
+            result.resize(this->getSize());
+
+            this->getEvaluator()->readData(this->getOffset(), result.data(), result.size(), this->getSection());
+            if (this->getEndian() != std::endian::native)
+                std::reverse(result.begin(), result.end());
+
+            return result;
+        }
     };
 
 }

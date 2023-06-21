@@ -158,6 +158,17 @@ namespace pl::ptrn {
             return Pattern::formatDisplayValue(result, this->clone());
         }
 
+        std::vector<u8> getRawBytes() override {
+            std::vector<u8> result;
+            result.resize(this->getSize());
+
+            this->getEvaluator()->readData(this->getOffset(), result.data(), result.size(), this->getSection());
+            if (this->getEndian() != std::endian::native)
+                std::reverse(result.begin(), result.end());
+
+            return result;
+        }
+
     private:
         std::shared_ptr<Pattern> m_pointedAt;
         std::shared_ptr<Pattern> m_pointerType;

@@ -200,17 +200,13 @@ namespace pl::ptrn {
             return Pattern::formatDisplayValue("{ ... }", this->clone());
         }
 
-        const std::vector<u8>& getBytes() override {
-            if (this->m_cachedBytes != nullptr)
-                return *this->m_cachedBytes;
-
+        std::vector<u8> getRawBytes() override {
             std::vector<u8> result;
+
             result.resize(this->getSize());
             this->getEvaluator()->readData(this->getOffset(), result.data(), result.size(), this->getSection());
 
-            this->m_cachedBytes = std::make_unique<std::vector<u8>>(std::move(result));
-
-            return *this->m_cachedBytes;
+            return result;
         }
 
     private:

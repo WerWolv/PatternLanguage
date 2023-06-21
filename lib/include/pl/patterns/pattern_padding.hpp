@@ -40,6 +40,10 @@ namespace pl::ptrn {
 
             return Pattern::formatDisplayValue(result, this->getValue());
         }
+
+        std::vector<u8> getRawBytes() override {
+            return { };
+        }
     };
 
 }
