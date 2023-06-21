@@ -545,7 +545,7 @@ namespace pl::core {
                 },
                 [&, this](const std::shared_ptr<ptrn::Pattern>& value) {
                     if (heapSection || patternLocalSection) {
-                        storage.resize(pattern->getSize());
+                        storage.resize(value->getSize());
                         this->readData(value->getOffset(), storage.data(), value->getSize(), value->getSection());
                     } else if (storage.size() < pattern->getOffset() + pattern->getSize()) {
                         storage.resize(pattern->getOffset() + pattern->getSize());
