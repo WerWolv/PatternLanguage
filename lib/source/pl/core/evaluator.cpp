@@ -241,6 +241,9 @@ namespace pl::core {
     }
 
     std::shared_ptr<ptrn::Pattern> Evaluator::createVariable(const std::string &name, ast::ASTNodeTypeDecl *type, const std::optional<Token::Literal> &value, bool outVariable, bool reference, bool templateVariable, bool constant) {
+        auto startPos = this->getReadOffset();
+        ON_SCOPE_EXIT { this->setReadOffset(startPos); };
+
         // A variable named _ gets treated as "don't care"
         if (name == "_")
             return nullptr;
@@ -504,6 +507,9 @@ namespace pl::core {
     }
 
     void Evaluator::setVariable(std::shared_ptr<ptrn::Pattern> &pattern, const Token::Literal &value) {
+        auto startPos = this->getReadOffset();
+        ON_SCOPE_EXIT { this->setReadOffset(startPos); };
+
         if (pattern->isConstant() && pattern->isInitialized())
             err::E0011.throwError(fmt::format("Cannot modify constant variable '{}'.", pattern->getVariableName()));
         pattern->setInitialized(true);
