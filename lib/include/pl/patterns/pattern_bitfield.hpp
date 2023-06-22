@@ -592,8 +592,7 @@ namespace pl::ptrn {
                 return;
 
             for (auto &field : this->m_fields)
-                if (field->getSection() >= ptrn::Pattern::InstantiationSectionId)
-                    field->setSection(id);
+                field->setSection(id);
 
             Pattern::setSection(id);
         }

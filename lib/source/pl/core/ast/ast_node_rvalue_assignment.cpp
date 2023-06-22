@@ -22,8 +22,8 @@ namespace pl::core::ast {
     ASTNode::FunctionResult ASTNodeRValueAssignment::execute(Evaluator *evaluator) const {
         evaluator->updateRuntime(this);
 
-        const auto lhs     = this->getLValue()->createPatterns(evaluator);
-        const auto rhs     = this->getRValue()->evaluate(evaluator);
+        auto lhs = this->getLValue()->createPatterns(evaluator);
+        auto rhs = this->getRValue()->evaluate(evaluator);
 
         if (lhs.empty())
             err::E0003.throwError("Cannot find variable in this scope.", {}, this);
@@ -33,7 +33,7 @@ namespace pl::core::ast {
         if (literal == nullptr)
             err::E0010.throwError("Cannot assign void expression to variable.", {}, this);
 
-        evaluator->setVariable(pattern.get(), literal->getValue());
+        evaluator->setVariable(pattern, literal->getValue());
 
         return {};
     }

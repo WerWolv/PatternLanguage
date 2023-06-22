@@ -95,12 +95,13 @@ namespace pl::core::ast {
                     auto value = templateParamLiterals[i]->getValue();
 
                     // Allow the evaluator to throw an error at the correct source location.
+                    this->m_currentTemplateParameterType = std::make_unique<ASTNodeTypeDecl>("");
                     this->m_currentTemplateParameterType->setSourceLocation(lvalue->getLine(), lvalue->getColumn());
 
                     auto variable = evaluator->createVariable(lvalue->getLValueName(), this->m_currentTemplateParameterType.get(), value, false, false, true, true);
                     if (variable != nullptr) {
                         variable->setInitialized(false);
-                        evaluator->setVariable(variable.get(), value);
+                        evaluator->setVariable(variable, value);
                         templatePatterns.push_back(variable);
                     }
                 }

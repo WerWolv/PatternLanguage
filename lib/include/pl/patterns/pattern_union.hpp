@@ -69,8 +69,7 @@ namespace pl::ptrn {
                 return;
 
             for (auto &member : this->m_members)
-                if (member->getSection() >= ptrn::Pattern::InstantiationSectionId)
-                    member->setSection(id);
+                member->setSection(id);
 
             Pattern::setSection(id);
         }

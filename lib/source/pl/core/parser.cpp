@@ -949,7 +949,7 @@ namespace pl::core {
             result = parseCustomType();
         } else if (MATCHES(sequence(tkn::ValueType::Any))) {    // Builtin type
             auto type = getValue<Token::ValueType>(-1);
-            result = create<ast::ASTNodeTypeDecl>("", create<ast::ASTNodeBuiltinType>(type));
+            result = create<ast::ASTNodeTypeDecl>(Token::getTypeName(type), create<ast::ASTNodeBuiltinType>(type));
         } else {
             err::P0002.throwError(fmt::format("Invalid type. Expected built-in type or custom type name, got {}.", getFormattedToken(0)), {}, 1);
         }
@@ -1346,7 +1346,8 @@ namespace pl::core {
             std::unique_ptr<ast::ASTNodeTypeDecl> type = nullptr;
 
             if (MATCHES(sequence(tkn::ValueType::Any))) {
-                type = create<ast::ASTNodeTypeDecl>("", create<ast::ASTNodeBuiltinType>(getValue<Token::ValueType>(-1)));
+                const auto typeToken = getValue<Token::ValueType>(-1);
+                type = create<ast::ASTNodeTypeDecl>(Token::getTypeName(typeToken), create<ast::ASTNodeBuiltinType>(typeToken));
             } else if (MATCHES(sequence(tkn::Literal::Identifier))) {
                 auto originalPosition = m_curr;
                 auto name = parseNamespaceResolution();

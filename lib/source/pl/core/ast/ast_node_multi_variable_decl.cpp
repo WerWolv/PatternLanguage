@@ -30,7 +30,7 @@ namespace pl::core::ast {
 
         for (auto &variable : this->m_variables) {
             auto variableDecl = dynamic_cast<ASTNodeVariableDecl *>(variable.get());
-            auto variableType = variableDecl->getType()->evaluate(evaluator);
+            auto variableType = variableDecl->getType();
 
             evaluator->createVariable(variableDecl->getName(), variableType.get());
         }

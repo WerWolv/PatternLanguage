@@ -74,20 +74,19 @@ namespace pl::core::ast {
             for (u32 paramIndex = 0; paramIndex < this->m_params.size() && paramIndex < params.size(); paramIndex++) {
                 const auto &[name, type] = this->m_params[paramIndex];
 
-                bool reference = false;
-                if (auto typeNode = dynamic_cast<ASTNodeTypeDecl *>(type.get()); typeNode != nullptr && typeNode->isReference())
-                    reference = true;
+                if (auto typeNode = dynamic_cast<ASTNodeTypeDecl *>(type.get()); typeNode != nullptr) {
+                    bool reference = typeNode->isReference();
+                    auto variable = ctx->createVariable(name, typeNode, params[paramIndex], false, reference);
 
-                auto variable = ctx->createVariable(name, type.get(), params[paramIndex], false, reference);
+                    if (reference && params[paramIndex].isPattern()) {
+                        auto pattern = params[paramIndex].toPattern();
+                        variable->setSection(pattern->getSection());
+                        variable->setOffset(pattern->getOffset());
+                    }
 
-                if (reference && params[paramIndex].isPattern()) {
-                    auto pattern = params[paramIndex].toPattern();
-                    variable->setSection(pattern->getSection());
-                    variable->setOffset(pattern->getOffset());
+                    ctx->setVariable(name, params[paramIndex]);
+                    ctx->setCurrentControlFlowStatement(ControlFlowStatement::None);
                 }
-
-                ctx->setVariable(name, params[paramIndex]);
-                ctx->setCurrentControlFlowStatement(ControlFlowStatement::None);
             }
 
             for (auto &statement : this->getBody()) {

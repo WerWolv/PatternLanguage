@@ -87,7 +87,7 @@ namespace pl::core::ast {
         std::vector<std::shared_ptr<ASTNode>> m_templateParameters;
         bool m_reference = false;
 
-        mutable std::unique_ptr<ASTNodeBuiltinType> m_currentTemplateParameterType = std::make_unique<ASTNodeBuiltinType>(Token::ValueType::Auto);
+        mutable std::unique_ptr<ASTNodeTypeDecl> m_currentTemplateParameterType;
     };
 
 }
