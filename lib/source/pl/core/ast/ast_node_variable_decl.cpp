@@ -109,6 +109,7 @@ namespace pl::core::ast {
             evaluator->changePatternSection(initValue.get(), ptrn::Pattern::PatternLocalSectionId);
         }
 
+        initValue->setTypeName(variable->getTypeName());
         evaluator->setVariable(variable, std::move(initValue));
 
         evaluator->setReadOffset(startOffset);
