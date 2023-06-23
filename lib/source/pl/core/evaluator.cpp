@@ -510,7 +510,10 @@ namespace pl::core {
         this->setVariable(pattern, value);
     }
 
-    static void changePatternType(std::shared_ptr<ptrn::Pattern> &pattern, std::shared_ptr<ptrn::Pattern> &&newPattern) {
+    void Evaluator::changePatternType(std::shared_ptr<ptrn::Pattern> &pattern, std::shared_ptr<ptrn::Pattern> &&newPattern) {
+        if (dynamic_cast<ptrn::PatternPadding*>(pattern.get()) == nullptr)
+            return;
+
         auto section = pattern->getSection();
         auto offset = pattern->getOffset();
         auto variableName = pattern->getVariableName();

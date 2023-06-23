@@ -264,6 +264,7 @@ namespace pl::core {
         void setVariable(std::shared_ptr<ptrn::Pattern> &pattern, const Token::Literal &value);
         void setVariableAddress(const std::string &variableName, u64 address, u64 section = 0);
         void changePatternSection(ptrn::Pattern *pattern, u64 section);
+        void changePatternType(std::shared_ptr<ptrn::Pattern> &pattern, std::shared_ptr<ptrn::Pattern> &&newPattern);
 
         void abort() {
             this->m_aborted = true;

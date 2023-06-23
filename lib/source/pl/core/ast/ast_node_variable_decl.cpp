@@ -89,7 +89,19 @@ namespace pl::core::ast {
     ASTNode::FunctionResult ASTNodeVariableDecl::execute(Evaluator *evaluator) const {
         evaluator->updateRuntime(this);
 
+        evaluator->pushSectionId(ptrn::Pattern::InstantiationSectionId);
+        auto initValue = this->getType()->createPatterns(evaluator).front();
+        evaluator->popSectionId();
+
+        auto &heap = evaluator->getHeap();
+        heap.emplace_back();
+        heap.resize(initValue->getSize());
+
+        initValue->setSection(ptrn::Pattern::HeapSectionId);
+        initValue->setOffset(heap.size() << 32);
+
         evaluator->createVariable(this->getName(), this->getType().get(), { }, this->m_outVariable, false, false, this->m_constant);
+        evaluator->setVariable(evaluator->getScope(0).scope->back(), std::move(initValue));
 
         if (this->m_placementOffset != nullptr) {
             const auto placementNode = this->m_placementOffset->evaluate(evaluator);
