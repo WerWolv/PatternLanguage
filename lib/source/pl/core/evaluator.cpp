@@ -383,6 +383,8 @@ namespace pl::core {
                    return truncateValue(pattern->getSize(), u128(value));
                else if (dynamic_cast<const ptrn::PatternString*>(pattern))
                    return Token::Literal(value).toString(false);
+               else if (dynamic_cast<const ptrn::PatternPadding*>(pattern))
+                   return value;
                else
                    err::E0004.throwError(fmt::format("Cannot cast from type 'integer' to type '{}'.", pattern->getTypeName()));
             },
@@ -398,6 +400,8 @@ namespace pl::core {
                 } else if (dynamic_cast<const ptrn::PatternBoolean*>(pattern) != nullptr)
                     return !value.empty();
                 else if (dynamic_cast<const ptrn::PatternString*>(pattern) != nullptr)
+                    return value;
+                else if (dynamic_cast<const ptrn::PatternPadding*>(pattern) != nullptr)
                     return value;
                 else
                     err::E0004.throwError(fmt::format("Cannot cast from type 'string' to type '{}'.", pattern->getTypeName()));
@@ -506,6 +510,18 @@ namespace pl::core {
         this->setVariable(pattern, value);
     }
 
+    static void changePatternType(std::shared_ptr<ptrn::Pattern> &pattern, std::shared_ptr<ptrn::Pattern> &&newPattern) {
+        auto section = pattern->getSection();
+        auto offset = pattern->getOffset();
+        auto variableName = pattern->getVariableName();
+
+        pattern = std::move(newPattern);
+
+        pattern->setSection(section);
+        pattern->setOffset(offset);
+        pattern->setVariableName(variableName);
+    }
+
     void Evaluator::setVariable(std::shared_ptr<ptrn::Pattern> &pattern, const Token::Literal &value) {
         auto startPos = this->getReadOffset();
         ON_SCOPE_EXIT { this->setReadOffset(startPos); };
@@ -567,16 +583,34 @@ namespace pl::core {
             };
 
             std::visit(wolv::util::overloaded {
-                [&](const auto &value) {
+                [&](const u128 &value) {
+                    changePatternType(pattern, std::make_shared<ptrn::PatternUnsigned>(this, 0, 16));
+
                     auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
                     copyToStorage(adjustedValue);
                 },
                 [&](const i128 &value) {
+                    changePatternType(pattern, std::make_shared<ptrn::PatternSigned>(this, 0, 16));
+
                     auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
                     adjustedValue = hlp::signExtend(pattern->getSize() * 8, adjustedValue);
                     copyToStorage(adjustedValue);
                 },
+                [&](const bool &value) {
+                    changePatternType(pattern, std::make_shared<ptrn::PatternBoolean>(this, 0));
+
+                    auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
+                    copyToStorage(adjustedValue);
+                },
+                [&](const char &value) {
+                    changePatternType(pattern, std::make_shared<ptrn::PatternCharacter>(this, 0));
+
+                    auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
+                    copyToStorage(adjustedValue);
+                },
                 [&](const double &value) {
+                    changePatternType(pattern, std::make_shared<ptrn::PatternFloat>(this, 0, 8));
+
                     auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
 
                     if (pattern->getSize() == sizeof(float)) {
@@ -586,20 +620,14 @@ namespace pl::core {
                     }
                 },
                 [&](const std::string &value) {
+                    changePatternType(pattern, std::make_shared<ptrn::PatternString>(this, 0, value.length()));
+
                     pattern->setSize(value.size());
                     copyToStorage(value[0]);
                 },
                 [&, this](const std::shared_ptr<ptrn::Pattern>& value) {
                     if (!pattern->isReference()) {
-                        auto section = pattern->getSection();
-                        auto offset = pattern->getOffset();
-                        auto variableName = pattern->getVariableName();
-
-                        pattern = value->clone();
-
-                        pattern->setSection(section);
-                        pattern->setOffset(offset);
-                        pattern->setVariableName(variableName);
+                        changePatternType(pattern, value->clone());
                     } else {
                         pattern = value;
                     }
