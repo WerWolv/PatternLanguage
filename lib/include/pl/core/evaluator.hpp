@@ -255,6 +255,14 @@ namespace pl::core {
             return this->m_heap;
         }
 
+        [[nodiscard]] std::map<u32, PatternLocalData> &getPatternLocalStorage() {
+            return this->m_patternLocalStorage;
+        }
+
+        [[nodiscard]] const std::map<u32, PatternLocalData> &getPatternLocalStorage() const {
+            return this->m_patternLocalStorage;
+        }
+
         void createParameterPack(const std::string &name, const std::vector<Token::Literal> &values);
 
         void createArrayVariable(const std::string &name, ast::ASTNode *type, size_t entryCount, u64 section, bool constant = false);
