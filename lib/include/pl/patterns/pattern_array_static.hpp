@@ -236,6 +236,15 @@ namespace pl::ptrn {
             return result;
         }
 
+        void clearFormatCache() override {
+            this->m_template->clearFormatCache();
+
+            for (auto &highlightTemplate : this->m_highlightTemplates)
+                highlightTemplate->clearFormatCache();
+
+            Pattern::clearFormatCache();
+        }
+
     private:
         std::shared_ptr<Pattern> m_template = nullptr;
         mutable std::vector<std::shared_ptr<Pattern>> m_highlightTemplates;

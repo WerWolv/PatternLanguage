@@ -169,6 +169,12 @@ namespace pl::ptrn {
             return result;
         }
 
+        void clearFormatCache() override {
+            this->m_pointedAt->clearFormatCache();
+
+            Pattern::clearFormatCache();
+        }
+
     private:
         std::shared_ptr<Pattern> m_pointedAt;
         std::shared_ptr<Pattern> m_pointerType;

@@ -411,17 +411,11 @@ namespace pl::ptrn {
             }
         }
 
-        void clearFormatCache() {
+        virtual void clearFormatCache() {
             if (this->m_cachedDisplayValue == nullptr)
                 return;
 
             this->m_cachedDisplayValue.reset();
-
-            if (auto *iterable = dynamic_cast<IIterable*>(this); iterable != nullptr) {
-                iterable->forEachEntry(0, iterable->getEntryCount(), [](u64, Pattern *pattern) {
-                    pattern->clearFormatCache();
-                });
-            }
         }
 
         void clearByteCache() {

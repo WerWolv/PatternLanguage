@@ -211,6 +211,14 @@ namespace pl::ptrn {
             return result;
         }
 
+        void clearFormatCache() override {
+            this->forEachEntry(0, this->getEntryCount(), [&](u64, pl::ptrn::Pattern *entry) {
+                entry->clearFormatCache();
+            });
+
+            Pattern::clearFormatCache();
+        }
+
     private:
         std::vector<std::shared_ptr<Pattern>> m_members;
         std::vector<Pattern *> m_sortedMembers;

@@ -525,6 +525,14 @@ namespace pl::ptrn {
             return result;
         }
 
+        void clearFormatCache() override {
+            this->forEachEntry(0, this->getEntryCount(), [&](u64, pl::ptrn::Pattern *entry) {
+                entry->clearFormatCache();
+            });
+
+            Pattern::clearFormatCache();
+        }
+
     private:
         std::vector<std::shared_ptr<Pattern>> m_entries;
         std::vector<Pattern *> m_sortedEntries;
@@ -798,6 +806,14 @@ namespace pl::ptrn {
                 std::reverse(result.begin(), result.end());
 
             return result;
+        }
+
+        void clearFormatCache() override {
+            this->forEachEntry(0, this->getEntryCount(), [&](u64, pl::ptrn::Pattern *entry) {
+                entry->clearFormatCache();
+            });
+
+            Pattern::clearFormatCache();
         }
 
     private:
