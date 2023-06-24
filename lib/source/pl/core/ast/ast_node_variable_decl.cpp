@@ -111,6 +111,7 @@ namespace pl::core::ast {
 
         initValue->setTypeName(variable->getTypeName());
         evaluator->setVariable(variable, std::move(initValue));
+        variable->setInitialized(false);
 
         evaluator->setReadOffset(startOffset);
 
