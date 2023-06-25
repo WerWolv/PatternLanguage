@@ -38,7 +38,7 @@ namespace pl::lib::libstd::string {
                 const auto absIndex = std::abs(index);
             #endif
 
-                if (absIndex > string.length())
+                if (absIndex >= string.length())
                     err::E0012.throwError(fmt::format("Character index {} out of range of string '{}' with length {}.", absIndex, string, string.length()));
 
                 if (index >= 0)

@@ -76,7 +76,8 @@ namespace pl::core::ast {
                         std::memcpy(string.data(), &value, string.size());
 
                         // Remove trailing null bytes
-                        string.erase(string.find('\x00'));
+                        if (auto pos = string.find('\x00'); pos != std::string::npos)
+                            string.erase(pos);
 
                         if (typePattern->getEndian() != std::endian::native)
                             std::reverse(string.begin(), string.end());
