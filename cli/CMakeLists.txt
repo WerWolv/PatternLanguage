@@ -14,7 +14,7 @@ add_executable(plcli
         source/subcommands/info.cpp
 )
 
-find_package(CLI11 CONFIG)
+find_package(CLI11 CONFIG QUIET)
 if(NOT CLI11_FOUND)
     add_subdirectory(../external/cli11 ../external/cli11)
 endif()
