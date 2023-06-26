@@ -71,6 +71,12 @@ namespace pl::core::ast {
                 ctx->createParameterPack(this->m_parameterPack.value(), parameterPackContent);
             }
 
+            std::vector<std::pair<std::shared_ptr<ptrn::Pattern>, std::string>> originalNames;
+            ON_SCOPE_EXIT {
+                for (auto &[variable, name] : originalNames) {
+                    variable->setVariableName(name);
+                }
+            };
             for (u32 paramIndex = 0; paramIndex < this->m_params.size() && paramIndex < params.size(); paramIndex++) {
                 const auto &[name, type] = this->m_params[paramIndex];
 
@@ -82,9 +88,13 @@ namespace pl::core::ast {
                         auto pattern = params[paramIndex].toPattern();
                         variable->setSection(pattern->getSection());
                         variable->setOffset(pattern->getOffset());
+                        variable = pattern;
                     }
 
                     ctx->setVariable(name, params[paramIndex]);
+                    originalNames.emplace_back(variable, name);
+                    variable->setVariableName(name);
+
                     ctx->setCurrentControlFlowStatement(ControlFlowStatement::None);
                 }
             }
