@@ -1004,13 +1004,15 @@ namespace pl::core {
         this->handleAbort();
 
         auto line = node->getLine();
-        if (this->m_breakpoints.contains(line)) {
+        if (this->m_shouldPauseNextLine && this->m_lastPauseLine != line) {
+            this->m_shouldPauseNextLine = false;
+            this->m_lastPauseLine = line;
+            this->m_breakpointHitCallback();
+        } else if (this->m_breakpoints.contains(line)) {
             if (this->m_lastPauseLine != line) {
                 this->m_lastPauseLine = line;
                 this->m_breakpointHitCallback();
             }
-        } else {
-            this->m_lastPauseLine.reset();
         }
     }
 
@@ -1019,6 +1021,7 @@ namespace pl::core {
     void Evaluator::clearBreakpoints() { this->m_breakpoints.clear(); }
     void Evaluator::setBreakpointHitCallback(const std::function<void()> &callback) { this->m_breakpointHitCallback = callback; }
     const std::unordered_set<int> &Evaluator::getBreakpoints() const { return this->m_breakpoints; }
+    void Evaluator::pauseNextLine() { this->m_shouldPauseNextLine = true; }
 
     std::optional<u32> Evaluator::getPauseLine() const {
         return this->m_lastPauseLine;
