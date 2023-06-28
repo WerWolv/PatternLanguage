@@ -8,7 +8,11 @@ using namespace pl;
 
 std::optional<u64> parseLimit(const std::string &value) {
     try {
-        auto limit = std::stoull(value);
+        size_t index = 0;
+        auto limit = std::stoull(value, &index, 0);
+        if (index != value.size())
+            return std::nullopt;
+
         if (limit == 0)
             return std::numeric_limits<u64>::max();
         else
