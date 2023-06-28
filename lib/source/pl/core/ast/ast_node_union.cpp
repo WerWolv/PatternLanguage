@@ -36,10 +36,11 @@ namespace pl::core::ast {
             }
             pattern->setSize(size);
 
+            if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
+                break;
+
             if (!evaluator->getCurrentArrayIndex().has_value()) {
-                if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
-                    break;
-                else if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Break) {
+                if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Break) {
                     evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
                     break;
                 } else if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Continue) {
