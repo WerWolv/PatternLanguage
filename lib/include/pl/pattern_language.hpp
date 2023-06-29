@@ -299,6 +299,14 @@ namespace pl {
             return this->m_patternsValid;
         }
 
+        /**
+         * @brief Gets the current run id
+         * @return Run id
+         */
+        [[nodiscard]] u64 getRunId() const {
+            return this->m_runId;
+        }
+
     private:
         void flattenPatterns();
 
@@ -315,6 +323,7 @@ namespace pl {
         std::atomic<bool> m_running = false;
         std::atomic<bool> m_patternsValid = false;
         std::atomic<bool> m_aborted = false;
+        std::atomic<u64>  m_runId = 0;
 
         std::optional<u64> m_startAddress;
         std::endian m_defaultEndian = std::endian::little;

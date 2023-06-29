@@ -86,6 +86,7 @@ namespace pl {
 
         this->m_running = true;
         this->m_aborted = false;
+        this->m_runId += 1;
         ON_SCOPE_EXIT { this->m_running = false; };
 
         ON_SCOPE_EXIT {
