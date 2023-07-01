@@ -325,4 +325,21 @@ namespace pl {
         return results;
     }
 
+    std::vector<u32> PatternLanguage::getColorsAtAddress(u64 address, u64 section) const {
+        if (this->m_flattenedPatterns.empty() || !this->m_flattenedPatterns.contains(section))
+            return { };
+
+        auto intervals = this->m_flattenedPatterns.at(section).overlapping({ address, address });
+
+        std::vector<u32> results;
+        for (auto &[interval, pattern] : intervals) {
+            if (pattern->getVisibility() != pl::ptrn::Visibility::Visible)
+                continue;
+
+            results.push_back(pattern->getColor());
+        }
+
+        return results;
+    }
+
 }

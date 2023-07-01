@@ -234,6 +234,15 @@ namespace pl {
          */
         [[nodiscard]] std::vector<ptrn::Pattern *> getPatternsAtAddress(u64 address, u64 section = 0x00) const;
 
+
+        /**
+         * @brief Get the colors of all patterns that overlap with the given address
+         * @param address Address to check
+         * @param section Section id
+         * @return Patterns
+         */
+        [[nodiscard]] std::vector<u32> getColorsAtAddress(u64 address, u64 section = 0x00) const;
+
         /**
          * @brief Resets the runtime
          */
