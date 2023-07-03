@@ -166,6 +166,16 @@ namespace pl::lib::libstd::mem {
                 return u128(ctx->getSection(id).size());
             });
 
+            /* set_section_size(id, size) */
+            runtime.addFunction(nsStdMem, "set_section_size", FunctionParameterCount::exactly(2), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
+                auto id   = params[0].toUnsigned();
+                auto size = params[1].toUnsigned();
+
+                ctx->getSection(id).resize(size);
+
+                return std::nullopt;
+            });
+
             /* copy_section_to_section(from_id, from_address, to_id, to_address, size) */
             runtime.addFunction(nsStdMem, "copy_to_section", FunctionParameterCount::exactly(5), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 auto fromId     = params[0].toUnsigned();
