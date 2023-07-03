@@ -92,26 +92,29 @@ namespace pl::core::ast {
         auto startOffset = evaluator->getReadOffset();
 
         evaluator->pushSectionId(ptrn::Pattern::InstantiationSectionId);
-        auto initValue = this->getType()->createPatterns(evaluator).front();
+        auto initValues = this->getType()->createPatterns(evaluator);
         evaluator->popSectionId();
 
         evaluator->createVariable(this->getName(), this->getType().get(), { }, this->m_outVariable, false, false, this->m_constant);
         auto &variable = evaluator->getScope(0).scope->back();
 
-        if (variable->getSection() == ptrn::Pattern::HeapSectionId) {
-            auto &heap = evaluator->getHeap();
-            heap.emplace_back();
-            heap.back().resize(initValue->getSize());
+        if (!initValues.empty()) {
+            auto &initValue = initValues.front();
+            if (variable->getSection() == ptrn::Pattern::HeapSectionId) {
+                auto &heap = evaluator->getHeap();
+                heap.emplace_back();
+                heap.back().resize(initValue->getSize());
 
-            initValue->setSection(ptrn::Pattern::HeapSectionId);
-            initValue->setOffset((heap.size() - 1) << 32);
-        } else if (variable->getSection() == ptrn::Pattern::PatternLocalSectionId) {
-            evaluator->changePatternSection(initValue.get(), ptrn::Pattern::PatternLocalSectionId);
+                initValue->setSection(ptrn::Pattern::HeapSectionId);
+                initValue->setOffset((heap.size() - 1) << 32);
+            } else if (variable->getSection() == ptrn::Pattern::PatternLocalSectionId) {
+                evaluator->changePatternSection(initValue.get(), ptrn::Pattern::PatternLocalSectionId);
+            }
+
+            initValue->setTypeName(variable->getTypeName());
+            evaluator->setVariable(variable, std::move(initValue));
+            variable->setInitialized(false);
         }
-
-        initValue->setTypeName(variable->getTypeName());
-        evaluator->setVariable(variable, std::move(initValue));
-        variable->setInitialized(false);
 
         evaluator->setReadOffset(startOffset);
 

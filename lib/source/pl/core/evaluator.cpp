@@ -284,9 +284,8 @@ namespace pl::core {
         if (auto builtinType = getBuiltinType(type); builtinType != nullptr && builtinType->getType() == Token::ValueType::Auto) {
             // Handle auto variables
             if (!value.has_value())
-                err::E0003.throwError("Cannot determine type of 'auto' variable.", "Try initializing it directly with a literal.", type);
-
-            if (std::get_if<u128>(&value.value()) != nullptr)
+                pattern = std::make_shared<ptrn::PatternPadding>(this, 0, 0);
+            else if (std::get_if<u128>(&value.value()) != nullptr)
                 pattern = std::make_shared<ptrn::PatternUnsigned>(this, 0, sizeof(u128));
             else if (std::get_if<i128>(&value.value()) != nullptr)
                 pattern = std::make_shared<ptrn::PatternSigned>(this, 0, sizeof(i128));
