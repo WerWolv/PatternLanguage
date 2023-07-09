@@ -1063,7 +1063,7 @@ namespace pl::core {
                 data.referenceCount--;
                 if (data.referenceCount == 0)
                     this->m_patternLocalStorage.erase(it);
-            } else {
+            } else if (!this->m_evaluated) {
                 err::E0001.throwError(fmt::format("Double free of variable named '{}'.", pattern->getVariableName()));
             }
         }
