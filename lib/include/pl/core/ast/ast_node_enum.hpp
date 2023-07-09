@@ -3,6 +3,8 @@
 #include <pl/core/ast/ast_node.hpp>
 #include <pl/core/ast/ast_node_attribute.hpp>
 
+#include <map>
+
 namespace pl::core::ast {
 
     class ASTNodeEnum : public ASTNode,

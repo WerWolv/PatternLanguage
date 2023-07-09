@@ -23,6 +23,8 @@
 #include <pl/patterns/pattern_array_dynamic.hpp>
 #include <pl/patterns/pattern_padding.hpp>
 
+#include <utility>
+
 namespace pl::core {
 
     std::map<std::string, Token::Literal> Evaluator::getOutVariables() const {

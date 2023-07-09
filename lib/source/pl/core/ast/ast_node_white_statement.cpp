@@ -1,5 +1,8 @@
 #include <pl/core/ast/ast_node_while_statement.hpp>
 
+#include <pl/core/evaluator.hpp>
+#include <pl/patterns/pattern.hpp>
+
 namespace pl::core::ast {
 
     ASTNodeWhileStatement::ASTNodeWhileStatement(std::unique_ptr<ASTNode> &&condition, std::vector<std::unique_ptr<ASTNode>> &&body, std::unique_ptr<ASTNode> &&postExpression)

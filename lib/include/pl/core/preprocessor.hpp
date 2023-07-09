@@ -6,7 +6,6 @@
 #include <set>
 #include <string>
 #include <unordered_map>
-#include <utility>
 
 #include <pl/api.hpp>
 #include <pl/helpers/types.hpp>

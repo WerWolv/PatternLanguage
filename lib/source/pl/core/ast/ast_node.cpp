@@ -1,5 +1,8 @@
 #include <pl/core/ast/ast_node.hpp>
 
+#include <pl/core/evaluator.hpp>
+#include <pl/patterns/pattern.hpp>
+
 namespace pl::core::ast {
 
     [[nodiscard]] u32 ASTNode::getLine() const { return this->m_line; }

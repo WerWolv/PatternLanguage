@@ -56,6 +56,8 @@ add_library(libpl ${LIBRARY_TYPE}
         source/pl/core/preprocessor.cpp
         source/pl/core/validator.cpp
 
+        source/pl/core/error.cpp
+
         source/pl/lib/std/pragmas.cpp
         source/pl/lib/std/std.cpp
         source/pl/lib/std/mem.cpp

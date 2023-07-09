@@ -7,10 +7,13 @@
 #include <pl/core/evaluator.hpp>
 #include <pl/core/errors/error.hpp>
 
+#include <pl/patterns/pattern.hpp>
+
 #include <pl/lib/std/libstd.hpp>
 
 #include <wolv/io/fs.hpp>
 #include <wolv/io/file.hpp>
+#include <wolv/utils/string.hpp>
 
 namespace pl {
 

@@ -10,7 +10,11 @@
 #include <pl/core/ast/ast_node_attribute.hpp>
 #include <pl/core/ast/ast_node_type_decl.hpp>
 
-#include <unordered_map>
+#include <fmt/format.h>
+
+#include <functional>
+#include <map>
+#include <optional>
 #include <stdexcept>
 #include <utility>
 #include <vector>

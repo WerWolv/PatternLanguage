@@ -37,13 +37,6 @@ namespace pl::core {
         Allow
     };
 
-    enum class ControlFlowStatement {
-        None,
-        Continue,
-        Break,
-        Return
-    };
-
     struct ByteAndBitOffset {
         u64 byteOffset;
         u8 bitOffset;

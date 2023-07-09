@@ -1,5 +1,8 @@
 #include <pl/core/ast/ast_node_control_flow_statement.hpp>
 
+#include <pl/core/evaluator.hpp>
+#include <pl/patterns/pattern.hpp>
+
 #include <pl/core/ast/ast_node_literal.hpp>
 
 namespace pl::core::ast {

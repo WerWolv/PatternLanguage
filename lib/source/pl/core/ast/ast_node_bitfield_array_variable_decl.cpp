@@ -1,5 +1,8 @@
 #include <pl/core/ast/ast_node_bitfield_array_variable_decl.hpp>
 
+#include <pl/core/evaluator.hpp>
+#include <pl/patterns/pattern.hpp>
+
 namespace pl::core::ast {
 
     ASTNodeBitfieldArrayVariableDecl::ASTNodeBitfieldArrayVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeDecl> type, std::unique_ptr<ASTNode> &&size)

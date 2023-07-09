@@ -1,5 +1,8 @@
 #include <pl/core/ast/ast_node_cast.hpp>
 
+#include <pl/core/evaluator.hpp>
+#include <pl/patterns/pattern.hpp>
+
 namespace pl::core::ast {
 
     namespace {

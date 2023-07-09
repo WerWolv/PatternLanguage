@@ -1,6 +1,10 @@
 #include <pl/core/token.hpp>
+#include <pl/core/log_console.hpp>
 
 #include <pl/patterns/pattern.hpp>
+
+#include <pl/helpers/utils.hpp>
+#include <pl/helpers/concepts.hpp>
 
 namespace pl::core {
 

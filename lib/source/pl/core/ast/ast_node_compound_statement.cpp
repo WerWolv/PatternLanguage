@@ -1,5 +1,8 @@
 #include <pl/core/ast/ast_node_compound_statement.hpp>
 
+#include <pl/core/evaluator.hpp>
+#include <pl/patterns/pattern.hpp>
+
 namespace pl::core::ast {
 
     ASTNodeCompoundStatement::ASTNodeCompoundStatement(std::vector<std::unique_ptr<ASTNode>> &&statements, bool newScope) : m_statements(std::move(statements)), m_newScope(newScope) {

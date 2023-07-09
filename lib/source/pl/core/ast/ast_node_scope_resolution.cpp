@@ -1,5 +1,8 @@
 #include <pl/core/ast/ast_node_scope_resolution.hpp>
 
+#include <pl/core/evaluator.hpp>
+#include <pl/patterns/pattern.hpp>
+
 #include <pl/core/ast/ast_node_enum.hpp>
 
 namespace pl::core::ast {

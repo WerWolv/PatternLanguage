@@ -1,5 +1,8 @@
 #include <pl/core/ast/ast_node_try_catch_statement.hpp>
 
+#include <pl/core/evaluator.hpp>
+#include <pl/patterns/pattern.hpp>
+
 namespace pl::core::ast {
 
     ASTNodeTryCatchStatement::ASTNodeTryCatchStatement(std::vector<std::unique_ptr<ASTNode>> &&tryBody, std::vector<std::unique_ptr<ASTNode>> &&catchBody)

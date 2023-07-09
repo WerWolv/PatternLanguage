@@ -1,17 +1,27 @@
 #pragma once
 
+#include <pl/helpers/types.hpp>
+
 #include <string>
 #include <stdexcept>
-#include <utility>
 #include <vector>
 
-#include <pl/helpers/utils.hpp>
-
-#include <wolv/utils/string.hpp>
-
-#include <fmt/format.h>
-
 namespace pl::core::err {
+
+    std::string formatImpl(
+            const std::string &sourceCode,
+            u32 line, u32 column,
+            char prefix,
+            u32 errorCode,
+            const std::string &title,
+            const std::string &description,
+            const std::string &hint);
+
+    std::string formatShortImpl(
+            char prefix,
+            u32 errorCode,
+            const std::string &title,
+            const std::string &description);
 
     template<typename T = void>
     class UserData {
@@ -47,7 +57,7 @@ namespace pl::core::err {
         public:
             Exception(char prefix, u32 errorCode, std::string title, std::string description, std::string hint, UserData<T> userData = {}) :
                     UserData<T>(userData), m_prefix(prefix), m_errorCode(errorCode), m_title(std::move(title)), m_description(std::move(description)), m_hint(std::move(hint)) {
-                this->m_shortMessage = fmt::format("error[{}{:04}]: {}\n{}", this->m_prefix, this->m_errorCode, this->m_title, this->m_description).c_str();
+                this->m_shortMessage = formatShortImpl(this->m_prefix, this->m_errorCode, this->m_title, this->m_description);
             }
 
             [[nodiscard]] const char *what() const noexcept override {
@@ -55,35 +65,7 @@ namespace pl::core::err {
             }
 
             [[nodiscard]] std::string format(const std::string &sourceCode, u32 line, u32 column) const {
-                std::string errorMessage;
-
-                errorMessage += fmt::format("error[{}{:04}]: {}\n", this->m_prefix, this->m_errorCode, this->m_title);
-
-                if (line != 0 && column != 0) {
-                    errorMessage += fmt::format("  --> <Source Code>:{}:{}\n", line, column);
-
-                    auto lines = wolv::util::splitString(sourceCode, "\n");
-
-                    if ((line - 1) < lines.size()) {
-                        const auto &errorLine = lines[line - 1];
-                        const auto lineNumberPrefix = fmt::format("{} | ", line);
-                        errorMessage += fmt::format("{}{}\n", lineNumberPrefix, errorLine);
-
-                        {
-                            const auto descriptionSpacing = std::string(lineNumberPrefix.length() + column - 1, ' ');
-                            errorMessage += descriptionSpacing + "^\n";
-                            errorMessage += descriptionSpacing + this->m_description + "\n\n";
-                        }
-                    }
-                } else {
-                    errorMessage += this->m_description + "\n";
-                }
-
-                if (!this->m_hint.empty()) {
-                    errorMessage += fmt::format("hint: {}", this->m_hint);
-                }
-
-                return errorMessage;
+                return formatImpl(sourceCode, line, column, this->m_prefix, this->m_errorCode, this->m_title, this->m_description, this->m_hint);
             }
 
         private:

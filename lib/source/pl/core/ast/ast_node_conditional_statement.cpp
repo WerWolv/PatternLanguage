@@ -1,7 +1,9 @@
 #include <pl/core/ast/ast_node_conditional_statement.hpp>
 
-#include <pl/core/ast/ast_node_literal.hpp>
+#include <pl/core/evaluator.hpp>
+#include <pl/patterns/pattern.hpp>
 
+#include <pl/core/ast/ast_node_literal.hpp>
 
 namespace pl::core::ast {
 

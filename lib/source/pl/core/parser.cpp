@@ -31,6 +31,8 @@
 #include <pl/core/ast/ast_node_variable_decl.hpp>
 #include <pl/core/ast/ast_node_while_statement.hpp>
 
+#include <wolv/utils/string.hpp>
+
 #include <optional>
 
 #define MATCHES(x) (begin() && resetIfFailed(x))

@@ -1,5 +1,8 @@
 #include <pl/core/ast/ast_node_bitfield.hpp>
 
+#include <pl/core/evaluator.hpp>
+#include <pl/patterns/pattern.hpp>
+
 #include <pl/core/ast/ast_node_literal.hpp>
 
 namespace pl::core::ast {
@@ -52,9 +55,9 @@ namespace pl::core::ast {
                 if (auto *literalNode = dynamic_cast<ASTNodeLiteral *>(directionNode.get()); literalNode != nullptr) {
                     auto value = literalNode->getValue().toUnsigned();
                     switch (value) {
-                        case std::to_underlying(BitfieldOrder::MostToLeastSignificant):
+                        case u32(BitfieldOrder::MostToLeastSignificant):
                             return BitfieldOrder::MostToLeastSignificant;
-                        case std::to_underlying(BitfieldOrder::LeastToMostSignificant):
+                        case u32(BitfieldOrder::LeastToMostSignificant):
                             return BitfieldOrder::LeastToMostSignificant;
                         default:
                             err::E0008.throwError(fmt::format("Invalid BitfieldOrder value {}.", value), {}, arguments[0].get());

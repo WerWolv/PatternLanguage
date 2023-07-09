@@ -1,11 +1,8 @@
 #pragma once
 
+#include <functional>
 #include <optional>
 #include <string>
-#include <string_view>
-#include <utility>
-#include <vector>
-#include <memory>
 
 #include <pl/helpers/types.hpp>
 #include <pl/core/errors/evaluator_errors.hpp>

@@ -1,16 +1,16 @@
 #pragma once
 
 #include <pl/core/token.hpp>
-#include <pl/core/evaluator.hpp>
-#include <pl/patterns/pattern.hpp>
 #include <pl/core/errors/evaluator_errors.hpp>
-
-#include <pl/helpers/utils.hpp>
 #include <pl/helpers/concepts.hpp>
 
 #include <wolv/utils/guards.hpp>
 
+#include <optional>
+#include <string>
+
 namespace pl::ptrn { class Pattern; }
+namespace pl::core { class Evaluator; }
 
 namespace pl::core::ast {
 

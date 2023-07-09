@@ -1,5 +1,8 @@
 #include <pl/core/ast/ast_node_attribute.hpp>
 
+#include <pl/core/evaluator.hpp>
+#include <pl/patterns/pattern.hpp>
+
 #include <pl/core/ast/ast_node_literal.hpp>
 
 #include <pl/patterns/pattern_pointer.hpp>

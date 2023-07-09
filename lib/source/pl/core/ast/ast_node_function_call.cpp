@@ -1,5 +1,8 @@
 #include <pl/core/ast/ast_node_function_call.hpp>
 
+#include <pl/core/evaluator.hpp>
+#include <pl/patterns/pattern.hpp>
+
 #include <pl/core/ast/ast_node_parameter_pack.hpp>
 #include <pl/core/ast/ast_node_mathematical_expression.hpp>
 #include <pl/core/ast/ast_node_literal.hpp>

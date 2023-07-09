@@ -22,4 +22,11 @@ namespace pl {
         size_t size;
     };
 
+    enum class ControlFlowStatement {
+        None,
+        Continue,
+        Break,
+        Return
+    };
+
 }

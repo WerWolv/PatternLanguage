@@ -1,16 +1,11 @@
 #pragma once
 
-#include <utility>
+#include <memory>
 #include <string>
 #include <variant>
-
-#include <fmt/format.h>
-
-#include <pl/core/log_console.hpp>
+#include <vector>
 
 #include <pl/helpers/types.hpp>
-#include <pl/helpers/utils.hpp>
-#include <pl/helpers/concepts.hpp>
 
 namespace pl::ptrn {
     class Pattern;

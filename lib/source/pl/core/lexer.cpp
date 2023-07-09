@@ -1,5 +1,7 @@
 #include <pl/core/lexer.hpp>
 
+#include <fmt/format.h>
+
 #include <algorithm>
 #include <charconv>
 #include <functional>

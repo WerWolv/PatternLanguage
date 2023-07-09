@@ -2,6 +2,8 @@
 
 #include <pl/core/ast/ast_node.hpp>
 
+#include <wolv/utils/core.hpp>
+
 namespace pl::core::ast {
 
 #define FLOAT_BIT_OPERATION(name)                                                       \

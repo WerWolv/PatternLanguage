@@ -1,5 +1,8 @@
 #include <pl/core/ast/ast_node_struct.hpp>
 
+#include <pl/core/evaluator.hpp>
+#include <pl/patterns/pattern.hpp>
+
 #include <pl/patterns/pattern_struct.hpp>
 
 namespace pl::core::ast {
