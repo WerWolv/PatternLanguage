@@ -1,5 +1,7 @@
 #include <pl/formatters/formatter.hpp>
 
+#include <wolv/utils/string.hpp>
+
 namespace pl::gen::fmt {
 
     class YamlPatternVisitor : public FormatterPatternVisitor {

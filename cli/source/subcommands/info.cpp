@@ -1,6 +1,8 @@
 #include <pl/pattern_language.hpp>
 #include <pl/core/parser.hpp>
+
 #include <wolv/io/file.hpp>
+#include <wolv/utils/string.hpp>
 
 #include <CLI/CLI.hpp>
 #include <fmt/format.h>

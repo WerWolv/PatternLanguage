@@ -2,6 +2,8 @@
 
 #include <wolv/io/file.hpp>
 
+#include <fmt/format.h>
+
 namespace pl::cli {
 
     void executePattern(
