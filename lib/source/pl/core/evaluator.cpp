@@ -635,12 +635,17 @@ namespace pl::core {
                         pattern = value;
                     }
 
-                    if (heapSection || patternLocalSection) {
-                        storage.resize((value->getOffset() & 0xFFFF'FFFF) + value->getSize());
-                        this->readData(value->getOffset(), storage.data(), value->getSize(), value->getSection());
-                    } else if (storage.size() < pattern->getOffset() + pattern->getSize()) {
-                        storage.resize(pattern->getOffset() + pattern->getSize());
-                        this->readData(value->getOffset(), storage.data() + pattern->getOffset(), value->getSize(), value->getSection());
+                    if (value->getSection() != ptrn::Pattern::InstantiationSectionId) {
+                        if (heapSection || patternLocalSection) {
+                            storage.resize((value->getOffset() & 0xFFFF'FFFF) + value->getSize());
+                            this->readData(value->getOffset(), storage.data(), value->getSize(), value->getSection());
+                        } else if (storage.size() < pattern->getOffset() + pattern->getSize()) {
+                            storage.resize(pattern->getOffset() + pattern->getSize());
+                            this->readData(value->getOffset(), storage.data() + pattern->getOffset(), value->getSize(), value->getSection());
+                        }
+                    } else {
+                        storage.resize(value->getSize());
+                        std::fill(storage.begin(), storage.end(), 0x00);
                     }
 
                     if (this->isDebugModeEnabled())
