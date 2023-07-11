@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pl/core/ast/ast_node.hpp>
+#include <pl/core/ast/ast_node_type_decl.hpp>
 #include <pl/core/ast/ast_node_attribute.hpp>
 
 #include <pl/patterns/pattern_bitfield.hpp>
