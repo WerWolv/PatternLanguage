@@ -94,12 +94,19 @@ namespace pl::core::ast {
 
         auto startOffset = evaluator->getReadOffset();
 
-        evaluator->pushSectionId(ptrn::Pattern::InstantiationSectionId);
-        auto initValues = this->getType()->createPatterns(evaluator);
-        evaluator->popSectionId();
-
         evaluator->createVariable(this->getName(), this->getType().get(), { }, this->m_outVariable, false, false, this->m_constant);
         auto &variable = evaluator->getScope(0).scope->back();
+
+        std::vector<std::shared_ptr<ptrn::Pattern>> initValues;
+        if (this->m_placementOffset == nullptr) {
+            evaluator->pushSectionId(ptrn::Pattern::InstantiationSectionId);
+            initValues = this->getType()->createPatterns(evaluator);
+            evaluator->popSectionId();
+        } else {
+            evaluator->pushSectionId(this->m_placementSection == nullptr ? ptrn::Pattern::MainSectionId : evaluator->getSectionId());
+            initValues = this->getType()->createPatterns(evaluator);
+            evaluator->popSectionId();
+        }
 
         if (!initValues.empty()) {
             auto &initValue = initValues.front();
