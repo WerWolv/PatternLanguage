@@ -19,6 +19,7 @@ if (LIBPL_BUILD_CLI_AS_EXECUTABLE)
     target_compile_definitions(plcli PRIVATE LIBPL_CLI_AS_EXECUTABLE)
 else ()
     add_library(plcli STATIC ${PLCLI_SOURCES})
+    set_property(TARGET plcli PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif ()
 
 find_package(CLI11 CONFIG QUIET)
@@ -27,7 +28,7 @@ if(NOT CLI11_FOUND)
     set(CLI11_LIBRARIES CLI11::CLI11)
 endif()
 
-target_compile_options(plcli PRIVATE -Wall -Wextra -Werror -Wno-unknown-pragmas)
+target_compile_options(plcli PRIVATE -Wall -Wextra -Werror -Wno-unknown-pragmas -Wno-array-bounds)
 target_include_directories(plcli PUBLIC include)
 target_link_libraries(plcli PUBLIC ${CLI11_LIBRARIES} libpl libpl-gen fmt::fmt-header-only)
 
