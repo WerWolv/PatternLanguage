@@ -68,6 +68,6 @@ namespace pl::cli {
             args.push_back(argv[i]);
         }
 
-        return pl::cli::sub::executeCommandLineInterface(args);
+        return pl::cli::executeCommandLineInterface(args);
     }
 #endif
