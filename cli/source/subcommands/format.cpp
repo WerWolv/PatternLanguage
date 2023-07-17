@@ -2,9 +2,10 @@
 #include <pl/formatters.hpp>
 #include <wolv/io/file.hpp>
 
-#include <cli/helpers/utils.hpp>
+#include <pl/cli/helpers/utils.hpp>
 
 #include <CLI/CLI.hpp>
+#include <CLI/App.hpp>
 #include <fmt/format.h>
 
 namespace pl::cli::sub {

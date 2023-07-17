@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 23)
 option(LIBPL_SHARED_LIBRARY "Compile the library as a shared library" OFF)
 option(LIBPL_ENABLE_TESTS "Enable testing" OFF)
 option(LIBPL_ENABLE_CLI "Enable building the CLI tool" ON)
+option(LIBPL_BUILD_CLI_AS_EXECUTABLE "Build the CLI tool as an executable" ON)
 option(LIBPL_ENABLE_EXAMPLE "Enable building the examples" OFF)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

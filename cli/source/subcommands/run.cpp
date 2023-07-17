@@ -3,6 +3,7 @@
 #include <wolv/io/file.hpp>
 
 #include <CLI/CLI.hpp>
+#include <CLI/App.hpp>
 #include <fmt/format.h>
 
 namespace pl::cli::sub {

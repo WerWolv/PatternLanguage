@@ -3,7 +3,7 @@ project(plcli)
 
 set(CMAKE_CXX_STANDARD 23)
 
-add_executable(plcli
+set(PLCLI_SOURCES
         source/main.cpp
 
         source/helpers/utils.cpp
@@ -14,14 +14,22 @@ add_executable(plcli
         source/subcommands/info.cpp
 )
 
+if (LIBPL_BUILD_CLI_AS_EXECUTABLE)
+    add_executable(plcli ${PLCLI_SOURCES})
+    target_compile_definitions(plcli PRIVATE LIBPL_CLI_AS_EXECUTABLE)
+else ()
+    add_library(plcli STATIC ${PLCLI_SOURCES})
+endif ()
+
 find_package(CLI11 CONFIG QUIET)
 if(NOT CLI11_FOUND)
-    add_subdirectory(../external/cli11 ../external/cli11)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../external/cli11 ${CMAKE_CURRENT_BINARY_DIR}/../external/cli11)
+    set(CLI11_LIBRARIES CLI11::CLI11)
 endif()
 
 target_compile_options(plcli PRIVATE -Wall -Wextra -Werror -Wno-unknown-pragmas)
 target_include_directories(plcli PUBLIC include)
-target_link_libraries(plcli PUBLIC libpl libpl-gen CLI11::CLI11 fmt::fmt-header-only)
+target_link_libraries(plcli PUBLIC ${CLI11_LIBRARIES} libpl libpl-gen fmt::fmt-header-only)
 
 if (WIN32)
     set(CMAKE_INSTALL_BINDIR ".")

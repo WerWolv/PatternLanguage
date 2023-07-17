@@ -5,6 +5,7 @@
 #include <wolv/utils/string.hpp>
 
 #include <CLI/CLI.hpp>
+#include <CLI/App.hpp>
 #include <fmt/format.h>
 
 #include <pl/core/ast/ast_node_array_variable_decl.hpp>
