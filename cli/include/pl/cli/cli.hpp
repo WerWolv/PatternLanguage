@@ -5,6 +5,6 @@
 
 namespace pl::cli {
 
-    int executeCommandLineInterface(const std::vector<std::string> &args);
+    int executeCommandLineInterface(std::vector<std::string> args);
 
 }

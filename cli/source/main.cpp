@@ -19,7 +19,7 @@ namespace pl::cli {
 
     }
 
-    int executeCommandLineInterface(const std::vector<std::string> &args) {
+    int executeCommandLineInterface(std::vector<std::string> args) {
         CLI::App app("Pattern Language CLI");
         app.require_subcommand();
 
@@ -51,9 +51,10 @@ namespace pl::cli {
 
         // Parse command line input
         try {
-            app.parse(auto(args));
+            std::reverse(args.begin(), args.end());
+            app.parse(args);
         } catch(const CLI::ParseError &e) {
-            return app.exit(e);
+            return app.exit(e, std::cout, std::cout);
         }
 
         return EXIT_SUCCESS;
