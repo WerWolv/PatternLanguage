@@ -105,12 +105,14 @@ namespace pl::core {
                         err::M0001.throwError("Unterminated multiline comment. Expected closing */ sequence.", {}, commentStartLine);
                 }
 
-                if (offset > 0 && code[offset - 1] != '\\' && code[offset] == '\"')
-                    isInString = !isInString;
-                else if (isInString) {
-                    output += code[offset];
-                    offset += 1;
-                    continue;
+                if (ifDefs.empty() || ifDefs.back()) {
+                    if (offset > 0 && code[offset - 1] != '\\' && code[offset] == '\"')
+                        isInString = !isInString;
+                    else if (isInString) {
+                        output += code[offset];
+                        offset += 1;
+                        continue;
+                    }
                 }
 
                 if (code[offset] == '#' && startOfLine) {
