@@ -282,6 +282,7 @@ namespace pl::core {
                                       case Dollar: return "$";
                                       case AddressOf: return "addressof";
                                       case SizeOf: return "sizeof";
+                                      case TypeNameOf: return "typenameof";
                                       case ScopeResolution: return "::";
                                   }
 

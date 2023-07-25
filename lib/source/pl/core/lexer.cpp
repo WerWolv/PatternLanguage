@@ -453,6 +453,9 @@ namespace pl::core {
                 } else if (code.substr(offset, 6) == "sizeof" && !isIdentifierCharacter(code[offset + 6])) {
                     addToken(tkn::Operator::SizeOf);
                     offset += 6;
+                } else if (code.substr(offset, 10) == "typenameof" && !isIdentifierCharacter(code[offset + 10])) {
+                    addToken(tkn::Operator::TypeNameOf);
+                    offset += 10;
                 } else if (c == '\'') {
                     auto lexedCharacter = getCharacterLiteral(code.substr(offset));
 

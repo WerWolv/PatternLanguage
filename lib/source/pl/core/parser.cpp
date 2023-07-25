@@ -188,14 +188,14 @@ namespace pl::core {
             }
         } else if (MATCHES(oneOf(tkn::Keyword::Parent, tkn::Keyword::This, tkn::Operator::Dollar, tkn::Keyword::Null))) {
             return this->parseRValue();
-        } else if (MATCHES(oneOf(tkn::Operator::AddressOf, tkn::Operator::SizeOf) && sequence(tkn::Separator::LeftParenthesis))) {
+        } else if (MATCHES(oneOf(tkn::Operator::AddressOf, tkn::Operator::SizeOf, tkn::Operator::TypeNameOf) && sequence(tkn::Separator::LeftParenthesis))) {
             auto op = getValue<Token::Operator>(-2);
 
             std::unique_ptr<ast::ASTNode> result;
 
             if (MATCHES(oneOf(tkn::Literal::Identifier))) {
                 auto startToken = this->m_curr;
-                if (op == Token::Operator::SizeOf) {
+                if (op == Token::Operator::SizeOf || op == Token::Operator::TypeNameOf) {
                     auto type = getCustomType(parseNamespaceResolution());
                     if (type != nullptr) {
                         parseCustomTypeParameters(type);
@@ -209,7 +209,7 @@ namespace pl::core {
                 }
             } else if (MATCHES(oneOf(tkn::Keyword::Parent, tkn::Keyword::This))) {
                 result = create<ast::ASTNodeTypeOperator>(op, this->parseRValue());
-            } else if (op == Token::Operator::SizeOf && MATCHES(sequence(tkn::ValueType::Any))) {
+            } else if ((op == Token::Operator::SizeOf || op == Token::Operator::TypeNameOf) && MATCHES(sequence(tkn::ValueType::Any))) {
                 auto type = getValue<Token::ValueType>(-1);
 
                 result = create<ast::ASTNodeLiteral>(u128(Token::getTypeSize(type)));
@@ -220,6 +220,8 @@ namespace pl::core {
                     err::P0005.throwError("Expected rvalue, type or '$' operator.", {}, 1);
                 else if (op == Token::Operator::AddressOf)
                     err::P0005.throwError("Expected rvalue or '$' operator.", {}, 1);
+                else if (op == Token::Operator::TypeNameOf)
+                    err::P0005.throwError("Expected rvalue or type.", {}, 1);
             }
 
             if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))

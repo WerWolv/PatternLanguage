@@ -4,6 +4,7 @@
 #include <pl/patterns/pattern.hpp>
 
 #include <pl/core/ast/ast_node_literal.hpp>
+#include <pl/core/ast/ast_node_type_decl.hpp>
 
 namespace pl::core::ast {
 
@@ -21,14 +22,14 @@ namespace pl::core::ast {
     [[nodiscard]] std::unique_ptr<ASTNode> ASTNodeTypeOperator::evaluate(Evaluator *evaluator) const {
         evaluator->updateRuntime(this);
 
-        u128 result;
+        Token::Literal result;
         if (this->m_providerOperation) {
             switch (this->getOperator()) {
                 case Token::Operator::AddressOf:
-                    result = evaluator->getDataBaseAddress();
+                    result = u128(evaluator->getDataBaseAddress());
                     break;
                 case Token::Operator::SizeOf:
-                    result = evaluator->getDataSize();
+                    result = u128(evaluator->getDataSize());
                     break;
                 default:
                     err::E0001.throwError("Invalid type operation.", {}, this);
@@ -49,11 +50,29 @@ namespace pl::core::ast {
 
             switch (this->getOperator()) {
                 case Token::Operator::AddressOf:
-                    result = pattern->getOffset();
+                    result = u128(pattern->getOffset());
                     break;
                 case Token::Operator::SizeOf:
-                    result = pattern->getSize();
+                    result = u128(pattern->getSize());
                     break;
+                case Token::Operator::TypeNameOf: {
+                    if (auto typeDecl = dynamic_cast<ASTNodeTypeDecl*>(this->m_expression.get()); typeDecl != nullptr) {
+                        ASTNodeTypeDecl *node;
+                        while (true) {
+                            node = dynamic_cast<ASTNodeTypeDecl*>(typeDecl->getType().get());
+                            if (node != nullptr)
+                                typeDecl = node;
+                            else
+                                break;
+                        }
+
+                        result = typeDecl->getName();
+                    } else {
+                        result = pattern->getTypeName();
+                    }
+
+                    break;
+                }
                 default:
                     err::E0001.throwError("Invalid type operation.", {}, this);
             }

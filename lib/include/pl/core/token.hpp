@@ -91,6 +91,7 @@ namespace pl::core {
             Dollar,
             AddressOf,
             SizeOf,
+            TypeNameOf,
             ScopeResolution
         };
 
@@ -301,6 +302,7 @@ namespace pl::core {
             const auto TernaryConditional       = createToken(core::Token::Type::Operator, Token::Operator::TernaryConditional);
             const auto AddressOf                = createToken(core::Token::Type::Operator, Token::Operator::AddressOf);
             const auto SizeOf                   = createToken(core::Token::Type::Operator, Token::Operator::SizeOf);
+            const auto TypeNameOf               = createToken(core::Token::Type::Operator, Token::Operator::TypeNameOf);
             const auto At                       = createToken(core::Token::Type::Operator, Token::Operator::At);
             const auto Assign                   = createToken(core::Token::Type::Operator, Token::Operator::Assign);
 
