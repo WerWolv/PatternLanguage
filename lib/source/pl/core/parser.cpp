@@ -209,10 +209,14 @@ namespace pl::core {
                 }
             } else if (MATCHES(oneOf(tkn::Keyword::Parent, tkn::Keyword::This))) {
                 result = create<ast::ASTNodeTypeOperator>(op, this->parseRValue());
-            } else if ((op == Token::Operator::SizeOf || op == Token::Operator::TypeNameOf) && MATCHES(sequence(tkn::ValueType::Any))) {
+            } else if (op == Token::Operator::SizeOf && MATCHES(sequence(tkn::ValueType::Any))) {
                 auto type = getValue<Token::ValueType>(-1);
 
                 result = create<ast::ASTNodeLiteral>(u128(Token::getTypeSize(type)));
+            } else if (op == Token::Operator::TypeNameOf && MATCHES(sequence(tkn::ValueType::Any))) {
+                auto type = getValue<Token::ValueType>(-1);
+
+                result = create<ast::ASTNodeLiteral>(Token::getTypeName(type));
             } else if (MATCHES(sequence(tkn::Operator::Dollar))) {
                 result = create<ast::ASTNodeTypeOperator>(op);
             } else {
