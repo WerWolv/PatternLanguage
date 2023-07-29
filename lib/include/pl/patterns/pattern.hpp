@@ -219,10 +219,7 @@ namespace pl::ptrn {
                 auto startOffset = this->m_evaluator->getReadOffset();
                 this->m_evaluator->setReadOffset(this->getOffset());
 
-                auto savedScope = this->m_evaluator->getScope(0);
-
                 ON_SCOPE_EXIT {
-                    this->m_evaluator->getScope(0) = savedScope;
                     this->m_evaluator->setReadOffset(startOffset);
                 };
 
@@ -395,6 +392,7 @@ namespace pl::ptrn {
                     const auto function = this->m_evaluator->findFunction(formatterFunctionName);
                     if (function.has_value()) {
                         auto formatterResult = function->func(this->m_evaluator, { value });
+                        this->m_evaluator->getHeap().clear();
 
                         if (formatterResult.has_value()) {
                             result = this->getBytesOf(*formatterResult);
@@ -493,9 +491,13 @@ namespace pl::ptrn {
 
         [[nodiscard]] core::Token::Literal transformValue(const core::Token::Literal &value) const {
             auto evaluator = this->getEvaluator();
-            if (auto transformFunc = evaluator->findFunction(this->getTransformFunction()); transformFunc.has_value())
+
+            if (auto transformFunc = evaluator->findFunction(this->getTransformFunction()); transformFunc.has_value()) {
+                ON_SCOPE_EXIT { this->m_evaluator->getHeap().clear(); };
+
                 if (auto result = transformFunc->func(evaluator, { value }); result.has_value())
                     return *result;
+            }
 
             return value;
         }
@@ -503,6 +505,9 @@ namespace pl::ptrn {
         [[nodiscard]] virtual std::string formatDisplayValue() = 0;
 
         [[nodiscard]] std::string formatDisplayValue(const std::string &value, const core::Token::Literal &literal) const {
+            if (this->m_cachedDisplayValue != nullptr)
+                return *this->m_cachedDisplayValue;
+
             const auto &formatterFunctionName = this->getReadFormatterFunction();
             if (formatterFunctionName.empty())
                 return value;
@@ -511,9 +516,13 @@ namespace pl::ptrn {
                     const auto function = this->m_evaluator->findFunction(formatterFunctionName);
                     if (function.has_value()) {
                         auto result = function->func(this->m_evaluator, { literal });
+                        this->m_evaluator->getHeap().clear();
 
                         if (result.has_value()) {
-                            return result->toString(true);
+                            auto string = result->toString(true);
+                            this->m_cachedDisplayValue = std::make_unique<std::string>(string);
+
+                            return string;
                         } else {
                             return "";
                         }
