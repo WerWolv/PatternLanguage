@@ -8,6 +8,8 @@
 #include <pl/patterns/pattern_pointer.hpp>
 #include <pl/patterns/pattern_array_dynamic.hpp>
 
+#include <bit>
+
 namespace pl::core::ast {
 
     ASTNodeAttribute::ASTNodeAttribute(std::string attribute, std::vector<std::unique_ptr<ASTNode>> &&value)

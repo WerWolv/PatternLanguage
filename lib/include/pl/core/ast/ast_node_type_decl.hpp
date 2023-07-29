@@ -6,6 +6,8 @@
 
 #include <wolv/utils/guards.hpp>
 
+#include <bit>
+
 namespace pl::core::ast {
 
     class ASTNodeTypeDecl : public ASTNode,

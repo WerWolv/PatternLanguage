@@ -3,6 +3,8 @@
 #include <pl/core/evaluator.hpp>
 #include <pl/patterns/pattern.hpp>
 
+#include <bit>
+
 namespace pl::core::ast {
 
     namespace {

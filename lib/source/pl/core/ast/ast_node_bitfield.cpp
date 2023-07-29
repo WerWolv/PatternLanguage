@@ -5,6 +5,8 @@
 
 #include <pl/core/ast/ast_node_literal.hpp>
 
+#include <bit>
+
 namespace pl::core::ast {
 
     ASTNodeBitfield::ASTNodeBitfield(const ASTNodeBitfield &other) : ASTNode(other), Attributable(other) {
