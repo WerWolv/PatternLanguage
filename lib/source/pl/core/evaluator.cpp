@@ -661,6 +661,7 @@ namespace pl::core {
 
         auto variable = this->getVariableByName(variableName);
 
+        variable->setLocal(false);
         variable->setOffset(address);
         variable->setSection(section);
     }

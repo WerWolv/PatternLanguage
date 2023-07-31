@@ -142,10 +142,12 @@ namespace pl::core::ast {
                 if (sectionLiteral == nullptr)
                     err::E0002.throwError("Cannot use void expression as section identifier.", {}, this);
 
-                section = sectionLiteral->getValue().toUnsigned();
+                auto value = sectionLiteral->getValue();
+                section = value.toUnsigned();
             }
 
-            evaluator->setVariableAddress(this->getName(), offsetLiteral->getValue().toUnsigned(), section);
+            auto value = offsetLiteral->getValue();
+            evaluator->setVariableAddress(this->getName(), value.toUnsigned(), section);
         }
 
         return std::nullopt;

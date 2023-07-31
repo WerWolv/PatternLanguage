@@ -294,7 +294,7 @@ namespace pl::ptrn {
                 this->setEndian(std::endian::native);
                 this->setSection(HeapSectionId);
             } else {
-                this->setSection(MainSectionId);
+                this->m_section = MainSectionId;
             }
         }
 
@@ -318,7 +318,7 @@ namespace pl::ptrn {
             if (this->m_section == id)
                 return;
 
-            if (this->m_section != id && this->m_section != PatternLocalSectionId && this->m_section != HeapSectionId) {
+            if (this->m_section != PatternLocalSectionId && this->m_section != HeapSectionId) {
                 if (this->m_evaluator != nullptr)
                     this->m_evaluator->patternDestroyed(this);
                 this->m_section = id;
