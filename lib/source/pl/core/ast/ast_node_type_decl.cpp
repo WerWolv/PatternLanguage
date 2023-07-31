@@ -17,10 +17,13 @@ namespace pl::core::ast {
         this->m_name                = other.m_name;
 
         if (other.m_type != nullptr) {
-            if (auto typeDecl = dynamic_cast<ASTNodeTypeDecl*>(other.m_type.get()); (typeDecl != nullptr && typeDecl->isForwardDeclared() && !typeDecl->isTemplateType()) || other.m_completed)
+            if (auto typeDecl = dynamic_cast<ASTNodeTypeDecl*>(other.m_type.get()); (typeDecl != nullptr && typeDecl->isForwardDeclared() && !typeDecl->isTemplateType()) || other.m_completed || other.m_alreadyCopied)
                 this->m_type = other.m_type;
-            else
+            else {
+                other.m_alreadyCopied = true;
                 this->m_type = other.m_type->clone();
+                other.m_alreadyCopied = false;
+            }
         }
 
         this->m_endian              = other.m_endian;

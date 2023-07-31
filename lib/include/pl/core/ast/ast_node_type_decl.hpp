@@ -82,6 +82,7 @@ namespace pl::core::ast {
         bool m_valid = true;
         bool m_templateType = false;
         bool m_completed = false;
+        mutable bool m_alreadyCopied = false;
 
         std::string m_name;
         std::shared_ptr<ASTNode> m_type;
