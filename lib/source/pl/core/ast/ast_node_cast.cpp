@@ -20,6 +20,13 @@ namespace pl::core::ast {
                 return hlp::changeEndianess(value, size, std::endian::little);
         }
 
+        template<typename To1, typename To2>
+        To1 doIntegerCast(Evaluator *evaluator, auto value, const std::shared_ptr<ptrn::Pattern> &typePattern) {
+            To2 result = changeEndianess(evaluator, To2(value), typePattern->getSize(), typePattern->getEndian());
+
+            return result;
+        }
+
     }
 
     std::unique_ptr<ASTNode> ASTNodeCast::castValue(const Token::Literal &literal, Token::ValueType type, const std::shared_ptr<ptrn::Pattern> &typePattern, Evaluator *evaluator) const {
@@ -43,38 +50,37 @@ namespace pl::core::ast {
                     err::E0004.throwError(fmt::format("Cannot cast value of type 'str' to type '{}'.", Token::getTypeName(type)), {}, this);
             },
             [&, this](auto &&value) -> ASTNode * {
-                auto endianAdjustedValue = changeEndianess(evaluator, value, typePattern->getSize(), typePattern->getEndian());
                 switch (type) {
                     case Token::ValueType::Unsigned8Bit:
-                        return new ASTNodeLiteral(u128(u8(endianAdjustedValue)));
+                        return new ASTNodeLiteral(doIntegerCast<u128, u8>(evaluator, value, typePattern));
                     case Token::ValueType::Unsigned16Bit:
-                        return new ASTNodeLiteral(u128(u16(endianAdjustedValue)));
+                        return new ASTNodeLiteral(doIntegerCast<u128, u16>(evaluator, value, typePattern));
                     case Token::ValueType::Unsigned32Bit:
-                        return new ASTNodeLiteral(u128(u32(endianAdjustedValue)));
+                        return new ASTNodeLiteral(doIntegerCast<u128, u32>(evaluator, value, typePattern));
                     case Token::ValueType::Unsigned64Bit:
-                        return new ASTNodeLiteral(u128(u64(endianAdjustedValue)));
+                        return new ASTNodeLiteral(doIntegerCast<u128, u64>(evaluator, value, typePattern));
                     case Token::ValueType::Unsigned128Bit:
-                        return new ASTNodeLiteral(u128(endianAdjustedValue));
+                        return new ASTNodeLiteral(doIntegerCast<u128, u128>(evaluator, value, typePattern));
                     case Token::ValueType::Signed8Bit:
-                        return new ASTNodeLiteral(i128(i8(endianAdjustedValue)));
+                        return new ASTNodeLiteral(doIntegerCast<i128, i8>(evaluator, value, typePattern));
                     case Token::ValueType::Signed16Bit:
-                        return new ASTNodeLiteral(i128(i16(endianAdjustedValue)));
+                        return new ASTNodeLiteral(doIntegerCast<i128, i16>(evaluator, value, typePattern));
                     case Token::ValueType::Signed32Bit:
-                        return new ASTNodeLiteral(i128(i32(endianAdjustedValue)));
+                        return new ASTNodeLiteral(doIntegerCast<i128, i32>(evaluator, value, typePattern));
                     case Token::ValueType::Signed64Bit:
-                        return new ASTNodeLiteral(i128(i64(endianAdjustedValue)));
+                        return new ASTNodeLiteral(doIntegerCast<i128, i64>(evaluator, value, typePattern));
                     case Token::ValueType::Signed128Bit:
-                        return new ASTNodeLiteral(i128(endianAdjustedValue));
+                        return new ASTNodeLiteral(doIntegerCast<i128, i128>(evaluator, value, typePattern));
                     case Token::ValueType::Float:
-                        return new ASTNodeLiteral(double(float(endianAdjustedValue)));
+                        return new ASTNodeLiteral(doIntegerCast<double, float>(evaluator, value, typePattern));
                     case Token::ValueType::Double:
-                        return new ASTNodeLiteral(double(endianAdjustedValue));
+                        return new ASTNodeLiteral(doIntegerCast<double, double>(evaluator, value, typePattern));
                     case Token::ValueType::Character:
-                        return new ASTNodeLiteral(char(endianAdjustedValue));
+                        return new ASTNodeLiteral(doIntegerCast<char, char>(evaluator, value, typePattern));
                     case Token::ValueType::Character16:
-                        return new ASTNodeLiteral(u128(char16_t(endianAdjustedValue)));
+                        return new ASTNodeLiteral(doIntegerCast<u128, char16_t>(evaluator, value, typePattern));
                     case Token::ValueType::Boolean:
-                        return new ASTNodeLiteral(bool(endianAdjustedValue));
+                        return new ASTNodeLiteral(doIntegerCast<bool, bool>(evaluator, value, typePattern));
                     case Token::ValueType::String:
                     {
                         std::string string(sizeof(value), '\x00');
