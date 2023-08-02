@@ -614,11 +614,18 @@ namespace pl::core {
                 [&](const double &value) {
                     changePatternType(pattern, std::make_shared<ptrn::PatternFloat>(this, 0, 8));
 
-                    auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
-
                     if (pattern->getSize() == sizeof(float)) {
-                        copyToStorage(float(adjustedValue));
+                        auto floatValue = float(value);
+                        u32 integerValue = 0x00;
+                        std::memcpy(&integerValue, &floatValue, sizeof(float));
+                        auto adjustedValue = hlp::changeEndianess(integerValue, pattern->getSize(), pattern->getEndian());
+
+                        copyToStorage(adjustedValue);
                     } else {
+                        u64 integerValue = 0x00;
+                        std::memcpy(&integerValue, &value, sizeof(double));
+                        auto adjustedValue = hlp::changeEndianess(integerValue, pattern->getSize(), pattern->getEndian());
+
                         copyToStorage(adjustedValue);
                     }
                 },
