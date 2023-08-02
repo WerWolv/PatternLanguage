@@ -1487,14 +1487,14 @@ namespace pl::core {
             bool invalidType = false;
             if (auto builtinType = dynamic_cast<ast::ASTNodeBuiltinType*>(type->getType().get()); builtinType != nullptr) {
                 auto valueType = builtinType->getType();
-                if (!Token::isInteger(valueType) && !Token::isFloatingPoint(valueType) && valueType != Token::ValueType::Boolean && valueType != Token::ValueType::Character)
+                if (!Token::isInteger(valueType) && !Token::isFloatingPoint(valueType) && valueType != Token::ValueType::Boolean && valueType != Token::ValueType::Character && valueType != Token::ValueType::String)
                     invalidType = true;
             } else {
                 invalidType = true;
             }
 
             if (invalidType)
-                err::P0010.throwError("Invalid in/out parameter type.", "Allowed types are: 'char', 'bool', floating point types or integral types.", 1);
+                err::P0010.throwError("Invalid in/out parameter type.", "Allowed types are: 'char', 'bool', 'str', floating point types or integral types.", 1);
         }
 
         return create<ast::ASTNodeVariableDecl>(name, type, std::move(placementOffset), std::move(placementSection), inVariable, outVariable);
