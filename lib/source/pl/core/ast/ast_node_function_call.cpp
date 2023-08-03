@@ -119,6 +119,10 @@ namespace pl::core::ast {
             }, param);
         }
 
+        auto controlFlow = evaluator->getCurrentControlFlowStatement();
+        ON_SCOPE_EXIT {
+            evaluator->setCurrentControlFlowStatement(controlFlow);
+        };
         auto result = function->func(evaluator, evaluatedParams);
 
         if (result.has_value())
