@@ -54,7 +54,7 @@ namespace pl::core::ast {
 
         if (!function.has_value()) {
             if (functionName.starts_with("std::")) {
-                evaluator->getConsole().log(LogConsole::Level::Warning, "This function might be part of the standard library.\nYou can install the standard library though\nthe Content Store found under Help -> Content Store and then\ninclude the correct file.");
+                evaluator->getConsole().log(LogConsole::Level::Warning, "This function might be part of the standard library.\nYou can install the standard library though\nthe Content Store found under Extras -> Content Store and then\ninclude the correct file.");
             }
 
             err::E0003.throwError(fmt::format("Cannot call unknown function '{}'.", functionName), fmt::format("Try defining it first using 'fn {}() {{ }}'", functionName), this);
