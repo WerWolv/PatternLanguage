@@ -391,9 +391,10 @@ namespace pl::ptrn {
                 try {
                     const auto function = this->m_evaluator->findFunction(formatterFunctionName);
                     if (function.has_value()) {
-                        auto formatterResult = function->func(this->m_evaluator, { value });
-                        this->m_evaluator->getHeap().clear();
+                        auto startHeap = this->m_evaluator->getHeap();
+                        ON_SCOPE_EXIT { this->m_evaluator->getHeap() = startHeap; };
 
+                        auto formatterResult = function->func(this->m_evaluator, { value });
                         if (formatterResult.has_value()) {
                             result = this->getBytesOf(*formatterResult);
                         }
@@ -493,7 +494,8 @@ namespace pl::ptrn {
             auto evaluator = this->getEvaluator();
 
             if (auto transformFunc = evaluator->findFunction(this->getTransformFunction()); transformFunc.has_value()) {
-                ON_SCOPE_EXIT { this->m_evaluator->getHeap().clear(); };
+                auto startHeap = this->m_evaluator->getHeap();
+                ON_SCOPE_EXIT { this->m_evaluator->getHeap() = startHeap; };
 
                 if (auto result = transformFunc->func(evaluator, { value }); result.has_value())
                     return *result;
@@ -515,9 +517,10 @@ namespace pl::ptrn {
                 try {
                     const auto function = this->m_evaluator->findFunction(formatterFunctionName);
                     if (function.has_value()) {
-                        auto result = function->func(this->m_evaluator, { literal });
-                        this->m_evaluator->getHeap().clear();
+                        auto startHeap = this->m_evaluator->getHeap();
+                        ON_SCOPE_EXIT { this->m_evaluator->getHeap() = startHeap; };
 
+                        auto result = function->func(this->m_evaluator, { literal });
                         if (result.has_value()) {
                             auto string = result->toString(true);
                             this->m_cachedDisplayValue = std::make_unique<std::string>(string);

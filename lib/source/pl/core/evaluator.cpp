@@ -881,10 +881,6 @@ namespace pl::core {
             this->setCurrentControlFlowStatement(ControlFlowStatement::None);
             this->pushScope(nullptr, this->m_patterns);
             this->pushTemplateParameters();
-            ON_SCOPE_EXIT {
-                this->popScope();
-                this->getHeap().clear();
-            };
 
             for (auto &topLevelNode : ast) {
                 std::vector<ast::ASTNode*> nodes;
