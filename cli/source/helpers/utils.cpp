@@ -24,7 +24,8 @@ namespace pl::cli {
         for (const auto &define : defines)
             runtime.addDefine(define);
 
-        runtime.setDataSource(baseAddress, inputFile.getSize(), [&](u64 address, void *buffer, size_t size) {
+        // Include baseAddress as a copy to prevent it from going out of scope in the lambda
+        runtime.setDataSource(baseAddress, inputFile.getSize(), [&inputFile, baseAddress](u64 address, void *buffer, size_t size) {
             inputFile.seek(address - baseAddress);
             inputFile.readBuffer(static_cast<u8*>(buffer), size);
         });
