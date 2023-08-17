@@ -65,7 +65,7 @@ namespace pl::cli {
 #if defined (LIBPL_CLI_AS_EXECUTABLE)
     int main(int argc, char** argv) {
         std::vector<std::string> args;
-        for (int i = 0; i < argc; i++) {
+        for (int i = 1; i < argc; i++) {
             args.push_back(argv[i]);
         }
 
