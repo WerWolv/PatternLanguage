@@ -85,6 +85,10 @@ namespace pl::core::ast {
 
                 if (auto typeNode = dynamic_cast<ASTNodeTypeDecl *>(type.get()); typeNode != nullptr) {
                     bool reference = typeNode->isReference();
+
+                    if (params[paramIndex].isString())
+                        reference = false;
+
                     auto variable = ctx->createVariable(name, typeNode, params[paramIndex], false, reference);
 
                     if (reference && params[paramIndex].isPattern()) {
