@@ -119,6 +119,7 @@ namespace pl::core::ast {
                 initValue->setOffset(u64(heap.size() - 1) << 32);
             } else if (variable->getSection() == ptrn::Pattern::PatternLocalSectionId) {
                 evaluator->changePatternSection(initValue.get(), ptrn::Pattern::PatternLocalSectionId);
+                initValue->setOffset(0);
             }
 
             initValue->setTypeName(variable->getTypeName());
