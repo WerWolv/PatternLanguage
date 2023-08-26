@@ -579,7 +579,7 @@ namespace pl::core {
 
                 if (storage.size() < offset + pattern->getSize())
                     storage.resize(offset + pattern->getSize());
-                std::memcpy(storage.data() + offset, &value, pattern->getSize());
+                std::memmove(storage.data() + offset, &value, pattern->getSize());
 
                 if (this->isDebugModeEnabled())
                     this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
@@ -744,9 +744,9 @@ namespace pl::core {
                 }
 
                 if (!write)
-                    std::memcpy(buffer, storage.data() + storageAddress, size);
+                    std::memmove(buffer, storage.data() + storageAddress, size);
                 else
-                    std::memcpy(storage.data() + storageAddress, buffer, size);
+                    std::memmove(storage.data() + storageAddress, buffer, size);
             }
             else
                 err::E0011.throwError(fmt::format("Tried accessing out of bounds heap cell {}. This is a bug.", heapAddress));
@@ -763,9 +763,9 @@ namespace pl::core {
                 }
 
                 if (!write)
-                    std::memcpy(buffer, storage.data() + storageAddress, size);
+                    std::memmove(buffer, storage.data() + storageAddress, size);
                 else
-                    std::memcpy(storage.data() + storageAddress, buffer, size);
+                    std::memmove(storage.data() + storageAddress, buffer, size);
             }
             else
                 err::E0011.throwError(fmt::format("Tried accessing out of bounds pattern local storage cell {}. This is a bug.", heapAddress));
@@ -777,12 +777,12 @@ namespace pl::core {
 
                 if (!write) {
                     if ((address + size) <= section.data.size())
-                        std::memcpy(buffer, section.data.data() + address, size);
+                        std::memmove(buffer, section.data.data() + address, size);
                     else
                         std::memset(buffer, 0x00, size);
                 } else {
                     if ((address + size) <= section.data.size())
-                        std::memcpy(section.data.data() + address, buffer, size);
+                        std::memmove(section.data.data() + address, buffer, size);
                 }
             } else
                 err::E0012.throwError(fmt::format("Tried accessing a non-existing section with id {}.", sectionId));
