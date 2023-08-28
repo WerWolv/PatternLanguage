@@ -180,6 +180,7 @@ namespace pl::core {
                             }
 
                             Preprocessor preprocessor(*this);
+                            preprocessor.m_pragmas.clear();
 
                             auto preprocessedInclude = preprocessor.preprocess(runtime, file.readString(), false);
 
