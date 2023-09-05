@@ -108,7 +108,7 @@ namespace pl::core::ast {
 
                     this->m_currTemplateParameterType->setSourceLocation(lvalue->getLine(), lvalue->getColumn());
 
-                    auto variable = evaluator->createVariable(lvalue->getLValueName(), this->m_currTemplateParameterType.get(), value, false, false, true, true);
+                    auto variable = evaluator->createVariable(lvalue->getLValueName(), this->m_currTemplateParameterType.get(), value, false, value.isPattern(), true, true);
                     if (variable != nullptr) {
                         variable->setInitialized(false);
                         evaluator->setVariable(variable, value);

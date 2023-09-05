@@ -393,8 +393,12 @@ namespace pl::ptrn {
 
         void setOffset(u64 offset) override {
             for (auto &entry : this->m_entries) {
-                if (entry->getSection() == this->getSection() && entry->getSection() != ptrn::Pattern::PatternLocalSectionId)
-                    entry->setOffset(entry->getOffset() - this->getOffset() + offset);
+                if (entry->getSection() == this->getSection()) {
+                    if (entry->getSection() != ptrn::Pattern::PatternLocalSectionId)
+                        entry->setOffset(entry->getOffset() - this->getOffset() + offset);
+                    else
+                        entry->setOffset(offset);
+                }
             }
 
             PatternBitfieldMember::setOffset(offset);
@@ -766,8 +770,12 @@ namespace pl::ptrn {
 
         void setOffset(u64 offset) override {
             for (auto &field : this->m_fields) {
-                if (field->getSection() == this->getSection() && field->getSection() != ptrn::Pattern::PatternLocalSectionId)
-                    field->setOffset(field->getOffset() - this->getOffset() + offset);
+                if (field->getSection() == this->getSection()) {
+                    if (field->getSection() != ptrn::Pattern::PatternLocalSectionId)
+                        field->setOffset(field->getOffset() - this->getOffset() + offset);
+                    else
+                        field->setOffset(offset);
+                }
             }
 
             PatternBitfieldMember::setOffset(offset);

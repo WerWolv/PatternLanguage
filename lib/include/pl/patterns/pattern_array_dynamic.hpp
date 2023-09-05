@@ -46,8 +46,12 @@ namespace pl::ptrn {
 
         void setOffset(u64 offset) override {
             for (auto &entry : this->m_entries) {
-                if (entry->getSection() == this->getSection() && entry->getSection() != ptrn::Pattern::PatternLocalSectionId)
-                    entry->setOffset(entry->getOffset() - this->getOffset() + offset);
+                if (entry->getSection() == this->getSection()) {
+                    if (entry->getSection() != ptrn::Pattern::PatternLocalSectionId)
+                        entry->setOffset(entry->getOffset() - this->getOffset() + offset);
+                    else
+                        entry->setOffset(offset);
+                }
             }
 
             Pattern::setOffset(offset);
