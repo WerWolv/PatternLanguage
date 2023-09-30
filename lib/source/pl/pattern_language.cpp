@@ -54,13 +54,15 @@ namespace pl {
             return std::nullopt;
         }
 
-        auto tokens = this->m_internals.lexer->lex(code, preprocessedCode.value());
-        if (!tokens.has_value()) {
-            this->m_currError = this->m_internals.lexer->getError();
+        auto result = this->m_internals.lexer->lex(preprocessedCode.value());
+
+        if (result.has_errs()) {
+            //this->m_currError = this->m_internals.lexer->getError();
+            // TODO: multiple errors
             return std::nullopt;
         }
 
-        auto ast = this->m_internals.parser->parse(code, tokens.value());
+        auto ast = this->m_internals.parser->parse(code, result.unwrap());
         if (!ast.has_value()) {
             this->m_currError = this->m_internals.parser->getError();
             return std::nullopt;

@@ -1,4 +1,5 @@
 #include <pl/core/parser.hpp>
+#include <pl/core/tokens.hpp>
 
 #include <pl/core/ast/ast_node_array_variable_decl.hpp>
 #include <pl/core/ast/ast_node_attribute.hpp>
@@ -351,9 +352,9 @@ namespace pl::core {
             return node;
 
         while (true) {
-            if (MATCHES(sequence(tkn::Operator::BoolGreaterThan, tkn::Operator::Assign)))
+            if (MATCHES(sequence(tkn::Operator::BoolGreaterThanOrEqual)))
                 node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryOrExpression(inMatchRange), Token::Operator::BoolGreaterThanOrEqual);
-            else if (MATCHES(sequence(tkn::Operator::BoolLessThan, tkn::Operator::Assign)))
+            else if (MATCHES(sequence(tkn::Operator::BoolLessThanOrEqual)))
                 node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryOrExpression(inMatchRange), Token::Operator::BoolLessThanOrEqual);
             else if (MATCHES(sequence(tkn::Operator::BoolGreaterThan)))
                 node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryOrExpression(inMatchRange), Token::Operator::BoolGreaterThan);
@@ -1805,8 +1806,8 @@ namespace pl::core {
         } catch (err::ParserError::Exception &e) {
             this->m_curr -= e.getUserData();
 
-            auto line   = this->m_curr->line;
-            auto column = this->m_curr->column;
+            auto line   = this->m_curr->location.line;
+            auto column = this->m_curr->location.column;
 
             this->m_error = err::PatternLanguageError(e.format(sourceCode, line, column), line, column);
 

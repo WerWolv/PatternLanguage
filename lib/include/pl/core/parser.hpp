@@ -57,11 +57,11 @@ namespace pl::core {
         }
 
         [[nodiscard]] u32 getLine(i32 index) const {
-            return this->m_curr[index].line;
+            return this->m_curr[index].location.line;
         }
 
         [[nodiscard]] u32 getColumn(i32 index) const {
-            return this->m_curr[index].column;
+            return this->m_curr[index].location.column;
         }
 
         template<typename T, typename...Ts>
