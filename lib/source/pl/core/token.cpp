@@ -338,4 +338,28 @@ namespace pl::core {
         return !operator==(other);
     }
 
+    std::map<std::string_view, Token>& Token::operators() {
+        static std::map<std::string_view, Token> s_operators;
+
+        return s_operators;
+    }
+
+    std::map<std::string_view, Token>& Token::keywords() {
+        static std::map<std::string_view, Token> s_keywords;
+
+        return s_keywords;
+    }
+
+    std::map<char, Token>& Token::separators() {
+        static std::map<char, Token> s_separators;
+
+        return s_separators;
+    }
+
+    std::map<std::string_view, Token> &Token::types() {
+        static std::map<std::string_view, Token> s_types;
+
+        return s_types;
+    }
+
 }
