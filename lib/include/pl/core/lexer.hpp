@@ -34,6 +34,8 @@ namespace pl::core {
         Result<std::vector<Token>, ParserError> lex(const std::string &sourceCode);
 
     private:
+        static constexpr char integerSeparator = '\'';
+
         static inline bool isIdentifierCharacter(char c) {
             return std::isalnum(c) || c == '_';
         }
@@ -104,6 +106,9 @@ namespace pl::core {
         std::optional<Token> parseConstant(const std::string_view &identifier);
         std::optional<Token> parseStringLiteral();
         std::optional<Token::Literal> parseIntegerLiteral(std::string_view literal);
+
+        std::optional<double> parseFloatingPoint(std::string_view literal, char suffix);
+        std::optional<u128> parseInteger(std::string_view literal);
 
         Token makeToken(const Token& token);
         void addToken(const Token& token);

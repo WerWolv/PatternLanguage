@@ -11,7 +11,6 @@ using namespace tkn;
 std::optional<char> Lexer::parseCharacter() {
     const char& c = m_sourceCode[m_cursor++];
     if (c == '\\') {
-        m_cursor++;
         switch (m_sourceCode[m_cursor++]) {
             case 'a':
                 return '\a';
@@ -29,6 +28,8 @@ std::optional<char> Lexer::parseCharacter() {
                 return '\0';
             case '\'':
                 return '\'';
+            case '"':
+                return '"';
             case '\\':
                 return '\\';
             case 'x': {
@@ -43,7 +44,7 @@ std::optional<char> Lexer::parseCharacter() {
                 return static_cast<char>(std::stoul(hex, nullptr, 16));
             }
             default:
-                this->error("Unknown escape sequence: {}", m_sourceCode[m_cursor]);
+                this->error("Unknown escape sequence: {}", m_sourceCode[m_cursor-1]);
                 return std::nullopt;
         }
     } else {
@@ -76,6 +77,67 @@ std::optional<Token> Lexer::parseStringLiteral() {
     return makeToken(Literal::makeString(result));
 }
 
+std::optional<u128> Lexer::parseInteger(std::string_view literal) {
+    u8 base = 10;
+
+    u128 value = 0;
+    if(literal[0] == '0') {
+        bool hasPrefix = true;
+        switch (literal[1]) {
+            case 'x':
+            case 'X':
+                base = 16;
+                break;
+            case 'o':
+            case 'O':
+                base = 8;
+                break;
+            case 'b':
+            case 'B':
+                base = 2;
+                break;
+            default:
+                hasPrefix = false;
+                break;
+        }
+        if (hasPrefix) {
+            literal = literal.substr(2);
+        }
+    }
+
+    for (char c : literal) {
+        if(c == integerSeparator) continue;
+
+        if (!isIntegerCharacter(c, base)) {
+            this->error("Invalid integer literal: {}", literal);
+            return std::nullopt;
+        }
+        value = value * base + characterValue(c);
+    }
+
+    return value;
+}
+
+std::optional<double> Lexer::parseFloatingPoint(std::string_view literal, char suffix) {
+    char *end = nullptr;
+    double val = std::strtod(literal.data(), &end);
+
+    if(end != literal.data() + literal.size()) {
+        this->error("Invalid float literal: {}", literal);
+        return std::nullopt;
+    }
+
+    switch (suffix) {
+        case 'f':
+        case 'F':
+            return float(val);
+        case 'd':
+        case 'D':
+        default:
+            return val;
+    }
+}
+
 std::optional<Token::Literal> Lexer::parseIntegerLiteral(std::string_view literal) {
     // parse a c like numeric literal
     bool floatSuffix = hlp::string_ends_with_one_of(literal, { "f", "F", "d", "D" });
@@ -85,6 +147,7 @@ std::optional<Token::Literal> Lexer::parseIntegerLiteral(std::string_view litera
     bool isUnsigned = unsignedSuffix;
 
     if(isFloat) {
+
         char suffix = 0;
         if(floatSuffix) {
             // remove suffix
@@ -92,69 +155,29 @@ std::optional<Token::Literal> Lexer::parseIntegerLiteral(std::string_view litera
             literal = literal.substr(0, literal.size() - 1);
         }
 
-        char *end = nullptr;
-        double val = std::strtod(literal.data(), &end);
+        auto floatingPoint = parseFloatingPoint(literal, suffix);
 
-        if(end != literal.data() + literal.size()) {
-            this->error("Invalid float literal: {}", literal);
-            return std::nullopt;
-        }
+        if(!floatingPoint.has_value()) return std::nullopt;
 
-        switch (suffix) {
-            case 'f':
-            case 'F':
-                return float(val);
-            case 'd':
-            case 'D':
-            default:
-                return val;
-        }
+        return floatingPoint.value();
 
     } else {
+
         if(unsignedSuffix) {
             // remove suffix
             literal = literal.substr(0, literal.size() - 1);
         }
 
-        u8 base = 10;
+        auto integer = parseInteger(literal);
 
-        u128 value = 0;
-        if(literal[0] == '0') {
-            bool hasPrefix = true;
-            switch (literal[1]) {
-                case 'x':
-                case 'X':
-                    base = 16;
-                    break;
-                case 'o':
-                case 'O':
-                    base = 8;
-                    break;
-                case 'b':
-                case 'B':
-                    base = 2;
-                    break;
-                default:
-                    hasPrefix = false;
-                    break;
-            }
-            if (hasPrefix) {
-                literal = literal.substr(2);
-            }
+        if(!integer.has_value()) return std::nullopt;
+
+        u128 value = integer.value();
+        if(isUnsigned) {
+            return value;
+        } else {
+            return i128(value);
         }
-
-        for (char c : literal) {
-            if (!isIntegerCharacter(c, base)) {
-                this->error("Invalid integer literal: {}", literal);
-                return std::nullopt;
-            }
-            value = value * base + characterValue(c);
-        }
-
-        if(isUnsigned)
-            return u128(value);
-        else
-            return i128(value); // signed cast
 
 
     }
@@ -174,9 +197,14 @@ std::optional<Token> Lexer::parseOneLineDocComment() {
 }
 
 std::optional<Token> Lexer::parseMultiLineDocComment() {
+    bool global = peek(2) == '!';
     m_cursor += 3;
     std::string result;
     while(true) {
+        if(peek(0) == '\n') {
+            m_line++;
+            m_lineBegin = m_cursor;
+        }
         if(peek(1) == 0) {
             this->error("Unexpected end of file while parsing multi line doc comment");
             return std::nullopt;
@@ -187,7 +215,7 @@ std::optional<Token> Lexer::parseMultiLineDocComment() {
         }
         result += m_sourceCode[m_cursor++];
     }
-    return makeToken(Literal::makeDocComment(true, result));
+    return makeToken(Literal::makeDocComment(global, result));
 }
 
 std::optional<Token> Lexer::parseOperator() {
@@ -323,45 +351,6 @@ Result<std::vector<Token>, ParserError> Lexer::lex(const std::string &sourceCode
             continue;
         }
 
-        auto operatorToken = parseOperator();
-        if (operatorToken.has_value()) {
-            addToken(operatorToken.value());
-            continue;
-        }
-
-        auto separatorToken = parseSeparator();
-        if (separatorToken.has_value()) {
-            addToken(separatorToken.value());
-            continue;
-        }
-
-        // literals
-        if (c == '"') {
-            auto string = parseStringLiteral();
-
-            if (string.has_value()) {
-                addToken(string.value());
-                continue;
-            }
-        } else if(c == '\'') {
-            m_cursor++;
-            auto character = parseCharacter();
-
-            if (character.has_value()) {
-                if(m_sourceCode[m_cursor] != '\'') {
-                    this->error("Expected closing '");
-                    continue;
-                }
-
-                m_cursor++;
-
-                addToken(makeToken(Literal::makeNumeric(character.value())));
-                continue;
-            }
-        } else {
-            this->error("Unexpected character: {}", c);
-        }
-
         // comment cases
         if(c == '/') {
             char category = peek(1);
@@ -385,8 +374,48 @@ Result<std::vector<Token>, ParserError> Lexer::lex(const std::string &sourceCode
                 if(token.has_value()) {
                     addToken(token.value());
                 }
+                m_cursor++; // skip closing /
                 continue;
             }
+        }
+
+        auto operatorToken = parseOperator();
+        if (operatorToken.has_value()) {
+            addToken(operatorToken.value());
+            continue;
+        }
+
+        auto separatorToken = parseSeparator();
+        if (separatorToken.has_value()) {
+            addToken(separatorToken.value());
+            continue;
+        }
+
+        // literals
+        if (c == '"') {
+            auto string = parseStringLiteral();
+
+            if (string.has_value()) {
+                addToken(string.value());
+                continue;
+            }
+        } else if(c == '\'') {
+            m_cursor++; // skip opening '
+            auto character = parseCharacter();
+
+            if (character.has_value()) {
+                if(m_sourceCode[m_cursor] != '\'') {
+                    this->error("Expected closing '");
+                    continue;
+                }
+
+                m_cursor++; // skip closing '
+
+                addToken(makeToken(Literal::makeNumeric(character.value())));
+                continue;
+            }
+        } else {
+            this->error("Unexpected character: {}", c);
         }
 
         m_cursor++;

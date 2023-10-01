@@ -356,9 +356,9 @@ namespace pl::core {
             return node;
 
         while (true) {
-            if (sequence(tkn::Operator::BoolGreaterThanOrEqual))
+            if (sequence(tkn::Operator::BoolGreaterThan, tkn::Operator::Assign))
                 node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryOrExpression(inMatchRange), Token::Operator::BoolGreaterThanOrEqual);
-            else if (sequence(tkn::Operator::BoolLessThanOrEqual))
+            else if (sequence(tkn::Operator::BoolLessThan, tkn::Operator::Assign))
                 node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryOrExpression(inMatchRange), Token::Operator::BoolLessThanOrEqual);
             else if (sequence(tkn::Operator::BoolGreaterThan))
                 node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryOrExpression(inMatchRange), Token::Operator::BoolGreaterThan);

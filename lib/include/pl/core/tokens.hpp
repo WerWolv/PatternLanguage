@@ -103,8 +103,7 @@ namespace pl::core::tkn {
         const auto BoolNotEqual             = makeOperator(Token::Operator::BoolNotEqual, "!=");
         const auto BoolLessThan             = makeOperator(Token::Operator::BoolLessThan, "<");
         const auto BoolGreaterThan          = makeOperator(Token::Operator::BoolGreaterThan, ">");
-        const auto BoolLessThanOrEqual      = makeOperator(Token::Operator::BoolLessThanOrEqual, "<=");
-        const auto BoolGreaterThanOrEqual   = makeOperator(Token::Operator::BoolGreaterThanOrEqual, ">=");
+        // ltoe and gtoe are also handled in the parser due to ambiguity with ls assignment
         const auto BoolAnd                  = makeOperator(Token::Operator::BoolAnd, "&&");
         const auto BoolOr                   = makeOperator(Token::Operator::BoolOr, "||");
         const auto BoolNot                  = makeOperator(Token::Operator::BoolNot, "!");
@@ -159,7 +158,7 @@ namespace pl::core::tkn {
 
         const auto Character        = makeValueType(Token::ValueType::Character, "char");
         const auto Character16      = makeValueType(Token::ValueType::Character16, "char16");
-        const auto String           = makeValueType(Token::ValueType::String, "string");
+        const auto String           = makeValueType(Token::ValueType::String, "str");
 
         // non named
         const auto Unsigned         = makeToken(Token::Type::ValueType, Token::ValueType::Unsigned);
