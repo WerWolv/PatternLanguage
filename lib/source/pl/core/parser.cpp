@@ -36,6 +36,10 @@
 
 #include <optional>
 
+/**
+ * Match only needs to be used when compound statements are involved.
+ * This is because the parser will automatically reset if a match fails.
+ */
 #define MATCHES(x) (begin() && resetIfFailed(x))
 
 // Definition syntax:
@@ -52,14 +56,14 @@ namespace pl::core {
     std::vector<std::unique_ptr<ast::ASTNode>> Parser::parseParameters() {
         std::vector<std::unique_ptr<ast::ASTNode>> params;
 
-        while (!MATCHES(sequence(tkn::Separator::RightParenthesis))) {
+        while (!sequence(tkn::Separator::RightParenthesis)) {
             params.push_back(parseMathematicalExpression());
 
-            if (MATCHES(sequence(tkn::Separator::Comma, tkn::Separator::RightParenthesis)))
+            if (sequence(tkn::Separator::Comma, tkn::Separator::RightParenthesis))
                 err::P0002.throwError(fmt::format("Expected ')' at end of parameter list, got {}.", getFormattedToken(0)), {}, 1);
-            else if (MATCHES(sequence(tkn::Separator::RightParenthesis)))
+            else if (sequence(tkn::Separator::RightParenthesis))
                 break;
-            else if (!MATCHES(sequence(tkn::Separator::Comma)))
+            else if (!sequence(tkn::Separator::Comma))
                 err::P0002.throwError(fmt::format("Expected ',' in-between parameters, got {}.", getFormattedToken(0)), {}, 1);
         }
 
@@ -70,7 +74,7 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parseFunctionCall() {
         std::string functionName = parseNamespaceResolution();
 
-        if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
+        if (!sequence(tkn::Separator::LeftParenthesis))
             err::P0002.throwError(fmt::format("Expected '(' after function name, got {}.", getFormattedToken(0)), {}, 1);
 
         auto params = parseParameters();
@@ -88,7 +92,7 @@ namespace pl::core {
         while (true) {
             name += getValue<Token::Identifier>(-1).get();
 
-            if (MATCHES(sequence(tkn::Operator::ScopeResolution, tkn::Literal::Identifier))) {
+            if (sequence(tkn::Operator::ScopeResolution, tkn::Literal::Identifier)) {
                 name += "::";
                 continue;
             } else
@@ -104,7 +108,7 @@ namespace pl::core {
         while (true) {
             typeName += getValue<Token::Identifier>(-1).get();
 
-            if (MATCHES(sequence(tkn::Operator::ScopeResolution, tkn::Literal::Identifier))) {
+            if (sequence(tkn::Operator::ScopeResolution, tkn::Literal::Identifier)) {
                 if (peek(tkn::Operator::ScopeResolution, 0) && peek(tkn::Literal::Identifier, 1)) {
                     typeName += "::";
                     continue;
@@ -148,12 +152,12 @@ namespace pl::core {
 
         if (MATCHES(sequence(tkn::Separator::LeftBracket) && !peek(tkn::Separator::LeftBracket))) {
             path.emplace_back(parseMathematicalExpression());
-            if (!MATCHES(sequence(tkn::Separator::RightBracket)))
+            if (!sequence(tkn::Separator::RightBracket))
                 err::P0002.throwError(fmt::format("Expected ']' at end of array indexing, got {}.", getFormattedToken(0)), {}, 1);
         }
 
-        if (MATCHES(sequence(tkn::Separator::Dot))) {
-            if (MATCHES(oneOf(tkn::Literal::Identifier, tkn::Keyword::Parent)))
+        if (sequence(tkn::Separator::Dot)) {
+            if (oneOf(tkn::Literal::Identifier, tkn::Keyword::Parent))
                 return this->parseRValue(path);
             else
                 err::P0002.throwError("Invalid member access, expected variable identifier or parent keyword.", {}, 1);
@@ -163,17 +167,17 @@ namespace pl::core {
 
     // <Integer|((parseMathematicalExpression))>
     std::unique_ptr<ast::ASTNode> Parser::parseFactor() {
-        if (MATCHES(sequence(tkn::Literal::Numeric)))
+        if (sequence(tkn::Literal::Numeric))
             return create<ast::ASTNodeLiteral>(getValue<Token::Literal>(-1));
-        else if (peek(tkn::Operator::Plus) || peek(tkn::Operator::Minus) || peek(tkn::Operator::BitNot) || peek(tkn::Operator::BoolNot))
+        else if (oneOf(tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::BoolNot, tkn::Operator::BitNot))
             return this->parseMathematicalExpression();
-        else if (MATCHES(sequence(tkn::Separator::LeftParenthesis))) {
+        else if (sequence(tkn::Separator::LeftParenthesis)) {
             auto node = this->parseMathematicalExpression();
-            if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
+            if (!sequence(tkn::Separator::RightParenthesis))
                 err::P0002.throwError("Mismatched '(' in mathematical expression.", {}, 1);
 
             return node;
-        } else if (MATCHES(sequence(tkn::Literal::Identifier))) {
+        } else if (sequence(tkn::Literal::Identifier)) {
             auto originalPos = this->m_curr;
             parseNamespaceResolution();
 
@@ -187,14 +191,14 @@ namespace pl::core {
             } else {
                 return this->parseRValue();
             }
-        } else if (MATCHES(oneOf(tkn::Keyword::Parent, tkn::Keyword::This, tkn::Operator::Dollar, tkn::Keyword::Null))) {
+        } else if (oneOf(tkn::Keyword::Parent, tkn::Keyword::This, tkn::Operator::Dollar, tkn::Keyword::Null)) {
             return this->parseRValue();
         } else if (MATCHES(oneOf(tkn::Operator::AddressOf, tkn::Operator::SizeOf, tkn::Operator::TypeNameOf) && sequence(tkn::Separator::LeftParenthesis))) {
             auto op = getValue<Token::Operator>(-2);
 
             std::unique_ptr<ast::ASTNode> result;
 
-            if (MATCHES(oneOf(tkn::Literal::Identifier))) {
+            if (oneOf(tkn::Literal::Identifier)) {
                 auto startToken = this->m_curr;
                 if (op == Token::Operator::SizeOf || op == Token::Operator::TypeNameOf) {
                     auto type = getCustomType(parseNamespaceResolution());
@@ -208,17 +212,17 @@ namespace pl::core {
                     this->m_curr = startToken;
                     result = create<ast::ASTNodeTypeOperator>(op, this->parseRValue());
                 }
-            } else if (MATCHES(oneOf(tkn::Keyword::Parent, tkn::Keyword::This))) {
+            } else if (oneOf(tkn::Keyword::Parent, tkn::Keyword::This)) {
                 result = create<ast::ASTNodeTypeOperator>(op, this->parseRValue());
-            } else if (op == Token::Operator::SizeOf && MATCHES(sequence(tkn::ValueType::Any))) {
+            } else if (op == Token::Operator::SizeOf && sequence(tkn::ValueType::Any)) {
                 auto type = getValue<Token::ValueType>(-1);
 
                 result = create<ast::ASTNodeLiteral>(u128(Token::getTypeSize(type)));
-            } else if (op == Token::Operator::TypeNameOf && MATCHES(sequence(tkn::ValueType::Any))) {
+            } else if (op == Token::Operator::TypeNameOf && sequence(tkn::ValueType::Any)) {
                 auto type = getValue<Token::ValueType>(-1);
 
                 result = create<ast::ASTNodeLiteral>(Token::getTypeName(type));
-            } else if (MATCHES(sequence(tkn::Operator::Dollar))) {
+            } else if (sequence(tkn::Operator::Dollar)) {
                 result = create<ast::ASTNodeTypeOperator>(op);
             } else {
                 if (op == Token::Operator::SizeOf)
@@ -229,7 +233,7 @@ namespace pl::core {
                     err::P0005.throwError("Expected rvalue or type.", {}, 1);
             }
 
-            if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
+            if (!sequence(tkn::Separator::RightParenthesis))
                 err::P0002.throwError("Mismatched '(' of type operator expression.", {}, 1);
 
             return result;
@@ -257,11 +261,11 @@ namespace pl::core {
 
     // <+|-|!|~> (parseFactor)
     std::unique_ptr<ast::ASTNode> Parser::parseUnaryExpression() {
-        if (MATCHES(oneOf(tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::BoolNot, tkn::Operator::BitNot))) {
+        if (oneOf(tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::BoolNot, tkn::Operator::BitNot)) {
             auto op = getValue<Token::Operator>(-1);
 
             return create<ast::ASTNodeMathematicalExpression>(create<ast::ASTNodeLiteral>(0), this->parseCastExpression(), op);
-        } else if (MATCHES(sequence(tkn::Literal::String))) {
+        } else if (sequence(tkn::Literal::String)) {
             return this->parseStringLiteral();
         }
 
@@ -272,7 +276,7 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parseMultiplicativeExpression() {
         auto node = this->parseUnaryExpression();
 
-        while (MATCHES(oneOf(tkn::Operator::Star, tkn::Operator::Slash, tkn::Operator::Percent))) {
+        while (oneOf(tkn::Operator::Star, tkn::Operator::Slash, tkn::Operator::Percent)) {
             auto op = getValue<Token::Operator>(-1);
             node    = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseUnaryExpression(), op);
         }
@@ -284,7 +288,7 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parseAdditiveExpression() {
         auto node = this->parseMultiplicativeExpression();
 
-        while (MATCHES(variant(tkn::Operator::Plus, tkn::Operator::Minus))) {
+        while (variant(tkn::Operator::Plus, tkn::Operator::Minus)) {
             auto op = getValue<Token::Operator>(-1);
             node    = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseMultiplicativeExpression(), op);
         }
@@ -297,9 +301,9 @@ namespace pl::core {
         auto node = this->parseAdditiveExpression();
 
         while (true) {
-            if (MATCHES(sequence(tkn::Operator::BoolGreaterThan, tkn::Operator::BoolGreaterThan))) {
+            if (sequence(tkn::Operator::BoolGreaterThan, tkn::Operator::BoolGreaterThan)) {
                 node    = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseAdditiveExpression(), Token::Operator::RightShift);
-            } else if (MATCHES(sequence(tkn::Operator::BoolLessThan, tkn::Operator::BoolLessThan))) {
+            } else if (sequence(tkn::Operator::BoolLessThan, tkn::Operator::BoolLessThan)) {
                 node    = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseAdditiveExpression(), Token::Operator::LeftShift);
             } else {
                 break;
@@ -313,7 +317,7 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parseBinaryAndExpression() {
         auto node = this->parseShiftExpression();
 
-        while (MATCHES(sequence(tkn::Operator::BitAnd))) {
+        while (sequence(tkn::Operator::BitAnd)) {
             node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseShiftExpression(), Token::Operator::BitAnd);
         }
 
@@ -324,7 +328,7 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parseBinaryXorExpression() {
         auto node = this->parseBinaryAndExpression();
 
-        while (MATCHES(sequence(tkn::Operator::BitXor))) {
+        while (sequence(tkn::Operator::BitXor)) {
             node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryAndExpression(), Token::Operator::BitXor);
         }
 
@@ -337,7 +341,7 @@ namespace pl::core {
 
         if (inMatchRange && peek(tkn::Operator::BitOr))
             return node;
-        while (MATCHES(sequence(tkn::Operator::BitOr))) {
+        while (sequence(tkn::Operator::BitOr)) {
             node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryXorExpression(), Token::Operator::BitOr);
         }
 
@@ -352,13 +356,13 @@ namespace pl::core {
             return node;
 
         while (true) {
-            if (MATCHES(sequence(tkn::Operator::BoolGreaterThanOrEqual)))
+            if (sequence(tkn::Operator::BoolGreaterThanOrEqual))
                 node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryOrExpression(inMatchRange), Token::Operator::BoolGreaterThanOrEqual);
-            else if (MATCHES(sequence(tkn::Operator::BoolLessThanOrEqual)))
+            else if (sequence(tkn::Operator::BoolLessThanOrEqual))
                 node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryOrExpression(inMatchRange), Token::Operator::BoolLessThanOrEqual);
-            else if (MATCHES(sequence(tkn::Operator::BoolGreaterThan)))
+            else if (sequence(tkn::Operator::BoolGreaterThan))
                 node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryOrExpression(inMatchRange), Token::Operator::BoolGreaterThan);
-            else if (MATCHES(sequence(tkn::Operator::BoolLessThan)))
+            else if (sequence(tkn::Operator::BoolLessThan))
                 node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryOrExpression(inMatchRange), Token::Operator::BoolLessThan);
             else
                 break;
@@ -383,7 +387,7 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parseBooleanAnd(bool inTemplate, bool inMatchRange) {
         auto node = this->parseEqualityExpression(inTemplate, inMatchRange);
 
-        while (MATCHES(sequence(tkn::Operator::BoolAnd))) {
+        while (sequence(tkn::Operator::BoolAnd)) {
             node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseEqualityExpression(inTemplate, inMatchRange), Token::Operator::BoolAnd);
         }
 
@@ -394,7 +398,7 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parseBooleanXor(bool inTemplate, bool inMatchRange) {
         auto node = this->parseBooleanAnd(inTemplate, inMatchRange);
 
-        while (MATCHES(sequence(tkn::Operator::BoolXor))) {
+        while (sequence(tkn::Operator::BoolXor)) {
             node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBooleanAnd(inTemplate, inMatchRange), Token::Operator::BoolXor);
         }
 
@@ -405,7 +409,7 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parseBooleanOr(bool inTemplate, bool inMatchRange) {
         auto node = this->parseBooleanXor(inTemplate, inMatchRange);
 
-        while (MATCHES(sequence(tkn::Operator::BoolOr))) {
+        while (sequence(tkn::Operator::BoolOr)) {
             node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBooleanXor(inTemplate, inMatchRange), Token::Operator::BoolOr);
         }
 
@@ -416,10 +420,10 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parseTernaryConditional(bool inTemplate, bool inMatchRange) {
         auto node = this->parseBooleanOr(inTemplate, inMatchRange);
 
-        while (MATCHES(sequence(tkn::Operator::TernaryConditional))) {
+        while (sequence(tkn::Operator::TernaryConditional)) {
             auto second = this->parseBooleanOr(inTemplate, inMatchRange);
 
-            if (!MATCHES(sequence(tkn::Operator::Colon)))
+            if (!sequence(tkn::Operator::Colon))
                 err::P0002.throwError(fmt::format("Expected ':' after ternary condition, got {}", getFormattedToken(0)), {}, 1);
 
             auto third = this->parseBooleanOr(inTemplate, inMatchRange);
@@ -440,27 +444,27 @@ namespace pl::core {
             err::P0007.throwError("Cannot use attribute here.", "Attributes can only be applied after type or variable definitions.", 1);
 
         do {
-            if (!MATCHES(sequence(tkn::Literal::Identifier)))
+            if (!sequence(tkn::Literal::Identifier))
                 err::P0002.throwError(fmt::format("Expected attribute instruction name, got {}", getFormattedToken(0)), {}, 1);
 
             auto attribute = parseNamespaceResolution();
 
-            if (MATCHES(sequence(tkn::Separator::LeftParenthesis))) {
+            if (sequence(tkn::Separator::LeftParenthesis)) {
                 std::vector<std::unique_ptr<ast::ASTNode>> args;
                 do {
                     args.push_back(parseMathematicalExpression());
-                } while (MATCHES(sequence(tkn::Separator::Comma)));
+                } while (sequence(tkn::Separator::Comma));
 
-                if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
+                if (!sequence(tkn::Separator::RightParenthesis))
                     err::P0002.throwError(fmt::format("Expected ')', got {}", getFormattedToken(0)), {}, 1);
 
                 currNode->addAttribute(create<ast::ASTNodeAttribute>(attribute, std::move(args)));
             } else
                 currNode->addAttribute(create<ast::ASTNodeAttribute>(attribute));
 
-        } while (MATCHES(sequence(tkn::Separator::Comma)));
+        } while (sequence(tkn::Separator::Comma));
 
-        if (!MATCHES(sequence(tkn::Separator::RightBracket, tkn::Separator::RightBracket)))
+        if (!sequence(tkn::Separator::RightBracket, tkn::Separator::RightBracket))
             err::P0002.throwError(fmt::format("Expected ']]' after attribute, got {}.", getFormattedToken(0)), {}, 1);
     }
 
@@ -471,7 +475,7 @@ namespace pl::core {
         std::vector<std::pair<std::string, std::unique_ptr<ast::ASTNode>>> params;
         std::optional<std::string> parameterPack;
 
-        if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
+        if (!sequence(tkn::Separator::LeftParenthesis))
             err::P0002.throwError(fmt::format("Expected '(' after function declaration, got {}.", getFormattedToken(0)), {}, 1);
 
         // Parse parameter list
@@ -480,24 +484,24 @@ namespace pl::core {
         std::vector<std::unique_ptr<ast::ASTNode>> defaultParameters;
 
         while (hasParams) {
-            if (MATCHES(sequence(tkn::ValueType::Auto, tkn::Separator::Dot, tkn::Separator::Dot, tkn::Separator::Dot, tkn::Literal::Identifier))) {
+            if (sequence(tkn::ValueType::Auto, tkn::Separator::Dot, tkn::Separator::Dot, tkn::Separator::Dot, tkn::Literal::Identifier)) {
                 parameterPack = getValue<Token::Identifier>(-1).get();
 
-                if (MATCHES(sequence(tkn::Separator::Comma)))
+                if (sequence(tkn::Separator::Comma))
                     err::P0008.throwError("Parameter pack can only appear at the end of the parameter list.", {}, 1);
 
                 break;
             } else {
                 auto type = parseType();
 
-                if (MATCHES(sequence(tkn::Literal::Identifier)))
+                if (sequence(tkn::Literal::Identifier))
                     params.emplace_back(getValue<Token::Identifier>(-1).get(), std::move(type));
                 else {
                     params.emplace_back(std::to_string(unnamedParamCount), std::move(type));
                     unnamedParamCount++;
                 }
 
-                if (MATCHES(sequence(tkn::Operator::Assign))) {
+                if (sequence(tkn::Operator::Assign)) {
                     // Parse default parameters
                     defaultParameters.push_back(parseMathematicalExpression());
                 } else {
@@ -505,23 +509,23 @@ namespace pl::core {
                         err::P0002.throwError(fmt::format("Expected default argument value for parameter '{}', got {}.", params.back().first, getFormattedToken(0)), {}, 1);
                 }
 
-                if (!MATCHES(sequence(tkn::Separator::Comma))) {
+                if (!sequence(tkn::Separator::Comma)) {
                     break;
                 }
             }
         }
 
-        if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
+        if (!sequence(tkn::Separator::RightParenthesis))
             err::P0002.throwError(fmt::format("Expected ')' after parameter list, got {}.", getFormattedToken(0)), {}, 1);
 
-        if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
+        if (!sequence(tkn::Separator::LeftBrace))
             err::P0002.throwError(fmt::format("Expected '{{' after function head, got {}.", getFormattedToken(0)), {}, 1);
 
 
         // Parse function body
         std::vector<std::unique_ptr<ast::ASTNode>> body;
 
-        while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
+        while (!sequence(tkn::Separator::RightBrace)) {
             body.push_back(this->parseFunctionStatement());
         }
 
@@ -532,7 +536,7 @@ namespace pl::core {
         std::unique_ptr<ast::ASTNode> statement;
         auto type = parseType();
 
-        if (MATCHES(sequence(tkn::Literal::Identifier))) {
+        if (sequence(tkn::Literal::Identifier)) {
             auto identifier = getValue<Token::Identifier>(-1).get();
 
             if (MATCHES(sequence(tkn::Separator::LeftBracket) && !peek(tkn::Separator::LeftBracket))) {
@@ -540,7 +544,7 @@ namespace pl::core {
             } else {
                 statement = parseMemberVariable(std::move(type), true, constant, identifier);
 
-                if (MATCHES(sequence(tkn::Operator::Assign))) {
+                if (sequence(tkn::Operator::Assign)) {
                     auto expression = parseMathematicalExpression();
 
                     std::vector<std::unique_ptr<ast::ASTNode>> compoundStatement;
@@ -561,41 +565,41 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parseFunctionStatement(bool needsSemicolon) {
         std::unique_ptr<ast::ASTNode> statement;
 
-        if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Operator::Assign)))
+        if (sequence(tkn::Literal::Identifier, tkn::Operator::Assign))
             statement = parseFunctionVariableAssignment(getValue<Token::Identifier>(-2).get());
-        else if (MATCHES(sequence(tkn::Operator::Dollar, tkn::Operator::Assign)))
+        else if (sequence(tkn::Operator::Dollar, tkn::Operator::Assign))
             statement = parseFunctionVariableAssignment("$");
         else if (auto identifierOffset = parseCompoundAssignment(tkn::Literal::Identifier); identifierOffset.has_value())
             statement = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(*identifierOffset).get());
         else if (parseCompoundAssignment(tkn::Operator::Dollar).has_value())
             statement = parseFunctionVariableCompoundAssignment("$");
-        else if (MATCHES(oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue)))
+        else if (oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue))
             statement = parseFunctionControlFlowStatement();
-        else if (MATCHES(sequence(tkn::Keyword::If))) {
+        else if (sequence(tkn::Keyword::If)) {
             statement      = parseConditional([&]() { return parseFunctionStatement(); });
             needsSemicolon = false;
-        } else if (MATCHES(sequence(tkn::Keyword::Match))) {
+        } else if (sequence(tkn::Keyword::Match)) {
             statement      = parseMatchStatement([&]() { return parseFunctionStatement(); });
             needsSemicolon = false;
-        } else if (MATCHES(sequence(tkn::Keyword::Try, tkn::Separator::LeftBrace))) {
+        } else if (sequence(tkn::Keyword::Try, tkn::Separator::LeftBrace)) {
             statement      = parseTryCatchStatement([&]() { return parseFunctionStatement(); });
             needsSemicolon = false;
-        } else if (MATCHES(sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis))) {
+        } else if (sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis)) {
             statement      = parseFunctionWhileLoop();
             needsSemicolon = false;
-        } else if (MATCHES(sequence(tkn::Keyword::For, tkn::Separator::LeftParenthesis))) {
+        } else if (sequence(tkn::Keyword::For, tkn::Separator::LeftParenthesis)) {
             statement      = parseFunctionForLoop();
             needsSemicolon = false;
         } else if (MATCHES(sequence(tkn::Literal::Identifier) && (peek(tkn::Separator::Dot) || peek(tkn::Separator::LeftBracket)))) {
             auto lhs = parseRValue();
 
-            if (!MATCHES(sequence(tkn::Operator::Assign)))
+            if (!sequence(tkn::Operator::Assign))
                 err::P0002.throwError(fmt::format("Expected value after '=' in variable assignment, got {}.", getFormattedToken(0)), {}, 0);
 
             auto rhs = parseMathematicalExpression();
 
             statement = create<ast::ASTNodeRValueAssignment>(std::move(lhs), std::move(rhs));
-        } else if (MATCHES(sequence(tkn::Literal::Identifier))) {
+        } else if (sequence(tkn::Literal::Identifier)) {
             auto originalPos = this->m_curr;
             parseNamespaceResolution();
             bool isFunction = peek(tkn::Separator::LeftParenthesis);
@@ -609,16 +613,16 @@ namespace pl::core {
             }
         } else if (peek(tkn::Keyword::BigEndian) || peek(tkn::Keyword::LittleEndian) || peek(tkn::ValueType::Any)) {
             statement = parseFunctionVariableDecl();
-        } else if (MATCHES(sequence(tkn::Keyword::Const))) {
+        } else if (sequence(tkn::Keyword::Const)) {
             statement = parseFunctionVariableDecl(true);
         } else
             err::P0002.throwError("Invalid function statement.", {}, 0);
 
-        if (needsSemicolon && !MATCHES(sequence(tkn::Separator::Semicolon)))
+        if (needsSemicolon && !sequence(tkn::Separator::Semicolon))
             err::P0002.throwError(fmt::format("Expected ';' at end of statement, got {}.", getFormattedToken(0)), {}, 1);
 
         // Consume superfluous semicolons
-        while (needsSemicolon && MATCHES(sequence(tkn::Separator::Semicolon)))
+        while (needsSemicolon && sequence(tkn::Separator::Semicolon))
             ;
 
         return statement;
@@ -665,8 +669,8 @@ namespace pl::core {
     std::vector<std::unique_ptr<ast::ASTNode>> Parser::parseStatementBody(const std::function<std::unique_ptr<ast::ASTNode>()> &memberParser) {
         std::vector<std::unique_ptr<ast::ASTNode>> body;
 
-        if (MATCHES(sequence(tkn::Separator::LeftBrace))) {
-            while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
+        if (sequence(tkn::Separator::LeftBrace)) {
+            while (!sequence(tkn::Separator::RightBrace)) {
                 body.push_back(memberParser());
             }
         } else {
@@ -680,7 +684,7 @@ namespace pl::core {
         auto condition = parseMathematicalExpression();
         std::vector<std::unique_ptr<ast::ASTNode>> body;
 
-        if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
+        if (!sequence(tkn::Separator::RightParenthesis))
             err::P0002.throwError(fmt::format("Expected ')' at end of while head, got {}.", getFormattedToken(0)), {}, 1);
 
         body = parseStatementBody([&]() { return parseFunctionStatement(); });
@@ -691,12 +695,12 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parseFunctionForLoop() {
         auto preExpression = parseFunctionStatement(false);
 
-        if (!MATCHES(sequence(tkn::Separator::Comma)))
+        if (!sequence(tkn::Separator::Comma))
             err::P0002.throwError(fmt::format("Expected ',' after for loop expression, got {}.", getFormattedToken(0)), {}, 1);
 
         auto condition = parseMathematicalExpression();
 
-        if (!MATCHES(sequence(tkn::Separator::Comma)))
+        if (!sequence(tkn::Separator::Comma))
             err::P0002.throwError(fmt::format("Expected ',' after for loop expression, got {}.", getFormattedToken(0)), {}, 1);
 
         auto postExpression = parseFunctionStatement(false);
@@ -704,7 +708,7 @@ namespace pl::core {
         std::vector<std::unique_ptr<ast::ASTNode>> body;
 
 
-        if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
+        if (!sequence(tkn::Separator::RightParenthesis))
             err::P0002.throwError(fmt::format("Expected ')' at end of for loop head, got {}.", getFormattedToken(0)), {}, 1);
 
         body = parseStatementBody([&]() { return parseFunctionStatement(); });
@@ -722,18 +726,18 @@ namespace pl::core {
 
     // if ((parseMathematicalExpression)) { (parseMember) }
     std::unique_ptr<ast::ASTNode> Parser::parseConditional(const std::function<std::unique_ptr<ast::ASTNode>()> &memberParser) {
-        if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
+        if (!sequence(tkn::Separator::LeftParenthesis))
             err::P0002.throwError(fmt::format("Expected '(' after 'if', got {}.", getFormattedToken(0)), {}, 1);
 
         auto condition = parseMathematicalExpression();
 
-        if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
+        if (!sequence(tkn::Separator::RightParenthesis))
             err::P0002.throwError(fmt::format("Expected ')' after if head, got {}.", getFormattedToken(0)), {}, 1);
 
         auto trueBody = parseStatementBody(memberParser);
 
         std::vector<std::unique_ptr<ast::ASTNode>> falseBody;
-        if (MATCHES(sequence(tkn::Keyword::Else)))
+        if (sequence(tkn::Keyword::Else))
             falseBody = parseStatementBody(memberParser);
 
         return create<ast::ASTNodeConditionalStatement>(std::move(condition), std::move(trueBody), std::move(falseBody));
@@ -744,13 +748,13 @@ namespace pl::core {
 
         size_t caseIndex = 0;
         bool isDefault = true;
-        while (!MATCHES(sequence(tkn::Separator::RightParenthesis))) {
+        while (!sequence(tkn::Separator::RightParenthesis)) {
             if (caseIndex >= matchParameters.size()) {
                 err::P0002.throwError("Size of case parameters bigger than size of match condition.", {}, 1);
             }
 
             std::unique_ptr<pl::core::ast::ASTNode> currentCondition = nullptr;
-            if (MATCHES(sequence(tkn::Keyword::Underscore))) {
+            if (sequence(tkn::Keyword::Underscore)) {
                 // if '_' is found, act as wildcard, push literal(true)
                 currentCondition = std::make_unique<ast::ASTNodeLiteral>(true);
             } else {
@@ -760,7 +764,7 @@ namespace pl::core {
                 do {
                     auto first = parseMathematicalExpression(false, true);
                     auto nextCondition = [&]() {
-                        if (MATCHES(sequence(tkn::Separator::Dot, tkn::Separator::Dot, tkn::Separator::Dot))) {
+                        if (sequence(tkn::Separator::Dot, tkn::Separator::Dot, tkn::Separator::Dot)) {
                             // range a ... b should compile to
                             // param >= a && param <= b
                             auto last = parseMathematicalExpression(false, true);
@@ -779,7 +783,7 @@ namespace pl::core {
                         // we've matched a previous |, add a
                         currentCondition = create<ast::ASTNodeMathematicalExpression>(std::move(currentCondition), std::move(nextCondition), Token::Operator::BoolOr);
                     }
-                } while (MATCHES(sequence(tkn::Operator::BitOr)));
+                } while (sequence(tkn::Operator::BitOr));
             }
 
             if (condition == nullptr) {
@@ -790,11 +794,11 @@ namespace pl::core {
             }
 
             caseIndex++;
-            if (MATCHES(sequence(tkn::Separator::Comma, tkn::Separator::RightParenthesis)))
+            if (sequence(tkn::Separator::Comma, tkn::Separator::RightParenthesis))
                 err::P0002.throwError(fmt::format("Expected ')' at end of parameter list, got {}.", getFormattedToken(0)), {}, 1);
-            else if (MATCHES(sequence(tkn::Separator::RightParenthesis)))
+            else if (sequence(tkn::Separator::RightParenthesis))
                 break;
-            else if (!MATCHES(sequence(tkn::Separator::Comma)))
+            else if (!sequence(tkn::Separator::Comma))
                 err::P0002.throwError(fmt::format("Expected ',' in-between parameters, got {}.", getFormattedToken(0)), {}, 1);
         }
 
@@ -807,24 +811,24 @@ namespace pl::core {
 
     // match ((parseParameters)) { (parseParameters { (parseMember) })*, default { (parseMember) } }
     std::unique_ptr<ast::ASTNode> Parser::parseMatchStatement(const std::function<std::unique_ptr<ast::ASTNode>()> &memberParser) {
-        if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
+        if (!sequence(tkn::Separator::LeftParenthesis))
             err::P0002.throwError(fmt::format("Expected '(' after 'match', got {}.", getFormattedToken(0)), {}, 1);
 
         auto condition = parseParameters();
 
-        if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
+        if (!sequence(tkn::Separator::LeftBrace))
             err::P0002.throwError(fmt::format("Expected '{{' after match head, got {}.", getFormattedToken(0)), {}, 1);
 
         std::vector<ast::MatchCase> cases;
         std::optional<ast::MatchCase> defaultCase;
 
-        while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
-            if (!MATCHES(sequence(tkn::Separator::LeftParenthesis)))
+        while (!sequence(tkn::Separator::RightBrace)) {
+            if (!sequence(tkn::Separator::LeftParenthesis))
                 err::P0002.throwError(fmt::format("Expected '(', got {}.", getFormattedToken(0)), {}, 1);
 
             auto [caseCondition, isDefault] = parseCaseParameters(condition);
 
-            if (!MATCHES(sequence(tkn::Operator::Colon)))
+            if (!sequence(tkn::Operator::Colon))
                 err::P0002.throwError(fmt::format("Expected ':' after case condition, got {}.", getFormattedToken(0)), {}, 1);
 
             auto body = parseStatementBody(memberParser);
@@ -834,7 +838,7 @@ namespace pl::core {
             else
                 cases.emplace_back(std::move(caseCondition), std::move(body));
 
-            if (MATCHES(sequence(tkn::Separator::RightBrace)))
+            if (sequence(tkn::Separator::RightBrace))
                 break;
         }
 
@@ -844,15 +848,15 @@ namespace pl::core {
     // try { (parseMember) } catch { (parseMember) }
     std::unique_ptr<ast::ASTNode> Parser::parseTryCatchStatement(const std::function<std::unique_ptr<ast::ASTNode>()> &memberParser) {
         std::vector<std::unique_ptr<ast::ASTNode>> tryBody, catchBody;
-        while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
+        while (!sequence(tkn::Separator::RightBrace)) {
             tryBody.emplace_back(memberParser());
         }
 
-        if (MATCHES(sequence(tkn::Keyword::Catch))) {
-            if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
+        if (sequence(tkn::Keyword::Catch)) {
+            if (!sequence(tkn::Separator::LeftBrace))
                 err::P0002.throwError(fmt::format("Expected '{{' after catch, got {}.", getFormattedToken(0)), {}, 1);
 
-            while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
+            while (!sequence(tkn::Separator::RightBrace)) {
                 catchBody.emplace_back(memberParser());
             }
         }
@@ -865,7 +869,7 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parseWhileStatement() {
         auto condition = parseMathematicalExpression();
 
-        if (!MATCHES(sequence(tkn::Separator::RightParenthesis)))
+        if (!sequence(tkn::Separator::RightParenthesis))
             err::P0002.throwError(fmt::format("Expected ')' after while head, got {}.", getFormattedToken(0)), {}, 1);
 
         return create<ast::ASTNodeWhileStatement>(std::move(condition), std::vector<std::unique_ptr<ast::ASTNode>>{});
@@ -896,7 +900,7 @@ namespace pl::core {
     void Parser::parseCustomTypeParameters(std::unique_ptr<ast::ASTNodeTypeDecl> &type) {
         if (auto actualType = dynamic_cast<ast::ASTNodeTypeDecl*>(type->getType().get()); actualType != nullptr)
             if (const auto &templateTypes = actualType->getTemplateParameters(); !templateTypes.empty()) {
-                if (!MATCHES(sequence(tkn::Operator::BoolLessThan)))
+                if (!sequence(tkn::Operator::BoolLessThan))
                     err::P0002.throwError("Cannot use template type without template parameters.", {}, 1);
 
                 u32 index = 0;
@@ -918,12 +922,12 @@ namespace pl::core {
                         err::P0002.throwError("Invalid template parameter type.", {}, 1);
 
                     index++;
-                } while (MATCHES(sequence(tkn::Separator::Comma)));
+                } while (sequence(tkn::Separator::Comma));
 
                 if (index < templateTypes.size())
                     err::P0002.throwError(fmt::format("Not enough template parameters provided, expected {} parameters.", templateTypes.size()), {}, 1);
 
-                if (!MATCHES(sequence(tkn::Operator::BoolGreaterThan)))
+                if (!sequence(tkn::Operator::BoolGreaterThan))
                     err::P0002.throwError(fmt::format("Expected '>' to close template list, got {}.", getFormattedToken(0)), {}, 1);
 
                 type = std::unique_ptr<ast::ASTNodeTypeDecl>(static_cast<ast::ASTNodeTypeDecl*>(type->clone().release()));
@@ -945,18 +949,18 @@ namespace pl::core {
 
     // [be|le] <Identifier|u8|u16|u24|u32|u48|u64|u96|u128|s8|s16|s24|s32|s48|s64|s96|s128|float|double|str>
     std::unique_ptr<ast::ASTNodeTypeDecl> Parser::parseType() {
-        bool reference = MATCHES(sequence(tkn::Keyword::Reference));
+        bool reference = sequence(tkn::Keyword::Reference);
 
         std::optional<std::endian> endian;
-        if (MATCHES(sequence(tkn::Keyword::LittleEndian)))
+        if (sequence(tkn::Keyword::LittleEndian))
             endian = std::endian::little;
-        else if (MATCHES(sequence(tkn::Keyword::BigEndian)))
+        else if (sequence(tkn::Keyword::BigEndian))
             endian = std::endian::big;
 
         std::unique_ptr<ast::ASTNodeTypeDecl> result = nullptr;
-        if (MATCHES(sequence(tkn::Literal::Identifier))) {    // Custom type
+        if (sequence(tkn::Literal::Identifier)) {    // Custom type
             result = parseCustomType();
-        } else if (MATCHES(sequence(tkn::ValueType::Any))) {    // Builtin type
+        } else if (sequence(tkn::ValueType::Any)) {    // Builtin type
             auto type = getValue<Token::ValueType>(-1);
             result = create<ast::ASTNodeTypeDecl>(Token::getTypeName(type), create<ast::ASTNodeBuiltinType>(type));
         } else {
@@ -973,18 +977,18 @@ namespace pl::core {
     std::vector<std::shared_ptr<ast::ASTNode>> Parser::parseTemplateList() {
         std::vector<std::shared_ptr<ast::ASTNode>> result;
 
-        if (MATCHES(sequence(tkn::Operator::BoolLessThan))) {
+        if (sequence(tkn::Operator::BoolLessThan)) {
             do {
-                if (MATCHES(sequence(tkn::Literal::Identifier)))
+                if (sequence(tkn::Literal::Identifier))
                     result.push_back(createShared<ast::ASTNodeTypeDecl>(getValue<Token::Identifier>(-1).get()));
-                else if (MATCHES(sequence(tkn::ValueType::Auto, tkn::Literal::Identifier))) {
+                else if (sequence(tkn::ValueType::Auto, tkn::Literal::Identifier)) {
                     result.push_back(createShared<ast::ASTNodeLValueAssignment>(getValue<Token::Identifier>(-1).get(), nullptr));
                 }
                 else
                     err::P0002.throwError(fmt::format("Expected identifier for template type, got {}.", getFormattedToken(0)), {}, 1);
-            } while (MATCHES(sequence(tkn::Separator::Comma)));
+            } while (sequence(tkn::Separator::Comma));
 
-            if (!MATCHES(sequence(tkn::Operator::BoolGreaterThan)))
+            if (!sequence(tkn::Operator::BoolGreaterThan))
                 err::P0002.throwError(fmt::format("Expected '>' after template declaration, got {}.", getFormattedToken(0)), {}, 1);
         }
 
@@ -997,7 +1001,7 @@ namespace pl::core {
 
         auto templateList = this->parseTemplateList();
 
-        if (!MATCHES(sequence(tkn::Operator::Assign)))
+        if (!sequence(tkn::Operator::Assign))
             err::P0002.throwError(fmt::format("Expected '=' after using declaration type name, got {}.", getFormattedToken(0)), {}, 1);
 
         auto type = addType(name, nullptr);
@@ -1023,12 +1027,12 @@ namespace pl::core {
     // padding[(parseMathematicalExpression)]
     std::unique_ptr<ast::ASTNode> Parser::parsePadding() {
         std::unique_ptr<ast::ASTNode> size;
-        if (MATCHES(sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis)))
+        if (sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis))
             size = parseWhileStatement();
         else
             size = parseMathematicalExpression();
 
-        if (!MATCHES(sequence(tkn::Separator::RightBracket)))
+        if (!sequence(tkn::Separator::RightBracket))
             err::P0002.throwError(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)), {}, 1);
 
         return create<ast::ASTNodeArrayVariableDecl>("$padding$", createShared<ast::ASTNodeTypeDecl>("", createShared<ast::ASTNodeBuiltinType>(Token::ValueType::Padding)), std::move(size));
@@ -1042,13 +1046,13 @@ namespace pl::core {
 
             std::string variableName = identifier;
             do {
-                if (MATCHES(sequence(tkn::Literal::Identifier)))
+                if (sequence(tkn::Literal::Identifier))
                     variableName = getValue<Token::Identifier>(-1).get();
                 variables.push_back(createShared<ast::ASTNodeVariableDecl>(variableName, type, nullptr, nullptr, false, false, constant));
-            } while (MATCHES(sequence(tkn::Separator::Comma)));
+            } while (sequence(tkn::Separator::Comma));
 
             return create<ast::ASTNodeMultiVariableDecl>(std::move(variables));
-        } else if (MATCHES(sequence(tkn::Operator::At))) {
+        } else if (sequence(tkn::Operator::At)) {
             if (constant)
                 err::P0002.throwError("Cannot mark placed variable as 'const'.", "Variables placed in memory are always implicitly const.", 1);
 
@@ -1057,7 +1061,7 @@ namespace pl::core {
             std::unique_ptr<ast::ASTNode> placementOffset, placementSection;
             placementOffset = parseMathematicalExpression();
 
-            if (MATCHES(sequence(tkn::Keyword::In))) {
+            if (sequence(tkn::Keyword::In)) {
                 if (!allowSection)
                     err::P0002.throwError("Cannot place a member variable in a separate section.", {}, 1);
 
@@ -1065,7 +1069,7 @@ namespace pl::core {
             }
 
             return create<ast::ASTNodeVariableDecl>(variableName, type, std::move(placementOffset), std::move(placementSection), false, false, constant);
-        } else if (MATCHES(sequence(tkn::Operator::Assign))) {
+        } else if (sequence(tkn::Operator::Assign)) {
             std::vector<std::unique_ptr<ast::ASTNode>> compounds;
             compounds.push_back(create<ast::ASTNodeVariableDecl>(identifier, type, nullptr, create<ast::ASTNodeLiteral>(u128(ptrn::Pattern::PatternLocalSectionId)), false, false, constant));
             compounds.push_back(create<ast::ASTNodeLValueAssignment>(identifier, parseMathematicalExpression()));
@@ -1082,24 +1086,24 @@ namespace pl::core {
 
         std::unique_ptr<ast::ASTNode> size;
 
-        if (!MATCHES(sequence(tkn::Separator::RightBracket))) {
-            if (MATCHES(sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis)))
+        if (!sequence(tkn::Separator::RightBracket)) {
+            if (sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis))
                 size = parseWhileStatement();
             else
                 size = parseMathematicalExpression();
 
-            if (!MATCHES(sequence(tkn::Separator::RightBracket)))
+            if (!sequence(tkn::Separator::RightBracket))
                 err::P0002.throwError(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)), {}, 1);
         }
 
-        if (MATCHES(sequence(tkn::Operator::At))) {
+        if (sequence(tkn::Operator::At)) {
             if (constant)
                 err::P0002.throwError("Cannot mark placed variable as 'const'.", "Variables placed in memory are always implicitly const.", 1);
 
             std::unique_ptr<ast::ASTNode> placementOffset, placementSection;
             placementOffset = parseMathematicalExpression();
 
-            if (MATCHES(sequence(tkn::Keyword::In))) {
+            if (sequence(tkn::Keyword::In)) {
                 if (!allowSection)
                     err::P0002.throwError("Cannot place a member variable in a separate section.", {}, 1);
 
@@ -1117,7 +1121,7 @@ namespace pl::core {
         auto name = getValue<Token::Identifier>(-2).get();
         auto sizeType = parseType();
 
-        if (MATCHES(sequence(tkn::Operator::At)))
+        if (sequence(tkn::Operator::At))
             return create<ast::ASTNodePointerVariableDecl>(name, type, std::move(sizeType), parseMathematicalExpression());
         else
             return create<ast::ASTNodePointerVariableDecl>(name, type, std::move(sizeType));
@@ -1128,24 +1132,24 @@ namespace pl::core {
         auto name = getValue<Token::Identifier>(-2).get();
         std::unique_ptr<ast::ASTNode> size;
 
-        if (!MATCHES(sequence(tkn::Separator::RightBracket))) {
-            if (MATCHES(sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis)))
+        if (!sequence(tkn::Separator::RightBracket)) {
+            if (sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis))
                 size = parseWhileStatement();
             else
                 size = parseMathematicalExpression();
 
-            if (!MATCHES(sequence(tkn::Separator::RightBracket)))
+            if (!sequence(tkn::Separator::RightBracket))
                 err::P0002.throwError(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)), {}, 1);
         }
 
-        if (!MATCHES(sequence(tkn::Operator::Colon))) {
+        if (!sequence(tkn::Operator::Colon)) {
             err::P0002.throwError(fmt::format("Expected ':' after pointer definition, got {}.", getFormattedToken(0)), "A pointer requires a integral type to specify its own size.", 1);
         }
 
         auto sizeType = parseType();
         auto arrayType = createShared<ast::ASTNodeArrayVariableDecl>("", type, std::move(size));
 
-        if (MATCHES(sequence(tkn::Operator::At)))
+        if (sequence(tkn::Operator::At))
             return create<ast::ASTNodePointerVariableDecl>(name, std::move(arrayType), std::move(sizeType), parseMathematicalExpression());
         else
             return create<ast::ASTNodePointerVariableDecl>(name, std::move(arrayType), std::move(sizeType));
@@ -1155,11 +1159,11 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parseMember() {
         std::unique_ptr<ast::ASTNode> member;
 
-        if (MATCHES(sequence(tkn::Operator::Dollar, tkn::Operator::Assign)))
+        if (sequence(tkn::Operator::Dollar, tkn::Operator::Assign))
             member = parseFunctionVariableAssignment("$");
         else if (parseCompoundAssignment(tkn::Operator::Dollar).has_value())
             member = parseFunctionVariableCompoundAssignment("$");
-        else if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Operator::Assign)))
+        else if (sequence(tkn::Literal::Identifier, tkn::Operator::Assign))
             member = parseFunctionVariableAssignment(getValue<Token::Identifier>(-2).get());
         else if (auto identifierOffset = parseCompoundAssignment(tkn::Literal::Identifier); identifierOffset.has_value())
             member = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(*identifierOffset).get());
@@ -1187,36 +1191,36 @@ namespace pl::core {
 
                 if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Separator::LeftBracket) && sequence<Not>(tkn::Separator::LeftBracket)))
                     member = parseMemberArrayVariable(std::move(type), false, false);
-                else if (MATCHES(sequence(tkn::Operator::Star, tkn::Literal::Identifier, tkn::Operator::Colon)))
+                else if (sequence(tkn::Operator::Star, tkn::Literal::Identifier, tkn::Operator::Colon))
                     member = parseMemberPointerVariable(std::move(type));
-                else if (MATCHES(sequence(tkn::Operator::Star, tkn::Literal::Identifier, tkn::Separator::LeftBracket)))
+                else if (sequence(tkn::Operator::Star, tkn::Literal::Identifier, tkn::Separator::LeftBracket))
                     member = parseMemberPointerArrayVariable(std::move(type));
-                else if (MATCHES(sequence(tkn::Literal::Identifier)))
+                else if (sequence(tkn::Literal::Identifier))
                     member = parseMemberVariable(std::move(type), false, false, getValue<Token::Identifier>(-1).get());
                 else
                     member = parseMemberVariable(std::move(type), false, false, "");
             }
-        } else if (MATCHES(sequence(tkn::ValueType::Padding, tkn::Separator::LeftBracket)))
+        } else if (sequence(tkn::ValueType::Padding, tkn::Separator::LeftBracket))
             member = parsePadding();
-        else if (MATCHES(sequence(tkn::Keyword::If)))
+        else if (sequence(tkn::Keyword::If))
             return parseConditional([this]() { return parseMember(); });
-        else if (MATCHES(sequence(tkn::Keyword::Match)))
+        else if (sequence(tkn::Keyword::Match))
             return parseMatchStatement([this]() { return parseMember(); });
-        else if (MATCHES(sequence(tkn::Keyword::Try, tkn::Separator::LeftBrace)))
+        else if (sequence(tkn::Keyword::Try, tkn::Separator::LeftBrace))
             return parseTryCatchStatement([this]() { return parseMember(); });
-        else if (MATCHES(oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue)))
+        else if (oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue))
             member = parseFunctionControlFlowStatement();
         else
             err::P0002.throwError("Invalid struct member definition.", {}, 0);
 
-        if (MATCHES(sequence(tkn::Separator::LeftBracket, tkn::Separator::LeftBracket)))
+        if (sequence(tkn::Separator::LeftBracket, tkn::Separator::LeftBracket))
             parseAttribute(dynamic_cast<ast::Attributable *>(member.get()));
 
-        if (!MATCHES(sequence(tkn::Separator::Semicolon)))
+        if (!sequence(tkn::Separator::Semicolon))
             err::P0002.throwError(fmt::format("Expected ';' at end of statement, got {}.", getFormattedToken(0)), {}, 1);
 
         // Consume superfluous semicolons
-        while (MATCHES(sequence(tkn::Separator::Semicolon)))
+        while (sequence(tkn::Separator::Semicolon))
             ;
 
         return member;
@@ -1233,21 +1237,21 @@ namespace pl::core {
 
         this->m_currTemplateType.push_back(typeDecl);
 
-        if (MATCHES(sequence(tkn::Operator::Colon))) {
+        if (sequence(tkn::Operator::Colon)) {
             // Inheritance
             do {
-                if (MATCHES(sequence(tkn::ValueType::Any)))
+                if (sequence(tkn::ValueType::Any))
                     err::P0002.throwError("Cannot inherit from built-in type.", {}, 1);
-                if (!MATCHES(sequence(tkn::Literal::Identifier)))
+                if (!sequence(tkn::Literal::Identifier))
                     err::P0002.throwError(fmt::format("Expected type to inherit from, got {}.", getFormattedToken(0)), {}, 0);
                 structNode->addInheritance(parseCustomType());
-            } while (MATCHES(sequence(tkn::Separator::Comma)));
+            } while (sequence(tkn::Separator::Comma));
         }
 
-        if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
+        if (!sequence(tkn::Separator::LeftBrace))
             err::P0002.throwError(fmt::format("Expected '{{' after struct declaration, got {}.", getFormattedToken(0)), {}, 1);
 
-        while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
+        while (!sequence(tkn::Separator::RightBrace)) {
             structNode->addMember(parseMember());
         }
         this->m_currTemplateType.pop_back();
@@ -1264,11 +1268,11 @@ namespace pl::core {
 
         typeDecl->setTemplateParameters(this->parseTemplateList());
 
-        if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
+        if (!sequence(tkn::Separator::LeftBrace))
             err::P0002.throwError(fmt::format("Expected '{{' after union declaration, got {}.", getFormattedToken(0)), {}, 1);
 
         this->m_currTemplateType.push_back(typeDecl);
-        while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
+        while (!sequence(tkn::Separator::RightBrace)) {
             unionNode->addMember(parseMember());
         }
         this->m_currTemplateType.pop_back();
@@ -1280,7 +1284,7 @@ namespace pl::core {
     std::shared_ptr<ast::ASTNodeTypeDecl> Parser::parseEnum() {
         auto typeName = getValue<Token::Identifier>(-1).get();
 
-        if (!MATCHES(sequence(tkn::Operator::Colon)))
+        if (!sequence(tkn::Operator::Colon))
             err::P0002.throwError(fmt::format("Expected ':' after enum declaration, got {}.", getFormattedToken(0)), {}, 1);
 
         auto underlyingType = parseType();
@@ -1290,20 +1294,20 @@ namespace pl::core {
         auto typeDecl = addType(typeName, create<ast::ASTNodeEnum>(std::move(underlyingType)));
         auto enumNode = static_cast<ast::ASTNodeEnum *>(typeDecl->getType().get());
 
-        if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
+        if (!sequence(tkn::Separator::LeftBrace))
             err::P0002.throwError(fmt::format("Expected '{{' after enum declaration, got {}.", getFormattedToken(0)), {}, 1);
 
         std::unique_ptr<ast::ASTNode> lastEntry;
-        while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
+        while (!sequence(tkn::Separator::RightBrace)) {
             std::unique_ptr<ast::ASTNode> enumValue;
             std::string name;
 
-            if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Operator::Assign))) {
+            if (sequence(tkn::Literal::Identifier, tkn::Operator::Assign)) {
                 name  = getValue<Token::Identifier>(-2).get();
                 enumValue = parseMathematicalExpression();
 
                 lastEntry = enumValue->clone();
-            } else if (MATCHES(sequence(tkn::Literal::Identifier))) {
+            } else if (sequence(tkn::Literal::Identifier)) {
                 name = getValue<Token::Identifier>(-1).get();
                 if (enumNode->getEntries().empty())
                     enumValue = create<ast::ASTNodeLiteral>(u128(0));
@@ -1314,7 +1318,7 @@ namespace pl::core {
             } else
                 err::P0002.throwError("Invalid enum entry definition.", "Enum entries can consist of either just a name or a name followed by a value assignment.", 1);
 
-            if (MATCHES(sequence(tkn::Separator::Dot, tkn::Separator::Dot, tkn::Separator::Dot))) {
+            if (sequence(tkn::Separator::Dot, tkn::Separator::Dot, tkn::Separator::Dot)) {
                 auto endExpr = parseMathematicalExpression();
                 enumNode->addEntry(name, std::move(enumValue), std::move(endExpr));
             } else {
@@ -1322,8 +1326,8 @@ namespace pl::core {
                 enumNode->addEntry(name, std::move(enumValue), std::move(clonedExpr));
             }
 
-            if (!MATCHES(sequence(tkn::Separator::Comma))) {
-                if (MATCHES(sequence(tkn::Separator::RightBrace)))
+            if (!sequence(tkn::Separator::Comma)) {
+                if (sequence(tkn::Separator::RightBrace))
                     break;
                 else
                     err::P0002.throwError(fmt::format("Expected ',' at end of enum entry, got {}.", getFormattedToken(0)), {}, 1);
@@ -1338,7 +1342,7 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parseBitfieldEntry() {
         std::unique_ptr<ast::ASTNode> member = nullptr;
 
-        if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Operator::Assign))) {
+        if (sequence(tkn::Literal::Identifier, tkn::Operator::Assign)) {
             auto variableName = getValue<Token::Identifier>(-2).get();
             member = parseFunctionVariableAssignment(variableName);
         } else if (auto identifierOffset = parseCompoundAssignment(tkn::Literal::Identifier); identifierOffset.has_value())
@@ -1346,22 +1350,22 @@ namespace pl::core {
         else if (MATCHES(optional(tkn::Keyword::Unsigned) && sequence(tkn::Literal::Identifier, tkn::Operator::Colon))) {
             auto fieldName = getValue<Token::Identifier>(-2).get();
             member = create<ast::ASTNodeBitfieldField>(fieldName, parseMathematicalExpression());
-        } else if (MATCHES(sequence(tkn::Keyword::Signed, tkn::Literal::Identifier, tkn::Operator::Colon))) {
+        } else if (sequence(tkn::Keyword::Signed, tkn::Literal::Identifier, tkn::Operator::Colon)) {
             auto fieldName = getValue<Token::Identifier>(-2).get();
             member = create<ast::ASTNodeBitfieldFieldSigned>(fieldName, parseMathematicalExpression());
-        } else if (MATCHES(sequence(tkn::ValueType::Padding, tkn::Operator::Colon)))
+        } else if (sequence(tkn::ValueType::Padding, tkn::Operator::Colon))
             member = create<ast::ASTNodeBitfieldField>("$padding$", parseMathematicalExpression());
         else if (peek(tkn::Literal::Identifier) || peek(tkn::ValueType::Any)) {
             std::unique_ptr<ast::ASTNodeTypeDecl> type = nullptr;
 
-            if (MATCHES(sequence(tkn::ValueType::Any))) {
+            if (sequence(tkn::ValueType::Any)) {
                 const auto typeToken = getValue<Token::ValueType>(-1);
                 type = create<ast::ASTNodeTypeDecl>(Token::getTypeName(typeToken), create<ast::ASTNodeBuiltinType>(typeToken));
-            } else if (MATCHES(sequence(tkn::Literal::Identifier))) {
+            } else if (sequence(tkn::Literal::Identifier)) {
                 auto originalPosition = m_curr;
                 auto name = parseNamespaceResolution();
 
-                if (MATCHES(sequence(tkn::Separator::LeftParenthesis))) {
+                if (sequence(tkn::Separator::LeftParenthesis)) {
                     m_curr = originalPosition;
                     member = parseFunctionCall();
                 } else {
@@ -1380,47 +1384,47 @@ namespace pl::core {
                 auto fieldName = getValue<Token::Identifier>(-2).get();
 
                 std::unique_ptr<ast::ASTNode> size;
-                if (MATCHES(sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis)))
+                if (sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis))
                     size = parseWhileStatement();
                 else
                     size = parseMathematicalExpression();
 
-                if (!MATCHES(sequence(tkn::Separator::RightBracket)))
+                if (!sequence(tkn::Separator::RightBracket))
                     err::P0002.throwError(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)), {}, 1);
 
                 member = create<ast::ASTNodeBitfieldArrayVariableDecl>(fieldName, std::move(type), std::move(size));
-            } else if (MATCHES(sequence(tkn::Literal::Identifier))) {
+            } else if (sequence(tkn::Literal::Identifier)) {
                 // (parseType) Identifier;
-                if (MATCHES(sequence(tkn::Operator::At)))
+                if (sequence(tkn::Operator::At))
                     err::P0002.throwError(fmt::format("Placement syntax is invalid within bitfields."), {}, 0);
 
                 auto variableName = getValue<Token::Identifier>(-1).get();
 
-                if (MATCHES(sequence(tkn::Operator::Colon)))
+                if (sequence(tkn::Operator::Colon))
                     member = create<ast::ASTNodeBitfieldFieldSizedType>(variableName, std::move(type), parseMathematicalExpression());
                 else
                     member = parseMemberVariable(std::move(type), false, false, variableName);
             } else
                 err::P0002.throwError(fmt::format("Expected a variable name, got {}.", getFormattedToken(0)), {}, 0);
-        } else if (MATCHES(sequence(tkn::Keyword::If)))
+        } else if (sequence(tkn::Keyword::If))
             return parseConditional([this]() { return parseBitfieldEntry(); });
-        else if (MATCHES(sequence(tkn::Keyword::Match)))
+        else if (sequence(tkn::Keyword::Match))
             return parseMatchStatement([this]() { return parseBitfieldEntry(); });
-        else if (MATCHES(sequence(tkn::Keyword::Try, tkn::Separator::LeftBrace)))
+        else if (sequence(tkn::Keyword::Try, tkn::Separator::LeftBrace))
             return parseTryCatchStatement([this]() { return parseBitfieldEntry(); });
-        else if (MATCHES(oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue)))
+        else if (oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue))
             member = parseFunctionControlFlowStatement();
         else
             err::P0002.throwError("Invalid bitfield member definition.", {}, 0);
 
-        if (MATCHES(sequence(tkn::Separator::LeftBracket, tkn::Separator::LeftBracket)))
+        if (sequence(tkn::Separator::LeftBracket, tkn::Separator::LeftBracket))
             parseAttribute(dynamic_cast<ast::Attributable *>(member.get()));
 
-        if (!MATCHES(sequence(tkn::Separator::Semicolon)))
+        if (!sequence(tkn::Separator::Semicolon))
             err::P0002.throwError(fmt::format("Expected ';' at end of statement, got {}.", getFormattedToken(0)), {}, 1);
 
         // Consume superfluous semicolons
-        while (MATCHES(sequence(tkn::Separator::Semicolon)))
+        while (sequence(tkn::Separator::Semicolon))
             ;
 
         return member;
@@ -1434,14 +1438,14 @@ namespace pl::core {
         typeDecl->setTemplateParameters(this->parseTemplateList());
         auto bitfieldNode = static_cast<ast::ASTNodeBitfield *>(typeDecl->getType().get());
 
-        if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
+        if (!sequence(tkn::Separator::LeftBrace))
             err::P0002.throwError(fmt::format("Expected '{{' after bitfield declaration, got {}.", getFormattedToken(0)), {}, 0);
 
-        while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
+        while (!sequence(tkn::Separator::RightBrace)) {
             bitfieldNode->addEntry(this->parseBitfieldEntry());
 
             // Consume superfluous semicolons
-            while (MATCHES(sequence(tkn::Separator::Semicolon)))
+            while (sequence(tkn::Separator::Semicolon))
                 ;
         }
 
@@ -1466,16 +1470,16 @@ namespace pl::core {
         auto name = getValue<Token::Identifier>(-1).get();
 
         std::unique_ptr<ast::ASTNode> placementOffset, placementSection;
-        if (MATCHES(sequence(tkn::Operator::At))) {
+        if (sequence(tkn::Operator::At)) {
             placementOffset = parseMathematicalExpression();
 
-            if (MATCHES(sequence(tkn::Keyword::In)))
+            if (sequence(tkn::Keyword::In))
                 placementSection = parseMathematicalExpression();
-        } else if (MATCHES(sequence(tkn::Keyword::In))) {
+        } else if (sequence(tkn::Keyword::In)) {
             inVariable = true;
-        } else if (MATCHES(sequence(tkn::Keyword::Out))) {
+        } else if (sequence(tkn::Keyword::Out)) {
             outVariable = true;
-        } else if (MATCHES(sequence(tkn::Operator::Assign))) {
+        } else if (sequence(tkn::Operator::Assign)) {
             std::vector<std::unique_ptr<ast::ASTNode>> compounds;
 
             compounds.push_back(create<ast::ASTNodeVariableDecl>(name, type, std::move(placementOffset), nullptr, inVariable, outVariable));
@@ -1507,21 +1511,21 @@ namespace pl::core {
 
         std::unique_ptr<ast::ASTNode> size;
 
-        if (!MATCHES(sequence(tkn::Separator::RightBracket))) {
-            if (MATCHES(sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis)))
+        if (!sequence(tkn::Separator::RightBracket)) {
+            if (sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis))
                 size = parseWhileStatement();
             else
                 size = parseMathematicalExpression();
 
-            if (!MATCHES(sequence(tkn::Separator::RightBracket)))
+            if (!sequence(tkn::Separator::RightBracket))
                 err::P0002.throwError(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)), {}, 1);
         }
 
         std::unique_ptr<ast::ASTNode> placementOffset, placementSection;
-        if (MATCHES(sequence(tkn::Operator::At))) {
+        if (sequence(tkn::Operator::At)) {
             placementOffset = parseMathematicalExpression();
 
-            if (MATCHES(sequence(tkn::Keyword::In)))
+            if (sequence(tkn::Keyword::In))
                 placementSection = parseMathematicalExpression();
         }
 
@@ -1534,13 +1538,13 @@ namespace pl::core {
 
         auto sizeType = parseType();
 
-        if (!MATCHES(sequence(tkn::Operator::At)))
+        if (!sequence(tkn::Operator::At))
             err::P0002.throwError(fmt::format("Expected '@' after pointer placement, got {}.", getFormattedToken(0)), {}, 1);
 
         auto placementOffset = parseMathematicalExpression();
 
         std::unique_ptr<ast::ASTNode> placementSection;
-        if (MATCHES(sequence(tkn::Keyword::In)))
+        if (sequence(tkn::Keyword::In))
             placementSection = parseMathematicalExpression();
 
         return create<ast::ASTNodePointerVariableDecl>(name, type, std::move(sizeType), std::move(placementOffset), std::move(placementSection));
@@ -1552,29 +1556,29 @@ namespace pl::core {
 
         std::unique_ptr<ast::ASTNode> size;
 
-        if (!MATCHES(sequence(tkn::Separator::RightBracket))) {
-            if (MATCHES(sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis)))
+        if (!sequence(tkn::Separator::RightBracket)) {
+            if (sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis))
                 size = parseWhileStatement();
             else
                 size = parseMathematicalExpression();
 
-            if (!MATCHES(sequence(tkn::Separator::RightBracket)))
+            if (!sequence(tkn::Separator::RightBracket))
                 err::P0002.throwError(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)), {}, 1);
         }
 
-        if (!MATCHES(sequence(tkn::Operator::Colon))) {
+        if (!sequence(tkn::Operator::Colon)) {
             err::P0002.throwError(fmt::format("Expected ':' at end of pointer declaration, got {}.", getFormattedToken(0)), {}, 1);
         }
 
         auto sizeType = parseType();
 
-        if (!MATCHES(sequence(tkn::Operator::At)))
+        if (!sequence(tkn::Operator::At))
             err::P0002.throwError(fmt::format("Expected '@' after array placement, got {}.", getFormattedToken(0)), {}, 1);
 
         auto placementOffset = parseMathematicalExpression();
 
         std::unique_ptr<ast::ASTNode> placementSection;
-        if (MATCHES(sequence(tkn::Keyword::In)))
+        if (sequence(tkn::Keyword::In))
             placementSection = parseMathematicalExpression();
 
         return create<ast::ASTNodePointerVariableDecl>(name, createShared<ast::ASTNodeArrayVariableDecl>("", type, std::move(size)), std::move(sizeType), std::move(placementOffset), std::move(placementSection));
@@ -1583,7 +1587,7 @@ namespace pl::core {
     std::vector<std::shared_ptr<ast::ASTNode>> Parser::parseNamespace() {
         std::vector<std::shared_ptr<ast::ASTNode>> statements;
 
-        if (!MATCHES(sequence(tkn::Literal::Identifier)))
+        if (!sequence(tkn::Literal::Identifier))
             err::P0002.throwError(fmt::format("Expected namespace identifier, got {}.", getFormattedToken(0)), {}, 1);
 
         this->m_currNamespace.push_back(this->m_currNamespace.back());
@@ -1591,16 +1595,16 @@ namespace pl::core {
         while (true) {
             this->m_currNamespace.back().push_back(getValue<Token::Identifier>(-1).get());
 
-            if (MATCHES(sequence(tkn::Operator::ScopeResolution, tkn::Literal::Identifier)))
+            if (sequence(tkn::Operator::ScopeResolution, tkn::Literal::Identifier))
                 continue;
             else
                 break;
         }
 
-        if (!MATCHES(sequence(tkn::Separator::LeftBrace)))
+        if (!sequence(tkn::Separator::LeftBrace))
             err::P0002.throwError(fmt::format("Expected '{{' at beginning of namespace, got {}.", getFormattedToken(0)), {}, 1);
 
-        while (!MATCHES(sequence(tkn::Separator::RightBrace))) {
+        while (!sequence(tkn::Separator::RightBrace)) {
             auto newStatements = parseStatements();
             std::move(newStatements.begin(), newStatements.end(), std::back_inserter(statements));
         }
@@ -1613,13 +1617,13 @@ namespace pl::core {
     std::unique_ptr<ast::ASTNode> Parser::parsePlacement() {
         auto type = parseType();
 
-        if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Separator::LeftBracket)))
+        if (sequence(tkn::Literal::Identifier, tkn::Separator::LeftBracket))
             return parseArrayVariablePlacement(std::move(type));
-        else if (MATCHES(sequence(tkn::Literal::Identifier)))
+        else if (sequence(tkn::Literal::Identifier))
             return parseVariablePlacement(std::move(type));
-        else if (MATCHES(sequence(tkn::Operator::Star, tkn::Literal::Identifier, tkn::Operator::Colon)))
+        else if (sequence(tkn::Operator::Star, tkn::Literal::Identifier, tkn::Operator::Colon))
             return parsePointerVariablePlacement(std::move(type));
-        else if (MATCHES(sequence(tkn::Operator::Star, tkn::Literal::Identifier, tkn::Separator::LeftBracket)))
+        else if (sequence(tkn::Operator::Star, tkn::Literal::Identifier, tkn::Separator::LeftBracket))
             return parsePointerArrayVariablePlacement(std::move(type));
         else
             err::P0002.throwError("Invalid placement sequence.", {}, 0);
@@ -1635,15 +1639,15 @@ namespace pl::core {
         if (auto docComment = parseDocComment(true); docComment.has_value())
             this->addGlobalDocComment(docComment->comment);
 
-        if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Operator::Assign)))
+        if (sequence(tkn::Literal::Identifier, tkn::Operator::Assign))
             statement = parseFunctionVariableAssignment(getValue<Token::Identifier>(-2).get());
-        else if (MATCHES(sequence(tkn::Operator::Dollar, tkn::Operator::Assign)))
+        else if (sequence(tkn::Operator::Dollar, tkn::Operator::Assign))
             statement = parseFunctionVariableAssignment("$");
         else if (auto identifierOffset = parseCompoundAssignment(tkn::Literal::Identifier); identifierOffset.has_value())
             statement = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(*identifierOffset).get());
         else if (MATCHES(sequence(tkn::Keyword::Using, tkn::Literal::Identifier) && (peek(tkn::Operator::Assign) || peek(tkn::Operator::BoolLessThan))))
             statement = parseUsingDeclaration();
-        else if (MATCHES(sequence(tkn::Keyword::Using, tkn::Literal::Identifier)))
+        else if (sequence(tkn::Keyword::Using, tkn::Literal::Identifier))
             parseForwardDeclaration();
         else if (peek(tkn::Keyword::BigEndian) || peek(tkn::Keyword::LittleEndian) || peek(tkn::ValueType::Any))
             statement = parsePlacement();
@@ -1660,27 +1664,27 @@ namespace pl::core {
             } else
                 statement = parsePlacement();
         }
-        else if (MATCHES(sequence(tkn::Keyword::Struct, tkn::Literal::Identifier)))
+        else if (sequence(tkn::Keyword::Struct, tkn::Literal::Identifier))
             statement = parseStruct();
-        else if (MATCHES(sequence(tkn::Keyword::Union, tkn::Literal::Identifier)))
+        else if (sequence(tkn::Keyword::Union, tkn::Literal::Identifier))
             statement = parseUnion();
-        else if (MATCHES(sequence(tkn::Keyword::Enum, tkn::Literal::Identifier)))
+        else if (sequence(tkn::Keyword::Enum, tkn::Literal::Identifier))
             statement = parseEnum();
-        else if (MATCHES(sequence(tkn::Keyword::Bitfield, tkn::Literal::Identifier)))
+        else if (sequence(tkn::Keyword::Bitfield, tkn::Literal::Identifier))
             statement = parseBitfield();
-        else if (MATCHES(sequence(tkn::Keyword::Function, tkn::Literal::Identifier)))
+        else if (sequence(tkn::Keyword::Function, tkn::Literal::Identifier))
             statement = parseFunctionDefinition();
-        else if (MATCHES(sequence(tkn::Keyword::Namespace)))
+        else if (sequence(tkn::Keyword::Namespace))
             return parseNamespace();
         else {
             statement = parseFunctionStatement();
             requiresSemicolon = false;
         }
 
-        if (statement && MATCHES(sequence(tkn::Separator::LeftBracket, tkn::Separator::LeftBracket)))
+        if (statement && sequence(tkn::Separator::LeftBracket, tkn::Separator::LeftBracket))
             parseAttribute(dynamic_cast<ast::Attributable *>(statement.get()));
 
-        if (requiresSemicolon && !MATCHES(sequence(tkn::Separator::Semicolon)))
+        if (requiresSemicolon && !sequence(tkn::Separator::Semicolon))
             err::P0002.throwError(fmt::format("Expected ';' at end of statement, got {}.", getFormattedToken(0)), {}, 1);
 
         if (statement == nullptr)
@@ -1692,7 +1696,7 @@ namespace pl::core {
         statement->setShouldDocument(this->m_ignoreDocsCount == 0);
 
         // Consume superfluous semicolons
-        while (MATCHES(sequence(tkn::Separator::Semicolon)))
+        while (sequence(tkn::Separator::Semicolon))
             ;
 
         return hlp::moveToVector(std::move(statement));
@@ -1703,12 +1707,12 @@ namespace pl::core {
         const static std::array DoubleTokens = { tkn::Operator::BoolLessThan, tkn::Operator::BoolGreaterThan };
 
         for (auto &singleToken : SingleTokens) {
-            if (MATCHES(sequence(token, singleToken, tkn::Operator::Assign)))
+            if (sequence(token, singleToken, tkn::Operator::Assign))
                 return -3;
         }
 
         for (auto &doubleTokens : DoubleTokens) {
-            if (MATCHES(sequence(token, doubleTokens, doubleTokens, tkn::Operator::Assign)))
+            if (sequence(token, doubleTokens, doubleTokens, tkn::Operator::Assign))
                 return -4;
         }
 
