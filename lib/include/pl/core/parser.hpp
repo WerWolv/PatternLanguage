@@ -242,7 +242,7 @@ namespace pl::core {
         }
 
         template<Setting S = Normal>
-        bool sequenceImpl(const Token &token, const auto &... args) {
+        bool matchOne(const Token &token) {
             if constexpr (S == Normal) {
                 if (!peek(token)) {
                     partReset();
@@ -250,26 +250,21 @@ namespace pl::core {
                 }
 
                 this->m_curr++;
-
-                if (!sequenceImpl<Normal>(args...)) {
-                    partReset();
-                    return false;
-                }
-
                 return true;
             } else if constexpr (S == Not) {
                 if (!peek(token))
                     return true;
 
                 this->m_curr++;
-
-                if (!sequenceImpl<Normal>(args...))
-                    return true;
-
                 partReset();
                 return false;
             } else
                 std::unreachable();
+        }
+
+        template<Setting S = Normal>
+        bool sequenceImpl(const auto &... args) {
+            return (matchOne<S>(args) && ...);
         }
 
         template<Setting S = Normal>
@@ -278,22 +273,25 @@ namespace pl::core {
         }
 
         template<Setting S = Normal>
-        bool oneOfImpl() {
-            if constexpr (S == Normal)
-                return false;
-            else if constexpr (S == Not)
-                return true;
-            else
-                std::unreachable();
-        }
+        bool oneOfImpl(const auto &... args) {
+            if constexpr (S == Normal) {
+                if (!(... || peek(args))) {
+                    partReset();
+                    return false;
+                }
 
-        template<Setting S = Normal>
-        bool oneOfImpl(const Token &token, const auto &... args) {
-            if constexpr (S == Normal)
-                return sequenceImpl<Normal>(token) || oneOfImpl(args...);
-            else if constexpr (S == Not)
-                return sequenceImpl<Not>(token) && oneOfImpl(args...);
-            else
+                this->m_curr++;
+
+                return true;
+            } else if constexpr (S == Not) {
+                if (!(... && peek(args)))
+                    return true;
+
+                this->m_curr++;
+
+                partReset();
+                return false;
+            } else
                 std::unreachable();
         }
 
