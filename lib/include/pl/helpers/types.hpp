@@ -19,7 +19,7 @@ namespace pl {
 
     struct Region {
         u64 address;
-        size_t size;
+        u64 size;
     };
 
     enum class ControlFlowStatement {
