@@ -89,6 +89,15 @@ namespace pl::lib::libstd {
             return true;
         });
 
+        runtime.addPragma("allow_edits", [](pl::PatternLanguage &runtime, const std::string &value) {
+            if (!value.empty())
+                return false;
+
+            runtime.getInternals().evaluator->allowMainSectionEdits();
+
+            return true;
+        });
+
     }
 
 }

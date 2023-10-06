@@ -469,40 +469,51 @@ namespace pl::core {
         auto &pattern = [&]() -> std::shared_ptr<ptrn::Pattern>& {
             auto& variablePattern = this->getVariableByName(name);
 
-            if (!variablePattern->isLocal() && !variablePattern->isReference())
-                err::E0011.throwError(fmt::format("Cannot modify global variable '{}' as it has been placed in memory.", name));
+            if (variablePattern->isLocal() || variablePattern->isReference()) {
+                // If the variable is being set to a pattern, adjust its layout to the real layout as it potentially contains dynamically sized members
+                std::visit(wolv::util::overloaded {
+                    [&](ptrn::Pattern * const value) {
+                        if (value->getTypeName() != variablePattern->getTypeName() && !variablePattern->getTypeName().empty())
+                            err::E0004.throwError(fmt::format("Cannot cast from type '{}' to type '{}'.", value->getTypeName(), variablePattern->getTypeName()));
 
-            // If the variable is being set to a pattern, adjust its layout to the real layout as it potentially contains dynamically sized members
-            std::visit(wolv::util::overloaded {
-                [&](ptrn::Pattern * const value) {
-                    if (value->getTypeName() != variablePattern->getTypeName() && !variablePattern->getTypeName().empty())
-                        err::E0004.throwError(fmt::format("Cannot cast from type '{}' to type '{}'.", value->getTypeName(), variablePattern->getTypeName()));
+                        auto reference = variablePattern->isReference();
+                        auto offset = variablePattern->getOffset();
+                        auto section = variablePattern->getSection();
 
-                    auto reference = variablePattern->isReference();
-                    auto offset = variablePattern->getOffset();
-                    auto section = variablePattern->getSection();
+                        // Keep the old variable until the new one is ref-counted, so we don't delete storage.
+                        auto oldVariable = std::exchange(variablePattern, value->clone());
 
-                    // Keep the old variable until the new one is ref-counted, so we don't delete storage.
-                    auto oldVariable = std::exchange(variablePattern, value->clone());
+                        variablePattern->setVariableName(name);
+                        variablePattern->setReference(reference);
 
-                    variablePattern->setVariableName(name);
-                    variablePattern->setReference(reference);
+                        if (!reference) {
+                            variablePattern->setOffset(offset);
+                            variablePattern->setSection(section);
+                        }
 
-                    if (!reference) {
-                        variablePattern->setOffset(offset);
-                        variablePattern->setSection(section);
-                    }
-
-                    this->changePatternSection(variablePattern.get(), section);
-                },
-                [&](const std::string &value) {
-                    if (dynamic_cast<ptrn::PatternString*>(variablePattern.get()) != nullptr)
-                        variablePattern->setSize(value.size());
-                    else
-                        err::E0004.throwError(fmt::format("Cannot assign value of type 'string' to variable of type '{}'.", variablePattern->getTypeName()));
-                },
-                [](const auto &) {}
-            }, value);
+                        this->changePatternSection(variablePattern.get(), section);
+                    },
+                    [&](const std::string &value) {
+                        if (dynamic_cast<ptrn::PatternString*>(variablePattern.get()) != nullptr)
+                            variablePattern->setSize(value.size());
+                        else
+                            err::E0004.throwError(fmt::format("Cannot assign value of type 'string' to variable of type '{}'.", variablePattern->getTypeName()));
+                    },
+                    [](const auto &) {}
+                }, value);
+            } else {
+                std::visit(wolv::util::overloaded {
+                    [&](ptrn::Pattern * const value) {
+                        if (value->getTypeName() != variablePattern->getTypeName() && !variablePattern->getTypeName().empty())
+                            err::E0004.throwError(fmt::format("Cannot cast from type '{}' to type '{}'.", value->getTypeName(), variablePattern->getTypeName()));
+                    },
+                    [&](const std::string &value) {
+                        if (variablePattern->getSize() != value.size())
+                            err::E0004.throwError(fmt::format("Cannot assign string of size {} to variable of size {}.", value.size(), variablePattern->getSize()));
+                    },
+                    [](const auto &) {}
+                }, value);
+            }
 
             return variablePattern;
         }();
@@ -545,9 +556,6 @@ namespace pl::core {
             return;
         }
 
-        if (!pattern->isLocal())
-            err::E0003.throwError(fmt::format("Cannot assign value to non-local pattern '{}'.", pattern->getVariableName()), {});
-
         if (pattern->getSize() > 0xFFFF'FFFF)
             err::E0003.throwError(fmt::format("Value is too large to place into local variable '{}'.", pattern->getVariableName()));
 
@@ -557,8 +565,10 @@ namespace pl::core {
         // Write value into variable storage
         {
             bool heapSection = pattern->getSection() == ptrn::Pattern::HeapSectionId;
+            bool mainSection = pattern->getSection() == ptrn::Pattern::MainSectionId;
             bool patternLocalSection = pattern->getSection() == ptrn::Pattern::PatternLocalSectionId;
-            auto &storage = [&, this]() -> auto& {
+
+            auto getStorage = [&, this]() -> auto& {
                 if (heapSection) {
                     if (auto &heap = this->getHeap(); heap.size() > pattern->getHeapAddress())
                         return heap[pattern->getHeapAddress()];
@@ -572,14 +582,23 @@ namespace pl::core {
                 } else {
                     return this->getSection(pattern->getSection());
                 }
-            }();
+            };
 
-            auto copyToStorage = [&](const auto &value) {
-                u64 offset = pattern->isPatternLocal() || pattern->getSection() == ptrn::Pattern::HeapSectionId ? pattern->getOffset() & 0xFFFF'FFFF : pattern->getOffset();
+            auto copyToStorage = [&, this](auto &value) {
+                u64 offset = (pattern->isPatternLocal() || heapSection) ? pattern->getOffset() & 0xFFFF'FFFF : pattern->getOffset();
 
-                if (storage.size() < offset + pattern->getSize())
-                    storage.resize(offset + pattern->getSize());
-                std::memmove(storage.data() + offset, &value, pattern->getSize());
+                if (mainSection) {
+                    if (!this->m_mainSectionEditsAllowed)
+                        err::E0007.throwError("Modifying the main memory directly is only allowed with `#pragma allow_edits` set.");
+
+                    this->accessData(offset, &value, pattern->getSize(), pattern->getSection(), true);
+                } else {
+                    auto &storage = getStorage();
+
+                    if (storage.size() < offset + pattern->getSize())
+                        storage.resize(offset + pattern->getSize());
+                    std::memmove(storage.data() + offset, &value, pattern->getSize());
+                }
 
                 if (this->isDebugModeEnabled())
                     this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
@@ -633,7 +652,9 @@ namespace pl::core {
                     changePatternType(pattern, std::make_shared<ptrn::PatternString>(this, 0, value.length()));
 
                     pattern->setSize(value.size());
-                    copyToStorage(value[0]);
+
+                    auto copy = value;
+                    copyToStorage(copy[0]);
                 },
                 [&, this](const std::shared_ptr<ptrn::Pattern>& value) {
                     if (!pattern->isReference()) {
@@ -642,6 +663,7 @@ namespace pl::core {
                         pattern = value;
                     }
 
+                    auto &storage = getStorage();
                     if (value->getSection() != ptrn::Pattern::InstantiationSectionId) {
                         if (heapSection || patternLocalSection) {
                             storage.resize((value->getOffset() & 0xFFFF'FFFF) + value->getSize());
@@ -868,6 +890,7 @@ namespace pl::core {
         ON_SCOPE_EXIT {
             this->m_envVariables.clear();
             this->m_evaluated = true;
+            this->m_mainSectionEditsAllowed = false;
         };
 
         this->m_currPatternCount = 0;

@@ -337,6 +337,10 @@ namespace pl::core {
             return this->m_debugMode;
         }
 
+        void allowMainSectionEdits() {
+            this->m_mainSectionEditsAllowed = true;
+        }
+
         void updateRuntime(const ast::ASTNode *node);
 
         void addBreakpoint(u64 line);
@@ -406,6 +410,8 @@ namespace pl::core {
         std::function<void(u64, u8*, size_t)> m_writerFunction = [](u64, u8*, size_t){
             err::E0011.throwError("No memory has been attached. Reading is disabled.");
         };
+
+        bool m_mainSectionEditsAllowed = false;
 
         std::optional<u64> m_currArrayIndex;
 
