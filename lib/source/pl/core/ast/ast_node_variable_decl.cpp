@@ -89,6 +89,30 @@ namespace pl::core::ast {
         }
     }
 
+    u128 ASTNodeVariableDecl::evaluatePlacementOffset(Evaluator *evaluator) const {
+        const auto placementNode = this->m_placementOffset->evaluate(evaluator);
+        const auto offsetLiteral = dynamic_cast<ASTNodeLiteral *>(placementNode.get());
+        if (offsetLiteral == nullptr)
+            err::E0002.throwError("Void expression used in placement expression.", { }, this);
+
+        return offsetLiteral->getValue().toUnsigned();
+    }
+
+    u64 ASTNodeVariableDecl::evaluatePlacementSection(Evaluator *evaluator) const {
+        u64 section = 0;
+        if (this->m_placementSection != nullptr) {
+            const auto sectionNode = this->m_placementSection->evaluate(evaluator);
+            const auto sectionLiteral = dynamic_cast<ASTNodeLiteral *>(sectionNode.get());
+            if (sectionLiteral == nullptr)
+                err::E0002.throwError("Cannot use void expression as section identifier.", {}, this);
+
+            auto value = sectionLiteral->getValue();
+            section = value.toUnsigned();
+        }
+
+        return section;
+    }
+
     ASTNode::FunctionResult ASTNodeVariableDecl::execute(Evaluator *evaluator) const {
         evaluator->updateRuntime(this);
 
@@ -104,6 +128,11 @@ namespace pl::core::ast {
             evaluator->popSectionId();
         } else {
             evaluator->pushSectionId(this->m_placementSection == nullptr ? ptrn::Pattern::MainSectionId : evaluator->getSectionId());
+
+            auto currOffset = evaluator->getReadOffset();
+            ON_SCOPE_EXIT { evaluator->setReadOffset(currOffset); };
+
+            evaluator->setReadOffset(this->evaluatePlacementOffset(evaluator));
             initValues = this->getType()->createPatterns(evaluator);
             evaluator->popSectionId();
         }
@@ -130,25 +159,9 @@ namespace pl::core::ast {
         evaluator->setReadOffset(startOffset);
 
         if (this->m_placementOffset != nullptr) {
-            const auto placementNode = this->m_placementOffset->evaluate(evaluator);
-            const auto offsetLiteral = dynamic_cast<ASTNodeLiteral *>(placementNode.get());
-            if (offsetLiteral == nullptr)
-                err::E0002.throwError("Void expression used in placement expression.", { }, this);
-
-
-            u64 section = 0;
-            if (this->m_placementSection != nullptr) {
-                const auto sectionNode = this->m_placementSection->evaluate(evaluator);
-                const auto sectionLiteral = dynamic_cast<ASTNodeLiteral *>(sectionNode.get());
-                if (sectionLiteral == nullptr)
-                    err::E0002.throwError("Cannot use void expression as section identifier.", {}, this);
-
-                auto value = sectionLiteral->getValue();
-                section = value.toUnsigned();
-            }
-
-            auto value = offsetLiteral->getValue();
-            evaluator->setVariableAddress(this->getName(), value.toUnsigned(), section);
+            auto section = this->evaluatePlacementSection(evaluator);
+            auto offset = this->evaluatePlacementOffset(evaluator);
+            evaluator->setVariableAddress(this->getName(), offset, section);
         }
 
         return std::nullopt;

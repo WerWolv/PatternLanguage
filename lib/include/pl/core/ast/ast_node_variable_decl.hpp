@@ -34,6 +34,10 @@ namespace pl::core::ast {
         }
 
     private:
+        u128 evaluatePlacementOffset(Evaluator *evaluator) const;
+        u64 evaluatePlacementSection(Evaluator *evaluator) const;
+
+    private:
         std::string m_name;
         std::shared_ptr<ASTNodeTypeDecl> m_type;
         std::unique_ptr<ASTNode> m_placementOffset, m_placementSection;
