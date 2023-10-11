@@ -47,7 +47,7 @@ add_library(libpl ${LIBRARY_TYPE}
         source/pl/core/ast/ast_node_type_operator.cpp
         source/pl/core/ast/ast_node_union.cpp
         source/pl/core/ast/ast_node_variable_decl.cpp
-        source/pl/core/ast/ast_node_white_statement.cpp
+        source/pl/core/ast/ast_node_while_statement.cpp
 
         source/pl/core/token.cpp
         source/pl/core/evaluator.cpp
