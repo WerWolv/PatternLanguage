@@ -3,6 +3,10 @@
 #include <pl/helpers/types.hpp>
 
 #include <pl/core/token.hpp>
+#include <pl/core/errors/error.hpp>
+
+#include <pl/core/parser_manager.hpp>
+
 #include <pl/core/errors/parser_errors.hpp>
 
 #include <pl/core/ast/ast_node.hpp>
@@ -25,16 +29,20 @@ namespace pl::core {
     public:
         using TokenIter = std::vector<Token>::const_iterator;
 
-        Parser()  = default;
+        explicit Parser() = default;
+        explicit Parser(ParserManager* parserManager) : m_parserManager(parserManager) {}
         ~Parser() = default;
 
-        std::optional<std::vector<std::shared_ptr<ast::ASTNode>>> parse(const std::string &sourceCode, const std::vector<Token> &tokens);
+        CompileResult<AST> parse(const std::string &sourceCode, const std::vector<Token> &tokens);
 
-        const std::optional<err::PatternLanguageError> &getError() { return this->m_error; }
         const auto &getTypes() { return this->m_types; }
 
         [[nodiscard]] const std::vector<std::string>& getGlobalDocComments() const {
             return this->m_globalDocComments;
+        }
+
+        void addNamespace(const std::vector<std::string>& path) {
+            this->m_currNamespace.push_back(path);
         }
 
     private:
@@ -51,6 +59,8 @@ namespace pl::core {
         std::vector<std::string> m_globalDocComments;
         i32 m_ignoreDocsCount = 0;
         std::vector<TokenIter> m_processedDocComments;
+
+        ParserManager* m_parserManager = nullptr;
 
         void addGlobalDocComment(const std::string &comment) {
             this->m_globalDocComments.push_back(comment);
@@ -173,6 +183,7 @@ namespace pl::core {
         std::unique_ptr<ast::ASTNode> parsePointerVariablePlacement(const std::shared_ptr<ast::ASTNodeTypeDecl> &type);
         std::unique_ptr<ast::ASTNode> parsePointerArrayVariablePlacement(const std::shared_ptr<ast::ASTNodeTypeDecl> &type);
         std::unique_ptr<ast::ASTNode> parsePlacement();
+        std::unique_ptr<ast::ASTNode> parseImportStatement();
         std::vector<std::shared_ptr<ast::ASTNode>> parseNamespace();
         std::vector<std::shared_ptr<ast::ASTNode>> parseStatements();
 

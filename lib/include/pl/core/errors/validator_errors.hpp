@@ -5,10 +5,10 @@
 namespace pl::core::err {
 
     namespace {
-        class ValidatorError : public Error<> {
+        class ValidatorError : public RuntimeError<> {
         public:
             ValidatorError(u32 errorCode, std::string title) noexcept :
-                    Error('V', errorCode, std::move(title)) { }
+                    RuntimeError('V', errorCode, std::move(title)) { }
         };
     }
 

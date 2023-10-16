@@ -1,7 +1,7 @@
 #pragma once
 
 #include <pl/helpers/types.hpp>
-#include <pl/helpers/result.hpp>
+#include <pl/core/errors/error.hpp>
 
 #include <pl/core/token.hpp>
 
@@ -11,27 +11,13 @@
 #include <string>
 #include <vector>
 
-#include <pl/core/errors/lexer_errors.hpp>
-
 namespace pl::core {
 
-    class ParserError : public Error {
-    public:
-        ParserError(const std::string& message, Location location) : Error(message), m_location(location) {}
-
-        [[nodiscard]] const Location& location() const {
-            return m_location;
-        }
-
-    private:
-        Location m_location;
-    };
-
-    class Lexer {
+    class Lexer : err::ErrorCollector {
     public:
         Lexer() = default;
 
-        Result<std::vector<Token>, ParserError> lex(const std::string &sourceCode);
+        CompileResult<std::vector<Token>> lex(const std::string &sourceCode, const std::string &sourceName);
 
     private:
         static constexpr char integerSeparator = '\'';
@@ -75,12 +61,6 @@ namespace pl::core {
                 return count;
         }
 
-        template<typename... Args>
-        inline void error(fmt::format_string<Args...> fmt, Args&&... args) {
-            m_errors.emplace_back(fmt::format(fmt, std::forward<Args>(args)...),
-                                  Location{ m_line, (u32) m_cursor - m_lineBegin });
-        }
-
         inline char peek(size_t p = 1) {
             return m_cursor + p < m_sourceCode.size() ? m_sourceCode[m_cursor + p] : '\0';
         }
@@ -94,6 +74,10 @@ namespace pl::core {
             }
             return false;
         };
+
+        inline err::ErrorLocation location() override {
+            return err::ErrorLocation { m_sourceName, m_line, (u32) m_cursor - m_lineBegin };
+        }
 
         std::optional<char> parseCharacter();
         std::optional<Token> parseOperator();
@@ -114,7 +98,7 @@ namespace pl::core {
         void addToken(const Token& token);
 
         std::string m_sourceCode;
-        std::vector<ParserError> m_errors;
+        std::string m_sourceName;
         std::vector<Token> m_tokens;
         size_t m_cursor{};
         u32 m_line{};

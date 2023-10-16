@@ -1,10 +1,15 @@
 #pragma once
 
 #include <pl/helpers/types.hpp>
+#include <pl/core/errors/result.hpp>
+
+#include <fmt/format.h>
 
 #include <string>
 #include <stdexcept>
+#include <utility>
 #include <vector>
+#include <functional>
 
 namespace pl::core::err {
 
@@ -51,7 +56,7 @@ namespace pl::core::err {
     class UserData<void> { };
 
     template<typename T = void>
-    class Error {
+    class RuntimeError {
     public:
         class Exception : public std::exception, public UserData<T> {
         public:
@@ -75,7 +80,7 @@ namespace pl::core::err {
             std::string m_title, m_description, m_hint;
         };
 
-        Error(char prefix, u32 errorCode, std::string title) : m_prefix(prefix), m_errorCode(errorCode), m_title(std::move(title)) {
+        RuntimeError(char prefix, u32 errorCode, std::string title) : m_prefix(prefix), m_errorCode(errorCode), m_title(std::move(title)) {
 
         }
 
@@ -92,5 +97,81 @@ namespace pl::core::err {
         u32 m_errorCode;
         std::string m_title;
     };
+
+    struct ErrorLocation {
+        std::string source;
+        u32 line, column;
+    };
+
+    class CompileError {
+
+    public:
+        CompileError(std::string message, ErrorLocation location) : m_message(std::move(message)), m_stackTrace({ std::move(location) }) { }
+        CompileError(std::string message, std::string description, ErrorLocation location) : m_message(std::move(message)), m_description(std::move(description)),
+                                                                                                m_stackTrace({ std::move(location) }) { }
+
+        [[nodiscard]] const std::string &getMessage() const { return this->m_message; }
+        [[nodiscard]] const std::string &getDescription() const { return this->m_description; }
+        [[nodiscard]] const ErrorLocation &getLocation() const { return this->m_stackTrace[0]; }
+        [[nodiscard]] const std::vector<ErrorLocation> &getStackTrace() const { return this->m_stackTrace; }
+        [[nodiscard]] std::vector<ErrorLocation> &getStackTrace() { return this->m_stackTrace; }
+
+    private:
+        std::string m_message;
+        std::string m_description;
+        std::vector<ErrorLocation> m_stackTrace;
+    };
+
+    class ErrorCollector {
+    protected:
+
+        virtual ~ErrorCollector() = default;
+
+        virtual ErrorLocation location() = 0;
+
+        template <typename... Args>
+        inline void error(const fmt::format_string<Args...>& fmt, Args&&... args) {
+            this->m_errors.emplace_back(fmt::format(fmt, std::forward<Args>(args)...), location());
+        }
+
+        inline void error(const std::string& message) {
+            this->m_errors.emplace_back(message, location());
+        }
+
+        inline void error(const std::string& message, const std::string& description) {
+            this->m_errors.emplace_back(message, description, location());
+        }
+
+        template<typename... Args>
+        inline void error(const std::string& message, const std::string& description, Args&&... args) {
+            this->m_errors.emplace_back(fmt::format(message, std::forward<Args>(args)...), description, location());
+        }
+
+        inline void error(CompileError& error) {
+            error.getStackTrace().push_back(location());
+            this->m_errors.push_back(std::move(error));
+        }
+
+        [[nodiscard]] bool hasErrors() const {
+            return !this->m_errors.empty();
+        }
+
+        [[nodiscard]] const std::vector<CompileError>& getErrors() const {
+            return this->m_errors;
+        }
+
+        void clear() {
+            this->m_errors.clear();
+        }
+
+        std::vector<CompileError> m_errors;
+    };
+
+}
+
+namespace pl::core {
+
+    template<typename T>
+    using CompileResult = hlp::Result<T, err::CompileError>;
 
 }

@@ -228,6 +228,9 @@ namespace pl::core {
                                       case Underscore: return "_";
                                       case Try: return "try";
                                       case Catch: return "catch";
+                                      case Import: return "import";
+                                      case As: return "as";
+                                      case Is: return "is";
                                   }
 
                                   return "";

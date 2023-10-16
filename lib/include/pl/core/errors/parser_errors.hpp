@@ -5,10 +5,10 @@
 namespace pl::core::err {
 
     namespace {
-        class ParserError : public Error<u32> {
+        class ParserError : public RuntimeError<u32> {
         public:
             ParserError(u32 errorCode, std::string title) noexcept :
-                    Error('P', errorCode, std::move(title)) { }
+                    RuntimeError('P', errorCode, std::move(title)) { }
         };
     }
 

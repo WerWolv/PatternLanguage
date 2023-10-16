@@ -52,6 +52,9 @@ namespace pl::core::tkn {
         const auto Underscore   = makeKeyword(Token::Keyword::Underscore, "_");
         const auto Try          = makeKeyword(Token::Keyword::Try, "try");
         const auto Catch        = makeKeyword(Token::Keyword::Catch, "catch");
+        const auto Import       = makeKeyword(Token::Keyword::Import, "import");
+        const auto As           = makeKeyword(Token::Keyword::As, "as");
+        const auto Is           = makeKeyword(Token::Keyword::Is, "is");
 
     }
 

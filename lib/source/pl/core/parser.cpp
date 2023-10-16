@@ -532,6 +532,31 @@ namespace pl::core {
         return create<ast::ASTNodeFunctionDefinition>(getNamespacePrefixedNames(functionName).back(), std::move(params), std::move(body), parameterPack, std::move(defaultParameters));
     }
 
+    std::unique_ptr<ast::ASTNode> Parser::parseImportStatement() {
+        // 'import' identifier ( colon colon identifier)* ('as' identifier)? semicolon
+        // parse consumed `import <identifier>` for us
+        auto name = getValue<Token::Identifier>(-1).get();
+
+        while (sequence(tkn::Operator::ScopeResolution, tkn::Literal::Identifier)) {
+            name += "/";
+            name += getValue<Token::Identifier>(-1).get();
+        }
+
+        std::string alias;
+
+        if (sequence(tkn::Keyword::As)) {
+            if (!sequence(tkn::Literal::Identifier))
+                err::P0002.throwError(fmt::format("Expected identifier after 'as', got {}.", getFormattedToken(0)), {}, 1);
+
+            alias = getValue<Token::Identifier>(-1).get();
+        }
+
+        if (!sequence(tkn::Separator::Semicolon))
+            err::P0002.throwError(fmt::format("Expected ';' at end of import statement, got {}.", getFormattedToken(0)), {}, 1);
+
+        return nullptr;
+    }
+
     std::unique_ptr<ast::ASTNode> Parser::parseFunctionVariableDecl(bool constant) {
         std::unique_ptr<ast::ASTNode> statement;
         auto type = parseType();
@@ -1786,7 +1811,7 @@ namespace pl::core {
     }
 
     // <(parseNamespace)...> EndOfProgram
-    std::optional<std::vector<std::shared_ptr<ast::ASTNode>>> Parser::parse(const std::string &sourceCode, const std::vector<Token> &tokens) {
+    CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> Parser::parse(const std::string &sourceCode, const std::vector<Token> &tokens) {
         this->m_curr = this->m_startToken = this->m_originalPosition = this->m_partOriginalPosition = tokens.begin();
 
         this->m_types.clear();
@@ -1806,7 +1831,7 @@ namespace pl::core {
             for (auto &type : this->m_types)
                 type.second->setCompleted();
 
-            return program;
+            return { program, {} };
         } catch (err::ParserError::Exception &e) {
             this->m_curr -= e.getUserData();
 
@@ -1815,7 +1840,7 @@ namespace pl::core {
 
             this->m_error = err::PatternLanguageError(e.format(sourceCode, line, column), line, column);
 
-            return std::nullopt;
+            return { {}, {} };
         }
     }
 

@@ -48,33 +48,32 @@ namespace pl {
     }
 
     std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> PatternLanguage::parseString(const std::string &code) {
-        auto preprocessedCode = this->m_internals.preprocessor->preprocess(*this, code);
-        if (!preprocessedCode.has_value()) {
-            this->m_currError = this->m_internals.preprocessor->getError();
+        auto [preprocessedCode, preprocessorErrors] = this->m_internals.preprocessor->preprocess(*this, code);
+        if (!preprocessorErrors.empty()) {
             return std::nullopt;
         }
 
-        auto result = this->m_internals.lexer->lex(preprocessedCode.value());
+        auto [tokens, lexerErrors] = this->m_internals.lexer->lex(preprocessedCode.value(), "");
 
-        if (result.has_errs()) {
+        if (!lexerErrors.empty()) {
             //this->m_currError = this->m_internals.lexer->getError();
             // TODO: multiple errors
             return std::nullopt;
         }
 
-        auto ast = this->m_internals.parser->parse(code, result.unwrap());
-        if (!ast.has_value()) {
-            this->m_currError = this->m_internals.parser->getError();
+        auto ast = this->m_internals.parser->parse(code, tokens.value());
+        if (!ast.is_ok()) {
+            //this->m_currError = this->m_internals.parser->getError();
             return std::nullopt;
         }
 
-        if (!this->m_internals.validator->validate(code, *ast, true, true)) {
+        if (!this->m_internals.validator->validate(code, *ast.ok, true, true)) {
             this->m_currError = this->m_internals.validator->getError();
 
             return std::nullopt;
         }
 
-        return ast;
+        return ast.ok;
     }
 
     bool PatternLanguage::executeString(std::string code, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
@@ -171,8 +170,16 @@ namespace pl {
         this->m_aborted = true;
     }
 
-    void PatternLanguage::setIncludePaths(std::vector<std::fs::path> paths) const {
-        this->m_internals.preprocessor->setIncludePaths(std::move(paths));
+    void PatternLanguage::setIncludePaths(std::vector<std::fs::path> paths) {
+        this->m_includeResolver = [paths = std::move(paths)](std::fs::path &path) -> std::fs::path {
+            for (const auto &includePath : paths) {
+                auto fullPath = includePath / path;
+                if (std::fs::exists(fullPath))
+                    return fullPath;
+            }
+
+            return {};
+        };
     }
 
     void PatternLanguage::addPragma(const std::string &name, const api::PragmaHandler &callback) const {

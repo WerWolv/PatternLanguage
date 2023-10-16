@@ -44,7 +44,7 @@ std::optional<char> Lexer::parseCharacter() {
                 return static_cast<char>(std::stoul(hex, nullptr, 16));
             }
             default:
-                this->error("Unknown escape sequence: {}", m_sourceCode[m_cursor-1]);
+                error("Unknown escape sequence: {}", m_sourceCode[m_cursor-1]);
                 return std::nullopt;
         }
     } else {
@@ -67,7 +67,7 @@ std::optional<Token> Lexer::parseStringLiteral() {
         }
 
         if(m_cursor > m_sourceCode.size()) {
-            this->error("Unexpected end of string literal");
+            error("Unexpected end of string literal");
             return std::nullopt;
         }
     }
@@ -109,7 +109,7 @@ std::optional<u128> Lexer::parseInteger(std::string_view literal) {
         if(c == integerSeparator) continue;
 
         if (!isIntegerCharacter(c, base)) {
-            this->error("Invalid integer literal: {}", literal);
+            error("Invalid integer literal: {}", literal);
             return std::nullopt;
         }
         value = value * base + characterValue(c);
@@ -123,7 +123,7 @@ std::optional<double> Lexer::parseFloatingPoint(std::string_view literal, char s
     double val = std::strtod(literal.data(), &end);
 
     if(end != literal.data() + literal.size()) {
-        this->error("Invalid float literal: {}", literal);
+        error("Invalid float literal: {}", literal);
         return std::nullopt;
     }
 
@@ -189,7 +189,7 @@ std::optional<Token> Lexer::parseOneLineDocComment() {
     while(m_sourceCode[m_cursor] != '\n') {
         result += m_sourceCode[m_cursor++];
         if(peek(1) == 0) {
-            this->error("Unexpected end of file while parsing one line doc comment");
+            error("Unexpected end of file while parsing one line doc comment");
             return std::nullopt;
         }
     }
@@ -206,7 +206,7 @@ std::optional<Token> Lexer::parseMultiLineDocComment() {
             m_lineBegin = m_cursor;
         }
         if(peek(1) == 0) {
-            this->error("Unexpected end of file while parsing multi line doc comment");
+            error("Unexpected end of file while parsing multi line doc comment");
             return std::nullopt;
         }
         if(peek(1) == '*' && peek(2) == '/') {
@@ -288,8 +288,9 @@ void Lexer::addToken(const Token &token) {
     m_tokens.emplace_back(token);
 }
 
-Result<std::vector<Token>, ParserError> Lexer::lex(const std::string &sourceCode) {
+CompileResult<std::vector<Token>> Lexer::lex(const std::string &sourceCode, const std::string &sourceName) {
     this->m_sourceCode = sourceCode;
+    this->m_sourceName = sourceName;
     this->m_cursor = 0;
     this->m_line = 1;
 
@@ -362,12 +363,12 @@ Result<std::vector<Token>, ParserError> Lexer::lex(const std::string &sourceCode
                         addToken(token.value());
                     }
                 } else {
-                    this->error("Expected '/' after '//' but got '//{}'", type);
+                    error("Expected '/' after '//' but got '//{}'", type);
                 }
                 continue;
             } else if(category == '*') {
                 if(type != '!' && type != '*') {
-                    this->error("Invalid documentation comment. Expected '/**' or '/*!', got '/*{}", type);
+                    error("Invalid documentation comment. Expected '/**' or '/*!', got '/*{}", type);
                     continue;
                 }
                 auto token = parseMultiLineDocComment();
@@ -405,7 +406,7 @@ Result<std::vector<Token>, ParserError> Lexer::lex(const std::string &sourceCode
 
             if (character.has_value()) {
                 if(m_sourceCode[m_cursor] != '\'') {
-                    this->error("Expected closing '");
+                    error("Expected closing '");
                     continue;
                 }
 
@@ -415,7 +416,7 @@ Result<std::vector<Token>, ParserError> Lexer::lex(const std::string &sourceCode
                 continue;
             }
         } else {
-            this->error("Unexpected character: {}", c);
+            error("Unexpected character: {}", c);
         }
 
         m_cursor++;
@@ -423,5 +424,5 @@ Result<std::vector<Token>, ParserError> Lexer::lex(const std::string &sourceCode
 
     addToken(makeToken(Separator::EndOfProgram));
 
-    return Result<std::vector<Token>, ParserError> { m_tokens, m_errors };
+    return { m_tokens, m_errors };
 }

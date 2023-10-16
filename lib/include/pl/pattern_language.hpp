@@ -165,7 +165,7 @@ namespace pl {
          * @brief Sets the include paths for where to look for include files
          * @param paths List of paths to look in
          */
-        void setIncludePaths(std::vector<std::fs::path> paths) const;
+        void setIncludePaths(std::vector<std::fs::path> paths);
 
         /**
          * @brief Registers a callback to be called when a dangerous function is being executed
@@ -323,6 +323,7 @@ namespace pl {
 
         Internals m_internals;
         std::optional<core::err::PatternLanguageError> m_currError;
+        api::IncludeResolver m_includeResolver;
 
         std::map<u64, std::vector<std::shared_ptr<ptrn::Pattern>>> m_patterns;
         std::map<u64, wolv::container::IntervalTree<ptrn::Pattern*, u64, 5>> m_flattenedPatterns;

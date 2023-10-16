@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <functional>
 #include <optional>
 #include <set>
@@ -9,27 +8,25 @@
 
 #include <pl/api.hpp>
 #include <pl/helpers/types.hpp>
-#include <pl/core/errors/preprocessor_errors.hpp>
+#include <pl/core/errors/error.hpp>
 
+#include <utility>
 #include <wolv/io/fs.hpp>
 
 namespace pl::core {
 
-    class Preprocessor {
+    class Preprocessor : err::ErrorCollector {
     public:
+
         Preprocessor();
 
-        std::optional<std::string> preprocess(PatternLanguage &runtime, const std::string &code, bool initialRun = true);
+        ~Preprocessor() override = default;
+
+        CompileResult<std::string> preprocess(PatternLanguage &runtime, const std::string &code, bool initialRun = true);
 
         void addDefine(const std::string &name, const std::string &value = "");
         void addPragmaHandler(const std::string &pragmaType, const api::PragmaHandler &handler);
         void removePragmaHandler(const std::string &pragmaType);
-
-        void setIncludePaths(std::vector<std::fs::path> paths) {
-            this->m_includePaths = std::move(paths);
-        }
-
-        const std::optional<err::PatternLanguageError> &getError() { return this->m_error; }
 
         [[nodiscard]] bool shouldOnlyIncludeOnce() const {
             return this->m_onlyIncludeOnce;
@@ -39,6 +36,8 @@ namespace pl::core {
         Preprocessor(const Preprocessor &);
 
     private:
+        err::ErrorLocation location() override;
+
         std::unordered_map<std::string, api::PragmaHandler> m_pragmaHandlers;
 
         std::unordered_map<std::string, std::pair<std::string, u32>> m_defines;
@@ -46,11 +45,12 @@ namespace pl::core {
 
         std::set<std::fs::path> m_onceIncludedFiles;
 
-        std::optional<err::PatternLanguageError> m_error;
+        api::IncludeResolver m_includeResolver;
+
+        u32 m_offset = 0;
+        u32 m_lineNumber = 1;
 
         bool m_onlyIncludeOnce = false;
-
-        std::vector<std::fs::path> m_includePaths;
     };
 
 }

@@ -3,6 +3,8 @@
 #include <pl/core/token.hpp>
 #include <pl/helpers/types.hpp>
 
+#include <wolv/io/fs.hpp>
+
 #include <cmath>
 #include <vector>
 #include <functional>
@@ -23,6 +25,8 @@ namespace pl::api {
      * @brief A pragma handler is a function that is called when a pragma is encountered.
      */
     using PragmaHandler = std::function<bool(PatternLanguage&, const std::string &)>;
+
+    using IncludeResolver = std::function<std::fs::path(std::fs::path&)>;
 
     /**
      * @brief A type representing a custom section

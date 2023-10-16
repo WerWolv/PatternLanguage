@@ -71,7 +71,10 @@ namespace pl::core {
             Const,
             Underscore,
             Try,
-            Catch
+            Catch,
+            Import,
+            As,
+            Is
         };
 
         enum class Operator {
