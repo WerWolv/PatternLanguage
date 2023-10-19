@@ -20,64 +20,9 @@ namespace pl::core {
         CompileResult<std::vector<Token>> lex(const std::string &sourceCode, const std::string &sourceName);
 
     private:
-        static constexpr char integerSeparator = '\'';
-
-        static inline bool isIdentifierCharacter(char c) {
-            return std::isalnum(c) || c == '_';
-        }
-
-        static inline bool isIntegerCharacter(char c, int base) {
-            switch (base) {
-                case 16:
-                    return std::isxdigit(c);
-                case 10:
-                    return std::isdigit(c);
-                case 8:
-                    return c >= '0' && c <= '7';
-                case 2:
-                    return c == '0' || c == '1';
-                default:
-                    return false;
-            }
-        }
-
-        static inline int characterValue(char c) {
-            if (c >= '0' && c <= '9') {
-                return c - '0';
-            } else if (c >= 'a' && c <= 'f') {
-                return c - 'a' + 10;
-            } else if (c >= 'A' && c <= 'F') {
-                return c - 'A' + 10;
-            } else {
-                return 0;
-            }
-        }
-
-        static inline size_t getIntegerLiteralLength(const std::string_view& literal) {
-            auto count = literal.find_first_not_of("0123456789ABCDEFabcdef'xXoOpP.uU");
-            if (count == std::string_view::npos)
-                return literal.size();
-            else
-                return count;
-        }
-
-        inline char peek(size_t p = 1) {
-            return m_cursor + p < m_sourceCode.size() ? m_sourceCode[m_cursor + p] : '\0';
-        }
-
-        inline bool processToken(auto parserFunction, const std::string_view& identifier) {
-            auto token = (this->*parserFunction)(identifier);
-            if (token.has_value()) {
-                m_tokens.emplace_back(token.value());
-                m_cursor += identifier.size();
-                return true;
-            }
-            return false;
-        };
-
-        inline err::ErrorLocation location() override {
-            return err::ErrorLocation { m_sourceName, m_line, (u32) m_cursor - m_lineBegin };
-        }
+        [[nodiscard]] char peek(size_t p = 1) const;
+        bool processToken(auto parserFunction, const std::string_view& identifier);
+        Location location() override;
 
         std::optional<char> parseCharacter();
         std::optional<Token> parseOperator();

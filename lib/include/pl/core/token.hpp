@@ -8,6 +8,7 @@
 #include <limits>
 
 #include <pl/helpers/types.hpp>
+#include "location.hpp"
 
 namespace pl::ptrn {
     class Pattern;
@@ -16,11 +17,6 @@ namespace pl::ptrn {
 namespace pl::core {
 
     namespace ast { class ASTNode; }
-
-    struct Location {
-        u32 line;
-        u32 column;
-    };
 
     class Token {
     public:

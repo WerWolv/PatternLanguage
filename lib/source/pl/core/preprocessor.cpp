@@ -297,8 +297,8 @@ namespace pl::core {
         this->m_pragmaHandlers.erase(pragmaType);
     }
 
-    err::ErrorLocation Preprocessor::location() {
-        return err::ErrorLocation();
+    Location Preprocessor::location() {
+        return {};
     }
 
 }

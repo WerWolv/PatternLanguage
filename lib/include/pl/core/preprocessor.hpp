@@ -36,7 +36,7 @@ namespace pl::core {
         Preprocessor(const Preprocessor &);
 
     private:
-        err::ErrorLocation location() override;
+        Location location() override;
 
         std::unordered_map<std::string, api::PragmaHandler> m_pragmaHandlers;
 

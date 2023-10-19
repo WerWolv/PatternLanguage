@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pl/helpers/types.hpp>
+#include "pl/core/location.hpp"
 #include <pl/core/errors/result.hpp>
 
 #include <fmt/format.h>
@@ -98,28 +99,23 @@ namespace pl::core::err {
         std::string m_title;
     };
 
-    struct ErrorLocation {
-        std::string source;
-        u32 line, column;
-    };
-
     class CompileError {
 
     public:
-        CompileError(std::string message, ErrorLocation location) : m_message(std::move(message)), m_stackTrace({ std::move(location) }) { }
-        CompileError(std::string message, std::string description, ErrorLocation location) : m_message(std::move(message)), m_description(std::move(description)),
-                                                                                                m_stackTrace({ std::move(location) }) { }
+        CompileError(std::string message, Location location) : m_message(std::move(message)), trace({std::move(location) }) { }
+        CompileError(std::string message, std::string description, Location location) : m_message(std::move(message)), m_description(std::move(description)),
+                                                                                             trace({std::move(location) }) { }
 
         [[nodiscard]] const std::string &getMessage() const { return this->m_message; }
         [[nodiscard]] const std::string &getDescription() const { return this->m_description; }
-        [[nodiscard]] const ErrorLocation &getLocation() const { return this->m_stackTrace[0]; }
-        [[nodiscard]] const std::vector<ErrorLocation> &getStackTrace() const { return this->m_stackTrace; }
-        [[nodiscard]] std::vector<ErrorLocation> &getStackTrace() { return this->m_stackTrace; }
+        [[nodiscard]] const Location &getLocation() const { return this->trace[0]; }
+        [[nodiscard]] const std::vector<Location> &getTrace() const { return this->trace; }
+        [[nodiscard]] std::vector<Location> &getTrace() { return this->trace; }
 
     private:
         std::string m_message;
         std::string m_description;
-        std::vector<ErrorLocation> m_stackTrace;
+        std::vector<Location> trace;
     };
 
     class ErrorCollector {
@@ -127,7 +123,7 @@ namespace pl::core::err {
 
         virtual ~ErrorCollector() = default;
 
-        virtual ErrorLocation location() = 0;
+        virtual Location location() = 0;
 
         template <typename... Args>
         inline void error(const fmt::format_string<Args...>& fmt, Args&&... args) {
@@ -148,7 +144,7 @@ namespace pl::core::err {
         }
 
         inline void error(CompileError& error) {
-            error.getStackTrace().push_back(location());
+            error.getTrace().push_back(location());
             this->m_errors.push_back(std::move(error));
         }
 

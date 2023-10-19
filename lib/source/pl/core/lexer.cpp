@@ -8,6 +8,47 @@ using namespace pl;
 using namespace pl::core;
 using namespace tkn;
 
+static constexpr char integerSeparator = '\'';
+
+static inline bool isIdentifierCharacter(char c) {
+    return std::isalnum(c) || c == '_';
+}
+
+static inline bool isIntegerCharacter(char c, int base) {
+    switch (base) {
+        case 16:
+            return std::isxdigit(c);
+        case 10:
+            return std::isdigit(c);
+        case 8:
+            return c >= '0' && c <= '7';
+        case 2:
+            return c == '0' || c == '1';
+        default:
+            return false;
+    }
+}
+
+static inline int characterValue(char c) {
+    if (c >= '0' && c <= '9') {
+        return c - '0';
+    } else if (c >= 'a' && c <= 'f') {
+        return c - 'a' + 10;
+    } else if (c >= 'A' && c <= 'F') {
+        return c - 'A' + 10;
+    } else {
+        return 0;
+    }
+}
+
+static inline size_t getIntegerLiteralLength(const std::string_view& literal) {
+    auto count = literal.find_first_not_of("0123456789ABCDEFabcdef'xXoOpP.uU");
+    if (count == std::string_view::npos)
+        return literal.size();
+    else
+        return count;
+}
+
 std::optional<char> Lexer::parseCharacter() {
     const char& c = m_sourceCode[m_cursor++];
     if (c == '\\') {
@@ -281,7 +322,7 @@ std::optional<Token> Lexer::parseConstant(const std::string_view &identifier) {
 }
 
 Token Lexer::makeToken(const Token &token) {
-    return Token(token.type, token.value, { m_line, (u32) m_cursor - m_lineBegin });
+    return Token(token.type, token.value, { m_sourceName, m_line, (u32) m_cursor - m_lineBegin });
 }
 
 void Lexer::addToken(const Token &token) {
@@ -425,4 +466,22 @@ CompileResult<std::vector<Token>> Lexer::lex(const std::string &sourceCode, cons
     addToken(makeToken(Separator::EndOfProgram));
 
     return { m_tokens, m_errors };
+}
+
+inline char Lexer::peek(size_t p) const {
+    return m_cursor + p < m_sourceCode.size() ? m_sourceCode[m_cursor + p] : '\0';
+}
+
+inline bool Lexer::processToken(auto parserFunction, const std::string_view& identifier) {
+    auto token = (this->*parserFunction)(identifier);
+    if (token.has_value()) {
+        m_tokens.emplace_back(token.value());
+        m_cursor += identifier.size();
+        return true;
+    }
+    return false;
+};
+
+inline Location Lexer::location() {
+    return Location { m_sourceName, m_line, (u32) m_cursor - m_lineBegin };
 }

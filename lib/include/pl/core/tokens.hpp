@@ -12,7 +12,7 @@ namespace pl::core::tkn {
     };
 
     inline Token makeToken(const core::Token::Type type, const core::Token::ValueTypes &value) {
-        return { type, value, { 1, 1 } };
+        return { type, value, EmptyLocation };
     }
 
     namespace Keyword {
@@ -73,7 +73,7 @@ namespace pl::core::tkn {
         }
 
         inline Token makeDocComment(bool global, const std::string &value) {
-            return { core::Token::Type::DocComment, Token::DocComment { global, value }, { 1, 1 } };
+            return { core::Token::Type::DocComment, Token::DocComment { global, value }, EmptyLocation };
         }
 
         const auto Identifier = makeToken(core::Token::Type::Identifier, { });
