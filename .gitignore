@@ -1,2 +1,3 @@
 cmake-build-*/
 build/
+.idea/compilerexplorer.settings.xml
