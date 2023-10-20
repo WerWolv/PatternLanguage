@@ -94,6 +94,7 @@ namespace pl::core {
                     if (code[m_offset] == '\n') {
                         output += '\n';
                         m_lineNumber++;
+                        m_lineBeginOffset = m_offset;
                         startOfLine = true;
                     }
 
@@ -240,6 +241,7 @@ namespace pl::core {
 
             if (code[m_offset] == '\n') {
                 m_lineNumber++;
+                m_lineBeginOffset = m_offset;
                 startOfLine = true;
             } else if (!std::isspace(code[m_offset]))
                 startOfLine = false;
@@ -299,7 +301,7 @@ namespace pl::core {
     }
 
     Location Preprocessor::location() {
-        return {};
+        return { m_source, m_lineNumber, (u32) (m_offset - m_lineBeginOffset) };
     }
 
 }

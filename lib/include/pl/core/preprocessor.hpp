@@ -49,6 +49,7 @@ namespace pl::core {
 
         u32 m_offset = 0;
         u32 m_lineNumber = 1;
+        u32 m_lineBeginOffset = 0;
 
         std::string m_source;
 
