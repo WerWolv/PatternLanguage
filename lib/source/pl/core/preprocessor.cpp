@@ -30,9 +30,10 @@ namespace pl::core {
         });
     }
 
-    CompileResult<std::string> Preprocessor::preprocess(PatternLanguage &runtime, const std::string &sourceCode, bool initialRun) {
+    CompileResult<std::string> Preprocessor::preprocess(PatternLanguage &runtime, const std::string &sourceCode, const std::string &source, bool initialRun) {
         m_offset      = 0;
         m_lineNumber  = 1;
+        m_source      = source;
         bool isInString = false;
 
         std::vector<bool> ifDefs;
@@ -174,7 +175,7 @@ namespace pl::core {
                         Preprocessor preprocessor(*this);
                         preprocessor.m_pragmas.clear();
 
-                        auto result = preprocessor.preprocess(runtime, file.readString(), false);
+                        auto result = preprocessor.preprocess(runtime, file.readString(), includePath.string(), false);
 
                         if (result.has_errs()) {
                             for (auto &item: result.errs) {

@@ -146,7 +146,7 @@ namespace pl::cli::sub {
             // Execute pattern file
             wolv::io::File patternFile(patternFilePath, wolv::io::File::Mode::Read);
 
-            auto ast = runtime.parseString(patternFile.readString());
+            auto ast = runtime.parseString(patternFile.readString(), patternFile.getPath().string());
             if (!ast.has_value()) {
                 auto error = runtime.getError().value();
                 fmt::print("Pattern Error: {}:{} -> {}\n", error.line, error.column, error.message);

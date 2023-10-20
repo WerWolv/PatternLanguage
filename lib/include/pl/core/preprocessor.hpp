@@ -22,7 +22,7 @@ namespace pl::core {
 
         ~Preprocessor() override = default;
 
-        CompileResult<std::string> preprocess(PatternLanguage &runtime, const std::string &code, bool initialRun = true);
+        CompileResult<std::string> preprocess(PatternLanguage &runtime, const std::string &code, const std::string &source, bool initialRun = true);
 
         void addDefine(const std::string &name, const std::string &value = "");
         void addPragmaHandler(const std::string &pragmaType, const api::PragmaHandler &handler);
@@ -49,6 +49,8 @@ namespace pl::core {
 
         u32 m_offset = 0;
         u32 m_lineNumber = 1;
+
+        std::string m_source;
 
         bool m_onlyIncludeOnce = false;
     };

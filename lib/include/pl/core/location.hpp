@@ -14,5 +14,6 @@ namespace pl::core {
     };
 
     static constexpr Location EmptyLocation = { "", 0, 0 };
+    static constexpr std::string DefaultSource = "<Source Code>";
 
 }

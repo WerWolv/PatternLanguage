@@ -71,9 +71,10 @@ namespace pl {
         /**
          * @brief Parses a pattern language code string and returns the generated AST
          * @param code Code to parse
+         * @param source Source of the code
          * @return Generated AST
          */
-        [[nodiscard]] std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> parseString(const std::string &code);
+        [[nodiscard]] std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> parseString(const std::string &code, const std::string &source);
 
         /**
          * @brief Executes a pattern language code string
@@ -83,7 +84,7 @@ namespace pl {
          * @param checkResult Whether to check the result of the execution
          * @return True if the execution was successful, false otherwise
          */
-        [[nodiscard]] bool executeString(std::string code, const std::map<std::string, core::Token::Literal> &envVars = {}, const std::map<std::string, core::Token::Literal> &inVariables = {}, bool checkResult = true);
+        [[nodiscard]] bool executeString(std::string code, const std::string& source, const std::map<std::string, core::Token::Literal> &envVars = {}, const std::map<std::string, core::Token::Literal> &inVariables = {}, bool checkResult = true);
 
         /**
          * @brief Executes a pattern language file

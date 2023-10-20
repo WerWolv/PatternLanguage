@@ -61,7 +61,7 @@ int runTests(int argc, char **argv) {
 
     auto &test = testPatterns[testName];
 
-    auto result = runtime.executeString(test->getSourceCode());
+    auto result = runtime.executeString(test->getSourceCode(), "<test: " + testName + ">");
 
     // Check if compilation succeeded
     if (!result) {

@@ -47,13 +47,13 @@ namespace pl {
         this->m_running.exchange(other.m_running.load());
     }
 
-    std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> PatternLanguage::parseString(const std::string &code) {
-        auto [preprocessedCode, preprocessorErrors] = this->m_internals.preprocessor->preprocess(*this, code);
+    std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> PatternLanguage::parseString(const std::string &code, const std::string &source) {
+        auto [preprocessedCode, preprocessorErrors] = this->m_internals.preprocessor->preprocess(*this, code, source);
         if (!preprocessorErrors.empty()) {
             return std::nullopt;
         }
 
-        auto [tokens, lexerErrors] = this->m_internals.lexer->lex(preprocessedCode.value(), "");
+        auto [tokens, lexerErrors] = this->m_internals.lexer->lex(preprocessedCode.value(), source);
 
         if (!lexerErrors.empty()) {
             //this->m_currError = this->m_internals.lexer->getError();
@@ -76,7 +76,7 @@ namespace pl {
         return ast.ok;
     }
 
-    bool PatternLanguage::executeString(std::string code, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
+    bool PatternLanguage::executeString(std::string code, const std::string& source, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
         auto startTime = std::chrono::high_resolution_clock::now();
         ON_SCOPE_EXIT {
             auto endTime = std::chrono::high_resolution_clock::now();
@@ -110,7 +110,7 @@ namespace pl {
         for (const auto &[name, value] : envVars)
             evaluator->setEnvVariable(name, value);
 
-        auto ast = this->parseString(code);
+        auto ast = this->parseString(code, source);
         if (!ast.has_value())
             return false;
 
@@ -152,14 +152,14 @@ namespace pl {
         if (!file.isValid())
             return false;
 
-        return this->executeString(file.readString(), envVars, inVariables, checkResult);
+        return this->executeString(file.readString(), path.string(), envVars, inVariables, checkResult);
     }
 
     std::pair<bool, std::optional<core::Token::Literal>> PatternLanguage::executeFunction(const std::string &code) {
 
         auto functionContent = fmt::format("fn main() {{ {0} }};", code);
 
-        auto success = this->executeString(functionContent, {}, {}, false);
+        auto success = this->executeString(functionContent, core::DefaultSource, {}, {}, false);
         auto result  = this->m_internals.evaluator->getMainResult();
 
         return { success, std::move(result) };
