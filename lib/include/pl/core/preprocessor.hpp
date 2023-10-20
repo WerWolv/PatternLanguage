@@ -32,6 +32,10 @@ namespace pl::core {
             return this->m_onlyIncludeOnce;
         }
 
+        void setIncludeResolver(const api::IncludeResolver &resolver) {
+            this->m_includeResolver = resolver;
+        }
+
     private:
         Preprocessor(const Preprocessor &);
 

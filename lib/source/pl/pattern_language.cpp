@@ -180,6 +180,7 @@ namespace pl {
 
             return {};
         };
+        this->m_internals.preprocessor->setIncludeResolver(this->m_includeResolver);
     }
 
     void PatternLanguage::addPragma(const std::string &name, const api::PragmaHandler &callback) const {

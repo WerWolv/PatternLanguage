@@ -158,8 +158,13 @@ namespace pl::core {
 
                         std::fs::path includePath = includeFile->substr(1, includeFile->length() - 2);
 
-                        if (includePath.is_relative())
-                            includePath = this->m_includeResolver(includePath);
+                        if (includePath.is_relative()) {
+                            if(this->m_includeResolver) {
+                                includePath = this->m_includeResolver(includePath);
+                            } else {
+                                err::M0004.throwError("Path doesn't point to a valid file.");
+                            }
+                        }
 
                         if (!wolv::io::fs::isRegularFile(includePath)) {
                             if (includePath.parent_path().filename().string() == "std")
@@ -174,6 +179,7 @@ namespace pl::core {
                         }
 
                         Preprocessor preprocessor(*this);
+                        preprocessor.setIncludeResolver(this->m_includeResolver);
                         preprocessor.m_pragmas.clear();
 
                         auto result = preprocessor.preprocess(runtime, file.readString(), includePath.string(), false);

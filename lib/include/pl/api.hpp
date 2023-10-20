@@ -26,6 +26,7 @@ namespace pl::api {
      */
     using PragmaHandler = std::function<bool(PatternLanguage&, const std::string &)>;
 
+    // TODO: consider it being able to return the content of something, to enable non filesystem sources
     using IncludeResolver = std::function<std::fs::path(std::fs::path&)>;
 
     /**
