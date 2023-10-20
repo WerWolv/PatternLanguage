@@ -113,6 +113,8 @@ namespace pl::core::ast {
                         variable->setInitialized(false);
                         evaluator->setVariable(variable, value);
                         templatePatterns.push_back(variable);
+
+                        variable->setVisibility(ptrn::Visibility::Hidden);
                     }
                 }
             }
