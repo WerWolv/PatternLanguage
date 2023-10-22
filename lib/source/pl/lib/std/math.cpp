@@ -122,7 +122,7 @@ namespace pl::lib::libstd::math {
             });
 
             /* atan2(y, x) */
-            runtime.addFunction(nsStdMath, "atan", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
+            runtime.addFunction(nsStdMath, "atan2", FunctionParameterCount::exactly(2), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 return std::atan2(params[0].toFloatingPoint(), params[1].toFloatingPoint());
             });
 
