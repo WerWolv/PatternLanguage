@@ -134,18 +134,31 @@ namespace pl::core::err {
             this->m_errors.emplace_back(message, location());
         }
 
-        inline void error(const std::string& message, const std::string& description) {
+        inline void error_desc(const std::string& message, const std::string& description) {
             this->m_errors.emplace_back(message, description, location());
         }
 
         template<typename... Args>
-        inline void error(const std::string& message, const std::string& description, Args&&... args) {
+        inline void error_desc(const std::string& message, const std::string& description, Args&&... args) {
             this->m_errors.emplace_back(fmt::format(message, std::forward<Args>(args)...), description, location());
         }
 
         inline void error(CompileError& error) {
             error.getTrace().push_back(location());
             this->m_errors.push_back(std::move(error));
+        }
+
+        inline void error_at(const Location& location, const std::string& message) {
+            this->m_errors.emplace_back(message, location);
+        }
+
+        inline void error_at_desc(const Location& location, const std::string& message, const std::string& description) {
+            this->m_errors.emplace_back(message, description, location);
+        }
+
+        template<typename... Args>
+        inline void error_at(const Location& location, const std::string& message, Args&&... args) {
+            this->m_errors.emplace_back(fmt::format(message, std::forward<Args>(args)...), location);
         }
 
         [[nodiscard]] bool hasErrors() const {
