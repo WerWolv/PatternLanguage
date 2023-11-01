@@ -1,6 +1,8 @@
 #include <pl/core/resolver.hpp>
 #include <wolv/io/file.hpp>
 
+#include <iostream>
+
 using namespace pl::core;
 using namespace pl::api;
 using namespace pl::hlp;

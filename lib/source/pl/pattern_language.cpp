@@ -15,6 +15,8 @@
 #include <wolv/io/file.hpp>
 #include <wolv/utils/string.hpp>
 
+#include <iostream>
+
 namespace pl {
 
     PatternLanguage::PatternLanguage(bool addLibStd) : m_internals() {

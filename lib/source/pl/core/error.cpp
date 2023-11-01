@@ -86,19 +86,11 @@ namespace pl::core::err {
 
             auto lines = wolv::util::splitString(location.source->content, "\n");
 
-            std::cout << "location.line: " << location.line << std::endl;
-            std::cout << "location.column: " << location.column << std::endl;
-            std::cout << "location.source->source: " << location.source->source << std::endl;
-            std::cout << "location.source->content: " << std::endl;
-
-            for (const auto &item: lines) {
-                std::cout << item << std::endl;
-            }
-
             if ((location.line - 1) < lines.size()) {
-                const auto &errorLine = lines[location.line - 1];
                 const auto lineNumberPrefix = fmt::format("{} | ", location.line);
-                errorMessage += fmt::format("{}{}", lineNumberPrefix, errorLine);
+                const auto &errorLine = wolv::util::replaceStrings(lines[location.line - 1], "\r", "");
+
+                errorMessage += fmt::format("{}{}\n", lineNumberPrefix, errorLine);
 
                 {
                     const auto descriptionSpacing = std::string(lineNumberPrefix.length() + location.column - 1, ' ');
