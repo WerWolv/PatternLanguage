@@ -105,7 +105,27 @@ namespace pl::core {
                 depth--;
             }
             if(add) process();
-            else m_offset++;
+            else {
+                char c = peek();
+                if(c == '\n') {
+                    m_lineNumber++;
+                    m_lineBeginOffset = m_offset;
+                    m_startOfLine = true;
+                } else if (c == '#' && !m_inString && m_startOfLine) {
+                    m_offset++;
+                    // handle ifdef and ifndef
+                    std::string name = parseDirectiveName();
+                    if(name == "ifdef" || name == "ifndef") {
+                        depth++;
+                    }
+                } else if(!std::isspace(c)) {
+                    m_startOfLine = false;
+                } else if(c == '"') {
+                    m_inString = !m_inString;
+                }
+
+                m_offset++;
+            }
         }
 
         // if we didn't find an #endif, we have an error
