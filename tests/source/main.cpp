@@ -18,6 +18,22 @@
 using namespace pl;
 using namespace pl::test;
 
+struct VirtualIncludeResolver {
+    std::map<std::string, api::Source> files;
+
+    hlp::Result<api::Source*, std::string> operator()(const std::string &path) {
+        if (files.contains(path))
+            return hlp::Result<api::Source*, std::string>::good(&files[path]);
+        else
+            return hlp::Result<api::Source*, std::string>::err(
+                    fmt::format("File {} not found", path));
+    }
+
+    void addFile(const std::string &name, const std::string &content) {
+        files[name] = { content, name };
+    }
+};
+
 int runTests(int argc, char **argv) {
     auto &testPatterns = TestPattern::getTests();
 
@@ -58,6 +74,29 @@ int runTests(int argc, char **argv) {
     runtime.setLogCallback([](auto level, const std::string &message) {
         fmt::print("{}\n", message);
     });
+
+    VirtualIncludeResolver resolver;
+
+    resolver.addFile("A", R"(
+        #include <B>
+        #include <C>
+
+        fn a() {}
+    )");
+
+    resolver.addFile("B", R"(
+        #include <C>
+
+        fn b() {}
+    )");
+
+    resolver.addFile("C", R"(
+        #pragma once
+
+        fn c() {}
+    )");
+
+    runtime.setIncludeResolver(resolver);
 
     auto &test = testPatterns[testName];
 

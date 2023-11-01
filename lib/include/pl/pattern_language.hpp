@@ -15,6 +15,7 @@
 #include <pl/core/log_console.hpp>
 #include <pl/core/token.hpp>
 #include <pl/core/errors/error.hpp>
+#include <pl/core/resolver.hpp>
 
 #include <pl/helpers/types.hpp>
 
@@ -166,7 +167,9 @@ namespace pl {
          * @brief Sets the include paths for where to look for include files
          * @param paths List of paths to look in
          */
-        void setIncludePaths(std::vector<std::fs::path> paths);
+        void setIncludePaths(const std::vector<std::fs::path>& paths) const;
+
+        void setIncludeResolver(const api::IncludeResolver &resolver) const;
 
         /**
          * @brief Registers a callback to be called when a dangerous function is being executed
@@ -323,8 +326,10 @@ namespace pl {
     private:
 
         Internals m_internals;
+        std::vector<core::err::CompileError> m_compErrors;
         std::optional<core::err::PatternLanguageError> m_currError;
-        api::IncludeResolver m_includeResolver;
+
+        core::Resolvers m_resolvers;
 
         std::map<u64, std::vector<std::shared_ptr<ptrn::Pattern>>> m_patterns;
         std::map<u64, wolv::container::IntervalTree<ptrn::Pattern*, u64, 5>> m_flattenedPatterns;

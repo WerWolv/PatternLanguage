@@ -99,23 +99,35 @@ namespace pl::core::err {
         std::string m_title;
     };
 
+    std::string formatImpl(
+            Location location,
+            const std::string& message,
+            const std::string& description,
+            const std::vector<Location>& trace);
+
     class CompileError {
 
     public:
-        CompileError(std::string message, Location location) : m_message(std::move(message)), trace({std::move(location) }) { }
+        CompileError(std::string message, Location location) : m_message(std::move(message)), m_location(location) { }
         CompileError(std::string message, std::string description, Location location) : m_message(std::move(message)), m_description(std::move(description)),
-                                                                                             trace({std::move(location) }) { }
+                                                                                             m_location(location) { }
 
         [[nodiscard]] const std::string &getMessage() const { return this->m_message; }
         [[nodiscard]] const std::string &getDescription() const { return this->m_description; }
-        [[nodiscard]] const Location &getLocation() const { return this->trace[0]; }
-        [[nodiscard]] const std::vector<Location> &getTrace() const { return this->trace; }
-        [[nodiscard]] std::vector<Location> &getTrace() { return this->trace; }
+        [[nodiscard]] const Location &getLocation() const { return this->m_location; }
+        [[nodiscard]] Location &getLocation() { return this->m_location; }
+        [[nodiscard]] const std::vector<Location> &getTrace() const { return this->m_trace; }
+        [[nodiscard]] std::vector<Location> &getTrace() { return this->m_trace; }
+
+        [[nodiscard]] std::string format() const {
+            return formatImpl(this->getLocation(), this->getMessage(), this->getDescription(), getTrace());
+        }
 
     private:
         std::string m_message;
         std::string m_description;
-        std::vector<Location> trace;
+        Location m_location;
+        std::vector<Location> m_trace;
     };
 
     class ErrorCollector {
@@ -157,7 +169,7 @@ namespace pl::core::err {
         }
 
         template<typename... Args>
-        inline void error_at(const Location& location, const std::string& message, Args&&... args) {
+        inline void error_at(const Location& location, const fmt::format_string<Args...>& message, Args&&... args) {
             this->m_errors.emplace_back(fmt::format(message, std::forward<Args>(args)...), location);
         }
 

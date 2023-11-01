@@ -48,28 +48,29 @@ namespace pl {
     }
 
     std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> PatternLanguage::parseString(const std::string &code, const std::string &source) {
-        auto [preprocessedCode, preprocessorErrors] = this->m_internals.preprocessor->preprocess(*this, code, source);
+        auto sourceObj = m_resolvers.addSource(code, source);
+
+        auto [preprocessedCode, preprocessorErrors] = this->m_internals.preprocessor->preprocess(this, sourceObj);
         if (!preprocessorErrors.empty()) {
+            this->m_compErrors = std::move(preprocessorErrors);
             return std::nullopt;
         }
 
-        auto [tokens, lexerErrors] = this->m_internals.lexer->lex(preprocessedCode.value(), source);
+        sourceObj->content = preprocessedCode.value(); // update source object with preprocessed code
+
+        auto [tokens, lexerErrors] = this->m_internals.lexer->lex(sourceObj);
 
         if (!lexerErrors.empty()) {
-            //this->m_currError = this->m_internals.lexer->getError();
-            // TODO: multiple errors
+            this->m_compErrors = std::move(lexerErrors);
             return std::nullopt;
         }
 
         auto ast = this->m_internals.parser->parse(code, tokens.value());
         if (!ast.is_ok()) {
-            //this->m_currError = this->m_internals.parser->getError();
             return std::nullopt;
         }
 
         if (!this->m_internals.validator->validate(code, *ast.ok, true, true)) {
-            this->m_currError = this->m_internals.validator->getError();
-
             return std::nullopt;
         }
 
@@ -94,6 +95,10 @@ namespace pl {
         ON_SCOPE_EXIT { this->m_running = false; };
 
         ON_SCOPE_EXIT {
+            for (const auto &error: this->m_compErrors) {
+                evaluator->getConsole().log(core::LogConsole::Level::Error, error.format());
+            }
+
             if (this->m_currError.has_value()) {
                 const auto &error = this->m_currError.value();
 
@@ -170,17 +175,13 @@ namespace pl {
         this->m_aborted = true;
     }
 
-    void PatternLanguage::setIncludePaths(std::vector<std::fs::path> paths) {
-        this->m_includeResolver = [paths = std::move(paths)](std::fs::path &path) -> std::fs::path {
-            for (const auto &includePath : paths) {
-                auto fullPath = includePath / path;
-                if (std::fs::exists(fullPath))
-                    return fullPath;
-            }
+    void PatternLanguage::setIncludePaths(const std::vector<std::fs::path>& paths) const {
+        this->m_resolvers.setDefaultResolver(core::FileResolver { paths });
+        setIncludeResolver(m_resolvers);
+    }
 
-            return {};
-        };
-        this->m_internals.preprocessor->setIncludeResolver(this->m_includeResolver);
+    void PatternLanguage::setIncludeResolver(const api::IncludeResolver &resolver) const {
+        this->m_internals.preprocessor->setIncludeResolver(resolver);
     }
 
     void PatternLanguage::addPragma(const std::string &name, const api::PragmaHandler &callback) const {

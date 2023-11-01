@@ -1,6 +1,7 @@
 #include <pl/core/lexer.hpp>
 #include <pl/core/tokens.hpp>
 #include <pl/helpers/utils.hpp>
+#include <pl/api.hpp>
 
 #include <optional>
 
@@ -322,16 +323,16 @@ std::optional<Token> Lexer::parseConstant(const std::string_view &identifier) {
 }
 
 Token Lexer::makeToken(const Token &token) {
-    return Token(token.type, token.value, { m_sourceName, m_line, (u32) m_cursor - m_lineBegin });
+    return Token(token.type, token.value, location());
 }
 
 void Lexer::addToken(const Token &token) {
     m_tokens.emplace_back(token);
 }
 
-CompileResult<std::vector<Token>> Lexer::lex(const std::string &sourceCode, const std::string &sourceName) {
-    this->m_sourceCode = sourceCode;
-    this->m_sourceName = sourceName;
+CompileResult<std::vector<Token>> Lexer::lex(api::Source* source) {
+    this->m_sourceCode = source->content;
+    this->m_source = source;
     this->m_cursor = 0;
     this->m_line = 1;
 
@@ -480,8 +481,8 @@ inline bool Lexer::processToken(auto parserFunction, const std::string_view& ide
         return true;
     }
     return false;
-};
+}
 
 inline Location Lexer::location() {
-    return Location { m_sourceName, m_line, (u32) m_cursor - m_lineBegin };
+    return Location { m_source, m_line, (u32) m_cursor - m_lineBegin };
 }

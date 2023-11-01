@@ -21,6 +21,7 @@
 #include "test_patterns/test_pattern_struct_inheritance.hpp"
 #include "test_patterns/test_pattern_doc_comments.hpp"
 #include "test_patterns/test_pattern_strings.hpp"
+#include "test_patterns/test_pattern_include.hpp"
 
 std::array Tests = {
     TEST(Placement),
@@ -39,6 +40,7 @@ std::array Tests = {
     TEST(Matching),
     TEST(RValues),
     TEST(Namespaces),
+    TEST(Include),
     TEST(ExtraSemicolon),
     TEST(Pointers),
     TEST(Arrays),

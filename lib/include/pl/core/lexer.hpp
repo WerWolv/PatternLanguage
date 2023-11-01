@@ -17,7 +17,7 @@ namespace pl::core {
     public:
         Lexer() = default;
 
-        CompileResult<std::vector<Token>> lex(const std::string &sourceCode, const std::string &sourceName);
+        CompileResult<std::vector<Token>> lex(api::Source* source);
 
     private:
         [[nodiscard]] char peek(size_t p = 1) const;
@@ -43,7 +43,7 @@ namespace pl::core {
         void addToken(const Token& token);
 
         std::string m_sourceCode;
-        std::string m_sourceName;
+        api::Source* m_source{};
         std::vector<Token> m_tokens;
         size_t m_cursor{};
         u32 m_line{};

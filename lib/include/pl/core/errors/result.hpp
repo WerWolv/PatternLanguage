@@ -13,8 +13,30 @@ namespace pl::hlp {
 
         Result() = default;
 
+        explicit Result(const Ok& ok) : ok(ok), errs({ }) { }
         Result(const Ok& ok, const std::vector<Err>& errs) : ok(ok), errs(errs) { }
-        Result(const Result&& other) noexcept : ok(other.ok), errs(other.errs) { }
+        Result(const Ok& ok, const Err& err) : ok(ok), errs({ err }) { }
+        Result(Result&& other) noexcept : ok(other.ok), errs(other.errs) { }
+        Result(const Result& other) noexcept : ok(other.ok), errs(other.errs) { }
+        // move assignment operator
+
+        Result& operator=(Result&& other) noexcept {
+            this->ok = other.ok;
+            this->errs = other.errs;
+            return *this;
+        }
+
+        static Result<Ok, Err> good(const Ok& ok) {
+            return Result<Ok, Err>(ok);
+        }
+
+        static Result<Ok, Err> err(const Err& err) {
+            return Result<Ok, Err>({}, { err });
+        }
+
+        static Result<Ok, Err> err(const std::vector<Err>& errs) {
+            return Result<Ok, Err>({}, errs);
+        }
 
         [[nodiscard]] bool is_ok() const {
             return ok.has_value();

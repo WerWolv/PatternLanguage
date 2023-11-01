@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pl/core/token.hpp>
+#include <pl/core/errors/result.hpp>
 #include <pl/helpers/types.hpp>
 
 #include <wolv/io/fs.hpp>
@@ -15,7 +16,10 @@ namespace pl {
 
     class PatternLanguage;
 
-    namespace core { class Evaluator; }
+    namespace core {
+        class Evaluator;
+        class Preprocessor;
+    }
 
 }
 
@@ -26,8 +30,16 @@ namespace pl::api {
      */
     using PragmaHandler = std::function<bool(PatternLanguage&, const std::string &)>;
 
-    // TODO: consider it being able to return the content of something, to enable non filesystem sources
-    using IncludeResolver = std::function<std::fs::path(std::fs::path&)>;
+    using DirectiveHandler = std::function<void(core::Preprocessor*)>;
+
+    struct Source {
+        std::string content;
+        std::string source;
+    };
+
+    static constexpr Source EmptySource = { "", "" };
+
+    using IncludeResolver = std::function<hlp::Result<Source*, std::string>(const std::string&)>;
 
     /**
      * @brief A type representing a custom section

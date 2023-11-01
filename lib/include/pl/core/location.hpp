@@ -4,16 +4,21 @@
 
 #include <string>
 
+namespace pl::api {
+    struct Source;
+}
+
 namespace pl::core {
 
     struct Location {
 
-        std::string source;
+        api::Source* source;
         u32 line, column;
 
     };
 
-    static constexpr Location EmptyLocation = { "", 0, 0 };
+    static constexpr api::Source* EmptySource = nullptr;
+    static constexpr Location EmptyLocation = { EmptySource, 0, 0 };
     static constexpr std::string DefaultSource = "<Source Code>";
 
 }
