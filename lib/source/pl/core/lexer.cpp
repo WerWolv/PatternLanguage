@@ -100,6 +100,11 @@ std::optional<Token> Lexer::parseStringLiteral() {
     m_cursor++;
     while(m_sourceCode[m_cursor] != '\"') {
 
+        if(peek() == '\n') {
+            error("Unexpected newline in string literal");
+            return std::nullopt;
+        }
+
         auto character = parseCharacter();
 
         if(character.has_value()) {

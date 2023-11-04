@@ -100,7 +100,7 @@ namespace pl::core {
         Location start = location();
         u32 depth = 1;
         while(peek() != 0 && depth > 0) {
-            if(m_code.substr(m_offset, 6) == "#endif") {
+            if(m_code.substr(m_offset, 6) == "#endif" && !m_inString && m_startOfLine) {
                 m_offset += 6;
                 depth--;
             }
@@ -356,7 +356,7 @@ namespace pl::core {
 
                 if (this->m_pragmaHandlers.contains(type)) {
                     if (!this->m_pragmaHandlers[type](runtimeRef, value))
-                        error_at(Location { m_source, 0, line },
+                        error_at(Location { m_source, line, 0 },
                                  "Value '{}' cannot be used with the '{}' pragma directive.", value, type);
                 }
             }
@@ -388,7 +388,8 @@ namespace pl::core {
     }
 
     Location Preprocessor::location() {
-        return { m_source, m_lineNumber, (u32) (m_offset - m_lineBeginOffset) };
+        u32 column = (u32) (m_offset - m_lineBeginOffset);
+        return { m_source, m_lineNumber, column };
     }
 
     void Preprocessor::registerDirectiveHandler(const std::string& name, auto memberFunction) {
