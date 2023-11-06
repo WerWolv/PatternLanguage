@@ -316,6 +316,10 @@ namespace pl {
             return this->m_runId;
         }
 
+        [[nodiscard]] const std::atomic<u64>& getLastReadAddress() const;
+        [[nodiscard]] const std::atomic<u64>& getLastWriteAddress() const;
+        [[nodiscard]] const std::atomic<u64>& getLastPatternPlaceAddress() const;
+
     private:
         void flattenPatterns();
 
