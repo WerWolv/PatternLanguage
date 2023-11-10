@@ -4,6 +4,7 @@
 #include <string>
 #include <variant>
 #include <vector>
+#include <utility>
 
 #include <pl/helpers/types.hpp>
 
@@ -181,6 +182,8 @@ namespace pl::core {
             [[nodiscard]] bool isString() const;
 
             [[nodiscard]] ValueType getType() const;
+
+            [[nodiscard]] bool operator==(const Literal &other) const;
         };
 
         using ValueTypes = std::variant<Keyword, Identifier, Operator, Literal, ValueType, Separator, DocComment>;

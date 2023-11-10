@@ -109,6 +109,31 @@ namespace pl::core {
         return std::holds_alternative<std::shared_ptr<ptrn::Pattern>>(*this);
     }
 
+    bool Token::Literal::operator==(const pl::core::Token::Literal &other) const {
+        return std::visit(wolv::util::overloaded {
+            []<typename T>(T lhs, T rhs) {
+                return lhs == rhs;
+            },
+            [](pl::integral auto lhs, pl::integral auto rhs) {
+                if constexpr (std::same_as<decltype(lhs), char> || std::same_as<decltype(rhs), char>)
+                    return char(lhs) == char(rhs);
+                else if constexpr (std::same_as<decltype(lhs), bool> || std::same_as<decltype(rhs), bool>)
+                    return bool(lhs) == bool(rhs);
+                else
+                    return std::cmp_equal(lhs, rhs);
+            },
+            [](pl::integral auto lhs, pl::floating_point auto rhs) {
+                return lhs == rhs;
+            },
+            [](pl::floating_point auto lhs, pl::integral auto rhs) {
+                return lhs == rhs;
+            },
+            [](auto, auto) {
+                return false;
+            }
+        }, *this, other);
+    }
+
     Token::ValueType Token::Literal::getType() const {
         return std::visit(wolv::util::overloaded {
                 [](char) { return Token::ValueType::Character; },

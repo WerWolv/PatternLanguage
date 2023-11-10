@@ -235,7 +235,7 @@ namespace pl::core {
         size_t size = 1;
 
         std::string result;
-        while (string[size] != '\"') {
+        while (size < string.size() && string[size] != '\"') {
             auto character = getCharacter(string.substr(size));
 
             if (!character.has_value())
