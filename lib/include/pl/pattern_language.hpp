@@ -105,6 +105,22 @@ namespace pl {
         [[nodiscard]] std::pair<bool, std::optional<core::Token::Literal>> executeFunction(const std::string &code);
 
         /**
+         * @brief Adds the source to the runtime, this function will not overwrite existing sources
+         * @param code the code of the source
+         * @param source the source of the code
+         * @return the source that was added or that already existed
+         */
+        [[nodiscard]] api::Source* addSource(const std::string& code, const std::string& source);
+
+        /**
+         * @brief Sets the source to the runtime, this function will overwrite existing sources
+         * @param code the code of the source
+         * @param source the source of the code
+         * @return the source that was set
+         */
+        [[nodiscard]] api::Source* setSource(const std::string& code, const std::string& source);
+
+        /**
          * @brief Aborts the currently running execution asynchronously
          */
         void abort();

@@ -50,7 +50,7 @@ namespace pl {
     }
 
     std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> PatternLanguage::parseString(const std::string &code, const std::string &source) {
-        auto sourceObj = m_resolvers.addSource(code, source);
+        auto sourceObj = m_resolvers.setSource(code, source);
 
         auto [preprocessedCode, preprocessorErrors] = this->m_internals.preprocessor->preprocess(this, sourceObj);
         if (!preprocessorErrors.empty()) {
@@ -67,16 +67,17 @@ namespace pl {
             return std::nullopt;
         }
 
-        auto ast = this->m_internals.parser->parse(code, tokens.value());
-        if (!ast.is_ok()) {
+        auto [ast, parserErrors] = this->m_internals.parser->parse(code, tokens.value());
+        if (!parserErrors.empty()) {
+            this->m_compErrors = std::move(parserErrors);
             return std::nullopt;
         }
 
-        if (!this->m_internals.validator->validate(code, *ast.ok, true, true)) {
+        if (!this->m_internals.validator->validate(code, *ast, true, true)) {
             return std::nullopt;
         }
 
-        return ast.ok;
+        return ast;
     }
 
     bool PatternLanguage::executeString(std::string code, const std::string& source, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
@@ -170,6 +171,14 @@ namespace pl {
         auto result  = this->m_internals.evaluator->getMainResult();
 
         return { success, std::move(result) };
+    }
+
+    api::Source *PatternLanguage::addSource(const std::string &code, const std::string &source) {
+        return this->m_resolvers.addSource(code, source);
+    }
+
+    api::Source *PatternLanguage::setSource(const std::string &code, const std::string &source) {
+        return this->m_resolvers.setSource(code, source);
     }
 
     void PatternLanguage::abort() {
@@ -269,6 +278,7 @@ namespace pl {
         this->m_flattenedPatterns.clear();
 
         this->m_currError.reset();
+        this->m_compErrors.clear();
         this->m_internals.validator->setRecursionDepth(32);
 
         this->m_internals.evaluator->getConsole().clear();
