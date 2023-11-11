@@ -200,8 +200,10 @@ namespace pl::core {
             ; // Parsed path wrapped in ""
         else if (includeFile->starts_with('<') && includeFile->ends_with('>'))
             ; // Parsed path wrapped in <>
-        else
-            err::M0003.throwError("Expected path wrapped in \"path\" or <path>.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
+        else {
+            error_desc("Invalid file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
+            return;
+        }
 
         std::fs::path includePath = includeFile->substr(1, includeFile->length() - 2);
 
@@ -210,6 +212,13 @@ namespace pl::core {
             return;
         }
         auto [resolved, error] = this->m_includeResolver(includePath);
+
+        if(!resolved.has_value()) {
+            for (const auto &item: error) {
+                this->error(item);
+            }
+            return;
+        }
 
         Preprocessor preprocessor(*this);
         preprocessor.m_pragmas.clear();
@@ -220,7 +229,10 @@ namespace pl::core {
             for (auto &item: result.errs) {
                 this->error(item);
             }
+            return;
         }
+
+        resolved.value()->content = result.unwrap(); // cache result
 
         bool shouldInclude = true;
         if (preprocessor.shouldOnlyIncludeOnce()) {
@@ -313,6 +325,7 @@ namespace pl::core {
         m_source      = source;
         m_inString    = false;
         m_runtime     = runtime;
+        m_lineBeginOffset = 0;
         m_output.clear();
 
         if (initialRun) {
@@ -364,7 +377,7 @@ namespace pl::core {
 
         this->m_defines.clear();
 
-        return { m_output, m_errors };
+        return { m_output, collectErrors() };
     }
 
     void Preprocessor::addDefine(const std::string &name, const std::string &value) {

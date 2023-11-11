@@ -97,11 +97,14 @@ std::optional<char> Lexer::parseCharacter() {
 std::optional<Token> Lexer::parseStringLiteral() {
     std::string result;
 
-    m_cursor++;
+    m_cursor++; // skip opening "
     while(m_sourceCode[m_cursor] != '\"') {
-
-        if(peek() == '\n') {
+        char c = peek();
+        if(c == '\n') {
             error("Unexpected newline in string literal");
+            return std::nullopt;
+        } else if(c == '\0') {
+            error("Unexpected end of file in string literal");
             return std::nullopt;
         }
 
@@ -110,11 +113,6 @@ std::optional<Token> Lexer::parseStringLiteral() {
         if(character.has_value()) {
             result += character.value();
         } else {
-            return std::nullopt;
-        }
-
-        if(m_cursor > m_sourceCode.size()) {
-            error("Unexpected end of string literal");
             return std::nullopt;
         }
     }
@@ -129,6 +127,9 @@ std::optional<u128> Lexer::parseInteger(std::string_view literal) {
 
     u128 value = 0;
     if(literal[0] == '0') {
+        if(literal.size() == 1) {
+            return 0;
+        }
         bool hasPrefix = true;
         switch (literal[1]) {
             case 'x':
@@ -328,7 +329,7 @@ std::optional<Token> Lexer::parseConstant(const std::string_view &identifier) {
 }
 
 Token Lexer::makeToken(const Token &token) {
-    return Token(token.type, token.value, location());
+    return { token.type, token.value, location() };
 }
 
 void Lexer::addToken(const Token &token) {
@@ -344,7 +345,6 @@ CompileResult<std::vector<Token>> Lexer::lex(api::Source* source) {
     size_t end = this->m_sourceCode.size();
 
     m_tokens.clear();
-    m_errors.clear();
 
     while(this->m_cursor < end) {
         const char& c = this->m_sourceCode[this->m_cursor];
@@ -471,7 +471,7 @@ CompileResult<std::vector<Token>> Lexer::lex(api::Source* source) {
 
     addToken(makeToken(Separator::EndOfProgram));
 
-    return { m_tokens, m_errors };
+    return { m_tokens, collectErrors() };
 }
 
 inline char Lexer::peek(size_t p) const {
@@ -489,5 +489,5 @@ inline bool Lexer::processToken(auto parserFunction, const std::string_view& ide
 }
 
 inline Location Lexer::location() {
-    return Location { m_source, m_line, (u32) m_cursor - m_lineBegin };
+    return Location { m_source, m_line, (u32) m_cursor - m_lineBegin + 1 };
 }

@@ -47,7 +47,8 @@ namespace pl::core {
         Location location() override;
 
         inline char peek(i32 p = 0) const {
-            return m_offset + p < m_code.size() ? m_code[m_offset + p] : '\0';
+            if(m_offset + p >= m_code.size()) return '\0';
+            return m_code[m_offset + p];
         }
 
         std::string parseDirectiveName();
@@ -78,7 +79,7 @@ namespace pl::core {
 
         PatternLanguage *m_runtime = nullptr;
 
-        u32 m_offset = 0;
+        size_t m_offset = 0;
         u32 m_lineNumber = 1;
         u32 m_lineBeginOffset = 0;
         bool m_inString = false;

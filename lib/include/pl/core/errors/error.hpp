@@ -181,10 +181,17 @@ namespace pl::core::err {
             return this->m_errors;
         }
 
+        [[nodiscard]] std::vector<CompileError> collectErrors() {
+            if(this->m_errors.empty()) return { };
+            auto errors = std::move(this->m_errors);
+            this->m_errors.clear();
+            return errors;
+        }
+
         void clear() {
             this->m_errors.clear();
         }
-
+    private:
         std::vector<CompileError> m_errors;
     };
 

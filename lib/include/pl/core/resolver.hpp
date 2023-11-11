@@ -26,8 +26,17 @@ namespace pl::core {
             return &m_cachedSources.emplace(path, source).first->second;
         }
 
+        inline api::Source* setSource(const std::string& path, const api::Source& source) const {
+            m_cachedSources[path] = source;
+            return &m_cachedSources[path];
+        }
+
         inline api::Source* addSource(const std::string& code, const std::string& source) const {
             return addSource(source, api::Source(code, source));
+        }
+
+        inline api::Source* setSource(const std::string& code, const std::string& source) const {
+            return setSource(source, api::Source(code, source));
         }
 
         inline void setDefaultResolver(const Resolver& resolver) const {

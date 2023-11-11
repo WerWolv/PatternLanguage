@@ -88,18 +88,38 @@ namespace pl::core::err {
 
             if ((location.line - 1) < lines.size()) {
                 const auto lineNumberPrefix = fmt::format("{} | ", location.line);
-                const auto &errorLine = wolv::util::replaceStrings(lines[location.line - 1], "\r", "");
+                auto errorLine = wolv::util::replaceStrings(lines[location.line - 1], "\r", "");
+                u32 arrowPosition = location.column - 1;
+
+                // trim to size
+                if(errorLine.size() > 40) { // shrink to [column - 20; column + 20]
+                    const auto column = location.column - 1;
+                    auto start = column > 20 ? column - 20 : 0;
+                    auto end = column + 20 < errorLine.size() ? column + 20 : errorLine.size();
+                    // search for whitespaces on both sides until a maxium of 10 characters and change start/end accordingly
+                    for(auto i = 0; i < 10; ++i) {
+                        if(start > 0 && errorLine[start] != ' ') {
+                            --start;
+                        }
+                        if(end < errorLine.size() && errorLine[end] != ' ') {
+                            ++end;
+                        }
+                    }
+                    errorLine = errorLine.substr(start, end - start);
+                    arrowPosition = column - start - 1;
+                }
 
                 errorMessage += fmt::format("{}{}\n", lineNumberPrefix, errorLine);
 
                 {
-                    const auto descriptionSpacing = std::string(lineNumberPrefix.length() + location.column - 1, ' ');
+                    const auto descriptionSpacing = std::string(lineNumberPrefix.length() + arrowPosition, ' ');
                     errorMessage += descriptionSpacing + "^\n";
-                    errorMessage += descriptionSpacing + description + "\n\n";
                 }
             }
-        } else {
-            errorMessage += description + "\n";
+        }
+
+        if(!description.empty()) {
+            errorMessage += "\n" + description + "\n";
         }
 
         return errorMessage;

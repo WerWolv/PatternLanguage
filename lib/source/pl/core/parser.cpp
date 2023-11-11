@@ -1840,7 +1840,7 @@ namespace pl::core {
 
             this->m_error = err::PatternLanguageError(e.format(sourceCode, line, column), line, column);
 
-            return { {}, {} };
+            return { {}, err::CompileError(e.what(), this->m_curr->location) };
         }
     }
 
