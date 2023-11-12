@@ -41,7 +41,7 @@ namespace pl::core {
         });
     }
 
-    std::optional<std::string> Preprocessor::getDirectiveValue(bool allowWhitespace) {
+    std::optional<std::string> Preprocessor::getDirectiveValue(const bool allowWhitespace) {
         while (std::isblank(peek())) {
             m_offset++;
             if (peek() == '\n' || peek() == '\r')
@@ -62,7 +62,7 @@ namespace pl::core {
     }
 
     std::string Preprocessor::parseDirectiveName() {
-        std::string_view view = &m_code[m_offset];
+        const std::string_view view = &m_code[m_offset];
         auto end = view.find_first_of(" \t\n\r");
 
         if(end == std::string_view::npos)
@@ -95,9 +95,9 @@ namespace pl::core {
         }
     }
 
-    void Preprocessor::processIfDef(bool add) {
+    void Preprocessor::processIfDef(const bool add) {
         // find the next #endif
-        Location start = location();
+        const Location start = location();
         u32 depth = 1;
         while(peek() != 0 && depth > 0) {
             if(m_code.substr(m_offset, 6) == "#endif" && !m_inString && m_startOfLine) {
@@ -131,7 +131,6 @@ namespace pl::core {
         // if we didn't find an #endif, we have an error
         if(depth > 0) {
             error_at(start, "#ifdef without #endif");
-            return;
         }
     }
 
@@ -189,7 +188,7 @@ namespace pl::core {
     }
 
     void Preprocessor::handleInclude() {
-        auto includeFile = getDirectiveValue();
+        const auto includeFile = getDirectiveValue();
 
         if (!includeFile.has_value()) {
             error_desc("No file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
@@ -205,12 +204,17 @@ namespace pl::core {
             return;
         }
 
-        std::fs::path includePath = includeFile->substr(1, includeFile->length() - 2);
+        const std::fs::path includePath = includeFile->substr(1, includeFile->length() - 2);
+
+        // determine if we should include this file
+        if (this->m_onceIncludedFiles.contains(includePath))
+            return;
 
         if(!m_includeResolver) {
             error_desc("Unable to lookup results", "No include resolver was set.");
             return;
         }
+
         auto [resolved, error] = this->m_includeResolver(includePath);
 
         if(!resolved.has_value()) {
@@ -242,15 +246,15 @@ namespace pl::core {
             }
         }
 
-        std::copy(preprocessor.m_onceIncludedFiles.begin(), preprocessor.m_onceIncludedFiles.end(), std::inserter(this->m_onceIncludedFiles, this->m_onceIncludedFiles.begin()));
-        std::copy(preprocessor.m_defines.begin(), preprocessor.m_defines.end(), std::inserter(this->m_defines, this->m_defines.begin()));
-        std::copy(preprocessor.m_pragmas.begin(), preprocessor.m_pragmas.end(), std::inserter(this->m_pragmas, this->m_pragmas.begin()));
+        std::ranges::copy(preprocessor.m_onceIncludedFiles.begin(), preprocessor.m_onceIncludedFiles.end(), std::inserter(this->m_onceIncludedFiles, this->m_onceIncludedFiles.begin()));
+        std::ranges::copy(preprocessor.m_defines.begin(), preprocessor.m_defines.end(), std::inserter(this->m_defines, this->m_defines.begin()));
+        std::ranges::copy(preprocessor.m_pragmas.begin(), preprocessor.m_pragmas.end(), std::inserter(this->m_pragmas, this->m_pragmas.begin()));
 
         if (shouldInclude) {
             auto content = result.unwrap();
 
-            std::replace(content.begin(), content.end(), '\n', ' ');
-            std::replace(content.begin(), content.end(), '\r', ' ');
+            std::ranges::replace(content.begin(), content.end(), '\n', ' ');
+            std::ranges::replace(content.begin(), content.end(), '\r', ' ');
 
             content = wolv::util::trim(content);
 
@@ -343,13 +347,13 @@ namespace pl::core {
 
         // Apply defines
         std::vector<std::tuple<std::string, std::string, u32>> sortedDefines;
-        std::for_each(this->m_defines.begin(), this->m_defines.end(), [&sortedDefines](const auto &entry){
+        std::ranges::for_each(this->m_defines.begin(), this->m_defines.end(), [&sortedDefines](const auto &entry){
             const auto &[key, data] = entry;
             const auto &[value, line] = data;
 
             sortedDefines.emplace_back(key, value, line);
         });
-        std::sort(sortedDefines.begin(), sortedDefines.end(), [](const auto &left, const auto &right) {
+        std::ranges::sort(sortedDefines.begin(), sortedDefines.end(), [](const auto &left, const auto &right) {
             return std::get<0>(left).size() > std::get<0>(right).size();
         });
 
@@ -369,7 +373,7 @@ namespace pl::core {
 
                 if (this->m_pragmaHandlers.contains(type)) {
                     if (!this->m_pragmaHandlers[type](runtimeRef, value))
-                        error_at(Location { m_source, line, 0 },
+                        error_at(Location { m_source, line, 1, value.length() },
                                  "Value '{}' cannot be used with the '{}' pragma directive.", value, type);
                 }
             }
@@ -401,8 +405,7 @@ namespace pl::core {
     }
 
     Location Preprocessor::location() {
-        u32 column = (u32) (m_offset - m_lineBeginOffset);
-        return { m_source, m_lineNumber, column };
+        return { m_source, m_lineNumber, (u32) (m_offset - m_lineBeginOffset), 1 };
     }
 
     void Preprocessor::registerDirectiveHandler(const std::string& name, auto memberFunction) {

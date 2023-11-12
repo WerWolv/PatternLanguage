@@ -18,7 +18,7 @@ namespace pl::test {
                     a();
                     b();
                     c();
-                }
+                };
             )";
         }
     };

@@ -200,7 +200,7 @@ namespace pl {
          * @brief Sets the console log callback
          * @param callback Callback to call
          */
-        void setLogCallback(const core::LogConsole::Callback &callback);
+        void setLogCallback(const core::LogConsole::Callback &callback) const;
 
         /**
          * @brief Gets the error that occurred during the last execution

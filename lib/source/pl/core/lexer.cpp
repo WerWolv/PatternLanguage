@@ -11,11 +11,11 @@ using namespace tkn;
 
 static constexpr char integerSeparator = '\'';
 
-static inline bool isIdentifierCharacter(char c) {
+static bool isIdentifierCharacter(const char c) {
     return std::isalnum(c) || c == '_';
 }
 
-static inline bool isIntegerCharacter(char c, int base) {
+static bool isIntegerCharacter(const char c, const int base) {
     switch (base) {
         case 16:
             return std::isxdigit(c);
@@ -30,24 +30,26 @@ static inline bool isIntegerCharacter(char c, int base) {
     }
 }
 
-static inline int characterValue(char c) {
+static int characterValue(const char c) {
     if (c >= '0' && c <= '9') {
         return c - '0';
-    } else if (c >= 'a' && c <= 'f') {
-        return c - 'a' + 10;
-    } else if (c >= 'A' && c <= 'F') {
-        return c - 'A' + 10;
-    } else {
-        return 0;
     }
+    if (c >= 'a' && c <= 'f') {
+        return c - 'a' + 10;
+    }
+    if (c >= 'A' && c <= 'F') {
+        return c - 'A' + 10;
+    }
+
+    return 0;
 }
 
-static inline size_t getIntegerLiteralLength(const std::string_view& literal) {
-    auto count = literal.find_first_not_of("0123456789ABCDEFabcdef'xXoOpP.uU");
+static size_t getIntegerLiteralLength(const std::string_view& literal) {
+    const auto count = literal.find_first_not_of("0123456789ABCDEFabcdef'xXoOpP.uU");
     if (count == std::string_view::npos)
         return literal.size();
-    else
-        return count;
+
+    return count;
 }
 
 std::optional<char> Lexer::parseCharacter() {
@@ -75,12 +77,12 @@ std::optional<char> Lexer::parseCharacter() {
             case '\\':
                 return '\\';
             case 'x': {
-                char hex[3] = { m_sourceCode[m_cursor], m_sourceCode[m_cursor + 1], 0 };
+                const char hex[3] = { m_sourceCode[m_cursor], m_sourceCode[m_cursor + 1], 0 };
                 m_cursor += 2;
                 return static_cast<char>(std::stoul(hex, nullptr, 16));
             }
             case 'u': {
-                char hex[5] = { m_sourceCode[m_cursor], m_sourceCode[m_cursor + 1], m_sourceCode[m_cursor + 2],
+                const char hex[5] = { m_sourceCode[m_cursor], m_sourceCode[m_cursor + 1], m_sourceCode[m_cursor + 2],
                                 m_sourceCode[m_cursor + 3], 0 };
                 m_cursor += 4;
                 return static_cast<char>(std::stoul(hex, nullptr, 16));
@@ -89,37 +91,34 @@ std::optional<char> Lexer::parseCharacter() {
                 error("Unknown escape sequence: {}", m_sourceCode[m_cursor-1]);
                 return std::nullopt;
         }
-    } else {
-        return c;
     }
+    return c;
 }
 
 std::optional<Token> Lexer::parseStringLiteral() {
     std::string result;
+    auto location = this->location();
 
-    m_cursor++; // skip opening "
-    while(m_sourceCode[m_cursor] != '\"') {
+    m_cursor++; // Skip opening "
+
+    while (m_sourceCode[m_cursor] != '\"') {
         char c = peek();
-        if(c == '\n') {
-            error("Unexpected newline in string literal");
-            return std::nullopt;
-        } else if(c == '\0') {
-            error("Unexpected end of file in string literal");
+        if (c == '\n' || c == '\0') {
+            error(c == '\n' ? "Unexpected newline in string literal" : "Unexpected end of file in string literal");
             return std::nullopt;
         }
 
         auto character = parseCharacter();
-
-        if(character.has_value()) {
-            result += character.value();
-        } else {
+        if (!character.has_value()) {
             return std::nullopt;
         }
+
+        result += character.value();
     }
 
     m_cursor++;
 
-    return makeToken(Literal::makeString(result));
+    return makeTokenAt(Literal::makeString(result), location, result.size() + 2);
 }
 
 std::optional<u128> Lexer::parseInteger(std::string_view literal) {
@@ -153,7 +152,7 @@ std::optional<u128> Lexer::parseInteger(std::string_view literal) {
         }
     }
 
-    for (char c : literal) {
+    for (const char c : literal) {
         if(c == integerSeparator) continue;
 
         if (!isIntegerCharacter(c, base)) {
@@ -166,7 +165,7 @@ std::optional<u128> Lexer::parseInteger(std::string_view literal) {
     return value;
 }
 
-std::optional<double> Lexer::parseFloatingPoint(std::string_view literal, char suffix) {
+std::optional<double> Lexer::parseFloatingPoint(std::string_view literal, const char suffix) {
     char *end = nullptr;
     double val = std::strtod(literal.data(), &end);
 
@@ -188,11 +187,11 @@ std::optional<double> Lexer::parseFloatingPoint(std::string_view literal, char s
 
 std::optional<Token::Literal> Lexer::parseIntegerLiteral(std::string_view literal) {
     // parse a c like numeric literal
-    bool floatSuffix = hlp::string_ends_with_one_of(literal, { "f", "F", "d", "D" });
-    bool unsignedSuffix = hlp::string_ends_with_one_of(literal, { "u", "U" });
-    bool isFloat = literal.find('.') != std::string_view::npos
+    const bool floatSuffix = hlp::string_ends_with_one_of(literal, { "f", "F", "d", "D" });
+    const bool unsignedSuffix = hlp::string_ends_with_one_of(literal, { "u", "U" });
+    const bool isFloat = literal.find('.') != std::string_view::npos
                    || (!literal.starts_with("0x") && floatSuffix);
-    bool isUnsigned = unsignedSuffix;
+    const bool isUnsigned = unsignedSuffix;
 
     if(isFloat) {
 
@@ -209,127 +208,142 @@ std::optional<Token::Literal> Lexer::parseIntegerLiteral(std::string_view litera
 
         return floatingPoint.value();
 
-    } else {
-
-        if(unsignedSuffix) {
-            // remove suffix
-            literal = literal.substr(0, literal.size() - 1);
-        }
-
-        auto integer = parseInteger(literal);
-
-        if(!integer.has_value()) return std::nullopt;
-
-        u128 value = integer.value();
-        if(isUnsigned) {
-            return value;
-        } else {
-            return i128(value);
-        }
-
-
     }
+
+    if(unsignedSuffix) {
+        // remove suffix
+        literal = literal.substr(0, literal.size() - 1);
+    }
+
+    const auto integer = parseInteger(literal);
+
+    if(!integer.has_value()) return std::nullopt;
+
+    u128 value = integer.value();
+    if(isUnsigned) {
+        return value;
+    }
+
+    return i128(value);
 }
 
 std::optional<Token> Lexer::parseOneLineDocComment() {
+    auto location = this->location();
+    const auto begin = m_cursor;
     m_cursor += 3;
+
     std::string result;
     while(m_sourceCode[m_cursor] != '\n') {
         result += m_sourceCode[m_cursor++];
+
         if(peek(1) == 0) {
             error("Unexpected end of file while parsing one line doc comment");
             return std::nullopt;
         }
     }
-    return makeToken(Literal::makeDocComment(false, result));
+
+    return makeTokenAt(Literal::makeDocComment(false, result), location, m_cursor - begin);
 }
 
 std::optional<Token> Lexer::parseMultiLineDocComment() {
-    bool global = peek(2) == '!';
-    m_cursor += 3;
+    auto location = this->location();
+    const auto begin = m_cursor;
+    const bool global = peek(2) == '!';
     std::string result;
+
+    m_cursor += 3;
     while(true) {
         if(peek(0) == '\n') {
             m_line++;
             m_lineBegin = m_cursor;
         }
+
         if(peek(1) == 0) {
             error("Unexpected end of file while parsing multi line doc comment");
             return std::nullopt;
         }
+
         if(peek(1) == '*' && peek(2) == '/') {
             m_cursor += 2;
             break;
         }
+
         result += m_sourceCode[m_cursor++];
     }
-    return makeToken(Literal::makeDocComment(global, result));
+
+    return makeTokenAt(Literal::makeDocComment(global, result), location, m_cursor - begin);
 }
 
 std::optional<Token> Lexer::parseOperator() {
-    auto operators = Token::operators();
+    auto location = this->location();
+    const auto begin = m_cursor;
+    const auto operators = Token::operators();
     std::optional<Token> lastMatch = std::nullopt;
-    size_t begin = m_cursor;
+
     for (int i = 1; i <= Operator::maxOperatorLength; ++i) {
-        const auto view = std::string_view { &m_sourceCode[begin], (size_t) i };
-        auto operatorToken = operators.find(view);
-        if (operatorToken != operators.end()) {
+        const auto view = std::string_view { &m_sourceCode[begin], static_cast<size_t>(i) };
+        if (auto operatorToken = operators.find(view); operatorToken != operators.end()) {
             m_cursor++;
             lastMatch = operatorToken->second;
         }
     }
-    if(lastMatch.has_value()) {
-        return makeToken(lastMatch.value());
-    }
-    return lastMatch;
+
+    return lastMatch ? makeTokenAt(lastMatch.value(), location, m_cursor - begin) : lastMatch;
 }
 
 std::optional<Token> Lexer::parseSeparator() {
-    auto separators = Token::separators();
-    auto separatorToken = separators.find(m_sourceCode[m_cursor]);
-    if (separatorToken != separators.end()) {
+    auto location = this->location();
+    const auto begin = m_cursor;
+
+    if (const auto separatorToken = Token::separators().find(m_sourceCode[m_cursor]);
+        separatorToken != Token::separators().end()) {
         m_cursor++;
-        return makeToken(separatorToken->second);
-    }
+        return makeTokenAt(separatorToken->second, location, m_cursor - begin);
+        }
+
     return std::nullopt;
 }
 
 std::optional<Token> Lexer::parseKeyword(const std::string_view &identifier) {
-    auto keywords = Token::keywords();
-    auto keywordToken = keywords.find(identifier);
-    if (keywordToken != keywords.end()) {
-        return makeToken(keywordToken->second);
+    const auto keywords = Token::keywords();
+    if (const auto keywordToken = keywords.find(identifier); keywordToken != keywords.end()) {
+        return makeToken(keywordToken->second, identifier.length());
     }
     return std::nullopt;
 }
 
 std::optional<Token> Lexer::parseType(const std::string_view &identifier) {
     auto types = Token::types();
-    auto typeToken = types.find(identifier);
-    if (typeToken != types.end()) {
-        return makeToken(typeToken->second);
+    if (const auto typeToken = types.find(identifier); typeToken != types.end()) {
+        return makeToken(typeToken->second, identifier.length());
     }
     return std::nullopt;
 }
 
 std::optional<Token> Lexer::parseNamedOperator(const std::string_view &identifier) {
-    auto operatorToken = Token::operators().find(identifier);
-    if (operatorToken != Token::operators().end()) {
-        return makeToken(operatorToken->second);
+    auto operators = Token::operators();
+    if (const auto operatorToken = operators.find(identifier); operatorToken != operators.end()) {
+        return makeToken(operatorToken->second, identifier.length());
     }
     return std::nullopt;
 }
 
 std::optional<Token> Lexer::parseConstant(const std::string_view &identifier) {
-    auto constantToken = tkn::constants.find(identifier);
-    if (constantToken != tkn::constants.end()) {
-        return makeToken(Literal::makeNumeric(constantToken->second));
+    if (const auto constantToken = constants.find(identifier); constantToken != constants.end()) {
+        return makeToken(Literal::makeNumeric(constantToken->second), identifier.length());
     }
     return std::nullopt;
 }
 
-Token Lexer::makeToken(const Token &token) {
-    return { token.type, token.value, location() };
+Token Lexer::makeToken(const Token &token, const size_t length) {
+    auto location = this->location();
+    location.length = length;
+    return { token.type, token.value, location };
+}
+
+Token Lexer::makeTokenAt(const Token &token, Location& location, const size_t length) {
+    location.length = length;
+    return { token.type, token.value, location };
 }
 
 void Lexer::addToken(const Token &token) {
@@ -341,8 +355,9 @@ CompileResult<std::vector<Token>> Lexer::lex(api::Source* source) {
     this->m_source = source;
     this->m_cursor = 0;
     this->m_line = 1;
+    this->m_lineBegin = 0;
 
-    size_t end = this->m_sourceCode.size();
+    const size_t end = this->m_sourceCode.size();
 
     m_tokens.clear();
 
@@ -377,7 +392,7 @@ CompileResult<std::vector<Token>> Lexer::lex(api::Source* source) {
             }
 
             // not a predefined token, so it must be an identifier
-            addToken(makeToken(Literal::makeIdentifier(std::string(identifier))));
+            addToken(makeToken(Literal::makeIdentifier(std::string(identifier)), length));
             this->m_cursor += length;
 
             continue;
@@ -387,10 +402,10 @@ CompileResult<std::vector<Token>> Lexer::lex(api::Source* source) {
             auto literal = &m_sourceCode[m_cursor];
             size_t size = getIntegerLiteralLength(literal);
 
-            auto integer = parseIntegerLiteral({ literal, size });
+            const auto integer = parseIntegerLiteral({ literal, size });
 
             if(integer.has_value()) {
-                addToken(makeToken(Literal::makeNumeric(integer.value())));
+                addToken(makeToken(Literal::makeNumeric(integer.value()), size));
                 this->m_cursor += size;
                 continue;
             }
@@ -401,11 +416,11 @@ CompileResult<std::vector<Token>> Lexer::lex(api::Source* source) {
 
         // comment cases
         if(c == '/') {
-            char category = peek(1);
+            const char category = peek(1);
             char type = peek(2);
             if(category == '/') {
                 if(type == '/') {
-                    auto token = parseOneLineDocComment();
+                    const auto token = parseOneLineDocComment();
                     if(token.has_value()) {
                         addToken(token.value());
                     }
@@ -413,12 +428,13 @@ CompileResult<std::vector<Token>> Lexer::lex(api::Source* source) {
                     error("Expected '/' after '//' but got '//{}'", type);
                 }
                 continue;
-            } else if(category == '*') {
+            }
+            if(category == '*') {
                 if(type != '!' && type != '*') {
                     error("Invalid documentation comment. Expected '/**' or '/*!', got '/*{}", type);
                     continue;
                 }
-                auto token = parseMultiLineDocComment();
+                const auto token = parseMultiLineDocComment();
                 if(token.has_value()) {
                     addToken(token.value());
                 }
@@ -427,13 +443,13 @@ CompileResult<std::vector<Token>> Lexer::lex(api::Source* source) {
             }
         }
 
-        auto operatorToken = parseOperator();
+        const auto operatorToken = parseOperator();
         if (operatorToken.has_value()) {
             addToken(operatorToken.value());
             continue;
         }
 
-        auto separatorToken = parseSeparator();
+        const auto separatorToken = parseSeparator();
         if (separatorToken.has_value()) {
             addToken(separatorToken.value());
             continue;
@@ -441,15 +457,17 @@ CompileResult<std::vector<Token>> Lexer::lex(api::Source* source) {
 
         // literals
         if (c == '"') {
-            auto string = parseStringLiteral();
+            const auto string = parseStringLiteral();
 
             if (string.has_value()) {
                 addToken(string.value());
                 continue;
             }
         } else if(c == '\'') {
+            auto location = this->location();
+            const auto begin = m_cursor;
             m_cursor++; // skip opening '
-            auto character = parseCharacter();
+            const auto character = parseCharacter();
 
             if (character.has_value()) {
                 if(m_sourceCode[m_cursor] != '\'') {
@@ -459,7 +477,7 @@ CompileResult<std::vector<Token>> Lexer::lex(api::Source* source) {
 
                 m_cursor++; // skip closing '
 
-                addToken(makeToken(Literal::makeNumeric(character.value())));
+                addToken(makeTokenAt(Literal::makeNumeric(character.value()), location, m_cursor - begin));
                 continue;
             }
         } else {
@@ -474,12 +492,12 @@ CompileResult<std::vector<Token>> Lexer::lex(api::Source* source) {
     return { m_tokens, collectErrors() };
 }
 
-inline char Lexer::peek(size_t p) const {
+inline char Lexer::peek(const size_t p) const {
     return m_cursor + p < m_sourceCode.size() ? m_sourceCode[m_cursor + p] : '\0';
 }
 
-inline bool Lexer::processToken(auto parserFunction, const std::string_view& identifier) {
-    auto token = (this->*parserFunction)(identifier);
+bool Lexer::processToken(auto parserFunction, const std::string_view& identifier) {
+    const auto token = (this->*parserFunction)(identifier);
     if (token.has_value()) {
         m_tokens.emplace_back(token.value());
         m_cursor += identifier.size();
@@ -489,5 +507,5 @@ inline bool Lexer::processToken(auto parserFunction, const std::string_view& ide
 }
 
 inline Location Lexer::location() {
-    return Location { m_source, m_line, (u32) m_cursor - m_lineBegin + 1 };
+    return Location { m_source, m_line, (u32) m_cursor - m_lineBegin, 0 };
 }

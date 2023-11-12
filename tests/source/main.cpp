@@ -81,19 +81,19 @@ int runTests(int argc, char **argv) {
         #include <B>
         #include <C>
 
-        fn a() {}
+        fn a() {};
     )");
 
     resolver.addFile("B", R"(
         #include <C>
 
-        fn b() {}
+        fn b() {};
     )");
 
     resolver.addFile("C", R"(
         #pragma once
 
-        fn c() {}
+        fn c() {};
     )");
 
     runtime.setIncludeResolver(resolver);

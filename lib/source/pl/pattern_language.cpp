@@ -19,7 +19,7 @@
 
 namespace pl {
 
-    PatternLanguage::PatternLanguage(bool addLibStd) : m_internals() {
+    PatternLanguage::PatternLanguage(const bool addLibStd) {
         this->m_internals = {
             .preprocessor   = std::make_unique<core::Preprocessor>(),
             .lexer          = std::make_unique<core::Lexer>(),
@@ -50,7 +50,7 @@ namespace pl {
     }
 
     std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> PatternLanguage::parseString(const std::string &code, const std::string &source) {
-        auto sourceObj = m_resolvers.setSource(code, source);
+        const auto sourceObj = m_resolvers.setSource(code, source);
 
         auto [preprocessedCode, preprocessorErrors] = this->m_internals.preprocessor->preprocess(this, sourceObj);
         if (!preprocessorErrors.empty()) {
@@ -81,16 +81,16 @@ namespace pl {
     }
 
     bool PatternLanguage::executeString(std::string code, const std::string& source, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
-        auto startTime = std::chrono::high_resolution_clock::now();
+        const auto startTime = std::chrono::high_resolution_clock::now();
         ON_SCOPE_EXIT {
-            auto endTime = std::chrono::high_resolution_clock::now();
+            const auto endTime = std::chrono::high_resolution_clock::now();
             this->m_runningTime = std::chrono::duration_cast<std::chrono::duration<double>>(endTime - startTime);
         };
 
         code = wolv::util::replaceStrings(code, "\r\n", "\n");
         code = wolv::util::replaceStrings(code, "\t", "    ");
 
-        auto &evaluator = this->m_internals.evaluator;
+        const auto &evaluator = this->m_internals.evaluator;
 
         this->m_running = true;
         this->m_aborted = false;
@@ -165,7 +165,7 @@ namespace pl {
 
     std::pair<bool, std::optional<core::Token::Literal>> PatternLanguage::executeFunction(const std::string &code) {
 
-        auto functionContent = fmt::format("fn main() {{ {0} }};", code);
+        const auto functionContent = fmt::format("fn main() {{ {0} }};", code);
 
         auto success = this->executeString(functionContent, core::DefaultSource, {}, {}, false);
         auto result  = this->m_internals.evaluator->getMainResult();
@@ -236,7 +236,7 @@ namespace pl {
     }
 
 
-    void PatternLanguage::setLogCallback(const core::LogConsole::Callback &callback) {
+    void PatternLanguage::setLogCallback(const core::LogConsole::Callback &callback) const {
         this->m_internals.evaluator->getConsole().setLogCallback(callback);
     }
 

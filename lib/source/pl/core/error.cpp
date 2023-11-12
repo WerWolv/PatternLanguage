@@ -112,8 +112,9 @@ namespace pl::core::err {
                 errorMessage += fmt::format("{}{}\n", lineNumberPrefix, errorLine);
 
                 {
-                    const auto descriptionSpacing = std::string(lineNumberPrefix.length() + arrowPosition, ' ');
-                    errorMessage += descriptionSpacing + "^\n";
+                    const auto arrowSpacing = std::string(lineNumberPrefix.length() + arrowPosition, ' ');
+                    // add arrow with length of the token
+                    errorMessage += arrowSpacing + std::string(location.length, '^') + '\n';
                 }
             }
         }
