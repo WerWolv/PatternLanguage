@@ -221,7 +221,7 @@ namespace pl::ptrn {
 
             result += " ]";
 
-            return Pattern::formatDisplayValue(result, this->clone());
+            return Pattern::formatDisplayValue(result, this->clone(), true);
         }
 
         std::vector<u8> getRawBytes() override {

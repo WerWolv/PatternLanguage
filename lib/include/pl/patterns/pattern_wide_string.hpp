@@ -52,7 +52,7 @@ namespace pl::ptrn {
 
             auto result = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>("???").to_bytes(buffer);
 
-            return Pattern::formatDisplayValue(result, this->getValue());
+            return Pattern::formatDisplayValue(result, this->getValue(), true);
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override { return compareCommonProperties<decltype(*this)>(other); }

@@ -155,7 +155,7 @@ namespace pl::ptrn {
         [[nodiscard]] std::string toString() const override {
             auto result = this->m_pointedAt->toString();
 
-            return Pattern::formatDisplayValue(result, this->clone());
+            return Pattern::formatDisplayValue(result, this->clone(), true);
         }
 
         std::vector<u8> getRawBytes() override {

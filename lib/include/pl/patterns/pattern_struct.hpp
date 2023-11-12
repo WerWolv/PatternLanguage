@@ -141,7 +141,7 @@ namespace pl::ptrn {
 
             result += " }";
 
-            return Pattern::formatDisplayValue(result, this->clone());
+            return Pattern::formatDisplayValue(result, this->clone(), true);
         }
 
         void setMembers(std::vector<std::shared_ptr<Pattern>> members) {

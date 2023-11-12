@@ -163,7 +163,7 @@ namespace pl::ptrn {
 
             result += " ]";
 
-            return Pattern::formatDisplayValue(result, this->clone());
+            return Pattern::formatDisplayValue(result, this->clone(), true);
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override {

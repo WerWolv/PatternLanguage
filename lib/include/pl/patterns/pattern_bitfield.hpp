@@ -117,7 +117,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string toString() const override {
             auto value = this->readValue();
-            return Pattern::formatDisplayValue(fmt::format("{}", value), value);
+            return Pattern::formatDisplayValue(fmt::format("{}", value), value, true);
         }
 
         [[nodiscard]] bool isPadding() const override { return this->m_padding; }
@@ -184,7 +184,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string toString() const override {
             auto result = fmt::format("{}", this->getValue().toSigned());
-            return Pattern::formatDisplayValue(result, this->getValue());
+            return Pattern::formatDisplayValue(result, this->getValue(), true);
         }
     };
 
@@ -214,7 +214,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string toString() const override {
             auto value = this->getValue();
-            return Pattern::formatDisplayValue(fmt::format("{}", value.toBoolean() ? "true" : "false"), value);
+            return Pattern::formatDisplayValue(fmt::format("{}", value.toBoolean() ? "true" : "false"), value, true);
         }
     };
 
@@ -258,7 +258,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string toString() const override {
             auto enumName = PatternEnum::getEnumName(this->getTypeName(), this->readValue(), this->getEnumValues());
-            return Pattern::formatDisplayValue(enumName, this->getValue());
+            return Pattern::formatDisplayValue(enumName, this->getValue(), true);
         }
 
     private:
@@ -462,7 +462,7 @@ namespace pl::ptrn {
 
             result += " ]";
 
-            return Pattern::formatDisplayValue(result, this->clone());
+            return Pattern::formatDisplayValue(result, this->clone(), true);
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override {
@@ -705,7 +705,7 @@ namespace pl::ptrn {
 
             result += " }";
 
-            return Pattern::formatDisplayValue(result, this->clone());
+            return Pattern::formatDisplayValue(result, this->clone(), true);
         }
 
         std::string formatDisplayValue() override {
