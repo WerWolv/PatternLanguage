@@ -5,7 +5,7 @@
 #include <variant>
 #include <vector>
 #include <map>
-#include <limits>
+#include <utility>
 
 #include <pl/helpers/types.hpp>
 #include "location.hpp"
@@ -171,7 +171,7 @@ namespace pl::core {
             constexpr bool operator==(const DocComment &) const = default;
         };
 
-        struct Literal : public std::variant<char, bool, u128, i128, double, std::string, std::shared_ptr<ptrn::Pattern>> {
+        struct Literal : std::variant<char, bool, u128, i128, double, std::string, std::shared_ptr<ptrn::Pattern>> {
             using variant::variant;
 
             [[nodiscard]] std::shared_ptr<ptrn::Pattern> toPattern() const;
@@ -192,33 +192,35 @@ namespace pl::core {
             [[nodiscard]] bool isString() const;
 
             [[nodiscard]] ValueType getType() const;
+
+            [[nodiscard]] bool operator==(const Literal &other) const;
         };
 
         using ValueTypes = std::variant<Keyword, Identifier, Operator, Literal, ValueType, Separator, DocComment>;
 
-        constexpr Token(Type type, auto value, Location location) : type(type), value(std::move(value)), location(location) {}
+        constexpr Token(const Type type, auto value, const Location location) : type(type), value(std::move(value)), location(location) {}
 
-        [[nodiscard]] constexpr static inline bool isInteger(const ValueType &type) {
+        [[nodiscard]] constexpr static bool isInteger(const ValueType &type) {
             return isUnsigned(type) || isSigned(type);
         }
 
-        [[nodiscard]] constexpr static inline bool isUnsigned(const ValueType &type) {
+        [[nodiscard]] constexpr static bool isUnsigned(const ValueType &type) {
             return (static_cast<u32>(type) & 0x0F) == 0x00;
         }
 
-        [[nodiscard]] constexpr static inline bool isSigned(const ValueType &type) {
+        [[nodiscard]] constexpr static bool isSigned(const ValueType &type) {
             return (static_cast<u32>(type) & 0x0F) == 0x01;
         }
 
-        [[nodiscard]] constexpr static inline bool isFloatingPoint(const ValueType &type) {
+        [[nodiscard]] constexpr static bool isFloatingPoint(const ValueType &type) {
             return (static_cast<u32>(type) & 0x0F) == 0x02;
         }
 
-        [[nodiscard]] constexpr static inline u32 getTypeSize(const ValueType &type) {
+        [[nodiscard]] constexpr static u32 getTypeSize(const ValueType &type) {
             return static_cast<u32>(type) >> 4;
         }
 
-        [[nodiscard]] static const char* getTypeName(core::Token::ValueType type);
+        [[nodiscard]] static const char* getTypeName(ValueType type);
 
         [[nodiscard]] std::string getFormattedType() const;
         [[nodiscard]] std::string getFormattedValue() const;

@@ -109,6 +109,31 @@ namespace pl::core {
         return std::holds_alternative<std::shared_ptr<ptrn::Pattern>>(*this);
     }
 
+    bool Token::Literal::operator==(const Literal &other) const {
+        return std::visit(wolv::util::overloaded {
+            []<typename T>(T lhs, T rhs) {
+                return lhs == rhs;
+            },
+            [](integral auto lhs, pl::integral auto rhs) {
+                if constexpr (std::same_as<decltype(lhs), char> || std::same_as<decltype(rhs), char>)
+                    return char(lhs) == char(rhs);
+                else if constexpr (std::same_as<decltype(lhs), bool> || std::same_as<decltype(rhs), bool>)
+                    return bool(lhs) == bool(rhs);
+                else
+                    return std::cmp_equal(lhs, rhs);
+            },
+            [](integral auto lhs, floating_point auto rhs) {
+                return lhs == rhs;
+            },
+            [](floating_point auto lhs, integral auto rhs) {
+                return lhs == rhs;
+            },
+            [](auto, auto) {
+                return false;
+            }
+        }, *this, other);
+    }
+
     Token::ValueType Token::Literal::getType() const {
         return std::visit(wolv::util::overloaded {
                 [](char) { return Token::ValueType::Character; },
@@ -196,9 +221,9 @@ namespace pl::core {
 
     [[nodiscard]] std::string Token::getFormattedValue() const {
         return std::visit(wolv::util::overloaded {
-                              [](Token::Keyword keyword) -> std::string {
+                              [](const Keyword keyword) -> std::string {
                                   switch (keyword) {
-                                      using enum Token::Keyword;
+                                      using enum Keyword;
                                       case Struct: return "struct";
                                       case Union: return "union";
                                       case Using: return "using";
@@ -235,9 +260,9 @@ namespace pl::core {
 
                                   return "";
                               },
-                              [](Token::Separator separator) -> std::string  {
+                              [](const Separator separator) -> std::string  {
                                   switch(separator) {
-                                      using enum Token::Separator;
+                                      using enum Separator;
 
                                       case LeftParenthesis: return "(";
                                       case RightParenthesis: return ")";
@@ -253,9 +278,9 @@ namespace pl::core {
 
                                   return "";
                               },
-                              [](Token::Operator op) -> std::string  {
+                              [](const Operator op) -> std::string  {
                                   switch (op) {
-                                      using enum Token::Operator;
+                                      using enum Operator;
 
                                       case At: return "@";
                                       case Assign: return "=";
@@ -291,16 +316,16 @@ namespace pl::core {
 
                                   return "";
                               },
-                              [](const Token::Identifier &identifier) -> std::string  {
+                              [](const Identifier &identifier) -> std::string  {
                                   return fmt::format("'{}'", identifier.get());
                               },
-                              [](const Token::Literal &literal) -> std::string  {
+                              [](const Literal &literal) -> std::string  {
                                   return fmt::format("'{}'", literal.toString(true));
                               },
-                              [](Token::ValueType valueType) -> std::string  {
+                              [](const ValueType valueType) -> std::string  {
                                   return getTypeName(valueType);
                               },
-                              [](const Token::DocComment &docComment) -> std::string {
+                              [](const DocComment &docComment) -> std::string {
                                   if (docComment.global)
                                       return fmt::format("/*! {} */", docComment.comment);
                                   else
@@ -312,24 +337,24 @@ namespace pl::core {
     bool Token::operator==(const ValueTypes &other) const {
         if (this->type == Type::Integer || this->type == Type::Identifier || this->type == Type::String || this->type == Type::DocComment)
             return true;
-        else if (this->type == Type::ValueType) {
-            auto otherValueType = std::get_if<ValueType>(&other);
-            auto valueType      = std::get_if<ValueType>(&this->value);
+        if (this->type == Type::ValueType) {
+            const auto otherValueType = std::get_if<ValueType>(&other);
+            const auto valueType      = std::get_if<ValueType>(&this->value);
 
             if (otherValueType == nullptr) return false;
             if (valueType == nullptr) return false;
 
             if (*otherValueType == *valueType)
                 return true;
-            else if (*otherValueType == ValueType::Any)
+            if (*otherValueType == ValueType::Any)
                 return *valueType != ValueType::CustomType && *valueType != ValueType::Padding;
-            else if (*otherValueType == ValueType::Unsigned)
+            if (*otherValueType == ValueType::Unsigned)
                 return isUnsigned(*valueType);
-            else if (*otherValueType == ValueType::Signed)
+            if (*otherValueType == ValueType::Signed)
                 return isSigned(*valueType);
-            else if (*otherValueType == ValueType::FloatingPoint)
+            if (*otherValueType == ValueType::FloatingPoint)
                 return isFloatingPoint(*valueType);
-            else if (*otherValueType == ValueType::Integer)
+            if (*otherValueType == ValueType::Integer)
                 return isUnsigned(*valueType) || isSigned(*valueType);
         } else
             return other == this->value;
