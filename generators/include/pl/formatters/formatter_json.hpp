@@ -57,9 +57,15 @@ namespace pl::gen::fmt {
         }
 
         void formatString(pl::ptrn::Pattern *pattern) {
-            auto result = pattern->toString();
-            result = wolv::util::replaceStrings(result, "\n", " ");
-            result = hlp::encodeByteString({ result.begin(), result.end() });
+            auto string = pattern->toString();
+
+            std::string result;
+            for (char c : string) {
+                if (std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~')
+                    result += c;
+                else
+                    result += ::fmt::format("%{:02X}", c);
+            }
 
             addLine(pattern->getVariableName(), ::fmt::format("\"{}\",", result));
         }
