@@ -311,10 +311,7 @@ namespace pl::core {
             else if (auto string = std::get_if<std::string>(&value.value()); string != nullptr)
                 pattern = std::make_shared<ptrn::PatternString>(this, 0, string->size());
             else if (auto patternValue = std::get_if<std::shared_ptr<ptrn::Pattern>>(&value.value()); patternValue != nullptr) {
-                if (reference)
-                    pattern = *patternValue;
-                else
-                    pattern = (*patternValue)->clone();
+                pattern = (*patternValue)->clone();
             }
             else
                 err::E0003.throwError("Cannot determine type of 'auto' variable.", "Try initializing it directly with a literal.", type);
@@ -560,7 +557,7 @@ namespace pl::core {
         } else if (!pattern->isLocal()) {
             std::visit(wolv::util::overloaded {
                 [&](const std::shared_ptr<ptrn::Pattern> &patternValue) {
-                    pattern = patternValue;
+                    pattern = patternValue->clone();
                 },
                 [](const auto &) { }
             }, value);
