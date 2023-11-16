@@ -120,6 +120,7 @@ namespace pl::cli::sub {
             }
 
             outputFile.writeVector(result);
+            ::fmt::print("Wrote pattern data to {}\n", outputFilePath.string());
         });
     }
 
