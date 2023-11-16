@@ -30,7 +30,7 @@ namespace pl::cli::sub {
         static std::fs::path patternFilePath;
         static std::string type;
 
-        auto subcommand = app->add_subcommand("info");
+        auto subcommand = app->add_subcommand("info", "Print information about a pattern");
 
         // Add command line arguments
         subcommand->add_option("-p,--pattern,PATTERN_FILE", patternFilePath, "Pattern file")->required()->check(CLI::ExistingFile);
