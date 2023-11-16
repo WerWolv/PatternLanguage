@@ -23,7 +23,7 @@ namespace pl::cli::sub {
         static bool metaInformation = false;
         static u64 baseAddress = 0x00;
 
-        auto subcommand = app->add_subcommand("format", "Executes the given pattern on the given file, and output the pattern data");
+        auto subcommand = app->add_subcommand("format", "Executes the given pattern on the given file, and output the pattern data in the wanted format");
 
         // Add command line arguments
         subcommand->add_option("-i,--input,INPUT_FILE", inputFilePath, "Input file to parse")->required()->check(CLI::ExistingFile);
