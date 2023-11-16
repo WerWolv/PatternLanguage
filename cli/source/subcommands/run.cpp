@@ -22,7 +22,7 @@ namespace pl::cli::sub {
         auto subcommand = app->add_subcommand("run");
 
         // Add command line arguments
-        subcommand->add_option("-i,--input,INPUT_FILE", inputFilePath, "Input file")->check(CLI::ExistingFile);
+        subcommand->add_option("-i,--input,INPUT_FILE", inputFilePath, "Input file to parse")->check(CLI::ExistingFile);
         subcommand->add_option("-p,--pattern,PATTERN_FILE", patternFilePath, "Pattern file")->required()->check(CLI::ExistingFile);
         subcommand->add_option("-I,--includes", includePaths, "Include file paths")->take_all()->check(CLI::ExistingDirectory);
         subcommand->add_option("-b,--base", baseAddress, "Base address")->default_val(0x00);
