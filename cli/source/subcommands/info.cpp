@@ -36,7 +36,7 @@ namespace pl::cli::sub {
         subcommand->add_option("-p,--pattern,PATTERN_FILE", patternFilePath, "Pattern file")->required()->check(CLI::ExistingFile);
         subcommand->add_option("-I,--includes", includePaths, "Include file paths")->take_all()->check(CLI::ExistingDirectory);
         subcommand->add_option("-D,--define", defines, "Define a preprocessor macro")->take_all();
-        subcommand->add_option("-t,--type", type, "Type of information you want to query")->required()->check([](const std::string &value) -> std::string {
+        subcommand->add_option("-t,--type", type, "Type of information you want to query")->check([](const std::string &value) -> std::string {
             if (value == "name" || value == "authors" || value == "description" || value == "mime" || value == "version")
                 return "";
             else
@@ -94,7 +94,13 @@ namespace pl::cli::sub {
                 std::exit(EXIT_FAILURE);
             }
 
-            if (type == "name") {
+            if (type.empty()) {
+                    fmt::print("Pattern name: {}\n", patternName);
+                    fmt::print("Authors: {}\n", wolv::util::combineStrings(patternAuthors, ", "));
+                    fmt::print("Description: {}\n", wolv::util::combineStrings(patternDescriptions, ".\n"));
+                    fmt::print("MIMEs: {}\n", wolv::util::combineStrings(patternMimes, ", "));
+                    fmt::print("Version: {}\n", patternVersion);
+            } else if (type == "name") {
                 if (!patternName.empty())
                     fmt::print("{}\n", patternName);
             } else if (type == "authors") {
