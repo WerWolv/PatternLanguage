@@ -3,20 +3,25 @@
 #include <pl/api.hpp>
 #include <pl/core/ast/ast_node.hpp>
 #include <pl/core/errors/error.hpp>
+#include <pl/core/resolver.hpp>
+
+#include <utility>
 
 namespace pl::core {
 
-    using AST = std::vector<std::shared_ptr<ast::ASTNode>>;
-
     class ParserManager {
+    public:
+        explicit ParserManager() = default;
 
-        explicit ParserManager(const api::IncludeResolver& resolver) : m_includeResolver(resolver) {}
+        CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> parse(const api::Source* source, const std::string &namespacePrefix = "");
 
-        CompileResult<AST> parse(const std::string &code);
+        void setResolvers(Resolver* resolvers) {
+            m_resolvers = resolvers;
+        }
 
     private:
-        std::map<std::string, AST> m_astCache;
-        api::IncludeResolver m_includeResolver;
+        std::map<std::string, std::vector<std::shared_ptr<ast::ASTNode>>> m_astCache;
+        Resolver* m_resolvers = nullptr;
     };
 
 }

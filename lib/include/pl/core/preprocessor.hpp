@@ -9,9 +9,9 @@
 #include <pl/api.hpp>
 #include <pl/helpers/types.hpp>
 #include <pl/core/errors/error.hpp>
+#include <pl/core/resolver.hpp>
 
 #include <utility>
-#include <wolv/io/fs.hpp>
 
 namespace pl::core {
 
@@ -36,8 +36,8 @@ namespace pl::core {
             return this->m_onlyIncludeOnce;
         }
 
-        void setIncludeResolver(const api::IncludeResolver &resolver) {
-            this->m_includeResolver = resolver;
+        void setResolver(Resolver* resolvers) {
+            m_resolver = resolvers;
         }
 
     private:
@@ -73,10 +73,9 @@ namespace pl::core {
         std::unordered_map<std::string, std::pair<std::string, u32>> m_defines;
         std::unordered_map<std::string, std::vector<std::pair<std::string, u32>>> m_pragmas;
 
-        std::set<std::fs::path> m_onceIncludedFiles;
+        std::set<std::string> m_onceIncludedFiles;
 
-        api::IncludeResolver m_includeResolver;
-
+        Resolver *m_resolver = nullptr;
         PatternLanguage *m_runtime = nullptr;
 
         size_t m_offset = 0;

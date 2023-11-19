@@ -30,10 +30,9 @@ namespace pl::core {
         using TokenIter = std::vector<Token>::const_iterator;
 
         explicit Parser() = default;
-        explicit Parser(ParserManager* parserManager) : m_parserManager(parserManager) {}
         ~Parser() = default;
 
-        CompileResult<AST> parse(const std::string &sourceCode, const std::vector<Token> &tokens);
+        CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> parse(const std::string &sourceCode, const std::vector<Token> &tokens);
 
         const auto &getTypes() { return this->m_types; }
 
@@ -43,6 +42,10 @@ namespace pl::core {
 
         void addNamespace(const std::vector<std::string>& path) {
             this->m_currNamespace.push_back(path);
+        }
+
+        void setParserManager(ParserManager* parserManager) {
+            this->m_parserManager = parserManager;
         }
 
     private:

@@ -1,8 +1,6 @@
 #include <pl/core/preprocessor.hpp>
 #include <pl/core/errors/preprocessor_errors.hpp>
 
-#include <fmt/format.h>
-
 #include <wolv/utils/string.hpp>
 
 namespace pl::core {
@@ -27,7 +25,7 @@ namespace pl::core {
         this->m_defines = other.m_defines;
         this->m_pragmas = other.m_pragmas;
         this->m_onceIncludedFiles = other.m_onceIncludedFiles;
-        this->m_includeResolver = other.m_includeResolver;
+        this->m_resolver = other.m_resolver;
         this->m_onlyIncludeOnce = false;
         this->m_pragmaHandlers = other.m_pragmaHandlers;
         this->m_directiveHandlers = other.m_directiveHandlers;
@@ -204,18 +202,18 @@ namespace pl::core {
             return;
         }
 
-        const std::fs::path includePath = includeFile->substr(1, includeFile->length() - 2);
+        const std::string includePath = includeFile->substr(1, includeFile->length() - 2);
 
         // determine if we should include this file
         if (this->m_onceIncludedFiles.contains(includePath))
             return;
 
-        if(!m_includeResolver) {
+        if(m_resolver == nullptr) {
             error_desc("Unable to lookup results", "No include resolver was set.");
             return;
         }
 
-        auto [resolved, error] = this->m_includeResolver(includePath);
+        auto [resolved, error] = this->m_resolver->resolve(includePath);
 
         if(!resolved.has_value()) {
             for (const auto &item: error) {

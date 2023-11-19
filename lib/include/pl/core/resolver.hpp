@@ -6,19 +6,16 @@
 
 namespace pl::core {
 
-    using Resolver = std::function<hlp::Result<api::Source, std::string>(const std::string&)>;
+    using SourceResolver = std::function<hlp::Result<api::Source, std::string>(const std::string&)>;
 
-    class Resolvers {
+    class Resolver {
 
     public:
-        Resolvers() = default;
+        Resolver() = default;
 
         hlp::Result<api::Source*, std::string> resolve(const std::string& path);
-        inline hlp::Result<api::Source*, std::string> operator()(const std::string& path) { // forward for include resolver functional interface
-            return resolve(path);
-        }
 
-        inline void registerProtocol(const std::string& protocol, const Resolver& resolver) {
+        inline void registerProtocol(const std::string& protocol, const SourceResolver& resolver) {
             m_protocolResolvers[protocol] = resolver;
         }
 
@@ -39,33 +36,14 @@ namespace pl::core {
             return setSource(source, api::Source(code, source));
         }
 
-        inline void setDefaultResolver(const Resolver& resolver) const {
+        inline void setDefaultResolver(const SourceResolver& resolver) const {
             m_defaultResolver = resolver;
         }
 
     private:
-        mutable std::map<std::string, Resolver> m_protocolResolvers; // for git://, http(s)://
-        mutable Resolver m_defaultResolver;
+        mutable std::map<std::string, SourceResolver> m_protocolResolvers; // for git://, http(s)://
+        mutable SourceResolver m_defaultResolver;
         mutable std::map<std::string, api::Source> m_cachedSources;
-    };
-
-    class FileResolver {
-    public:
-
-        FileResolver() = default;
-        explicit FileResolver(const std::vector<std::fs::path>& includePaths) : m_includePaths(includePaths) { }
-
-        hlp::Result<api::Source, std::string> resolve(const std::string& path);
-        inline hlp::Result<api::Source, std::string> operator()(const std::string& path) {
-            return resolve(path);
-        }
-
-        void setIncludePaths(const std::vector<std::fs::path>& includePaths) const {
-            this->m_includePaths = includePaths;
-        }
-
-    private:
-        mutable std::vector<std::fs::path> m_includePaths;
     };
 
 }

@@ -39,8 +39,6 @@ namespace pl::api {
 
     static constexpr Source EmptySource = { "", "" };
 
-    using IncludeResolver = std::function<hlp::Result<Source*, std::string>(const std::string&)>;
-
     /**
      * @brief A type representing a custom section
      */

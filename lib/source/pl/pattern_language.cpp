@@ -6,6 +6,8 @@
 #include <pl/core/validator.hpp>
 #include <pl/core/evaluator.hpp>
 #include <pl/core/errors/error.hpp>
+#include <pl/core/resolver.hpp>
+#include <pl/core/resolvers.hpp>
 
 #include <pl/patterns/pattern.hpp>
 
@@ -30,6 +32,10 @@ namespace pl {
 
         if (addLibStd)
             lib::libstd::registerFunctions(*this);
+
+        this->m_internals.preprocessor->setResolver(&this->m_resolvers);
+
+        this->m_parserManager.setResolvers(&this->m_resolvers);
     }
 
     PatternLanguage::~PatternLanguage() {
@@ -188,11 +194,10 @@ namespace pl {
 
     void PatternLanguage::setIncludePaths(const std::vector<std::fs::path>& paths) const {
         this->m_resolvers.setDefaultResolver(core::FileResolver { paths });
-        setIncludeResolver(m_resolvers);
     }
 
-    void PatternLanguage::setIncludeResolver(const api::IncludeResolver &resolver) const {
-        this->m_internals.preprocessor->setIncludeResolver(resolver);
+    void PatternLanguage::setResolver(const core::Resolver& resolver) {
+        this->m_resolvers = resolver;
     }
 
     void PatternLanguage::addPragma(const std::string &name, const api::PragmaHandler &callback) const {

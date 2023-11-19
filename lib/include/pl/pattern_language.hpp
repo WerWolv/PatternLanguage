@@ -16,6 +16,7 @@
 #include <pl/core/token.hpp>
 #include <pl/core/errors/error.hpp>
 #include <pl/core/resolver.hpp>
+#include <pl/core/parser_manager.hpp>
 
 #include <pl/helpers/types.hpp>
 
@@ -185,7 +186,7 @@ namespace pl {
          */
         void setIncludePaths(const std::vector<std::fs::path>& paths) const;
 
-        void setIncludeResolver(const api::IncludeResolver &resolver) const;
+        void setResolver(const core::Resolver& resolver);
 
         /**
          * @brief Registers a callback to be called when a dangerous function is being executed
@@ -311,6 +312,14 @@ namespace pl {
             return this->m_internals;
         }
 
+        [[nodiscard]] core::Resolver& getResolver() {
+            return this->m_resolvers;
+        }
+
+        [[nodiscard]] const core::Resolver& getResolver() const {
+            return this->m_resolvers;
+        }
+
         /**
          * Adds a new cleanup callback that is called when the runtime is reset
          * @note This is useful for built-in functions that need to clean up their state
@@ -345,7 +354,8 @@ namespace pl {
         std::vector<core::err::CompileError> m_compErrors;
         std::optional<core::err::PatternLanguageError> m_currError;
 
-        core::Resolvers m_resolvers;
+        core::Resolver m_resolvers;
+        core::ParserManager m_parserManager;
 
         std::map<u64, std::vector<std::shared_ptr<ptrn::Pattern>>> m_patterns;
         std::map<u64, wolv::container::IntervalTree<ptrn::Pattern*, u64, 5>> m_flattenedPatterns;
