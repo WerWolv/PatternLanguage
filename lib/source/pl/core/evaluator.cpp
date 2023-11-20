@@ -560,7 +560,7 @@ namespace pl::core {
         } else if (!pattern->isLocal()) {
             std::visit(wolv::util::overloaded {
                 [&](const std::shared_ptr<ptrn::Pattern> &patternValue) {
-                    pattern = patternValue->clone();
+                    pattern = patternValue;
                 },
                 [](const auto &) { }
             }, value);
