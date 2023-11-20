@@ -311,7 +311,10 @@ namespace pl::core {
             else if (auto string = std::get_if<std::string>(&value.value()); string != nullptr)
                 pattern = std::make_shared<ptrn::PatternString>(this, 0, string->size());
             else if (auto patternValue = std::get_if<std::shared_ptr<ptrn::Pattern>>(&value.value()); patternValue != nullptr) {
-                pattern = (*patternValue)->clone();
+                if (reference && !templateVariable)
+                    pattern = *patternValue;
+                else
+                    pattern = (*patternValue)->clone();
             }
             else
                 err::E0003.throwError("Cannot determine type of 'auto' variable.", "Try initializing it directly with a literal.", type);
