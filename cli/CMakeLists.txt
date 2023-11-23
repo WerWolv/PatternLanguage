@@ -22,11 +22,17 @@ else ()
     set_property(TARGET plcli PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif ()
 
+if(NOT TARGET nlohmann_json)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../external/nlohmann_json ${CMAKE_CURRENT_BINARY_DIR}/../external/nlohmann_json)
+    set(NLOHMANN_JSON_LIBRARIES nlohmann_json)
+endif()
+target_link_libraries(plcli PUBLIC ${NLOHMANN_JSON_LIBRARIES})
+
 if (NOT USE_SYSTEM_CLI11)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../external/cli11 ${CMAKE_CURRENT_BINARY_DIR}/../external/cli11)
     set(CLI11_LIBRARIES CLI11::CLI11)
     set(CLI11_INCLUDE_DIRS)
-else()
+    else()
     find_package(CLI11 CONFIG QUIET)
 endif()
 
