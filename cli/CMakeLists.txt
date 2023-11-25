@@ -32,7 +32,7 @@ if (NOT USE_SYSTEM_CLI11)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../external/cli11 ${CMAKE_CURRENT_BINARY_DIR}/../external/cli11)
     set(CLI11_LIBRARIES CLI11::CLI11)
     set(CLI11_INCLUDE_DIRS)
-    else()
+else()
     find_package(CLI11 CONFIG QUIET)
 endif()
 
