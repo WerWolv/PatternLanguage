@@ -151,7 +151,7 @@ namespace pl::core {
 
         if (MATCHES(sequence(tkn::Separator::LeftBracket) && !peek(tkn::Separator::LeftBracket))) {
             path.emplace_back(parseMathematicalExpression());
-            if (sequence<Not>(tkn::Separator::RightBracket))
+            if (!sequence(tkn::Separator::RightBracket))
                 err::P0002.throwError(fmt::format("Expected ']' at end of array indexing, got {}.", getFormattedToken(0)), {}, 1);
         }
 
@@ -1600,7 +1600,7 @@ namespace pl::core {
         while (true) {
             this->m_currNamespace.back().push_back(getValue<Token::Identifier>(-1).get());
 
-            if (sequence<Not>(tkn::Operator::ScopeResolution, tkn::Literal::Identifier))
+            if (!sequence(tkn::Operator::ScopeResolution, tkn::Literal::Identifier))
                 break;
         }
 
