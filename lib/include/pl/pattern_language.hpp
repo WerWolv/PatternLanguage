@@ -281,7 +281,7 @@ namespace pl {
          * @brief Gets the time the last execution took
          * @return Time the last execution took
          */
-        [[nodiscard]] const std::chrono::duration<double> & getLastRunningTime() const {
+        [[nodiscard]] double getLastRunningTime() const {
             return this->m_runningTime;
         }
 
@@ -369,7 +369,7 @@ namespace pl {
 
         std::optional<u64> m_startAddress;
         std::endian m_defaultEndian = std::endian::little;
-        std::chrono::duration<double> m_runningTime = std::chrono::duration<double>::zero();
+        double m_runningTime = 0;
     };
 
 }
