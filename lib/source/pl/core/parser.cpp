@@ -1763,7 +1763,8 @@ namespace pl::core {
                 if (trimmed.starts_with("DOCS IGNORE ON")) {
                     this->m_ignoreDocsCount += 1;
                     return std::nullopt;
-                } else if (trimmed.starts_with("DOCS IGNORE OFF")) {
+                }
+                if (trimmed.starts_with("DOCS IGNORE OFF")) {
                     if (this->m_ignoreDocsCount == 0)
                         err::P0002.throwError("Unmatched DOCS IGNORE OFF without previous DOCS IGNORE ON", "", 0);
                     this->m_ignoreDocsCount -= 1;
@@ -1804,7 +1805,7 @@ namespace pl::core {
             if (this->m_curr != tokens.end())
                 err::P0002.throwError("Failed to parse entire input.", "Parsing stopped due to an invalid sequence before the entire input could be parsed. This is most likely a bug.", 1);
 
-            for (auto &type : this->m_types)
+            for (const auto &type : this->m_types)
                 type.second->setCompleted();
 
             return { program, {} };

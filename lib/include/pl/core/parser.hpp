@@ -19,7 +19,6 @@
 #include <functional>
 #include <map>
 #include <optional>
-#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -69,11 +68,11 @@ namespace pl::core {
             this->m_globalDocComments.push_back(comment);
         }
 
-        [[nodiscard]] u32 getLine(i32 index) const {
+        [[nodiscard]] u32 getLine(const i32 index) const {
             return this->m_curr[index].location.line;
         }
 
-        [[nodiscard]] u32 getColumn(i32 index) const {
+        [[nodiscard]] u32 getColumn(const i32 index) const {
             return this->m_curr[index].location.column;
         }
 
@@ -92,12 +91,12 @@ namespace pl::core {
         }
 
         template<typename T>
-        const T &getValue(i32 index) {
+        const T &getValue(const i32 index) {
             auto &token = this->m_curr[index];
             auto value = std::get_if<T>(&token.value);
 
             if (value == nullptr) {
-                std::visit([&](auto &&value) {
+                std::visit([&](auto &&) {
                     err::P0001.throwError(fmt::format("Expected {}, got {}.", typeid(T).name(), typeid(value).name()), "This is a serious parsing bug. Please open an issue on GitHub!", -index);
                 }, token.value);
             }
@@ -105,11 +104,11 @@ namespace pl::core {
             return *value;
         }
 
-        [[nodiscard]] std::string getFormattedToken(i32 index) const {
+        [[nodiscard]] std::string getFormattedToken(const i32 index) const {
             return fmt::format("{} ({})", this->m_curr[index].getFormattedType(), this->m_curr[index].getFormattedValue());
         }
 
-        std::vector<std::string> getNamespacePrefixedNames(const std::string &name) {
+        [[nodiscard]] std::vector<std::string> getNamespacePrefixedNames(const std::string &name) const {
             std::vector<std::string> result;
 
             result.push_back(name);
@@ -204,7 +203,7 @@ namespace pl::core {
                     program.push_back(std::move(statement));
             }
 
-            this->m_curr++;
+            ++this->m_curr;
 
             return program;
         }
@@ -224,11 +223,9 @@ namespace pl::core {
             return true;
         }
 
-        bool partBegin() {
+        void partBegin() {
             this->m_partOriginalPosition = this->m_curr;
             this->m_matchedOptionals.clear();
-
-            return true;
         }
 
         void reset() {
@@ -239,7 +236,7 @@ namespace pl::core {
             this->m_curr = this->m_partOriginalPosition;
         }
 
-        bool resetIfFailed(bool value) {
+        bool resetIfFailed(const bool value) {
             if (!value) reset();
 
             return value;
@@ -263,13 +260,13 @@ namespace pl::core {
                     return false;
                 }
 
-                this->m_curr++;
+                ++this->m_curr;
                 return true;
             } else if constexpr (S == Not) {
                 if (!peek(token))
                     return true;
 
-                this->m_curr++;
+                ++this->m_curr;
                 partReset();
                 return false;
             } else
@@ -283,7 +280,8 @@ namespace pl::core {
 
         template<Setting S = Normal>
         bool sequence(const Token &token, const auto &... args) {
-            return partBegin() && sequenceImpl<S>(token, args...);
+            partBegin();
+            return sequenceImpl<S>(token, args...);
         }
 
         template<Setting S = Normal>
@@ -294,14 +292,14 @@ namespace pl::core {
                     return false;
                 }
 
-                this->m_curr++;
+                ++this->m_curr;
 
                 return true;
             } else if constexpr (S == Not) {
                 if (!(... && peek(args)))
                     return true;
 
-                this->m_curr++;
+                ++this->m_curr;
 
                 partReset();
                 return false;
@@ -311,7 +309,8 @@ namespace pl::core {
 
         template<Setting S = Normal>
         bool oneOf(const Token &token, const auto &... args) {
-            return partBegin() && oneOfImpl<S>(token, args...);
+            partBegin();
+            return oneOfImpl<S>(token, args...);
         }
 
         bool variantImpl(const Token &token1, const Token &token2) {
@@ -322,7 +321,7 @@ namespace pl::core {
                 }
             }
 
-            this->m_curr++;
+            ++this->m_curr;
 
             return true;
         }
@@ -334,7 +333,7 @@ namespace pl::core {
         bool optionalImpl(const Token &token) {
             if (peek(token)) {
                 this->m_matchedOptionals.push_back(this->m_curr);
-                this->m_curr++;
+                ++this->m_curr;
             }
 
             return true;
@@ -344,18 +343,18 @@ namespace pl::core {
             return partBegin() && optionalImpl(token);
         }
 
-        bool peek(const Token &token, i32 index = 0) {
+        bool peek(const Token &token, const i32 index = 0) {
             if (index >= 0) {
                 while (this->m_curr->type == Token::Type::DocComment) {
                     if (auto docComment = parseDocComment(true); docComment.has_value())
                         this->addGlobalDocComment(docComment->comment);
-                    this->m_curr++;
+                    ++this->m_curr;
                 }
             } else {
                 while (this->m_curr->type == Token::Type::DocComment) {
                     if (auto docComment = parseDocComment(true); docComment.has_value())
                         this->addGlobalDocComment(docComment->comment);
-                    this->m_curr--;
+                    --this->m_curr;
                 }
             }
 
