@@ -138,38 +138,38 @@ namespace pl::core::err {
         virtual Location location() = 0;
 
         template <typename... Args>
-        inline void error(const fmt::format_string<Args...>& fmt, Args&&... args) {
+        void error(const fmt::format_string<Args...>& fmt, Args&&... args) {
             this->m_errors.emplace_back(fmt::format(fmt, std::forward<Args>(args)...), location());
         }
 
-        inline void error(const std::string& message) {
+        void error(const std::string& message) {
             this->m_errors.emplace_back(message, location());
         }
 
-        inline void error_desc(const std::string& message, const std::string& description) {
+        void error_desc(const std::string& message, const std::string& description) {
             this->m_errors.emplace_back(message, description, location());
         }
 
         template<typename... Args>
-        inline void error_desc(const std::string& message, const std::string& description, Args&&... args) {
+        void error_desc(const fmt::format_string<Args...>& message, const std::string& description, Args&&... args) {
             this->m_errors.emplace_back(fmt::format(message, std::forward<Args>(args)...), description, location());
         }
 
-        inline void error(CompileError& error) {
+        void error(CompileError& error) {
             error.getTrace().push_back(location());
             this->m_errors.push_back(std::move(error));
         }
 
-        inline void error_at(const Location& location, const std::string& message) {
+        void error_at(const Location& location, const std::string& message) {
             this->m_errors.emplace_back(message, location);
         }
 
-        inline void error_at_desc(const Location& location, const std::string& message, const std::string& description) {
+        void error_at_desc(const Location& location, const std::string& message, const std::string& description) {
             this->m_errors.emplace_back(message, description, location);
         }
 
         template<typename... Args>
-        inline void error_at(const Location& location, const fmt::format_string<Args...>& message, Args&&... args) {
+        void error_at(const Location& location, const fmt::format_string<Args...>& message, Args&&... args) {
             this->m_errors.emplace_back(fmt::format(message, std::forward<Args>(args)...), location);
         }
 

@@ -73,7 +73,7 @@ namespace pl {
             return std::nullopt;
         }
 
-        auto [ast, parserErrors] = this->m_internals.parser->parse(code, tokens.value());
+        auto [ast, parserErrors] = this->m_internals.parser->parse(tokens.value());
         if (!parserErrors.empty()) {
             this->m_compErrors = std::move(parserErrors);
             return std::nullopt;

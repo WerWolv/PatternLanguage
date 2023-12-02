@@ -24,14 +24,14 @@
 
 namespace pl::core {
 
-    class Parser {
+    class Parser : err::ErrorCollector {
     public:
         using TokenIter = std::vector<Token>::const_iterator;
 
         explicit Parser() = default;
-        ~Parser() = default;
+        ~Parser() override = default;
 
-        CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> parse(const std::string &sourceCode, const std::vector<Token> &tokens);
+        CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> parse(const std::vector<Token> &tokens);
 
         const auto &getTypes() { return this->m_types; }
 
@@ -63,6 +63,8 @@ namespace pl::core {
         std::vector<TokenIter> m_processedDocComments;
 
         ParserManager* m_parserManager = nullptr;
+
+        Location location() override;
 
         void addGlobalDocComment(const std::string &comment) {
             this->m_globalDocComments.push_back(comment);
@@ -158,7 +160,7 @@ namespace pl::core {
 
         void parseAttribute(ast::Attributable *currNode);
         std::unique_ptr<ast::ASTNode> parseConditional(const std::function<std::unique_ptr<ast::ASTNode>()> &memberParser);
-        std::pair<std::unique_ptr<ast::ASTNode>, bool> parseCaseParameters(std::vector<std::unique_ptr<ast::ASTNode>> &condition);
+        std::pair<std::unique_ptr<ast::ASTNode>, bool> parseCaseParameters(const std::vector<std::unique_ptr<ast::ASTNode>> &condition);
         std::unique_ptr<ast::ASTNode> parseMatchStatement(const std::function<std::unique_ptr<ast::ASTNode>()> &memberParser);
         std::unique_ptr<ast::ASTNode> parseTryCatchStatement(const std::function<std::unique_ptr<ast::ASTNode>()> &memberParser);
         std::unique_ptr<ast::ASTNode> parseWhileStatement();
