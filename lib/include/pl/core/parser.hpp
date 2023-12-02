@@ -327,7 +327,8 @@ namespace pl::core {
         }
 
         bool variant(const Token &token1, const Token &token2) {
-            return partBegin() && variantImpl(token1, token2);
+            partBegin();
+            return variantImpl(token1, token2);
         }
 
         bool optionalImpl(const Token &token) {
@@ -340,7 +341,8 @@ namespace pl::core {
         }
 
         bool optional(const Token &token) {
-            return partBegin() && optionalImpl(token);
+            partBegin();
+            return optionalImpl(token);
         }
 
         bool peek(const Token &token, const i32 index = 0) {
