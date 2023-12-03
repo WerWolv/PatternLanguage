@@ -2,7 +2,6 @@
 
 #include <pl/core/validator.hpp>
 #include <pl/core/evaluator.hpp>
-#include <pl/core/errors/preprocessor_errors.hpp>
 
 using namespace pl;
 
@@ -73,11 +72,6 @@ namespace pl::lib::libstd {
 
             runtime.getInternals().evaluator->setLoopLimit(*limit);
             return true;
-        });
-
-        runtime.addPragma("bitfield_order", [](pl::PatternLanguage &, const std::string &) -> bool {
-            core::err::M0006.throwError("Pragma 'bitfield_order' is unsupported.",
-                "Bitfield order can be overridden on a field declaration with the `be` or `le` keywords.");
         });
 
         runtime.addPragma("debug", [](pl::PatternLanguage &runtime, const std::string &value) {

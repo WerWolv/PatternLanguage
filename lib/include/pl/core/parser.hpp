@@ -7,8 +7,6 @@
 
 #include <pl/core/parser_manager.hpp>
 
-#include <pl/core/errors/parser_errors.hpp>
-
 #include <pl/core/ast/ast_node.hpp>
 #include <pl/core/ast/ast_node_rvalue.hpp>
 #include <pl/core/ast/ast_node_attribute.hpp>
@@ -91,7 +89,7 @@ namespace pl::core {
 
             if (value == nullptr) {
                 std::visit([&](auto &&) {
-                    err::P0001.throwError(fmt::format("Expected {}, got {}.", typeid(T).name(), typeid(value).name()), "This is a serious parsing bug. Please open an issue on GitHub!", -index);
+                    error_desc("Expected {}, got {}.", "This is a serious parsing bug. Please open an issue on GitHub!", typeid(T).name(), typeid(value).name());
                 }, token.value);
             }
 
