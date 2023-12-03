@@ -1014,10 +1014,9 @@ namespace pl::core {
 
             auto node = e.getUserData();
 
-            const auto line = node == nullptr ? 0 : node->getLine();
-            const auto column = node == nullptr ? 0 : node->getColumn();
-
-            this->getConsole().setHardError(err::PatternLanguageError(e.format(sourceCode, line, column), line, column));
+            const auto location = node == nullptr ? EmptyLocation : node->getLocation();
+            this->getConsole().setHardError(err::PatternLanguageError(e.format(sourceCode,
+                location.line, location.column), location.line, location.column));
 
             // Don't clear patterns on error if debug mode is enabled
             if (this->m_debugMode)
@@ -1039,7 +1038,7 @@ namespace pl::core {
 
         this->handleAbort();
 
-        auto line = node->getLine();
+        const auto line = node->getLocation().line;
         if (this->m_shouldPauseNextLine && this->m_lastPauseLine != line) {
             this->m_shouldPauseNextLine = false;
             this->m_lastPauseLine = line;

@@ -106,7 +106,7 @@ namespace pl::core::ast {
                         this->m_currTemplateParameterType->setType(std::make_unique<ASTNodeBuiltinType>(Token::ValueType::Auto));
                     }
 
-                    this->m_currTemplateParameterType->setSourceLocation(lvalue->getLine(), lvalue->getColumn());
+                    this->m_currTemplateParameterType->setLocation(lvalue->getLocation());
 
                     auto variable = evaluator->createVariable(lvalue->getLValueName(), this->m_currTemplateParameterType.get(), value, false, value.isPattern(), true, true);
                     if (variable != nullptr) {

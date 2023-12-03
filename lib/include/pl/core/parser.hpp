@@ -70,25 +70,17 @@ namespace pl::core {
             this->m_globalDocComments.push_back(comment);
         }
 
-        [[nodiscard]] u32 getLine(const i32 index) const {
-            return this->m_curr[index].location.line;
-        }
-
-        [[nodiscard]] u32 getColumn(const i32 index) const {
-            return this->m_curr[index].location.column;
-        }
-
         template<typename T, typename...Ts>
         std::unique_ptr<T> create(Ts&&... ts) {
             auto temp = std::make_unique<T>(std::forward<Ts>(ts)...);
-            temp->setSourceLocation(this->getLine(-1), this->getColumn(-1));
+            temp->setLocation(this->m_curr[-1].location);
             return temp;
         }
 
         template<typename T, typename...Ts>
         std::shared_ptr<T> createShared(Ts&&... ts) {
             auto temp = std::make_shared<T>(std::forward<Ts>(ts)...);
-            temp->setSourceLocation(this->getLine(-1), this->getColumn(-1));
+            temp->setLocation(this->m_curr[-1].location);
             return temp;
         }
 

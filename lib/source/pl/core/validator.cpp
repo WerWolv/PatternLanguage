@@ -126,10 +126,10 @@ namespace pl::core {
 
         } catch (err::ValidatorError::Exception &e) {
             if (this->m_lastNode != nullptr) {
-                auto line = this->m_lastNode->getLine();
-                auto column = this->m_lastNode->getColumn();
+                const auto location = this->m_lastNode->getLocation();
 
-                this->m_error = err::PatternLanguageError(e.format(sourceCode, line, column), line, column);
+                this->m_error = err::PatternLanguageError(e.format(sourceCode,
+                    location.line, location.column), location.line, location.column);
             }
             else
                 this->m_error = err::PatternLanguageError(e.format(sourceCode, 1, 1), 1, 1);
