@@ -79,7 +79,9 @@ namespace pl {
             return std::nullopt;
         }
 
-        if (!this->m_internals.validator->validate(code, *ast, true, true)) {
+        auto [_, validatorErrors] = this->m_internals.validator->validate(*ast);
+        if (!validatorErrors.empty()) {
+            this->m_compErrors = std::move(validatorErrors);
             return std::nullopt;
         }
 

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <string>
 #include <optional>
 #include <vector>
 
@@ -26,16 +25,16 @@ namespace pl::hlp {
             return *this;
         }
 
-        static Result<Ok, Err> good(const Ok& ok) {
-            return Result<Ok, Err>(ok);
+        static Result good(const Ok& ok) {
+            return Result(ok);
         }
 
-        static Result<Ok, Err> err(const Err& err) {
-            return Result<Ok, Err>({}, { err });
+        static Result err(const Err& err) {
+            return Result({}, { err });
         }
 
-        static Result<Ok, Err> err(const std::vector<Err>& errs) {
-            return Result<Ok, Err>({}, errs);
+        static Result err(const std::vector<Err>& errs) {
+            return Result({}, errs);
         }
 
         [[nodiscard]] bool is_ok() const {

@@ -19,15 +19,23 @@
 
 namespace pl::core {
 
-    bool Validator::validate(const std::string &sourceCode, const std::vector<std::shared_ptr<ast::ASTNode>> &ast, bool newScope, bool firstRun) {
-        if (firstRun) {
-            this->m_recursionDepth = 0;
-            this->m_validatedNodes.clear();
-            this->m_identifiers.clear();
-        }
+    using result_t = CompileResult<bool>;
 
-        newScope = newScope || this->m_identifiers.empty();
-        if (newScope)
+    CompileResult<bool> Validator::validate(const std::vector<std::shared_ptr<ast::ASTNode>> &ast) {
+        this->m_recursionDepth = 0;
+        this->m_validatedNodes.clear();
+        this->m_identifiers.clear();
+
+        validateNodes(ast);
+
+        if(this->hasErrors()) {
+            return result_t::err(this->collectErrors());
+        }
+        return { };
+    }
+
+    bool Validator::validateNodes(const std::vector<std::shared_ptr<ast::ASTNode>>& nodes, const bool newScope) {
+        if (newScope || this->m_identifiers.empty())
             this->m_identifiers.emplace_back();
 
         auto &identifiers = this->m_identifiers.back();
@@ -40,112 +48,133 @@ namespace pl::core {
                 this->m_identifiers.pop_back();
         };
 
-        try {
+        bool success = true;
+        for (const auto &node : nodes) {
+            if (this->m_validatedNodes.contains(node.get()))
+                continue;
 
-            for (const auto &node : ast) {
-                if (this->m_validatedNodes.contains(node.get()))
-                    continue;
-
-                if (node == nullptr)
-                    err::V0001.throwError("Null-Pointer found in AST.", "This is a parser bug. Please report it on GitHub.");
-
-                this->m_lastNode = node.get();
-
-                // Variables named "$padding$" are paddings and can appear multiple times per type definition
-                identifiers.erase("$padding$");
-                // Variables that don't have a name are anonymous and can appear multiple times per type definition
-                identifiers.erase("");
-
-                if (this->m_recursionDepth > this->m_maxRecursionDepth)
-                    return true;
-
-                if (auto variableDeclNode = dynamic_cast<ast::ASTNodeVariableDecl *>(node.get()); variableDeclNode != nullptr) {
-                    if (!identifiers.insert(variableDeclNode->getName()).second)
-                        err::V0002.throwError(fmt::format("Redefinition of identifier '{0}'", variableDeclNode->getName()));
-
-                    if (!this->validate(sourceCode, { variableDeclNode->getType() }))
-                        return false;
-                } else if (auto arrayVariableDeclNode = dynamic_cast<ast::ASTNodeArrayVariableDecl *>(node.get()); arrayVariableDeclNode != nullptr) {
-                    if (!identifiers.insert(arrayVariableDeclNode->getName()).second)
-                        err::V0002.throwError(fmt::format("Redefinition of identifier '{0}'", arrayVariableDeclNode->getName()));
-
-                    if (!this->validate(sourceCode, { arrayVariableDeclNode->getType() }))
-                        return false;
-                } else if (auto pointerVariableDecl = dynamic_cast<ast::ASTNodePointerVariableDecl *>(node.get()); pointerVariableDecl != nullptr) {
-                    if (!identifiers.insert(pointerVariableDecl->getName()).second)
-                        err::V0002.throwError(fmt::format("Redefinition of identifier '{0}'", pointerVariableDecl->getName()));
-
-                    if (!this->validate(sourceCode, { pointerVariableDecl->getType() }))
-                        return false;
-                } else if (auto bitfieldFieldDecl = dynamic_cast<ast::ASTNodeBitfieldField *>(node.get()); bitfieldFieldDecl != nullptr) {
-                    if (!identifiers.insert(bitfieldFieldDecl->getName()).second)
-                        err::V0002.throwError(fmt::format("Redefinition of identifier '{0}'", bitfieldFieldDecl->getName()));
-                } else if (auto multiVariableDecl = dynamic_cast<ast::ASTNodeMultiVariableDecl *>(node.get()); multiVariableDecl != nullptr) {
-                    if (!this->validate(sourceCode, multiVariableDecl->getVariables()))
-                        return false;
-                } else if (auto typeDeclNode = dynamic_cast<ast::ASTNodeTypeDecl *>(node.get()); typeDeclNode != nullptr) {
-                    if (!typeDeclNode->isForwardDeclared())
-                        if (!this->validate(sourceCode, { typeDeclNode->getType() }))
-                            return false;
-                } else if (auto structNode = dynamic_cast<ast::ASTNodeStruct *>(node.get()); structNode != nullptr) {
-                    if (!this->validate(sourceCode, structNode->getMembers()))
-                        return false;
-                } else if (auto unionNode = dynamic_cast<ast::ASTNodeUnion *>(node.get()); unionNode != nullptr) {
-                    if (!this->validate(sourceCode, unionNode->getMembers()))
-                        return false;
-                } else if (auto bitfieldNode = dynamic_cast<ast::ASTNodeBitfield *>(node.get()); bitfieldNode != nullptr) {
-                    if (!this->validate(sourceCode, bitfieldNode->getEntries()))
-                        return false;
-                } else if (auto enumNode = dynamic_cast<ast::ASTNodeEnum *>(node.get()); enumNode != nullptr) {
-                    std::unordered_set<std::string> enumIdentifiers;
-                    for (auto &[name, value] : enumNode->getEntries()) {
-                        if (!enumIdentifiers.insert(name).second)
-                            err::V0002.throwError(fmt::format("Redefinition of enum entry '{0}'", name));
-                    }
-                } else if (auto conditionalNode = dynamic_cast<ast::ASTNodeConditionalStatement *>(node.get()); conditionalNode != nullptr) {
-                    auto prevIdentifiers = identifiers;
-                    if (!this->validate(sourceCode, conditionalNode->getTrueBody(), false))
-                        return false;
-                    identifiers = prevIdentifiers;
-                    if (!this->validate(sourceCode, conditionalNode->getFalseBody(), false))
-                        return false;
-                    identifiers = prevIdentifiers;
-                } else if (auto functionNode = dynamic_cast<ast::ASTNodeFunctionDefinition *>(node.get()); functionNode != nullptr) {
-                    if (!identifiers.insert(functionNode->getName()).second)
-                        err::V0002.throwError(fmt::format("Redefinition of identifier '{0}'", functionNode->getName()));
-
-                    std::unordered_set<std::string> parameterIdentifiers;
-                    for (const auto &[name, type] : functionNode->getParams()) {
-                        if (!parameterIdentifiers.insert(name).second)
-                            err::V0002.throwError(fmt::format("Redefinition of function parameter '{0}'", name));
-                    }
-                }
-
-                this->m_validatedNodes.insert(node.get());
+            if (node == nullptr) {
+                error_desc("Null-Pointer found in AST.", "This is a parser bug. Please report it on GitHub.");
+                continue;
             }
 
-        } catch (err::ValidatorError::Exception &e) {
-            if (this->m_lastNode != nullptr) {
-                const auto location = this->m_lastNode->getLocation();
+            this->m_lastNode = node.get();
 
-                this->m_error = err::PatternLanguageError(e.format(sourceCode,
-                    location.line, location.column), location.line, location.column);
-            }
-            else
-                this->m_error = err::PatternLanguageError(e.format(sourceCode, 1, 1), 1, 1);
+            // Variables named "$padding$" are paddings and can appear multiple times per type definition
+            identifiers.erase("$padding$");
+            // Variables that don't have a name are anonymous and can appear multiple times per type definition
+            identifiers.erase("");
 
-            return false;
+            if (this->m_recursionDepth > this->m_maxRecursionDepth)
+                break;
+
+            if(!validateNode(node.get(), identifiers))
+                success = false;
+        }
+        return success;
+    }
+
+    bool Validator::validateNodes(const std::vector<std::unique_ptr<ast::ASTNode>>& nodes, bool newScope) {
+        // move into vector of shared_ptr
+        std::vector<std::shared_ptr<ast::ASTNode>> sharedNodes;
+        sharedNodes.reserve(nodes.size());
+        for (const auto& node : nodes) {
+            sharedNodes.emplace_back(node->clone());
         }
 
+        return validateNodes(sharedNodes, newScope);
+    }
+
+
+    bool Validator::validateNode(const std::shared_ptr<ast::ASTNode>& node, const bool newScope) {
+        return this->validateNodes({ node }, newScope);
+    }
+
+
+    bool Validator::validateNode(ast::ASTNode* node, std::unordered_set<std::string>& identifiers) {
+        if (const auto variableDeclNode = dynamic_cast<ast::ASTNodeVariableDecl *>(node); variableDeclNode != nullptr) {
+            if (!identifiers.insert(variableDeclNode->getName()).second) {
+                error("Redeclaration of identifier '{}'", variableDeclNode->getName());
+                return false;
+            }
+
+            if (!this->validateNode(variableDeclNode->getType()))
+                return false;
+        } else if (const auto arrayVariableDeclNode = dynamic_cast<ast::ASTNodeArrayVariableDecl *>(node); arrayVariableDeclNode != nullptr) {
+            if (!identifiers.insert(arrayVariableDeclNode->getName()).second) {
+                error("Redeclaration of identifier '{}'", arrayVariableDeclNode->getName());
+                return false;
+            }
+
+            if (!this->validateNode(arrayVariableDeclNode->getType()))
+                return false;
+        } else if (const auto pointerVariableDecl = dynamic_cast<ast::ASTNodePointerVariableDecl *>(node); pointerVariableDecl != nullptr) {
+            if (!identifiers.insert(pointerVariableDecl->getName()).second) {
+                error("Redeclaration of identifier '{}'", pointerVariableDecl->getName());
+                return false;
+            }
+
+            if (!this->validateNode(pointerVariableDecl->getType()))
+                return false;
+        } else if (const auto bitfieldFieldDecl = dynamic_cast<ast::ASTNodeBitfieldField *>(node); bitfieldFieldDecl != nullptr) {
+            if (!identifiers.insert(bitfieldFieldDecl->getName()).second) {
+                error("Redefinition of identifier '{}'", bitfieldFieldDecl->getName());
+                return false;
+            }
+        } else if (const auto multiVariableDecl = dynamic_cast<ast::ASTNodeMultiVariableDecl *>(node); multiVariableDecl != nullptr) {
+            if (!this->validateNodes(multiVariableDecl->getVariables()))
+                return false;
+        } else if (const auto typeDeclNode = dynamic_cast<ast::ASTNodeTypeDecl *>(node); typeDeclNode != nullptr) {
+            if (!typeDeclNode->isForwardDeclared())
+                if (!this->validateNode(typeDeclNode->getType()))
+                    return false;
+        } else if (const auto structNode = dynamic_cast<ast::ASTNodeStruct *>(node); structNode != nullptr) {
+            if (!this->validateNodes(structNode->getMembers()))
+                return false;
+        } else if (const auto unionNode = dynamic_cast<ast::ASTNodeUnion *>(node); unionNode != nullptr) {
+            if (!this->validateNodes(unionNode->getMembers()))
+                return false;
+        } else if (const auto bitfieldNode = dynamic_cast<ast::ASTNodeBitfield *>(node); bitfieldNode != nullptr) {
+            if (!this->validateNodes(bitfieldNode->getEntries()))
+                return false;
+        } else if (const auto enumNode = dynamic_cast<ast::ASTNodeEnum *>(node); enumNode != nullptr) {
+            std::unordered_set<std::string> enumIdentifiers;
+            for (const auto &[name, value] : enumNode->getEntries()) {
+                if (!enumIdentifiers.insert(name).second) {
+                    error("Redeclaration of enum entry '{}'", name);
+                    return false;
+                }
+            }
+        } else if (const auto conditionalNode = dynamic_cast<ast::ASTNodeConditionalStatement *>(node); conditionalNode != nullptr) {
+            const auto prevIdentifiers = identifiers;
+            if (!this->validateNodes(conditionalNode->getTrueBody(), false))
+                return false;
+            identifiers = prevIdentifiers;
+            if (!this->validateNodes(conditionalNode->getFalseBody(), false))
+                return false;
+            identifiers = prevIdentifiers;
+        } else if (const auto functionNode = dynamic_cast<ast::ASTNodeFunctionDefinition *>(node); functionNode != nullptr) {
+            if (!identifiers.insert(functionNode->getName()).second) {
+                error("Redefinition of identifier '{}'", functionNode->getName());
+                return false;
+            }
+
+            std::unordered_set<std::string> parameterIdentifiers;
+            for (const auto &[name, type] : functionNode->getParams()) {
+                if (!parameterIdentifiers.insert(name).second) {
+                    error("Redefinition of function parameter '{}'", name);
+                    return false;
+                }
+            }
+        }
+
+        this->m_validatedNodes.insert(node);
         return true;
     }
 
-    bool Validator::validate(const std::string &sourceCode, const std::vector<std::unique_ptr<ast::ASTNode>> &ast, bool newScope, bool firstRun) {
-        std::vector<std::shared_ptr<ast::ASTNode>> sharedAst;
-        sharedAst.reserve(ast.size());
-        for (const auto &node : ast)
-            sharedAst.emplace_back(node->clone());
-
-        return this->validate(sourceCode, sharedAst, newScope, firstRun);
+    Location Validator::location() {
+        return m_lastNode->getLocation();
     }
+
+
 }
