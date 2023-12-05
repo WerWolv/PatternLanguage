@@ -57,9 +57,15 @@ namespace pl::gen::fmt {
         }
 
         void formatString(pl::ptrn::Pattern *pattern) {
-            auto result = pattern->toString();
-            result = wolv::util::replaceStrings(result, "\n", " ");
-            result = hlp::encodeByteString({ result.begin(), result.end() });
+            auto string = pattern->toString();
+
+            std::string result;
+            for (char c : string) {
+                if (std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~')
+                    result += c;
+                else
+                    result += ::fmt::format("%{:02X}", c);
+            }
 
             addLine(pattern->getVariableName(), ::fmt::format("\"{}\",", result));
         }
@@ -106,8 +112,18 @@ namespace pl::gen::fmt {
         void formatValue(pl::ptrn::Pattern *pattern) {
             if (auto functionName = pattern->getReadFormatterFunction(); !functionName.empty())
                 formatString(pattern);
-            else if (!pattern->isSealed())
-                addLine(pattern->getVariableName(), ::fmt::format("\"{}\",", pattern->toString()));
+            else if (!pattern->isSealed()) {
+                auto literal = pattern->getValue();
+
+                addLine(pattern->getVariableName(), std::visit(wolv::util::overloaded {
+                    [&](std::integral auto value)       -> std::string { return ::fmt::format("{}", value); },
+                    [&](std::floating_point auto value) -> std::string { return ::fmt::format("{}", value); },
+                    [&](const std::string &value)       -> std::string { return ::fmt::format("\"{}\"", value); },
+                    [&](bool value)                     -> std::string { return value ? "true" : "false"; },
+                    [&](char value)                     -> std::string { return ::fmt::format("\"{}\"", value); },
+                    [&](const std::shared_ptr<ptrn::Pattern> &value) -> std::string { return ::fmt::format("\"{}\"", value->toString()); },
+                }, literal) + ",");
+            }
         }
 
     private:

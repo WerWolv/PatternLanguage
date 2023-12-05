@@ -236,7 +236,7 @@ namespace pl::ptrn {
         [[nodiscard]] virtual std::string toString() const {
             auto result = fmt::format("{} {} @ 0x{:X}", this->getTypeName(), this->getVariableName(), this->getOffset());
 
-            return this->formatDisplayValue(result, this->getValue());
+            return this->formatDisplayValue(result, this->getValue(), true);
         }
 
         [[nodiscard]] virtual core::Token::Literal getValue() const {
@@ -506,7 +506,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] virtual std::string formatDisplayValue() = 0;
 
-        [[nodiscard]] std::string formatDisplayValue(const std::string &value, const core::Token::Literal &literal) const {
+        [[nodiscard]] std::string formatDisplayValue(const std::string &value, const core::Token::Literal &literal, bool fromCast = false) const {
             if (this->m_cachedDisplayValue != nullptr)
                 return *this->m_cachedDisplayValue;
 
@@ -522,7 +522,14 @@ namespace pl::ptrn {
 
                         auto result = function->func(this->m_evaluator, { literal });
                         if (result.has_value()) {
-                            auto string = result->toString(true);
+                            std::string string;
+                            if (fromCast && result->isPattern() && result->toPattern()->getTypeName() == this->getTypeName()) {
+                                string = value;
+                            } else {
+                                string = result->toString(true);
+                            }
+
+
                             this->m_cachedDisplayValue = std::make_unique<std::string>(string);
 
                             return string;

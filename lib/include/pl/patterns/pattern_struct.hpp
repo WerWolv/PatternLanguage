@@ -141,7 +141,7 @@ namespace pl::ptrn {
 
             result += " }";
 
-            return Pattern::formatDisplayValue(result, this->clone());
+            return Pattern::formatDisplayValue(result, this->clone(), true);
         }
 
         void setMembers(std::vector<std::shared_ptr<Pattern>> members) {
@@ -207,10 +207,15 @@ namespace pl::ptrn {
         std::vector<u8> getRawBytes() override {
             std::vector<u8> result;
 
-            this->forEachEntry(0, this->getEntryCount(), [&](u64, pl::ptrn::Pattern *entry) {
-                auto bytes = entry->getBytes();
-                std::copy(bytes.begin(), bytes.end(), std::back_inserter(result));
-            });
+            if (this->isSealed()) {
+                result.resize(this->getSize());
+                this->getEvaluator()->readData(this->getOffset(), result.data(), result.size(), this->getSection());
+            } else {
+                this->forEachEntry(0, this->getEntryCount(), [&](u64, pl::ptrn::Pattern *entry) {
+                    auto bytes = entry->getBytes();
+                    std::copy(bytes.begin(), bytes.end(), std::back_inserter(result));
+                });
+            }
 
             return result;
         }

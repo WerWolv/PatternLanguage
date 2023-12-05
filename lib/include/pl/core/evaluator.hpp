@@ -353,6 +353,18 @@ namespace pl::core {
         void pauseNextLine();
         std::optional<u32> getPauseLine() const;
 
+        const std::atomic<u64>& getLastReadAddress() const {
+            return this->m_lastReadAddress;
+        }
+
+        const std::atomic<u64>& getLastWriteAddress() const {
+            return this->m_lastWriteAddress;
+        }
+
+        const std::atomic<u64>& getLastPatternPlaceAddress() const {
+            return this->m_lastPatternAddress;
+        }
+
     private:
         void patternCreated(ptrn::Pattern *pattern);
         void patternDestroyed(ptrn::Pattern *pattern);
@@ -420,6 +432,8 @@ namespace pl::core {
         std::unordered_set<int> m_breakpoints;
         std::optional<u32> m_lastPauseLine;
         bool m_shouldPauseNextLine = false;
+
+        std::atomic<u64> m_lastReadAddress, m_lastWriteAddress, m_lastPatternAddress;
 
         u32 getNextPatternColor() {
             constexpr static std::array Palette = { 0x70B4771F, 0x700E7FFF, 0x702CA02C, 0x702827D6, 0x70BD6794, 0x704B568C, 0x70C277E3, 0x7022BDBC, 0x70CFBE17 };

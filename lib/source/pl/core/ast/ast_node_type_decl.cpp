@@ -75,8 +75,10 @@ namespace pl::core::ast {
                 if (!lvalue->getRValue())
                     err::E0003.throwError(fmt::format("No value set for non-type template parameter {}. This is a bug.", lvalue->getLValueName()), {}, this);
                 auto value = lvalue->getRValue()->evaluate(evaluator);
-                if (auto literal = dynamic_cast<ASTNodeLiteral*>(value.release()))
+                if (auto literal = dynamic_cast<ASTNodeLiteral*>(value.get()); literal != nullptr) {
                     templateParamLiterals[i] = std::unique_ptr<ASTNodeLiteral>(literal);
+                    value.release();
+                }
                 else
                     err::E0003.throwError(fmt::format("Template parameter {} is not a literal. This is a bug.", lvalue->getLValueName()), {}, this);
             }
@@ -113,6 +115,8 @@ namespace pl::core::ast {
                         variable->setInitialized(false);
                         evaluator->setVariable(variable, value);
                         templatePatterns.push_back(variable);
+
+                        variable->setVisibility(ptrn::Visibility::Hidden);
                     }
                 }
             }

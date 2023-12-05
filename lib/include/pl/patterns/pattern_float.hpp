@@ -85,7 +85,7 @@ namespace pl::ptrn {
             auto value = this->getValue();
             auto result = fmt::format("{}", value.toFloatingPoint());
 
-            return Pattern::formatDisplayValue(result, value);
+            return Pattern::formatDisplayValue(result, value, true);
         }
 
         std::vector<u8> getRawBytes() override {

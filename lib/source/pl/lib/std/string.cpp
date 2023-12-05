@@ -31,12 +31,9 @@ namespace pl::lib::libstd::string {
                 auto string = params[0].toString(false);
                 auto index  = params[1].toSigned();
 
-            #if defined(OS_MACOS) || defined(OS_WEB)
+                // Calculate the absolute value of the index
                 const auto signIndex = index >> (sizeof(index) * 8 - 1);
                 const auto absIndex  = (index ^ signIndex) - signIndex;
-            #else
-                const auto absIndex = std::abs(index);
-            #endif
 
                 if (absIndex >= string.length())
                     err::E0012.throwError(fmt::format("Character index {} out of range of string '{}' with length {}.", absIndex, string, string.length()));

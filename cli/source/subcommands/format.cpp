@@ -23,19 +23,19 @@ namespace pl::cli::sub {
         static bool metaInformation = false;
         static u64 baseAddress = 0x00;
 
-        auto subcommand = app->add_subcommand("format");
+        auto subcommand = app->add_subcommand("format", "Executes the given pattern on the given file, and output the pattern data in the wanted format");
 
         // Add command line arguments
-        subcommand->add_option("-i,--input,INPUT_FILE", inputFilePath, "Input file")->required()->check(CLI::ExistingFile);
+        subcommand->add_option("-i,--input,INPUT_FILE", inputFilePath, "Input file to extract data from")->required()->check(CLI::ExistingFile);
         subcommand->add_option("-p,--pattern,PATTERN_FILE", patternFilePath, "Pattern file")->required()->check(CLI::ExistingFile);
-        subcommand->add_option("-o,--output,OUTPUT_FILE", outputFilePath, "Output file")->check(CLI::NonexistentPath);
+        subcommand->add_option("-o,--output,OUTPUT_FILE", outputFilePath, "File to write the pattern data to")->check(CLI::NonexistentPath);
         subcommand->add_option("-I,--includes", includePaths, "Include file paths")->take_all()->check(CLI::ExistingDirectory);
         subcommand->add_option("-D,--define", defines, "Define a preprocessor macro")->take_all();
         subcommand->add_option("-b,--base", baseAddress, "Base address")->default_val(0x00);
         subcommand->add_flag("-v,--verbose", verbose, "Verbose output")->default_val(false);
         subcommand->add_flag("-d,--dangerous", allowDangerousFunctions, "Allow dangerous functions")->default_val(false);
         subcommand->add_flag("-m,--metadata", metaInformation, "Include meta type information")->default_val(0x00);
-        subcommand->add_option("-f,--formatter", formatterName, "Formatter")->default_val("default")->check([&](const auto &value) -> std::string {
+        subcommand->add_option("-f,--formatter", formatterName, "Output file format")->default_val("default")->check([&](const auto &value) -> std::string {
             // Validate if the selected formatter exists
             if (std::any_of(formatters.begin(), formatters.end(), [&](const auto &formatter) { return formatter->getName() == value; }))
                 return "";
@@ -120,6 +120,7 @@ namespace pl::cli::sub {
             }
 
             outputFile.writeVector(result);
+            ::fmt::print("Wrote pattern data to {}\n", outputFilePath.string());
         });
     }
 

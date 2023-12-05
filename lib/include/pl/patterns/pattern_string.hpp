@@ -53,7 +53,7 @@ namespace pl::ptrn {
             auto value = this->getValue();
             auto result = value.toString(false);
 
-            return Pattern::formatDisplayValue(result, value);
+            return Pattern::formatDisplayValue(result, value, true);
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override { return compareCommonProperties<decltype(*this)>(other); }

@@ -2,11 +2,9 @@
 
 #include <atomic>
 #include <bit>
-#include <chrono>
 #include <map>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <vector>
 #include <filesystem>
 
@@ -344,6 +342,10 @@ namespace pl {
         [[nodiscard]] u64 getRunId() const {
             return this->m_runId;
         }
+
+        [[nodiscard]] const std::atomic<u64>& getLastReadAddress() const;
+        [[nodiscard]] const std::atomic<u64>& getLastWriteAddress() const;
+        [[nodiscard]] const std::atomic<u64>& getLastPatternPlaceAddress() const;
 
     private:
         void flattenPatterns();

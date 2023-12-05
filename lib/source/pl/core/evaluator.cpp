@@ -41,8 +41,19 @@ namespace pl::core {
         this->m_dataBaseAddress = baseAddress;
         this->m_dataSize = dataSize;
 
-        this->m_readerFunction = std::move(readerFunction);
-        if (writerFunction.has_value()) this->m_writerFunction = std::move(writerFunction.value());
+        this->m_readerFunction = [this, readerFunction = std::move(readerFunction)](u64 offset, u8* buffer, size_t size) {
+            this->m_lastReadAddress = offset;
+
+            readerFunction(offset, buffer, size);
+        };
+
+        if (writerFunction.has_value()) {
+            this->m_writerFunction = [this, writerFunction = std::move(writerFunction.value())](u64 offset, u8* buffer, size_t size) {
+                this->m_lastWriteAddress = offset;
+
+                writerFunction(offset, buffer, size);
+            };
+        }
     }
 
     void Evaluator::alignToByte() {
@@ -300,7 +311,7 @@ namespace pl::core {
             else if (auto string = std::get_if<std::string>(&value.value()); string != nullptr)
                 pattern = std::make_shared<ptrn::PatternString>(this, 0, string->size());
             else if (auto patternValue = std::get_if<std::shared_ptr<ptrn::Pattern>>(&value.value()); patternValue != nullptr) {
-                if (reference)
+                if (reference && !templateVariable)
                     pattern = *patternValue;
                 else
                     pattern = (*patternValue)->clone();
@@ -1063,7 +1074,7 @@ namespace pl::core {
     }
 
     void Evaluator::patternCreated(ptrn::Pattern *pattern) {
-        wolv::util::unused(pattern);
+        this->m_lastPatternAddress = pattern->getOffset();
 
         if (this->m_currPatternCount > this->m_patternLimit && !this->m_evaluated)
             err::E0007.throwError(fmt::format("Pattern count exceeded set limit of '{}'.", this->getPatternLimit()), "If this is intended, try increasing the limit using '#pragma pattern_limit <new_limit>'.");

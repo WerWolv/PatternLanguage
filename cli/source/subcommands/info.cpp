@@ -8,6 +8,8 @@
 #include <CLI/App.hpp>
 #include <fmt/format.h>
 
+#include <nlohmann/json.hpp>
+
 namespace pl::cli::sub {
 
     namespace {
@@ -29,18 +31,25 @@ namespace pl::cli::sub {
 
         static std::fs::path patternFilePath;
         static std::string type;
+        static std::string formatterName;
 
-        auto subcommand = app->add_subcommand("info");
+        auto subcommand = app->add_subcommand("info", "Print information about a pattern");
 
         // Add command line arguments
         subcommand->add_option("-p,--pattern,PATTERN_FILE", patternFilePath, "Pattern file")->required()->check(CLI::ExistingFile);
         subcommand->add_option("-I,--includes", includePaths, "Include file paths")->take_all()->check(CLI::ExistingDirectory);
         subcommand->add_option("-D,--define", defines, "Define a preprocessor macro")->take_all();
-        subcommand->add_option("-t,--type", type, "Type of information you want to query")->required()->check([](const std::string &value) -> std::string {
+        subcommand->add_option("-t,--type", type, "Type of information you want to query")->check([](const std::string &value) -> std::string {
             if (value == "name" || value == "authors" || value == "description" || value == "mime" || value == "version")
                 return "";
             else
                 return "Invalid type. Valid types are: [ name, authors, description, mime, version ]";
+        });
+        subcommand->add_option("-f,--formatter", formatterName, "Formatter")->default_val("pretty")->check([&](const auto &value) -> std::string {
+            if (value == "pretty" || value == "json")
+                return "";
+            else
+                return "Invalid formatter. Valid formatters are: [pretty, json]";
         });
 
         subcommand->callback([] {
@@ -94,24 +103,46 @@ namespace pl::cli::sub {
                 std::exit(EXIT_FAILURE);
             }
 
-            if (type == "name") {
-                if (!patternName.empty())
-                    fmt::print("{}\n", patternName);
-            } else if (type == "authors") {
-                for (const auto &author : patternAuthors) {
-                    fmt::print("{}\n", author);
+            if (formatterName == "json") {
+                if(!type.empty()) {
+                    fmt::print("Error: --type is not compatible with --format json\n");
+                    std::exit(EXIT_FAILURE);
                 }
-            } else if (type == "description") {
-                for (const auto &description : patternDescriptions) {
-                    fmt::print("{}\n", description);
+
+                nlohmann::json json = {
+                    {"name", patternName},
+                    {"authors", patternAuthors},
+                    {"description", wolv::util::combineStrings(patternDescriptions, ".\n")},
+                    {"MIMEs", patternMimes},
+                    {"version", patternVersion},
+                };
+                fmt::print("{}\n", json.dump());
+            } else if (formatterName == "pretty") {
+                if (type.empty()) {
+                        fmt::print("Pattern name: {}\n", patternName);
+                        fmt::print("Authors: {}\n", wolv::util::combineStrings(patternAuthors, ", "));
+                        fmt::print("Description: {}\n", wolv::util::combineStrings(patternDescriptions, ".\n"));
+                        fmt::print("MIMEs: {}\n", wolv::util::combineStrings(patternMimes, ", "));
+                        fmt::print("Version: {}\n", patternVersion);
+                } else if (type == "name") {
+                    if (!patternName.empty())
+                        fmt::print("{}\n", patternName);
+                } else if (type == "authors") {
+                    for (const auto &author : patternAuthors) {
+                        fmt::print("{}\n", author);
+                    }
+                } else if (type == "description") {
+                    for (const auto &description : patternDescriptions) {
+                        fmt::print("{}\n", description);
+                    }
+                } else if (type == "mime") {
+                    for (const auto &mime : patternMimes) {
+                        fmt::print("{}\n", mime);
+                    }
+                } else if (type == "version") {
+                    if (!patternVersion.empty())
+                        fmt::print("{}\n", patternVersion);
                 }
-            } else if (type == "mime") {
-                for (const auto &mime : patternMimes) {
-                    fmt::print("{}\n", mime);
-                }
-            } else if (type == "version") {
-                if (!patternVersion.empty())
-                    fmt::print("{}\n", patternVersion);
             }
 
         });

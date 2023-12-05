@@ -218,6 +218,18 @@ namespace pl {
         this->m_internals.evaluator->setDataSource(baseAddress, size, std::move(readFunction), std::move(writeFunction));
     }
 
+    const std::atomic<u64>& PatternLanguage::getLastReadAddress() const {
+        return this->m_internals.evaluator->getLastReadAddress();
+    }
+
+    const std::atomic<u64>& PatternLanguage::getLastWriteAddress() const {
+        return this->m_internals.evaluator->getLastWriteAddress();
+    }
+
+    const std::atomic<u64>& PatternLanguage::getLastPatternPlaceAddress() const {
+        return this->m_internals.evaluator->getLastPatternPlaceAddress();
+    }
+
     void PatternLanguage::setDataBaseAddress(u64 baseAddress) const {
         this->m_internals.evaluator->setDataBaseAddress(baseAddress);
     }
