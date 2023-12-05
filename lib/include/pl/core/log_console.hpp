@@ -5,7 +5,7 @@
 #include <string>
 
 #include <pl/helpers/types.hpp>
-#include <pl/core/errors/evaluator_errors.hpp>
+#include <pl/core/errors/runtime_errors.hpp>
 
 namespace pl::core {
 

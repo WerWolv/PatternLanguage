@@ -862,7 +862,7 @@ namespace pl::core {
         return this->m_sections.size();
     }
 
-    bool Evaluator::evaluate(const std::string &sourceCode, const std::vector<std::shared_ptr<ast::ASTNode>> &ast) {
+    bool Evaluator::evaluate(const std::vector<std::shared_ptr<ast::ASTNode>> &ast) {
         this->m_readOrderReversed = false;
         this->m_currBitOffset = 0;
 
@@ -1015,8 +1015,8 @@ namespace pl::core {
             auto node = e.getUserData();
 
             const auto location = node == nullptr ? EmptyLocation : node->getLocation();
-            this->getConsole().setHardError(err::PatternLanguageError(e.format(sourceCode,
-                location.line, location.column), location.line, location.column));
+            this->getConsole().setHardError(err::PatternLanguageError(e.format(location),
+                location.line, location.column));
 
             // Don't clear patterns on error if debug mode is enabled
             if (this->m_debugMode)

@@ -13,6 +13,8 @@
 #include <pl/core/token.hpp>
 #include <pl/api.hpp>
 
+#include <pl/core/errors/runtime_errors.hpp>
+
 #include <fmt/format.h>
 
 namespace pl::ptrn {
@@ -46,7 +48,7 @@ namespace pl::core {
     public:
         Evaluator() = default;
 
-        [[nodiscard]] bool evaluate(const std::string &sourceCode, const std::vector<std::shared_ptr<ast::ASTNode>> &ast);
+        [[nodiscard]] bool evaluate(const std::vector<std::shared_ptr<ast::ASTNode>> &ast);
 
         [[nodiscard]] const auto &getPatterns() const {
             return this->m_patterns;

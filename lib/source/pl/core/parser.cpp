@@ -135,7 +135,7 @@ namespace pl::core {
             break;
         }
 
-        error_desc("Invalid scope resolution.", "Expected statement in the form of 'NamespaceA::NamespaceB::TypeName'.");
+        errorDesc("Invalid scope resolution.", "Expected statement in the form of 'NamespaceA::NamespaceB::TypeName'.");
         return nullptr;
     }
 
@@ -169,7 +169,7 @@ namespace pl::core {
             if (oneOf(tkn::Literal::Identifier, tkn::Keyword::Parent))
                 return this->parseRValue(path);
 
-            error_desc("Invalid member access, expected variable identifier or parent keyword.", {});
+            errorDesc("Invalid member access, expected variable identifier or parent keyword.", {});
             return nullptr;
         }
         return create<ast::ASTNodeRValue>(std::move(path));
@@ -469,7 +469,7 @@ namespace pl::core {
     // [[ <Identifier[( (parseStringLiteral) )], ...> ]]
     void Parser::parseAttribute(ast::Attributable *currNode) {
         if (currNode == nullptr) {
-            error_desc("Cannot use attribute here.", "Attributes can only be applied after type or variable definitions.");
+            errorDesc("Cannot use attribute here.", "Attributes can only be applied after type or variable definitions.");
             return;
         }
 
@@ -704,7 +704,7 @@ namespace pl::core {
         else if (peek(tkn::Keyword::Continue, -1))
             type = ControlFlowStatement::Continue;
         else {
-            error_desc("Invalid control flow statement.", "Control flow statements include 'return', 'break' and 'continue'.");
+            errorDesc("Invalid control flow statement.", "Control flow statements include 'return', 'break' and 'continue'.");
             return nullptr;
         }
 
@@ -1028,7 +1028,7 @@ namespace pl::core {
         auto type = getCustomType(baseTypeName);
 
         if (type == nullptr) {
-            error_desc(fmt::format("Type {} has not been declared yet.", baseTypeName), fmt::format("If this type is being declared further down in the code, consider forward declaring it with 'using {};'.", baseTypeName));
+            errorDesc(fmt::format("Type {} has not been declared yet.", baseTypeName), fmt::format("If this type is being declared further down in the code, consider forward declaring it with 'using {};'.", baseTypeName));
             return nullptr;
         }
 
@@ -1154,7 +1154,7 @@ namespace pl::core {
         }
         if (sequence(tkn::Operator::At)) {
             if (constant) {
-                error_desc("Cannot mark placed variable as 'const'.", "Variables placed in memory are always implicitly const.");
+                errorDesc("Cannot mark placed variable as 'const'.", "Variables placed in memory are always implicitly const.");
                 return nullptr;
             }
 
@@ -1254,7 +1254,7 @@ namespace pl::core {
         }
 
         if (!sequence(tkn::Operator::Colon)) {
-            error_desc("Expected ':' after pointer definition, got {}.", "A pointer requires a integral type to specify its own size.", getFormattedToken(0));
+            errorDesc("Expected ':' after pointer definition, got {}.", "A pointer requires a integral type to specify its own size.", getFormattedToken(0));
             return nullptr;
         }
 
@@ -1415,7 +1415,7 @@ namespace pl::core {
 
         auto underlyingType = parseType();
         if (underlyingType->getEndian().has_value()) {
-            error_desc("Underlying enum type may not have an endian specifier.", "Use the 'be' or 'le' keyword when declaring a variable instead.");
+            errorDesc("Underlying enum type may not have an endian specifier.", "Use the 'be' or 'le' keyword when declaring a variable instead.");
             return nullptr;
         }
 
@@ -1446,7 +1446,7 @@ namespace pl::core {
 
                 lastEntry = enumValue->clone();
             } else {
-                error_desc("Invalid enum entry definition.", "Enum entries can consist of either just a name or a name followed by a value assignment.");
+                errorDesc("Invalid enum entry definition.", "Enum entries can consist of either just a name or a name followed by a value assignment.");
                 break;
             }
 
@@ -1585,7 +1585,7 @@ namespace pl::core {
         const auto bitfieldNode = static_cast<ast::ASTNodeBitfield *>(typeDecl->getType().get());
 
         if (!sequence(tkn::Separator::LeftBrace)) {
-            error_desc("Expected '{{' after bitfield declaration, got {}.", getFormattedToken(0));
+            errorDesc("Expected '{{' after bitfield declaration, got {}.", getFormattedToken(0));
             return nullptr;
         }
 
@@ -1650,7 +1650,7 @@ namespace pl::core {
             }
 
             if (invalidType) {
-                error_desc("Invalid in/out parameter type.", "Allowed types are: 'char', 'bool', 'str', floating point types or integral types.");
+                errorDesc("Invalid in/out parameter type.", "Allowed types are: 'char', 'bool', 'str', floating point types or integral types.");
                 return nullptr;
             }
         }
@@ -1671,7 +1671,7 @@ namespace pl::core {
                 size = parseMathematicalExpression();
 
             if (!sequence(tkn::Separator::RightBracket)) {
-                error_desc("Expected ']' at end of array declaration, got {}.", getFormattedToken(0));
+                errorDesc("Expected ']' at end of array declaration, got {}.", getFormattedToken(0));
                 return nullptr;
             }
         }
@@ -1977,7 +1977,7 @@ namespace pl::core {
             return { program, {} };
         }
 
-        error_desc("Failed to parse entire input.", "Parsing stopped due to an invalid sequence before the entire input could be parsed. This is most likely a bug.");
+        errorDesc("Failed to parse entire input.", "Parsing stopped due to an invalid sequence before the entire input could be parsed. This is most likely a bug.");
         return { {}, this->collectErrors() };
     }
 

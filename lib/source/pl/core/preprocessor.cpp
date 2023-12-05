@@ -127,7 +127,7 @@ namespace pl::core {
 
         // if we didn't find an #endif, we have an error
         if(depth > 0) {
-            error_at(start, "#ifdef without #endif");
+            errorAt(start, "#ifdef without #endif");
         }
     }
 
@@ -175,7 +175,7 @@ namespace pl::core {
         auto key = getDirectiveValue();
 
         if(!key.has_value()) {
-            error_desc("No instruction given in #pragma directive.", "A #pragma directive expects a instruction followed by an optional value in the form of #pragma <instruction> <value>.");
+            errorDesc("No instruction given in #pragma directive.", "A #pragma directive expects a instruction followed by an optional value in the form of #pragma <instruction> <value>.");
             return;
         }
 
@@ -188,7 +188,7 @@ namespace pl::core {
         const auto includeFile = getDirectiveValue();
 
         if (!includeFile.has_value()) {
-            error_desc("No file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
+            errorDesc("No file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
             return;
         }
 
@@ -197,7 +197,7 @@ namespace pl::core {
         else if (includeFile->starts_with('<') && includeFile->ends_with('>'))
             ; // Parsed path wrapped in <>
         else {
-            error_desc("Invalid file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
+            errorDesc("Invalid file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
             return;
         }
 
@@ -208,7 +208,7 @@ namespace pl::core {
             return;
 
         if(m_resolver == nullptr) {
-            error_desc("Unable to lookup results", "No include resolver was set.");
+            errorDesc("Unable to lookup results", "No include resolver was set.");
             return;
         }
 
@@ -370,7 +370,7 @@ namespace pl::core {
 
                 if (this->m_pragmaHandlers.contains(type)) {
                     if (!this->m_pragmaHandlers[type](runtimeRef, value))
-                        error_at(Location { m_source, line, 1, value.length() },
+                        errorAt(Location { m_source, line, 1, value.length() },
                                  "Value '{}' cannot be used with the '{}' pragma directive.", value, type);
                 }
             }

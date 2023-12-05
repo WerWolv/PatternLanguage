@@ -89,7 +89,7 @@ namespace pl::core {
 
             if (value == nullptr) {
                 std::visit([&](auto &&) {
-                    error_desc("Expected {}, got {}.", "This is a serious parsing bug. Please open an issue on GitHub!", typeid(T).name(), typeid(value).name());
+                    errorDesc("Expected {}, got {}.", "This is a serious parsing bug. Please open an issue on GitHub!", typeid(T).name(), typeid(value).name());
                 }, token.value);
             }
 

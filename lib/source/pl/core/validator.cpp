@@ -54,7 +54,7 @@ namespace pl::core {
                 continue;
 
             if (node == nullptr) {
-                error_desc("Null-Pointer found in AST.", "This is a parser bug. Please report it on GitHub.");
+                errorDesc("Null-Pointer found in AST.", "This is a parser bug. Please report it on GitHub.");
                 continue;
             }
 

@@ -134,7 +134,7 @@ namespace pl {
 
         evaluator->setReadOffset(this->m_startAddress.value_or(evaluator->getDataBaseAddress()));
 
-        if (!evaluator->evaluate(code, this->m_currAST)) {
+        if (!evaluator->evaluate(this->m_currAST)) {
             this->m_currError = evaluator->getConsole().getLastHardError();
             return false;
         }

@@ -7,34 +7,37 @@
 #include <fmt/format.h>
 
 #include <string>
-#include <stdexcept>
 #include <utility>
 #include <vector>
-#include <functional>
 
 namespace pl::core::err {
 
-    std::string formatImpl(
-            const std::string &sourceCode,
-            u32 line, u32 column,
-            char prefix,
-            u32 errorCode,
-            const std::string &title,
-            const std::string &description,
-            const std::string &hint);
+    namespace impl {
+        std::string formatRuntimeError(
+                const Location& location,
+                char prefix,
+                const std::string &title,
+                const std::string &description,
+                const std::string &hint);
 
-    std::string formatShortImpl(
-            char prefix,
-            u32 errorCode,
-            const std::string &title,
-            const std::string &description);
+        std::string formatRuntimeErrorShort(
+                char prefix,
+                const std::string &title,
+                const std::string &description);
+
+        std::string formatCompilerError(
+            const Location&location,
+            const std::string& message,
+            const std::string& description,
+            const std::vector<Location>& trace);
+    }
 
     template<typename T = void>
     class UserData {
     public:
         UserData() = default;
         UserData(const T &userData) : m_userData(userData) { }
-        UserData(const UserData<T> &) = default;
+        UserData(const UserData &) = default;
 
         const T& getUserData() const { return this->m_userData; }
 
@@ -42,8 +45,8 @@ namespace pl::core::err {
         T m_userData = { };
     };
 
-    struct PatternLanguageError : public std::exception {
-        PatternLanguageError(std::string message, u32 line, u32 column) : message(std::move(message)), line(line), column(column) { }
+    struct PatternLanguageError : std::exception {
+        PatternLanguageError(std::string message, const u32 line, const u32 column) : message(std::move(message)), line(line), column(column) { }
 
         std::string message;
         u32 line, column;
@@ -61,17 +64,17 @@ namespace pl::core::err {
     public:
         class Exception : public std::exception, public UserData<T> {
         public:
-            Exception(char prefix, u32 errorCode, std::string title, std::string description, std::string hint, UserData<T> userData = {}) :
+            Exception(const char prefix, const u32 errorCode, std::string title, std::string description, std::string hint, UserData<T> userData = {}) :
                     UserData<T>(userData), m_prefix(prefix), m_errorCode(errorCode), m_title(std::move(title)), m_description(std::move(description)), m_hint(std::move(hint)) {
-                this->m_shortMessage = formatShortImpl(this->m_prefix, this->m_errorCode, this->m_title, this->m_description);
+                this->m_shortMessage = impl::formatRuntimeErrorShort(this->m_prefix, this->m_title, this->m_description);
             }
 
             [[nodiscard]] const char *what() const noexcept override {
                 return this->m_shortMessage.c_str();
             }
 
-            [[nodiscard]] std::string format(const std::string &sourceCode, u32 line, u32 column) const {
-                return formatImpl(sourceCode, line, column, this->m_prefix, this->m_errorCode, this->m_title, this->m_description, this->m_hint);
+            [[nodiscard]] std::string format(const Location& location) const {
+                return impl::formatRuntimeError(location, this->m_prefix, this->m_title, this->m_description, this->m_hint);
             }
 
         private:
@@ -81,7 +84,7 @@ namespace pl::core::err {
             std::string m_title, m_description, m_hint;
         };
 
-        RuntimeError(char prefix, u32 errorCode, std::string title) : m_prefix(prefix), m_errorCode(errorCode), m_title(std::move(title)) {
+        RuntimeError(const char prefix, const u32 errorCode, std::string title) : m_prefix(prefix), m_errorCode(errorCode), m_title(std::move(title)) {
 
         }
 
@@ -99,18 +102,12 @@ namespace pl::core::err {
         std::string m_title;
     };
 
-    std::string formatImpl(
-            Location location,
-            const std::string& message,
-            const std::string& description,
-            const std::vector<Location>& trace);
-
     class CompileError {
 
     public:
-        CompileError(std::string message, Location location) : m_message(std::move(message)), m_location(location) { }
-        CompileError(std::string message, std::string description, Location location) : m_message(std::move(message)), m_description(std::move(description)),
-                                                                                             m_location(location) { }
+        CompileError(std::string message, const Location& location) : m_message(std::move(message)), m_location(location) { }
+        CompileError(std::string message, std::string description, const Location& location) : m_message(std::move(message)), m_description(std::move(description)),
+                                                                                              m_location(location) { }
 
         [[nodiscard]] const std::string &getMessage() const { return this->m_message; }
         [[nodiscard]] const std::string &getDescription() const { return this->m_description; }
@@ -120,7 +117,7 @@ namespace pl::core::err {
         [[nodiscard]] std::vector<Location> &getTrace() { return this->m_trace; }
 
         [[nodiscard]] std::string format() const {
-            return formatImpl(this->getLocation(), this->getMessage(), this->getDescription(), getTrace());
+            return impl::formatCompilerError(this->getLocation(), this->getMessage(), this->getDescription(), getTrace());
         }
 
     private:
@@ -146,12 +143,12 @@ namespace pl::core::err {
             this->m_errors.emplace_back(message, location());
         }
 
-        void error_desc(const std::string& message, const std::string& description) {
+        void errorDesc(const std::string& message, const std::string& description) {
             this->m_errors.emplace_back(message, description, location());
         }
 
         template<typename... Args>
-        void error_desc(const fmt::format_string<Args...>& message, const std::string& description, Args&&... args) {
+        void errorDesc(const fmt::format_string<Args...>& message, const std::string& description, Args&&... args) {
             this->m_errors.emplace_back(fmt::format(message, std::forward<Args>(args)...), description, location());
         }
 
@@ -160,16 +157,16 @@ namespace pl::core::err {
             this->m_errors.push_back(std::move(error));
         }
 
-        void error_at(const Location& location, const std::string& message) {
+        void errorAt(const Location& location, const std::string& message) {
             this->m_errors.emplace_back(message, location);
         }
 
-        void error_at_desc(const Location& location, const std::string& message, const std::string& description) {
+        void errorAtDesc(const Location& location, const std::string& message, const std::string& description) {
             this->m_errors.emplace_back(message, description, location);
         }
 
         template<typename... Args>
-        void error_at(const Location& location, const fmt::format_string<Args...>& message, Args&&... args) {
+        void errorAt(const Location& location, const fmt::format_string<Args...>& message, Args&&... args) {
             this->m_errors.emplace_back(fmt::format(message, std::forward<Args>(args)...), location);
         }
 
