@@ -32,6 +32,11 @@ if (NOT TARGET fmt::fmt)
     set_property(TARGET fmt PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif ()
 
+if (NOT TARGET nlohmann_json)
+    add_subdirectory(external/nlohmann_json EXCLUDE_FROM_ALL)
+    set_property(TARGET nlohmann_json PROPERTY POSITION_INDEPENDENT_CODE ON)
+endif ()
+
 add_subdirectory(external/libwolv)
 
 add_subdirectory(lib)
