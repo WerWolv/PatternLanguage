@@ -84,10 +84,14 @@ int runTests(int argc, char **argv) {
 
     // Check if compilation succeeded
     if (!result) {
-        fmt::print("Error during compilation!\n");
+        fmt::print("Error during test!\n");
 
         if (auto error = runtime.getError(); error.has_value())
-            fmt::print("Compile error: {}:{} : {}\n", error->line, error->column, error->message);
+            fmt::print("Error: {}:{} : {}\n", error->line, error->column, error->message);
+
+        for (const auto& error : runtime.getCompileErrors()) {
+            fmt::print("{}", error.format());
+        }
 
         return failing ? EXIT_SUCCESS : EXIT_FAILURE;
     }
