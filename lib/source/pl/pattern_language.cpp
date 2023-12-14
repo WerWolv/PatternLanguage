@@ -68,7 +68,7 @@ namespace pl {
 
         auto [preprocessedCode, preprocessorErrors] = this->m_internals.preprocessor->preprocess(this, sourceObj.get());
         if (!preprocessorErrors.empty()) {
-            this->m_compErrors = std::move(preprocessorErrors);
+            this->m_compileErrors = std::move(preprocessorErrors);
             return std::nullopt;
         }
 
@@ -77,19 +77,19 @@ namespace pl {
         auto [tokens, lexerErrors] = this->m_internals.lexer->lex(sourceObj.get());
 
         if (!lexerErrors.empty()) {
-            this->m_compErrors = std::move(lexerErrors);
+            this->m_compileErrors = std::move(lexerErrors);
             return std::nullopt;
         }
 
         auto [ast, parserErrors] = this->m_internals.parser->parse(tokens.value());
         if (!parserErrors.empty()) {
-            this->m_compErrors = std::move(parserErrors);
+            this->m_compileErrors = std::move(parserErrors);
             return std::nullopt;
         }
 
         auto [_, validatorErrors] = this->m_internals.validator->validate(*ast);
         if (!validatorErrors.empty()) {
-            this->m_compErrors = std::move(validatorErrors);
+            this->m_compileErrors = std::move(validatorErrors);
             return std::nullopt;
         }
 
@@ -114,7 +114,7 @@ namespace pl {
         ON_SCOPE_EXIT { this->m_running = false; };
 
         ON_SCOPE_EXIT {
-            for (const auto &error: this->m_compErrors) {
+            for (const auto &error: this->m_compileErrors) {
                 evaluator->getConsole().log(core::LogConsole::Level::Error, error.format());
             }
 
@@ -301,7 +301,7 @@ namespace pl {
         this->m_flattenedPatterns.clear();
 
         this->m_currError.reset();
-        this->m_compErrors.clear();
+        this->m_compileErrors.clear();
         this->m_internals.validator->setRecursionDepth(32);
 
         this->m_internals.evaluator->getConsole().clear();

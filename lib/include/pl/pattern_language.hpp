@@ -358,7 +358,7 @@ namespace pl {
     private:
 
         Internals m_internals;
-        std::vector<core::err::CompileError> m_compErrors;
+        std::vector<core::err::CompileError> m_compileErrors;
         std::optional<core::err::PatternLanguageError> m_currError;
 
         core::Resolver m_resolvers;
