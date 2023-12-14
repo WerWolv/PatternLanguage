@@ -1,7 +1,3 @@
-//
-// Created by justus on 19.11.23.
-//
-
 #pragma once
 
 #include <pl/core/resolver.hpp>
