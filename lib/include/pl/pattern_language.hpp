@@ -111,9 +111,10 @@ namespace pl {
          * @return the source that was added or that already existed
          */
         [[nodiscard]] api::Source* addVirtualSource(const std::string& code, const std::string& source) const;
+
         /**
          * @brief Aborts the currently running execution asynchronously
-         */
+        */
         void abort();
 
         /**
@@ -176,6 +177,10 @@ namespace pl {
          */
         void setIncludePaths(const std::vector<std::fs::path>& paths) const;
 
+        /**
+         * @brief Sets the source resolver of the pattern language
+         * @param resolver Resolver to use
+         */
         void setResolver(const core::Resolver& resolver);
 
         /**
@@ -302,10 +307,18 @@ namespace pl {
             return this->m_internals;
         }
 
+        /**
+         * @brief Gets the source resolver of the pattern language
+         * @return Mutable reference to the Resolver
+         */
         [[nodiscard]] core::Resolver& getResolver() {
             return this->m_resolvers;
         }
 
+        /**
+         * @brief Gets the source resolver of the pattern language
+         * @return Resolver
+         */
         [[nodiscard]] const core::Resolver& getResolver() const {
             return this->m_resolvers;
         }
