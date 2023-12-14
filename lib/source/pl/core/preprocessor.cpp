@@ -362,14 +362,12 @@ namespace pl::core {
         }
 
         // Handle pragmas
-        auto& runtimeRef = *runtime;
-
         for (const auto &[type, datas] : this->m_pragmas) {
             for (const auto &data : datas) {
                 const auto &[value, line] = data;
 
                 if (this->m_pragmaHandlers.contains(type)) {
-                    if (!this->m_pragmaHandlers[type](runtimeRef, value))
+                    if (!this->m_pragmaHandlers[type](*runtime, value))
                         errorAt(Location { m_source, line, 1, value.length() },
                                  "Value '{}' cannot be used with the '{}' pragma directive.", value, type);
                 }

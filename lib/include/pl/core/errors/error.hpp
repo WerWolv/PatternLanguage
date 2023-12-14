@@ -127,7 +127,7 @@ namespace pl::core::err {
     };
 
     class ErrorCollector {
-    protected:
+    public:
 
         virtual ~ErrorCollector() = default;
 

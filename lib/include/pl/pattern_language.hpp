@@ -204,6 +204,8 @@ namespace pl {
          */
         [[nodiscard]] const std::optional<core::err::PatternLanguageError> &getError() const;
 
+        [[nodiscard]] const std::vector<core::err::CompileError>& getCompileErrors() const;
+
         /**
          * @brief Gets a map of all out variables and their values that have been defined in the last execution
          * @return Out variables

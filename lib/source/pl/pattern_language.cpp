@@ -17,8 +17,6 @@
 #include <wolv/io/file.hpp>
 #include <wolv/utils/string.hpp>
 
-#include <iostream>
-
 namespace pl {
 
     PatternLanguage::PatternLanguage(const bool addLibStd) {
@@ -64,17 +62,17 @@ namespace pl {
     }
 
     std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> PatternLanguage::parseString(const std::string &code, const std::string &source) {
-        const auto sourceObj = std::make_unique<api::Source>(code, source);
+        auto internalSource = std::make_unique<api::Source>(code, source);
 
-        auto [preprocessedCode, preprocessorErrors] = this->m_internals.preprocessor->preprocess(this, sourceObj.get());
+        auto [preprocessedCode, preprocessorErrors] = this->m_internals.preprocessor->preprocess(this, internalSource.get());
         if (!preprocessorErrors.empty()) {
             this->m_compileErrors = std::move(preprocessorErrors);
             return std::nullopt;
         }
 
-        sourceObj->content = preprocessedCode.value(); // update source object with preprocessed code
+        internalSource->content = std::move(preprocessedCode.value()); // update source object with preprocessed code
 
-        auto [tokens, lexerErrors] = this->m_internals.lexer->lex(sourceObj.get());
+        auto [tokens, lexerErrors] = this->m_internals.lexer->lex(internalSource.get());
 
         if (!lexerErrors.empty()) {
             this->m_compileErrors = std::move(lexerErrors);
@@ -87,7 +85,8 @@ namespace pl {
             return std::nullopt;
         }
 
-        auto [_, validatorErrors] = this->m_internals.validator->validate(*ast);
+        auto [validated, validatorErrors] = this->m_internals.validator->validate(*ast);
+        wolv::util::unused(validated);
         if (!validatorErrors.empty()) {
             this->m_compileErrors = std::move(validatorErrors);
             return std::nullopt;
@@ -266,6 +265,11 @@ namespace pl {
     const std::optional<core::err::PatternLanguageError> &PatternLanguage::getError() const {
         return this->m_currError;
     }
+
+    const std::vector<core::err::CompileError>& PatternLanguage::getCompileErrors() const {
+        return this->m_compileErrors;
+    }
+
 
     u32 PatternLanguage::getCreatedPatternCount() const {
         return this->m_internals.evaluator->getPatternCount();

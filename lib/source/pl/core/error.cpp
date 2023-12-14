@@ -19,23 +19,24 @@ namespace pl::core::err::impl {
     std::string formatLines(Location location) {
         std::string result;
 
-        if (const auto lines = wolv::util::splitString(location.source->content, "\n");
-                location.line - 1 < lines.size()) {
+        const auto lines = wolv::util::splitString(location.source->content, "\n");
+
+        if (location.line - 1 < lines.size()) {
             const auto lineNumberPrefix = fmt::format("{} | ", location.line);
             auto errorLine = wolv::util::replaceStrings(lines[location.line - 1], "\r", "");
             u32 arrowPosition = location.column - 1;
 
-            // trim to size
-            if(errorLine.size() > 40) { // shrink to [column - 20; column + 20]
+            // Trim to size
+            if (errorLine.length() > 40) { // shrink to [column - 20; column + 20]
                 const auto column = location.column - 1;
                 auto start = column > 20 ? column - 20 : 0;
-                auto end = column + 20 < errorLine.size() ? column + 20 : errorLine.size();
-                // search for whitespaces on both sides until a maxium of 10 characters and change start/end accordingly
+                auto end = column + 20 < errorLine.length() ? column + 20 : errorLine.length();
+                // Search for whitespaces on both sides until a maxium of 10 characters and change start/end accordingly
                 for(auto i = 0; i < 10; ++i) {
                     if(start > 0 && errorLine[start] != ' ') {
                         --start;
                     }
-                    if(end < errorLine.size() && errorLine[end] != ' ') {
+                    if(end < errorLine.length() && errorLine[end] != ' ') {
                         ++end;
                     }
                 }
@@ -47,9 +48,9 @@ namespace pl::core::err::impl {
 
             {
                 const auto arrowSpacing = std::string(lineNumberPrefix.length() + arrowPosition, ' ');
-                // add arrow with length of the token
+                // Add arrow with length of the token
                 result += arrowSpacing + std::string(location.length, '^') + '\n';
-                // add spacing for the error message
+                // Add spacing for the error message
                 result += arrowSpacing + std::string(location.length, ' ');
             }
         }
@@ -108,7 +109,7 @@ namespace pl::core::err::impl {
             errorMessage += formatLines(location) + "\n";
         }
 
-        if(!description.empty()) {
+        if (!description.empty()) {
             errorMessage += "\n" + description + "\n";
         }
 

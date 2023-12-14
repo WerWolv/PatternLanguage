@@ -19,7 +19,7 @@ namespace pl::core::tkn {
 
         inline Token makeKeyword(const Token::Keyword& keyword, const std::string_view& name) {
             auto token = makeToken(core::Token::Type::Keyword, keyword);
-            Token::keywords()[name] = token;
+            Token::Keywords()[name] = token;
             return token;
         }
 
@@ -88,7 +88,7 @@ namespace pl::core::tkn {
 
         inline Token makeOperator(const Token::Operator& op, const std::string_view& name) {
             auto token = makeToken(core::Token::Type::Operator, op);
-            Token::operators()[name] = token;
+            Token::Operators()[name] = token;
             return token;
         }
 
@@ -128,7 +128,7 @@ namespace pl::core::tkn {
 
         inline Token makeValueType(const Token::ValueType& value, const std::string_view& name) {
             auto token = makeToken(core::Token::Type::ValueType, value);
-            Token::types()[name] = token;
+            Token::Types()[name] = token;
             return token;
         }
 
@@ -176,7 +176,7 @@ namespace pl::core::tkn {
 
         inline Token makeSeparator(const Token::Separator& value, char name) {
             auto token = makeToken(Token::Type::Separator, value);
-            Token::separators()[name] = token;
+            Token::Seperators()[name] = token;
             return token;
         }
 

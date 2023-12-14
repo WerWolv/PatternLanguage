@@ -20,10 +20,10 @@ namespace pl::core {
 
     class Token {
     public:
-        static std::map<std::string_view, Token>& operators();
-        static std::map<char,             Token>& separators();
-        static std::map<std::string_view, Token>& keywords();
-        static std::map<std::string_view, Token>& types();
+        static std::map<std::string_view, Token>& Operators();
+        static std::map<char,             Token>& Seperators();
+        static std::map<std::string_view, Token>& Keywords();
+        static std::map<std::string_view, Token>& Types();
 
         Token() = default;
 

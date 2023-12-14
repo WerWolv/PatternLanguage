@@ -16,7 +16,7 @@
 
 namespace pl::core {
 
-    class Preprocessor : err::ErrorCollector {
+    class Preprocessor : public err::ErrorCollector {
     public:
 
         Preprocessor();

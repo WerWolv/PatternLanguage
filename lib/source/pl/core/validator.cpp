@@ -19,7 +19,7 @@
 
 namespace pl::core {
 
-    using result_t = hlp::CompileResult<bool>;
+    using result = hlp::CompileResult<bool>;
 
     hlp::CompileResult<bool> Validator::validate(const std::vector<std::shared_ptr<ast::ASTNode>> &ast) {
         this->m_recursionDepth = 0;
@@ -29,7 +29,7 @@ namespace pl::core {
         validateNodes(ast);
 
         if(this->hasErrors()) {
-            return result_t::err(this->collectErrors());
+            return result::err(this->collectErrors());
         }
         return { };
     }

@@ -114,7 +114,7 @@ namespace pl::core {
             []<typename T>(T lhs, T rhs) {
                 return lhs == rhs;
             },
-            [](integral auto lhs, pl::integral auto rhs) {
+            [](pl::integral auto lhs, pl::integral auto rhs) {
                 if constexpr (std::same_as<decltype(lhs), char> || std::same_as<decltype(rhs), char>)
                     return char(lhs) == char(rhs);
                 else if constexpr (std::same_as<decltype(lhs), bool> || std::same_as<decltype(rhs), bool>)
@@ -122,10 +122,10 @@ namespace pl::core {
                 else
                     return std::cmp_equal(lhs, rhs);
             },
-            [](integral auto lhs, floating_point auto rhs) {
+            [](pl::integral auto lhs, pl::floating_point auto rhs) {
                 return lhs == rhs;
             },
-            [](floating_point auto lhs, integral auto rhs) {
+            [](pl::floating_point auto lhs, pl::integral auto rhs) {
                 return lhs == rhs;
             },
             [](auto, auto) {
@@ -366,25 +366,25 @@ namespace pl::core {
         return !operator==(other);
     }
 
-    std::map<std::string_view, Token>& Token::operators() {
+    std::map<std::string_view, Token>& Token::Operators() {
         static std::map<std::string_view, Token> s_operators;
 
         return s_operators;
     }
 
-    std::map<std::string_view, Token>& Token::keywords() {
+    std::map<std::string_view, Token>& Token::Keywords() {
         static std::map<std::string_view, Token> s_keywords;
 
         return s_keywords;
     }
 
-    std::map<char, Token>& Token::separators() {
+    std::map<char, Token>& Token::Seperators() {
         static std::map<char, Token> s_separators;
 
         return s_separators;
     }
 
-    std::map<std::string_view, Token> &Token::types() {
+    std::map<std::string_view, Token> &Token::Types() {
         static std::map<std::string_view, Token> s_types;
 
         return s_types;

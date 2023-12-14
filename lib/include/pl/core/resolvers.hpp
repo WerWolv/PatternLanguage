@@ -5,9 +5,11 @@
 #pragma once
 
 #include <pl/core/resolver.hpp>
+#include <wolv/io/fs.hpp>
 
 namespace pl::core {
     class FileResolver final {
+        using result = hlp::Result<api::Source, std::string>;
     public:
 
         FileResolver() = default;
