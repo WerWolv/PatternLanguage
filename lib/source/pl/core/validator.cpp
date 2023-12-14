@@ -19,9 +19,9 @@
 
 namespace pl::core {
 
-    using result_t = CompileResult<bool>;
+    using result_t = hlp::CompileResult<bool>;
 
-    CompileResult<bool> Validator::validate(const std::vector<std::shared_ptr<ast::ASTNode>> &ast) {
+    hlp::CompileResult<bool> Validator::validate(const std::vector<std::shared_ptr<ast::ASTNode>> &ast) {
         this->m_recursionDepth = 0;
         this->m_validatedNodes.clear();
         this->m_identifiers.clear();

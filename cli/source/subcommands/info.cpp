@@ -96,7 +96,7 @@ namespace pl::cli::sub {
                 return true;
             });
 
-            auto ast = runtime.parseString(patternFile.readString(), patternFile.getPath().string());
+            auto ast = runtime.parseString(patternFile.readString(), wolv::util::toUTF8String(patternFile.getPath()));
             if (!ast.has_value()) {
                 auto error = runtime.getError().value();
                 fmt::print("Pattern Error: {}:{} -> {}\n", error.line, error.column, error.message);

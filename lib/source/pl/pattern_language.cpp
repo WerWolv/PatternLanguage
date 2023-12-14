@@ -33,9 +33,17 @@ namespace pl {
         if (addLibStd)
             lib::libstd::registerFunctions(*this);
 
-        this->m_internals.preprocessor->setResolver(&this->m_resolvers);
+        this->m_resolvers.setDefaultResolver([this](const std::string& path) {
+            return this->m_fileResolver.resolve(path);
+        });
 
-        this->m_parserManager.setResolvers(&this->m_resolvers);
+        auto resolver = [this](const std::string& path) {
+            return this->m_resolvers.resolve(path);
+        };
+
+        this->m_internals.preprocessor->setResolver(resolver);
+
+        this->m_parserManager.setResolver(resolver);
     }
 
     PatternLanguage::~PatternLanguage() {
@@ -56,9 +64,9 @@ namespace pl {
     }
 
     std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> PatternLanguage::parseString(const std::string &code, const std::string &source) {
-        const auto sourceObj = m_resolvers.setSource(code, source);
+        const auto sourceObj = std::make_unique<api::Source>(code, source);
 
-        auto [preprocessedCode, preprocessorErrors] = this->m_internals.preprocessor->preprocess(this, sourceObj);
+        auto [preprocessedCode, preprocessorErrors] = this->m_internals.preprocessor->preprocess(this, sourceObj.get());
         if (!preprocessorErrors.empty()) {
             this->m_compErrors = std::move(preprocessorErrors);
             return std::nullopt;
@@ -66,7 +74,7 @@ namespace pl {
 
         sourceObj->content = preprocessedCode.value(); // update source object with preprocessed code
 
-        auto [tokens, lexerErrors] = this->m_internals.lexer->lex(sourceObj);
+        auto [tokens, lexerErrors] = this->m_internals.lexer->lex(sourceObj.get());
 
         if (!lexerErrors.empty()) {
             this->m_compErrors = std::move(lexerErrors);
@@ -175,18 +183,14 @@ namespace pl {
 
         const auto functionContent = fmt::format("fn main() {{ {0} }};", code);
 
-        auto success = this->executeString(functionContent, core::DefaultSource, {}, {}, false);
+        auto success = this->executeString(functionContent, api::Source::DefaultSource, {}, {}, false);
         auto result  = this->m_internals.evaluator->getMainResult();
 
         return { success, std::move(result) };
     }
 
-    api::Source *PatternLanguage::addSource(const std::string &code, const std::string &source) {
-        return this->m_resolvers.addSource(code, source);
-    }
-
-    api::Source *PatternLanguage::setSource(const std::string &code, const std::string &source) {
-        return this->m_resolvers.setSource(code, source);
+    api::Source* PatternLanguage::addVirtualSource(const std::string &code, const std::string &source) const {
+        return this->m_fileResolver.addVirtualFile(code, source);
     }
 
     void PatternLanguage::abort() {
@@ -195,7 +199,7 @@ namespace pl {
     }
 
     void PatternLanguage::setIncludePaths(const std::vector<std::fs::path>& paths) const {
-        this->m_resolvers.setDefaultResolver(core::FileResolver { paths });
+        this->m_fileResolver.setIncludePaths(paths);
     }
 
     void PatternLanguage::setResolver(const core::Resolver& resolver) {

@@ -12,14 +12,14 @@ namespace pl::core {
 
     struct Location {
 
-        api::Source* source;
+        const api::Source* source;
         u32 line, column;
         size_t length;
 
-    };
+        constexpr static Location Empty() {
+            return { nullptr, 0, 0, 0 };
+        }
 
-    static constexpr api::Source* EmptySource = nullptr;
-    static constexpr Location EmptyLocation = { EmptySource, 0, 0, 0 };
-    static constexpr std::string DefaultSource = "<Source Code>";
+    };
 
 }

@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <vector>
+#include <pl/core/errors/error.hpp>
 
 namespace pl::hlp {
 
@@ -17,6 +18,7 @@ namespace pl::hlp {
         Result(const Ok& ok, const Err& err) : ok(ok), errs({ err }) { }
         Result(Result&& other) noexcept : ok(other.ok), errs(other.errs) { }
         Result(const Result& other) noexcept : ok(other.ok), errs(other.errs) { }
+        Result(std::optional<Ok> ok, const std::vector<Err>& errs) : ok(ok), errs(errs) { }
         // move assignment operator
 
         Result& operator=(Result&& other) noexcept {
@@ -30,22 +32,22 @@ namespace pl::hlp {
         }
 
         static Result err(const Err& err) {
-            return Result({}, { err });
+            return { std::nullopt, { err } };
         }
 
         static Result err(const std::vector<Err>& errs) {
-            return Result({}, errs);
+            return { std::nullopt, errs };
         }
 
-        [[nodiscard]] bool is_ok() const {
+        [[nodiscard]] bool isOk() const {
             return ok.has_value();
         }
 
-        [[nodiscard]] bool is_err() const {
-            return !is_ok();
+        [[nodiscard]] bool isErr() const {
+            return !isOk();
         }
 
-        [[nodiscard]] bool has_errs() const {
+        [[nodiscard]] bool hasErrs() const {
             return !errs.empty();
         }
 
@@ -53,7 +55,7 @@ namespace pl::hlp {
             return ok.value();
         }
 
-        const std::vector<Err>& unwrap_errs() const {
+        const std::vector<Err>& unwrapErrs() const {
             return errs;
         }
 
@@ -61,10 +63,13 @@ namespace pl::hlp {
             return ok.value();
         }
 
-        std::vector<Err>& unwrap_errs() {
+        std::vector<Err>& unwrapErrs() {
             return errs;
         }
 
     };
+
+    template <typename T>
+    using CompileResult = hlp::Result<T, pl::core::err::CompileError>;
 
 }

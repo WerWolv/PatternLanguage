@@ -4,38 +4,31 @@ using namespace pl::core;
 using namespace pl::api;
 using namespace pl::hlp;
 
-Result<Source *, std::string> Resolver::resolve(const std::string &path)  {
+Result<Source *, std::string> pl::core::Resolver::resolve(const std::string &path) const {
     using result_t = Result<Source *, std::string>;
-    // look in cache
-    auto it = m_cachedSources.find(path);
-    if (it != m_cachedSources.end())
-        return result_t::good(&it->second);
-
     Result<Source, std::string> result;
 
     // look for protocol
     if(!m_protocolResolvers.empty()){
-        auto protocolEnd = path.find("://");
-        if (protocolEnd != std::string::npos) {
-            auto protocol = path.substr(0, protocolEnd);
-            auto protocolIt = m_protocolResolvers.find(protocol);
-            if (protocolIt != m_protocolResolvers.end()) {
+        if (const auto protocolEnd = path.find("://"); protocolEnd != std::string::npos) {
+            const auto protocol = path.substr(0, protocolEnd);
+            if (const auto protocolIt = m_protocolResolvers.find(protocol); protocolIt != m_protocolResolvers.end()) {
                 result = protocolIt->second(path);
             }
         }
     }
 
-    if(!result.is_ok()) {
-        if (!m_defaultResolver)
+    if(!result.isOk()) {
+        if (m_defaultResolver == nullptr)
             return result_t::err("No possible way to resolve path " + path + " and no default resolver set");
 
         result = m_defaultResolver(path);
     }
 
-    if (result.is_ok()) {
-        m_cachedSources[path] = result.unwrap();
-        return result_t::good(&m_cachedSources[path]);
+    if (result.isOk()) {
+        const auto [it, inserted] = m_sourceContainer.insert_or_assign(path, result.unwrap());
+        return result_t::good(&it->second);
     }
 
-    return result_t::err(result.unwrap_errs());
+    return result_t::err(result.unwrapErrs());
 }

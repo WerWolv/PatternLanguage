@@ -9,7 +9,8 @@
 #include <pl/api.hpp>
 #include <pl/helpers/types.hpp>
 #include <pl/core/errors/error.hpp>
-#include <pl/core/resolver.hpp>
+
+#include <pl/core/errors/result.hpp>
 
 #include <utility>
 
@@ -22,7 +23,7 @@ namespace pl::core {
 
         ~Preprocessor() override = default;
 
-        CompileResult<std::string> preprocess(PatternLanguage *runtime, api::Source* source, bool initialRun = true);
+        hlp::CompileResult<std::string> preprocess(PatternLanguage *runtime, api::Source* source, bool initialRun = true);
 
         void addDefine(const std::string &name, const std::string &value = "");
         void addPragmaHandler(const std::string &pragmaType, const api::PragmaHandler &handler);
@@ -36,7 +37,7 @@ namespace pl::core {
             return this->m_onlyIncludeOnce;
         }
 
-        void setResolver(Resolver* resolvers) {
+        void setResolver(const api::Resolver& resolvers) {
             m_resolver = resolvers;
         }
 
@@ -75,7 +76,7 @@ namespace pl::core {
 
         std::set<std::string> m_onceIncludedFiles;
 
-        Resolver *m_resolver = nullptr;
+        api::Resolver m_resolver = nullptr;
         PatternLanguage *m_runtime = nullptr;
 
         size_t m_offset = 0;

@@ -1025,7 +1025,7 @@ namespace pl::core {
 
             auto node = e.getUserData();
 
-            const auto location = node == nullptr ? EmptyLocation : node->getLocation();
+            const auto location = node == nullptr ? Location::Empty() : node->getLocation();
             this->getConsole().setHardError(err::PatternLanguageError(e.format(location),
                 location.line, location.column));
 

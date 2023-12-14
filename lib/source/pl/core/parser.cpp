@@ -1956,7 +1956,7 @@ namespace pl::core {
     }
 
     // <(parseNamespace)...> EndOfProgram
-    CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> Parser::parse(const std::vector<Token> &tokens) {
+    hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> Parser::parse(const std::vector<Token> &tokens) {
 
         this->m_curr = this->m_startToken = this->m_originalPosition = this->m_partOriginalPosition = tokens.begin();
 
@@ -1978,7 +1978,7 @@ namespace pl::core {
         }
 
         errorDesc("Failed to parse entire input.", "Parsing stopped due to an invalid sequence before the entire input could be parsed. This is most likely a bug.");
-        return { {}, this->collectErrors() };
+        return { std::nullopt, this->collectErrors() };
     }
 
     Location Parser::location() {

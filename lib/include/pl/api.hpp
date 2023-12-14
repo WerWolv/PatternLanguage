@@ -32,12 +32,19 @@ namespace pl::api {
 
     using DirectiveHandler = std::function<void(core::Preprocessor*)>;
 
+    using Resolver = std::function<hlp::Result<Source*, std::string>(const std::string&)>;
+
     struct Source {
         std::string content;
         std::string source;
-    };
 
-    static constexpr Source EmptySource = { "", "" };
+        static constexpr std::string DefaultSource = "<Source Code>";
+        static constexpr Source* NoSource = nullptr;
+        static constexpr Source Empty() {
+            return { "", "" };
+        }
+
+    };
 
     /**
      * @brief A type representing a custom section

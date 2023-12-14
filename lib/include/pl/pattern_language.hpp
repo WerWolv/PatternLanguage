@@ -14,6 +14,7 @@
 #include <pl/core/token.hpp>
 #include <pl/core/errors/error.hpp>
 #include <pl/core/resolver.hpp>
+#include <pl/core/resolvers.hpp>
 #include <pl/core/parser_manager.hpp>
 
 #include <pl/helpers/types.hpp>
@@ -104,21 +105,12 @@ namespace pl {
         [[nodiscard]] std::pair<bool, std::optional<core::Token::Literal>> executeFunction(const std::string &code);
 
         /**
-         * @brief Adds the source to the runtime, this function will not overwrite existing sources
+         * @brief Adds a virtual source file under the path
          * @param code the code of the source
          * @param source the source of the code
          * @return the source that was added or that already existed
          */
-        [[nodiscard]] api::Source* addSource(const std::string& code, const std::string& source);
-
-        /**
-         * @brief Sets the source to the runtime, this function will overwrite existing sources
-         * @param code the code of the source
-         * @param source the source of the code
-         * @return the source that was set
-         */
-        [[nodiscard]] api::Source* setSource(const std::string& code, const std::string& source);
-
+        [[nodiscard]] api::Source* addVirtualSource(const std::string& code, const std::string& source) const;
         /**
          * @brief Aborts the currently running execution asynchronously
          */
@@ -357,6 +349,7 @@ namespace pl {
         std::optional<core::err::PatternLanguageError> m_currError;
 
         core::Resolver m_resolvers;
+        core::FileResolver m_fileResolver;
         core::ParserManager m_parserManager;
 
         std::map<u64, std::vector<std::shared_ptr<ptrn::Pattern>>> m_patterns;

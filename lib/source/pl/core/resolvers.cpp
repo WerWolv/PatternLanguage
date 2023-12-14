@@ -6,15 +6,16 @@ using namespace pl::core;
 using namespace pl::api;
 using namespace pl::hlp;
 
-Result<Source, std::string> FileResolver::resolve(const std::string &path) {
+Result<Source, std::string> FileResolver::resolve(const std::string &path) const {
     using result_t = Result<Source, std::string>;
+    if (const auto it = this->m_virtualFiles.find(path); it != this->m_virtualFiles.end()) {
+        return result_t::good(it->second);
+    }
 
-    std::fs::path fsPath(path);
+    const std::fs::path fsPath(path);
 
     for (const auto &item: this->m_includePaths) {
-        auto fullPath = item / fsPath;
-
-        if(std::fs::exists(fullPath)) {
+        if(auto fullPath = item / fsPath; std::fs::exists(fullPath)) {
 
             auto file = wolv::io::File(fullPath.string(), wolv::io::File::Mode::Read);
 
@@ -26,7 +27,7 @@ Result<Source, std::string> FileResolver::resolve(const std::string &path) {
                 return result_t::err("Path " + fullPath.string() + " is not a regular file");
             }
 
-            auto content = file.readString();
+            const auto content = file.readString();
 
             return result_t::good(Source { content, fullPath.string() });
         }

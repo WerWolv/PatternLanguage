@@ -11,13 +11,15 @@
 #include <string>
 #include <vector>
 
+#include <pl/core/errors/result.hpp>
+
 namespace pl::core {
 
     class Lexer : err::ErrorCollector {
     public:
         Lexer() = default;
 
-        CompileResult<std::vector<Token>> lex(api::Source* source);
+        hlp::CompileResult<std::vector<Token>> lex(const api::Source *source);
 
     private:
         [[nodiscard]] char peek(size_t p = 1) const;
@@ -44,10 +46,10 @@ namespace pl::core {
         void addToken(const Token& token);
 
         std::string m_sourceCode;
-        api::Source* m_source{};
+        const api::Source* m_source = nullptr;
         std::vector<Token> m_tokens;
-        size_t m_cursor{};
-        u32 m_line{};
-        u32 m_lineBegin{};
+        size_t m_cursor = 0;
+        u32 m_line = 0;
+        u32 m_lineBegin = 0;
     };
 }

@@ -35,7 +35,7 @@ namespace pl::core::ast {
         [[nodiscard]] bool shouldDocument() const;
 
     private:
-        Location m_location = EmptyLocation;
+        Location m_location = Location::Empty();
 
         std::string m_docComment;
         bool m_document = false;

@@ -187,8 +187,8 @@ std::optional<double> Lexer::parseFloatingPoint(std::string_view literal, const 
 
 std::optional<Token::Literal> Lexer::parseIntegerLiteral(std::string_view literal) {
     // parse a c like numeric literal
-    const bool floatSuffix = hlp::string_ends_with_one_of(literal, { "f", "F", "d", "D" });
-    const bool unsignedSuffix = hlp::string_ends_with_one_of(literal, { "u", "U" });
+    const bool floatSuffix = hlp::stringEndsWithOneOf(literal, { "f", "F", "d", "D" });
+    const bool unsignedSuffix = hlp::stringEndsWithOneOf(literal, { "u", "U" });
     const bool isFloat = literal.find('.') != std::string_view::npos
                    || (!literal.starts_with("0x") && floatSuffix);
     const bool isUnsigned = unsignedSuffix;
@@ -350,7 +350,7 @@ void Lexer::addToken(const Token &token) {
     m_tokens.emplace_back(token);
 }
 
-CompileResult<std::vector<Token>> Lexer::lex(api::Source* source) {
+hlp::CompileResult<std::vector<Token>> Lexer::lex(const api::Source *source) {
     this->m_sourceCode = source->content;
     this->m_source = source;
     this->m_cursor = 0;

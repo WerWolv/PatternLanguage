@@ -59,20 +59,20 @@ int runTests(int argc, char **argv) {
         fmt::print("{}\n", message);
     });
 
-    runtime.addSource(R"(
+    (void)runtime.addVirtualSource(R"(
         #include <B>
         #include <C>
 
         fn a() {};
     )", "A");
 
-    runtime.addSource(R"(
+    (void)runtime.addVirtualSource(R"(
         #include <C>
 
         fn b() {};
     )", "B");
 
-    runtime.addSource(R"(
+    (void)runtime.addVirtualSource(R"(
         #pragma once
 
         fn c() {};

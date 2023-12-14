@@ -12,6 +12,8 @@
 #include <pl/core/ast/ast_node_attribute.hpp>
 #include <pl/core/ast/ast_node_type_decl.hpp>
 
+#include <pl/core/errors/result.hpp>
+
 #include <fmt/format.h>
 
 #include <functional>
@@ -29,7 +31,7 @@ namespace pl::core {
         explicit Parser() = default;
         ~Parser() override = default;
 
-        CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> parse(const std::vector<Token> &tokens);
+        hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> parse(const std::vector<Token> &tokens);
 
         const auto &getTypes() { return this->m_types; }
 

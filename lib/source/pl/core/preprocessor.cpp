@@ -207,12 +207,12 @@ namespace pl::core {
         if (this->m_onceIncludedFiles.contains(includePath))
             return;
 
-        if(m_resolver == nullptr) {
+        if(!m_resolver) {
             errorDesc("Unable to lookup results", "No include resolver was set.");
             return;
         }
 
-        auto [resolved, error] = this->m_resolver->resolve(includePath);
+        auto [resolved, error] = this->m_resolver(includePath);
 
         if(!resolved.has_value()) {
             for (const auto &item: error) {
@@ -226,7 +226,7 @@ namespace pl::core {
 
         auto result = preprocessor.preprocess(m_runtime, resolved.value(), false);
 
-        if (result.has_errs()) {
+        if (result.hasErrs()) {
             for (auto &item: result.errs) {
                 this->error(item);
             }
@@ -319,7 +319,7 @@ namespace pl::core {
         }
     }
 
-    CompileResult<std::string> Preprocessor::preprocess(PatternLanguage* runtime, api::Source* source, bool initialRun) {
+    hlp::CompileResult<std::string> Preprocessor::preprocess(PatternLanguage* runtime, api::Source* source, bool initialRun) {
         m_offset      = 0;
         m_lineNumber  = 1;
         m_code        = source->content;
