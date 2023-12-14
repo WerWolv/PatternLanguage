@@ -78,6 +78,7 @@ namespace pl::lib::libstd {
         runtime.addPragma("bitfield_order", [](pl::PatternLanguage &runtime, const std::string &) -> bool {
             runtime.getInternals().preprocessor->errorDesc("Pragma 'bitfield_order' is unsupported.",
                  "Bitfield order can be overridden on a field declaration with the `be` or `le` keywords.");
+            return false;
         });
 
 
