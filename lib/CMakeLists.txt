@@ -32,7 +32,6 @@ add_library(libpl ${LIBRARY_TYPE}
         source/pl/core/ast/ast_node_function_definition.cpp
         source/pl/core/ast/ast_node_literal.cpp
         source/pl/core/ast/ast_node_lvalue_assignment.cpp
-        source/pl/core/ast/ast_node_import_statement.cpp
         source/pl/core/ast/ast_node_match_statement.cpp
         source/pl/core/ast/ast_node_mathematical_expression.cpp
         source/pl/core/ast/ast_node_multi_variable_decl.cpp
