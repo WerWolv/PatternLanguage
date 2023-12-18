@@ -364,7 +364,7 @@ namespace pl {
         std::optional<core::err::PatternLanguageError> m_currError;
 
         core::Resolver m_resolvers;
-        core::FileResolver m_fileResolver;
+        core::resolvers::FileResolver m_fileResolver;
         core::ParserManager m_parserManager;
 
         std::map<u64, std::vector<std::shared_ptr<ptrn::Pattern>>> m_patterns;

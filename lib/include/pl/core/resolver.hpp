@@ -10,18 +10,18 @@ namespace pl::core {
 
     class Resolver {
 
-        using result = hlp::Result<api::Source*, std::string>;
+        using Result = hlp::Result<api::Source*, std::string>;
 
     public:
         Resolver() = default;
 
-        result resolve(const std::string& path) const;
+        Result resolve(const std::string &path) const;
 
-        void registerProtocol(const std::string& protocol, const SourceResolver& resolver) const {
+        void registerProtocol(const std::string &protocol, const SourceResolver &resolver) const {
             m_protocolResolvers[protocol] = resolver;
         }
 
-        void setDefaultResolver(const SourceResolver& resolver) const {
+        void setDefaultResolver(const SourceResolver &resolver) const {
             m_defaultResolver = resolver;
         }
 

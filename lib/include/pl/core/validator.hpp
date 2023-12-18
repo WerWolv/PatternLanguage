@@ -17,10 +17,11 @@ namespace pl::core {
     namespace ast { class ASTNode; }
 
     class Validator : err::ErrorCollector {
+        using Result = hlp::CompileResult<bool>;
     public:
         Validator() = default;
 
-        hlp::CompileResult<bool> validate(const std::vector<std::shared_ptr<ast::ASTNode>> &ast);
+        Result validate(const std::vector<std::shared_ptr<ast::ASTNode>> &ast);
 
         void setRecursionDepth(const u32 limit) {
             this->m_maxRecursionDepth = limit;

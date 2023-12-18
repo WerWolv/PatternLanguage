@@ -13,29 +13,29 @@ namespace pl::core::err {
 
     namespace impl {
         std::string formatRuntimeError(
-                const Location& location,
+                const Location &location,
                 char prefix,
-                const std::string& title,
-                const std::string& description,
-                const std::string& hint);
+                const std::string &title,
+                const std::string &description,
+                const std::string &hint);
 
         std::string formatRuntimeErrorShort(
                 char prefix,
-                const std::string& title,
-                const std::string& description);
+                const std::string &title,
+                const std::string &description);
 
         std::string formatCompilerError(
-            const Location&location,
-            const std::string& message,
-            const std::string& description,
-            const std::vector<Location>& trace);
+            const Location &location,
+            const std::string &message,
+            const std::string &description,
+            const std::vector<Location> &trace);
     }
 
     template<typename T = void>
     class UserData {
     public:
         UserData() = default;
-        UserData(const T& userData) : m_userData(userData) { }
+        UserData(const T &userData) : m_userData(userData) { }
         UserData(const UserData& ) = default;
 
         const T& getUserData() const { return this->m_userData; }
@@ -87,11 +87,11 @@ namespace pl::core::err {
 
         }
 
-        [[nodiscard]] std::string format(const std::string& description, const std::string& hint = { }, UserData<T> userData = { }) const {
+        [[nodiscard]] std::string format(const std::string &description, const std::string &hint = { }, UserData<T> userData = { }) const {
             return Exception(this->m_prefix, this->m_errorCode, this->m_title, description, hint, userData).what();
         }
 
-        [[noreturn]] void throwError(const std::string& description, const std::string& hint = { }, UserData<T> userData = { }) const {
+        [[noreturn]] void throwError(const std::string &description, const std::string &hint = { }, UserData<T> userData = { }) const {
             throw Exception(this->m_prefix, this->m_errorCode, this->m_title, description, hint, userData);
         }
 
@@ -138,16 +138,16 @@ namespace pl::core::err {
             this->m_errors.emplace_back(fmt::format(fmt, std::forward<Args>(args)...), location());
         }
 
-        void error(const std::string& message) {
+        void error(const std::string &message) {
             this->m_errors.emplace_back(message, location());
         }
 
-        void errorDesc(const std::string& message, const std::string& description) {
+        void errorDesc(const std::string &message, const std::string &description) {
             this->m_errors.emplace_back(message, description, location());
         }
 
         template<typename... Args>
-        void errorDesc(const fmt::format_string<Args...>& message, const std::string& description, Args&&... args) {
+        void errorDesc(const fmt::format_string<Args...>& message, const std::string &description, Args&&... args) {
             this->m_errors.emplace_back(fmt::format(message, std::forward<Args>(args)...), description, location());
         }
 
@@ -156,11 +156,11 @@ namespace pl::core::err {
             this->m_errors.push_back(std::move(error));
         }
 
-        void errorAt(const Location& location, const std::string& message) {
+        void errorAt(const Location& location, const std::string &message) {
             this->m_errors.emplace_back(message, location);
         }
 
-        void errorAtDesc(const Location& location, const std::string& message, const std::string& description) {
+        void errorAtDesc(const Location& location, const std::string &message, const std::string &description) {
             this->m_errors.emplace_back(message, description, location);
         }
 
