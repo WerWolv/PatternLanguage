@@ -7,10 +7,10 @@ namespace pl::core::ast { class ASTNode; }
 namespace pl::core::err {
 
     namespace {
-        class EvaluatorError : public Error<const ast::ASTNode *> {
+        class EvaluatorError : public RuntimeError<const ast::ASTNode *> {
         public:
             EvaluatorError(u32 errorCode, std::string title) noexcept :
-                    Error('E', errorCode, std::move(title)) { }
+                    RuntimeError('E', errorCode, std::move(title)) { }
         };
     }
 

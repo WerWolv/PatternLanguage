@@ -6,6 +6,8 @@
 #include <pl/core/validator.hpp>
 #include <pl/core/evaluator.hpp>
 #include <pl/core/errors/error.hpp>
+#include <pl/core/resolver.hpp>
+#include <pl/core/resolvers.hpp>
 
 #include <pl/patterns/pattern.hpp>
 
@@ -17,7 +19,7 @@
 
 namespace pl {
 
-    PatternLanguage::PatternLanguage(bool addLibStd) : m_internals() {
+    PatternLanguage::PatternLanguage(const bool addLibStd) {
         this->m_internals = {
             .preprocessor   = std::make_unique<core::Preprocessor>(),
             .lexer          = std::make_unique<core::Lexer>(),
@@ -28,6 +30,18 @@ namespace pl {
 
         if (addLibStd)
             lib::libstd::registerFunctions(*this);
+
+        this->m_resolvers.setDefaultResolver([this](const std::string& path) {
+            return this->m_fileResolver.resolve(path);
+        });
+
+        auto resolver = [this](const std::string& path) {
+            return this->m_resolvers.resolve(path);
+        };
+
+        this->m_internals.preprocessor->setResolver(resolver);
+
+        this->m_parserManager.setResolver(resolver);
     }
 
     PatternLanguage::~PatternLanguage() {
@@ -47,45 +61,51 @@ namespace pl {
         this->m_running.exchange(other.m_running.load());
     }
 
-    std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> PatternLanguage::parseString(const std::string &code) {
-        auto preprocessedCode = this->m_internals.preprocessor->preprocess(*this, code);
-        if (!preprocessedCode.has_value()) {
-            this->m_currError = this->m_internals.preprocessor->getError();
+    std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> PatternLanguage::parseString(const std::string &code, const std::string &source) {
+        auto internalSource = std::make_unique<api::Source>(code, source);
+
+        auto [preprocessedCode, preprocessorErrors] = this->m_internals.preprocessor->preprocess(this, internalSource.get());
+        if (!preprocessorErrors.empty()) {
+            this->m_compileErrors = std::move(preprocessorErrors);
             return std::nullopt;
         }
 
-        auto tokens = this->m_internals.lexer->lex(code, preprocessedCode.value());
-        if (!tokens.has_value()) {
-            this->m_currError = this->m_internals.lexer->getError();
+        internalSource->content = std::move(preprocessedCode.value()); // update source object with preprocessed code
+
+        auto [tokens, lexerErrors] = this->m_internals.lexer->lex(internalSource.get());
+
+        if (!lexerErrors.empty()) {
+            this->m_compileErrors = std::move(lexerErrors);
             return std::nullopt;
         }
 
-        auto ast = this->m_internals.parser->parse(code, tokens.value());
-        if (!ast.has_value()) {
-            this->m_currError = this->m_internals.parser->getError();
+        auto [ast, parserErrors] = this->m_internals.parser->parse(tokens.value());
+        if (!parserErrors.empty()) {
+            this->m_compileErrors = std::move(parserErrors);
             return std::nullopt;
         }
 
-        if (!this->m_internals.validator->validate(code, *ast, true, true)) {
-            this->m_currError = this->m_internals.validator->getError();
-
+        auto [validated, validatorErrors] = this->m_internals.validator->validate(*ast);
+        wolv::util::unused(validated);
+        if (!validatorErrors.empty()) {
+            this->m_compileErrors = std::move(validatorErrors);
             return std::nullopt;
         }
 
         return ast;
     }
 
-    bool PatternLanguage::executeString(std::string code, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
-        auto startTime = std::chrono::high_resolution_clock::now();
+    bool PatternLanguage::executeString(std::string code, const std::string& source, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
+        const auto startTime = std::chrono::high_resolution_clock::now();
         ON_SCOPE_EXIT {
-            auto endTime = std::chrono::high_resolution_clock::now();
+            const auto endTime = std::chrono::high_resolution_clock::now();
             this->m_runningTime = std::chrono::duration_cast<std::chrono::duration<double>>(endTime - startTime).count();
         };
 
         code = wolv::util::replaceStrings(code, "\r\n", "\n");
         code = wolv::util::replaceStrings(code, "\t", "    ");
 
-        auto &evaluator = this->m_internals.evaluator;
+        const auto &evaluator = this->m_internals.evaluator;
 
         this->m_running = true;
         this->m_aborted = false;
@@ -93,6 +113,10 @@ namespace pl {
         ON_SCOPE_EXIT { this->m_running = false; };
 
         ON_SCOPE_EXIT {
+            for (const auto &error: this->m_compileErrors) {
+                evaluator->getConsole().log(core::LogConsole::Level::Error, error.format());
+            }
+
             if (this->m_currError.has_value()) {
                 const auto &error = this->m_currError.value();
 
@@ -109,7 +133,7 @@ namespace pl {
         for (const auto &[name, value] : envVars)
             evaluator->setEnvVariable(name, value);
 
-        auto ast = this->parseString(code);
+        auto ast = this->parseString(code, source);
         if (!ast.has_value())
             return false;
 
@@ -117,7 +141,7 @@ namespace pl {
 
         evaluator->setReadOffset(this->m_startAddress.value_or(evaluator->getDataBaseAddress()));
 
-        if (!evaluator->evaluate(code, this->m_currAST)) {
+        if (!evaluator->evaluate(this->m_currAST)) {
             this->m_currError = evaluator->getConsole().getLastHardError();
             return false;
         }
@@ -151,17 +175,21 @@ namespace pl {
         if (!file.isValid())
             return false;
 
-        return this->executeString(file.readString(), envVars, inVariables, checkResult);
+        return this->executeString(file.readString(), path.string(), envVars, inVariables, checkResult);
     }
 
     std::pair<bool, std::optional<core::Token::Literal>> PatternLanguage::executeFunction(const std::string &code) {
 
-        auto functionContent = fmt::format("fn main() {{ {0} }};", code);
+        const auto functionContent = fmt::format("fn main() {{ {0} }};", code);
 
-        auto success = this->executeString(functionContent, {}, {}, false);
+        auto success = this->executeString(functionContent, api::Source::DefaultSource, {}, {}, false);
         auto result  = this->m_internals.evaluator->getMainResult();
 
         return { success, std::move(result) };
+    }
+
+    api::Source* PatternLanguage::addVirtualSource(const std::string &code, const std::string &source) const {
+        return this->m_fileResolver.addVirtualFile(code, source);
     }
 
     void PatternLanguage::abort() {
@@ -169,8 +197,12 @@ namespace pl {
         this->m_aborted = true;
     }
 
-    void PatternLanguage::setIncludePaths(std::vector<std::fs::path> paths) const {
-        this->m_internals.preprocessor->setIncludePaths(std::move(paths));
+    void PatternLanguage::setIncludePaths(const std::vector<std::fs::path>& paths) const {
+        this->m_fileResolver.setIncludePaths(paths);
+    }
+
+    void PatternLanguage::setResolver(const core::Resolver& resolver) {
+        this->m_resolvers = resolver;
     }
 
     void PatternLanguage::addPragma(const std::string &name, const api::PragmaHandler &callback) const {
@@ -226,13 +258,18 @@ namespace pl {
     }
 
 
-    void PatternLanguage::setLogCallback(const core::LogConsole::Callback &callback) {
+    void PatternLanguage::setLogCallback(const core::LogConsole::Callback &callback) const {
         this->m_internals.evaluator->getConsole().setLogCallback(callback);
     }
 
     const std::optional<core::err::PatternLanguageError> &PatternLanguage::getError() const {
         return this->m_currError;
     }
+
+    const std::vector<core::err::CompileError>& PatternLanguage::getCompileErrors() const {
+        return this->m_compileErrors;
+    }
+
 
     u32 PatternLanguage::getCreatedPatternCount() const {
         return this->m_internals.evaluator->getPatternCount();
@@ -268,6 +305,7 @@ namespace pl {
         this->m_flattenedPatterns.clear();
 
         this->m_currError.reset();
+        this->m_compileErrors.clear();
         this->m_internals.validator->setRecursionDepth(32);
 
         this->m_internals.evaluator->getConsole().clear();

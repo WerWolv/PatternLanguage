@@ -3,6 +3,8 @@
 #include <wolv/io/file.hpp>
 
 #include <fmt/format.h>
+#include <pl/helpers/utils.hpp>
+#include <wolv/utils/string.hpp>
 
 namespace pl::cli {
 
@@ -31,7 +33,7 @@ namespace pl::cli {
         });
 
         // Execute pattern file
-        if (!runtime.executeString(patternFile.readString())) {
+        if (!runtime.executeString(patternFile.readString(), wolv::util::toUTF8String(patternFile.getPath()))) {
             auto error = runtime.getError().value();
             fmt::print("Pattern Error: {}:{} -> {}\n", error.line, error.column, error.message);
             std::exit(EXIT_FAILURE);

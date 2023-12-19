@@ -1,10 +1,10 @@
 #pragma once
 
 #include <pl/core/token.hpp>
-#include <pl/core/errors/evaluator_errors.hpp>
-#include <pl/helpers/concepts.hpp>
+#include <pl/core/location.hpp>
 
-#include <wolv/utils/guards.hpp>
+#include <pl/core/errors/runtime_errors.hpp>
+#include <pl/helpers/concepts.hpp>
 
 #include <optional>
 #include <string>
@@ -22,9 +22,8 @@ namespace pl::core::ast {
         constexpr virtual ~ASTNode() = default;
         constexpr ASTNode(const ASTNode &) = default;
 
-        [[nodiscard]] u32 getLine() const;
-        [[nodiscard]] u32 getColumn() const;
-        [[maybe_unused]] void setSourceLocation(u32 line, u32 column);
+        [[nodiscard]] const Location& getLocation() const;
+        void setLocation(const Location &location);
 
         [[nodiscard]] virtual std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const;
         [[nodiscard]] virtual std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const;
@@ -36,8 +35,7 @@ namespace pl::core::ast {
         [[nodiscard]] bool shouldDocument() const;
 
     private:
-        u32 m_line = 1;
-        u32 m_column = 1;
+        Location m_location = Location::Empty();
 
         std::string m_docComment;
         bool m_document = false;

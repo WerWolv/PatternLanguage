@@ -5,6 +5,8 @@ project(pattern_language_tests)
 
 # Add new tests here #
 set(AVAILABLE_TESTS
+        DocComments
+        Strings
         Placement
         Structs
         Unions
@@ -19,6 +21,7 @@ set(AVAILABLE_TESTS
         Math
         RValues
         Namespaces
+        Include
         ExtraSemicolon
         Pointers
         Arrays

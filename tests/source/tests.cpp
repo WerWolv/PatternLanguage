@@ -19,6 +19,9 @@
 #include "test_patterns/test_pattern_nested_structs.hpp"
 #include "test_patterns/test_pattern_attributes.hpp"
 #include "test_patterns/test_pattern_struct_inheritance.hpp"
+#include "test_patterns/test_pattern_doc_comments.hpp"
+#include "test_patterns/test_pattern_strings.hpp"
+#include "test_patterns/test_pattern_include.hpp"
 
 std::array Tests = {
     TEST(Placement),
@@ -27,6 +30,8 @@ std::array Tests = {
     TEST(Enums),
     TEST(Literals),
     TEST(Padding),
+    TEST(DocComments),
+    TEST(Strings),
     TEST(SucceedingAssert),
     TEST(FailingAssert),
     TEST(Bitfields),
@@ -35,6 +40,7 @@ std::array Tests = {
     TEST(Matching),
     TEST(RValues),
     TEST(Namespaces),
+    TEST(Include),
     TEST(ExtraSemicolon),
     TEST(Pointers),
     TEST(Arrays),
