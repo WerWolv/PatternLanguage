@@ -70,6 +70,14 @@ namespace pl {
         };
 
         /**
+        * @brief Lexes a pattern language code string and returns the generated tokens
+        * @param code Code to parse
+        * @param source Source of the code
+        * @return Generated Tokens
+        */
+        [[nodiscard]] std::optional<std::vector<pl::core::Token>> lexString(const std::string &code, const std::string &source);
+
+        /**
          * @brief Parses a pattern language code string and returns the generated AST
          * @param code Code to parse
          * @param source Source of the code

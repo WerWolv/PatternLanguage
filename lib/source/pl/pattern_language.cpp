@@ -18,7 +18,6 @@
 #include <wolv/utils/string.hpp>
 
 namespace pl {
-
     PatternLanguage::PatternLanguage(const bool addLibStd) {
         this->m_internals = {
             .preprocessor   = std::make_unique<core::Preprocessor>(),
@@ -61,7 +60,7 @@ namespace pl {
         this->m_running.exchange(other.m_running.load());
     }
 
-    std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> PatternLanguage::parseString(const std::string &code, const std::string &source) {
+    [[nodiscard]] std::optional<std::vector<pl::core::Token>> PatternLanguage::lexString(const std::string &code, const std::string &source) {
         auto internalSource = std::make_unique<api::Source>(code, source);
 
         auto [preprocessedCode, preprocessorErrors] = this->m_internals.preprocessor->preprocess(this, internalSource.get());
@@ -78,6 +77,12 @@ namespace pl {
             this->m_compileErrors = std::move(lexerErrors);
             return std::nullopt;
         }
+
+        return tokens;
+    }
+
+    std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> PatternLanguage::parseString(const std::string &code, const std::string &source) {
+        auto tokens = this->lexString(code, source);
 
         auto [ast, parserErrors] = this->m_internals.parser->parse(tokens.value());
         if (!parserErrors.empty()) {
