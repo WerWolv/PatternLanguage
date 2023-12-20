@@ -48,7 +48,6 @@ namespace pl::core {
         }
 
     private:
-        std::optional<err::PatternLanguageError> m_error;
         TokenIter m_curr;
         TokenIter m_startToken, m_originalPosition, m_partOriginalPosition;
 
@@ -65,6 +64,17 @@ namespace pl::core {
         ParserManager* m_parserManager = nullptr;
 
         Location location() override;
+        // error helpers
+        void errorHere(const std::string &message);
+        template <typename... Args>
+        void errorHere(const fmt::format_string<Args...> &fmt, Args&&... args) {
+            errorHere(fmt::format(fmt, std::forward<Args>(args)...));
+        }
+        void errorDescHere(const std::string &message, const std::string &description);
+        template <typename... Args>
+        void errorDescHere(const fmt::format_string<Args...> &fmt, const std::string &description, Args&&... args) {
+            errorDescHere(fmt::format(fmt, std::forward<Args>(args)...), description);
+        }
 
         void addGlobalDocComment(const std::string &comment) {
             this->m_globalDocComments.push_back(comment);

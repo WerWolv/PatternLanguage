@@ -637,7 +637,7 @@ namespace pl::core {
             auto lhs = parseRValue();
 
             if (!sequence(tkn::Operator::Assign)) {
-                error("Expected value after '=' in variable assignment, got {}.", getFormattedToken(0));
+                errorHere("Expected value after '=' in variable assignment, got {}.", getFormattedToken(0));
                 return nullptr;
             }
 
@@ -660,7 +660,7 @@ namespace pl::core {
         } else if (sequence(tkn::Keyword::Const)) {
             statement = parseFunctionVariableDecl(true);
         } else {
-            error("Invalid function statement.");
+            errorHere("Invalid function statement.");
             return nullptr;
         }
 
@@ -1058,6 +1058,9 @@ namespace pl::core {
             return nullptr;
         }
 
+        if (result == nullptr)
+            return nullptr;
+
         result->setReference(reference);
         if (endian.has_value())
             result->setEndian(endian.value());
@@ -1323,7 +1326,7 @@ namespace pl::core {
         else if (oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue))
             member = parseFunctionControlFlowStatement();
         else {
-            error("Invalid struct member definition.");
+            errorHere("Invalid struct member definition.");
             return nullptr;
         }
 
@@ -1790,7 +1793,7 @@ namespace pl::core {
         if (sequence(tkn::Operator::Star, tkn::Literal::Identifier, tkn::Separator::LeftBracket))
             return parsePointerArrayVariablePlacement(std::move(type));
 
-        error("Invalid placement syntax.");
+        errorHere("Invalid placement syntax.");
         return nullptr;
     }
 
@@ -1935,7 +1938,7 @@ namespace pl::core {
                     if (this->m_ignoreDocsCount != 0)
                         this->m_ignoreDocsCount -= 1;
 
-                    error("Unmatched DOCS IGNORE OFF without previous DOCS IGNORE ON");
+                    errorHere("Unmatched DOCS IGNORE OFF without previous DOCS IGNORE ON");
                     return std::nullopt;
                 }
 
@@ -1974,16 +1977,27 @@ namespace pl::core {
             for (const auto &type : this->m_types)
                 type.second->setCompleted();
 
-            return { program, {} };
+            return { program, this->collectErrors() };
         }
 
-        errorDesc("Failed to parse entire input.", "Parsing stopped due to an invalid sequence before the entire input could be parsed. This is most likely a bug.");
+        errorDescHere("Failed to parse entire input.", "Parsing stopped due to an invalid sequence before the entire input could be parsed. This is most likely a bug.");
         return { std::nullopt, this->collectErrors() };
     }
 
     Location Parser::location() {
-        return this->m_curr->location;
+        // get location of previous token
+        return this->m_curr == this->m_startToken ? this->m_startToken->location : this->m_curr[-1].location;
     }
+
+    void Parser::errorHere(const std::string &message) {
+        errorAt(m_curr->location, message);
+    }
+
+    void Parser::errorDescHere(const std::string &message, const std::string &description) {
+        errorAtDesc(m_curr->location, message, description);
+    }
+
+
 
 
 }

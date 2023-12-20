@@ -61,9 +61,9 @@ namespace pl {
     }
 
     [[nodiscard]] std::optional<std::vector<pl::core::Token>> PatternLanguage::lexString(const std::string &code, const std::string &source) {
-        auto internalSource = std::make_unique<api::Source>(code, source);
+        auto internalSource = addVirtualSource(code, source); // add virtual source to file resolver
 
-        auto [preprocessedCode, preprocessorErrors] = this->m_internals.preprocessor->preprocess(this, internalSource.get());
+        auto [preprocessedCode, preprocessorErrors] = this->m_internals.preprocessor->preprocess(this, internalSource);
         if (!preprocessorErrors.empty()) {
             this->m_compileErrors = std::move(preprocessorErrors);
             return std::nullopt;
@@ -71,7 +71,7 @@ namespace pl {
 
         internalSource->content = std::move(preprocessedCode.value()); // update source object with preprocessed code
 
-        auto [tokens, lexerErrors] = this->m_internals.lexer->lex(internalSource.get());
+        auto [tokens, lexerErrors] = this->m_internals.lexer->lex(internalSource);
 
         if (!lexerErrors.empty()) {
             this->m_compileErrors = std::move(lexerErrors);
