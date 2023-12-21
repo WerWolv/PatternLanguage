@@ -320,6 +320,7 @@ namespace pl::core {
     }
 
     hlp::CompileResult<std::string> Preprocessor::preprocess(PatternLanguage* runtime, api::Source* source, bool initialRun) {
+        m_startOfLine = true;
         m_offset      = 0;
         m_lineNumber  = 1;
         m_code        = source->content;

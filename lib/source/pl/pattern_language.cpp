@@ -30,17 +30,7 @@ namespace pl {
         if (addLibStd)
             lib::libstd::registerFunctions(*this);
 
-        this->m_resolvers.setDefaultResolver([this](const std::string& path) {
-            return this->m_fileResolver.resolve(path);
-        });
-
-        auto resolver = [this](const std::string& path) {
-            return this->m_resolvers.resolve(path);
-        };
-
-        this->m_internals.preprocessor->setResolver(resolver);
-
-        this->m_parserManager.setResolver(resolver);
+        this->reset();
     }
 
     PatternLanguage::~PatternLanguage() {
@@ -61,6 +51,8 @@ namespace pl {
     }
 
     [[nodiscard]] std::optional<std::vector<pl::core::Token>> PatternLanguage::lexString(const std::string &code, const std::string &source) {
+        this->reset();
+
         auto internalSource = addVirtualSource(code, source); // add virtual source to file resolver
 
         auto [preprocessedCode, preprocessorErrors] = this->m_internals.preprocessor->preprocess(this, internalSource);
@@ -135,7 +127,6 @@ namespace pl {
                 cleanupCallback(*this);
         };
 
-        this->reset();
         evaluator->setInVariables(inVariables);
 
         for (const auto &[name, value] : envVars)
@@ -324,6 +315,17 @@ namespace pl {
         this->m_internals.evaluator->setLoopLimit(0x1000);
         this->m_internals.evaluator->setDebugMode(false);
         this->m_patternsValid = false;
+
+        this->m_resolvers.setDefaultResolver([this](const std::string& path) {
+            return this->m_fileResolver.resolve(path);
+        });
+
+        auto resolver = [this](const std::string& path) {
+            return this->m_resolvers.resolve(path);
+        };
+
+        this->m_internals.preprocessor->setResolver(resolver);
+        this->m_parserManager.setResolver(resolver);
     }
 
 
