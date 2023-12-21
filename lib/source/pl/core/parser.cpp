@@ -1937,8 +1937,9 @@ namespace pl::core {
                 if (trimmed.starts_with("DOCS IGNORE OFF")) {
                     if (this->m_ignoreDocsCount != 0)
                         this->m_ignoreDocsCount -= 1;
+                    else
+                        errorHere("Unmatched DOCS IGNORE OFF without previous DOCS IGNORE ON");
 
-                    errorHere("Unmatched DOCS IGNORE OFF without previous DOCS IGNORE ON");
                     return std::nullopt;
                 }
 
