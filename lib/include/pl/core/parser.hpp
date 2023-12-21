@@ -49,7 +49,7 @@ namespace pl::core {
 
     private:
         TokenIter m_curr;
-        TokenIter m_startToken, m_originalPosition, m_partOriginalPosition;
+        TokenIter m_startToken, m_endToken, m_originalPosition, m_partOriginalPosition;
 
         std::vector<std::shared_ptr<ast::ASTNodeTypeDecl>> m_currTemplateType;
         std::map<std::string, std::shared_ptr<ast::ASTNodeTypeDecl>> m_types;
@@ -124,6 +124,13 @@ namespace pl::core {
             }
 
             return result;
+        }
+
+        void next() {
+            if (this->m_curr == this->m_endToken)
+                throw std::runtime_error("End of tokens reached");
+
+            ++this->m_curr;
         }
 
         std::vector<std::unique_ptr<ast::ASTNode>> parseParameters();
@@ -207,18 +214,18 @@ namespace pl::core {
                     program.push_back(std::move(statement));
             }
 
-            ++this->m_curr;
+            this->next();
 
             return program;
         }
 
         /* Token consuming */
 
-        enum class Setting
-        {
+        enum class Setting {
+            Normal = 0,
+            Not = 1
         };
-        constexpr static auto Normal = static_cast<Setting>(0);
-        constexpr static auto Not    = static_cast<Setting>(1);
+        using enum Parser::Setting;
 
         bool begin() {
             this->m_originalPosition = this->m_curr;
@@ -264,13 +271,13 @@ namespace pl::core {
                     return false;
                 }
 
-                ++this->m_curr;
+                this->next();
                 return true;
             } else if constexpr (S == Not) {
                 if (!peek(token))
                     return true;
 
-                ++this->m_curr;
+                this->next();
                 partReset();
                 return false;
             } else
@@ -296,14 +303,14 @@ namespace pl::core {
                     return false;
                 }
 
-                ++this->m_curr;
+                this->next();
 
                 return true;
             } else if constexpr (S == Not) {
                 if (!(... && peek(args)))
                     return true;
 
-                ++this->m_curr;
+                this->next();
 
                 partReset();
                 return false;
@@ -325,7 +332,7 @@ namespace pl::core {
                 }
             }
 
-            ++this->m_curr;
+            this->next();
 
             return true;
         }
@@ -338,7 +345,7 @@ namespace pl::core {
         bool optionalImpl(const Token &token) {
             if (peek(token)) {
                 this->m_matchedOptionals.push_back(this->m_curr);
-                ++this->m_curr;
+                this->next();
             }
 
             return true;
@@ -354,7 +361,7 @@ namespace pl::core {
                 while (this->m_curr->type == Token::Type::DocComment) {
                     if (auto docComment = parseDocComment(true); docComment.has_value())
                         this->addGlobalDocComment(docComment->comment);
-                    ++this->m_curr;
+                    this->next();
                 }
             } else {
                 while (this->m_curr->type == Token::Type::DocComment) {

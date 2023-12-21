@@ -36,7 +36,7 @@ namespace pl::api {
         std::string content;
         std::string source;
 
-        static constexpr std::string DefaultSource = "<Source Code>";
+        static constexpr auto DefaultSource = "<Source Code>";
         static constexpr Source* NoSource = nullptr;
         static constexpr Source Empty() {
             return { "", "" };

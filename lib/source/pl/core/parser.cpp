@@ -1962,6 +1962,7 @@ namespace pl::core {
     hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> Parser::parse(const std::vector<Token> &tokens) {
 
         this->m_curr = this->m_startToken = this->m_originalPosition = this->m_partOriginalPosition = tokens.begin();
+        this->m_endToken = tokens.end();
 
         this->m_types.clear();
         this->m_currTemplateType.clear();
@@ -1971,14 +1972,16 @@ namespace pl::core {
         this->m_currNamespace.clear();
         this->m_currNamespace.emplace_back();
 
-        auto program = parseTillToken(tkn::Separator::EndOfProgram);
+        try {
+            auto program = parseTillToken(tkn::Separator::EndOfProgram);
 
-        if (this->m_curr == tokens.end()) {
-            for (const auto &type : this->m_types)
-                type.second->setCompleted();
+            if (this->m_curr == tokens.end()) {
+                for (const auto &type : this->m_types)
+                    type.second->setCompleted();
 
-            return { program, this->collectErrors() };
-        }
+                return { program, this->collectErrors() };
+            }
+        } catch (const std::runtime_error&) {}
 
         errorDescHere("Failed to parse entire input.", "Parsing stopped due to an invalid sequence before the entire input could be parsed. This is most likely a bug.");
         return { std::nullopt, this->collectErrors() };
