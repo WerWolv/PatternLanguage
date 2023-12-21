@@ -41,7 +41,7 @@ namespace pl::core::err::impl {
                     }
                 }
                 errorLine = errorLine.substr(start, end - start);
-                arrowPosition = column - start - 1;
+                arrowPosition = column - start;
             }
 
             result += fmt::format("{}{}\n", lineNumberPrefix, errorLine);
