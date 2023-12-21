@@ -83,6 +83,9 @@ namespace pl {
 
     std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> PatternLanguage::parseString(const std::string &code, const std::string &source) {
         auto tokens = this->lexString(code, source);
+        if (!tokens.has_value()) {
+            return std::nullopt;
+        }
 
         auto [ast, parserErrors] = this->m_internals.parser->parse(tokens.value());
         if (!parserErrors.empty()) {
