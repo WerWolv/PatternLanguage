@@ -24,7 +24,7 @@ namespace pl::core::err::impl {
         if (location.line < lines.size() + 1) {
             const auto lineNumberPrefix = fmt::format("{} | ", location.line);
             auto errorLine = wolv::util::replaceStrings(lines[location.line - 1], "\r", "");
-            u32 arrowPosition = location.column;
+            u32 arrowPosition = location.column - 1;
 
             // Trim to size
             if (errorLine.length() > 40) { // shrink to [column - 20; column + 20]

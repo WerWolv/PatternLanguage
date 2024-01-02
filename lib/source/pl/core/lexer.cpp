@@ -508,6 +508,10 @@ namespace pl::core {
     }
 
     inline Location Lexer::location() {
-        return Location { m_source, m_line, u32(m_cursor - m_lineBegin), 0 };
+        u32 column = m_cursor - m_lineBegin;
+        if(column == 0) {
+            column = 1;
+        }
+        return Location { m_source, m_line, column, 0 };
     }
 }
