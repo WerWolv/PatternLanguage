@@ -48,29 +48,29 @@ namespace pl::hlp {
             return *this;
         }
 
-        Reference operator[](size_t index) const {
+        Reference operator[](DifferenceType index) const {
             checkRange(index + 1);
             return m_start[index];
         }
 
-        SafeIterator& operator+=(size_t index) {
+        SafeIterator& operator+=(DifferenceType index) {
             checkRange(index);
             m_start += index;
             return *this;
         }
 
-        SafeIterator& operator-=(size_t index) {
+        SafeIterator& operator-=(DifferenceType index) {
             checkRange(index);
             m_start -= index;
             return *this;
         }
 
-        SafeIterator operator+(size_t index) const {
+        SafeIterator operator+(DifferenceType index) const {
             checkRange(index);
             return SafeIterator(m_start + index, m_end);
         }
 
-        SafeIterator operator-(size_t index) const {
+        SafeIterator operator-(DifferenceType index) const {
             checkRange(index);
             return SafeIterator(m_start - index, m_end);
         }
