@@ -2,6 +2,8 @@
 
 #include <stdexcept>
 
+#include <utility>
+
 namespace pl::hlp {
 
     template <typename Iter>
@@ -79,8 +81,8 @@ namespace pl::hlp {
             return m_start == other.m_start;
         }
 
-        std::strong_ordering operator<=>(const SafeIterator& other) const {
-            return m_start <=> other.m_start;
+        bool operator>(const SafeIterator& other) const {
+            return m_start > other.m_start;
         }
 
         // helpers

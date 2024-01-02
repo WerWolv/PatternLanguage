@@ -507,7 +507,7 @@ namespace pl::core {
         return false;
     }
 
-    inline Location Lexer::location() {
+    Location Lexer::location() {
         u32 column = m_cursor - m_lineBegin;
         if(column == 0) {
             column = 1;
