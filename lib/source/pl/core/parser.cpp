@@ -32,6 +32,7 @@
 #include <pl/core/ast/ast_node_variable_decl.hpp>
 #include <pl/core/ast/ast_node_while_statement.hpp>
 
+#include <stdexcept>
 #include <wolv/utils/string.hpp>
 
 #include <optional>
@@ -485,7 +486,6 @@ namespace pl::core {
                 std::vector<std::unique_ptr<ast::ASTNode>> args;
                 do {
                     args.push_back(parseMathematicalExpression());
-                    if (hasErrors()) break;
                 } while (sequence(tkn::Separator::Comma));
 
                 if (!sequence(tkn::Separator::RightParenthesis)) {
@@ -496,8 +496,6 @@ namespace pl::core {
                 currNode->addAttribute(create<ast::ASTNodeAttribute>(attribute, std::move(args)));
             } else
                 currNode->addAttribute(create<ast::ASTNodeAttribute>(attribute));
-
-            if (hasErrors()) break;
         } while (sequence(tkn::Separator::Comma));
 
         if (!sequence(tkn::Separator::RightBracket, tkn::Separator::RightBracket))
@@ -570,7 +568,6 @@ namespace pl::core {
 
         while (!sequence(tkn::Separator::RightBrace)) {
             body.push_back(this->parseFunctionStatement());
-            if (hasErrors()) break;
         }
 
         return create<ast::ASTNodeFunctionDefinition>(getNamespacePrefixedNames(functionName).back(), std::move(params), std::move(body), parameterPack, std::move(defaultParameters));
@@ -664,6 +661,7 @@ namespace pl::core {
             statement = parseFunctionVariableDecl(true);
         } else {
             errorHere("Invalid function statement.");
+            next();
             return nullptr;
         }
 
@@ -726,8 +724,6 @@ namespace pl::core {
         if (sequence(tkn::Separator::LeftBrace)) {
             while (!sequence(tkn::Separator::RightBrace)) {
                 body.push_back(memberParser());
-
-                if (hasErrors()) break;
             }
         } else {
             body.push_back(memberParser());
@@ -928,7 +924,6 @@ namespace pl::core {
         std::vector<std::unique_ptr<ast::ASTNode>> tryBody, catchBody;
         while (!sequence(tkn::Separator::RightBrace)) {
             tryBody.emplace_back(memberParser());
-            if (hasErrors()) break;
         }
 
         if (sequence(tkn::Keyword::Catch)) {
@@ -939,7 +934,6 @@ namespace pl::core {
 
             while (!sequence(tkn::Separator::RightBrace)) {
                 catchBody.emplace_back(memberParser());
-                if (hasErrors()) break;
             }
         }
 
@@ -1334,6 +1328,7 @@ namespace pl::core {
             member = parseFunctionControlFlowStatement();
         else {
             errorHere("Invalid struct member definition.");
+            next();
             return nullptr;
         }
 
@@ -1385,7 +1380,6 @@ namespace pl::core {
 
         while (!sequence(tkn::Separator::RightBrace)) {
             structNode->addMember(parseMember());
-            if (hasErrors()) break;
         }
         this->m_currTemplateType.pop_back();
 
@@ -1409,7 +1403,6 @@ namespace pl::core {
         this->m_currTemplateType.push_back(typeDecl);
         while (!sequence(tkn::Separator::RightBrace)) {
             unionNode->addMember(parseMember());
-            if (hasErrors()) break;
         }
         this->m_currTemplateType.pop_back();
 
@@ -1607,7 +1600,6 @@ namespace pl::core {
             // Consume superfluous semicolons
             while (sequence(tkn::Separator::Semicolon))
                 ;
-            if (hasErrors()) break;
         }
 
         return typeDecl;
@@ -1784,8 +1776,6 @@ namespace pl::core {
         while (!sequence(tkn::Separator::RightBrace)) {
             auto newStatements = parseStatements();
             std::ranges::move(newStatements, std::back_inserter(statements));
-
-            if (hasErrors()) break;
         }
 
         this->m_currNamespace.pop_back();
@@ -1806,6 +1796,7 @@ namespace pl::core {
             return parsePointerArrayVariablePlacement(std::move(type));
 
         errorHere("Invalid placement syntax.");
+        next();
         return nullptr;
     }
 
@@ -1974,8 +1965,8 @@ namespace pl::core {
     // <(parseNamespace)...> EndOfProgram
     hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> Parser::parse(const std::vector<Token> &tokens) {
 
-        this->m_curr = this->m_startToken = this->m_originalPosition = this->m_partOriginalPosition = tokens.begin();
-        this->m_endToken = tokens.end();
+        this->m_curr = this->m_startToken = this->m_originalPosition = this->m_partOriginalPosition
+            = TokenIter(tokens.begin(), tokens.end());
 
         this->m_types.clear();
         this->m_currTemplateType.clear();
@@ -1987,16 +1978,12 @@ namespace pl::core {
 
         try {
             auto program = parseTillToken(tkn::Separator::EndOfProgram);
+            for (const auto &type : this->m_types)
+                type.second->setCompleted();
 
-            if (this->m_curr == tokens.end()) {
-                for (const auto &type : this->m_types)
-                    type.second->setCompleted();
+            return { program, this->collectErrors() };
+        } catch (const std::out_of_range&) { }
 
-                return { program, this->collectErrors() };
-            }
-        } catch (const std::runtime_error&) {}
-
-        errorDescHere("Failed to parse entire input.", "Parsing stopped due to an invalid sequence before the entire input could be parsed. This is most likely a bug.");
         return { std::nullopt, this->collectErrors() };
     }
 
@@ -2010,7 +1997,7 @@ namespace pl::core {
     }
 
     void Parser::errorDescHere(const std::string &message, const std::string &description) {
-        errorAtDesc(peek(tkn::Separator::EndOfProgram) ? m_curr[-1].location : m_curr->location, description, message);
+        errorAtDesc(peek(tkn::Separator::EndOfProgram) ? m_curr[-1].location : m_curr->location, message, description);
     }
 
 

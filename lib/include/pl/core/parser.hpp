@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pl/helpers/types.hpp>
+#include <pl/helpers/safe_iterator.hpp>
 
 #include <pl/core/token.hpp>
 #include <pl/core/errors/error.hpp>
@@ -26,7 +27,7 @@ namespace pl::core {
 
     class Parser : err::ErrorCollector {
     public:
-        using TokenIter = std::vector<Token>::const_iterator;
+        using TokenIter = hlp::SafeIterator<std::vector<Token>::const_iterator>;
 
         explicit Parser() = default;
         ~Parser() override = default;
@@ -49,7 +50,7 @@ namespace pl::core {
 
     private:
         TokenIter m_curr;
-        TokenIter m_startToken, m_endToken, m_originalPosition, m_partOriginalPosition;
+        TokenIter m_startToken, m_originalPosition, m_partOriginalPosition;
 
         std::vector<std::shared_ptr<ast::ASTNodeTypeDecl>> m_currTemplateType;
         std::map<std::string, std::shared_ptr<ast::ASTNodeTypeDecl>> m_types;
@@ -127,9 +128,6 @@ namespace pl::core {
         }
 
         void next() {
-            if (this->m_curr == this->m_endToken)
-                throw std::runtime_error("End of tokens reached");
-
             ++this->m_curr;
         }
 
@@ -360,9 +358,6 @@ namespace pl::core {
         }
 
         bool peek(const Token &token, const i32 index = 0) {
-            if (m_curr + index >= m_endToken)
-                return false;
-
             if (index >= 0) {
                 while (this->m_curr->type == Token::Type::DocComment) {
                     if (auto docComment = parseDocComment(true); docComment.has_value())
