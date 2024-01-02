@@ -485,6 +485,7 @@ namespace pl::core {
                 std::vector<std::unique_ptr<ast::ASTNode>> args;
                 do {
                     args.push_back(parseMathematicalExpression());
+                    if (hasErrors()) break;
                 } while (sequence(tkn::Separator::Comma));
 
                 if (!sequence(tkn::Separator::RightParenthesis)) {
@@ -496,6 +497,7 @@ namespace pl::core {
             } else
                 currNode->addAttribute(create<ast::ASTNodeAttribute>(attribute));
 
+            if (hasErrors()) break;
         } while (sequence(tkn::Separator::Comma));
 
         if (!sequence(tkn::Separator::RightBracket, tkn::Separator::RightBracket))
@@ -568,6 +570,7 @@ namespace pl::core {
 
         while (!sequence(tkn::Separator::RightBrace)) {
             body.push_back(this->parseFunctionStatement());
+            if (hasErrors()) break;
         }
 
         return create<ast::ASTNodeFunctionDefinition>(getNamespacePrefixedNames(functionName).back(), std::move(params), std::move(body), parameterPack, std::move(defaultParameters));
@@ -723,6 +726,8 @@ namespace pl::core {
         if (sequence(tkn::Separator::LeftBrace)) {
             while (!sequence(tkn::Separator::RightBrace)) {
                 body.push_back(memberParser());
+
+                if (hasErrors()) break;
             }
         } else {
             body.push_back(memberParser());
@@ -923,6 +928,7 @@ namespace pl::core {
         std::vector<std::unique_ptr<ast::ASTNode>> tryBody, catchBody;
         while (!sequence(tkn::Separator::RightBrace)) {
             tryBody.emplace_back(memberParser());
+            if (hasErrors()) break;
         }
 
         if (sequence(tkn::Keyword::Catch)) {
@@ -933,6 +939,7 @@ namespace pl::core {
 
             while (!sequence(tkn::Separator::RightBrace)) {
                 catchBody.emplace_back(memberParser());
+                if (hasErrors()) break;
             }
         }
 
@@ -1378,6 +1385,7 @@ namespace pl::core {
 
         while (!sequence(tkn::Separator::RightBrace)) {
             structNode->addMember(parseMember());
+            if (hasErrors()) break;
         }
         this->m_currTemplateType.pop_back();
 
@@ -1401,6 +1409,7 @@ namespace pl::core {
         this->m_currTemplateType.push_back(typeDecl);
         while (!sequence(tkn::Separator::RightBrace)) {
             unionNode->addMember(parseMember());
+            if (hasErrors()) break;
         }
         this->m_currTemplateType.pop_back();
 
@@ -1598,6 +1607,7 @@ namespace pl::core {
             // Consume superfluous semicolons
             while (sequence(tkn::Separator::Semicolon))
                 ;
+            if (hasErrors()) break;
         }
 
         return typeDecl;
@@ -1774,6 +1784,8 @@ namespace pl::core {
         while (!sequence(tkn::Separator::RightBrace)) {
             auto newStatements = parseStatements();
             std::ranges::move(newStatements, std::back_inserter(statements));
+
+            if (hasErrors()) break;
         }
 
         this->m_currNamespace.pop_back();
@@ -1994,11 +2006,11 @@ namespace pl::core {
     }
 
     void Parser::errorHere(const std::string &message) {
-        errorAt(m_curr->location, message);
+        errorAt(peek(tkn::Separator::EndOfProgram) ? m_curr[-1].location : m_curr->location, message);
     }
 
     void Parser::errorDescHere(const std::string &message, const std::string &description) {
-        errorAtDesc(m_curr->location, message, description);
+        errorAtDesc(peek(tkn::Separator::EndOfProgram) ? m_curr[-1].location : m_curr->location, description, message);
     }
 
 

@@ -21,14 +21,14 @@ namespace pl::core::err::impl {
 
         const auto lines = wolv::util::splitString(location.source->content, "\n");
 
-        if (location.line - 1 < lines.size()) {
+        if (location.line < lines.size() + 1) {
             const auto lineNumberPrefix = fmt::format("{} | ", location.line);
             auto errorLine = wolv::util::replaceStrings(lines[location.line - 1], "\r", "");
-            u32 arrowPosition = location.column - 1;
+            u32 arrowPosition = location.column;
 
             // Trim to size
             if (errorLine.length() > 40) { // shrink to [column - 20; column + 20]
-                const auto column = location.column - 1;
+                const auto column = location.column;
                 auto start = column > 20 ? column - 20 : 0;
                 auto end = column + 20 < errorLine.length() ? column + 20 : errorLine.length();
                 // Search for whitespaces on both sides until a maxium of 10 characters and change start/end accordingly
@@ -49,9 +49,11 @@ namespace pl::core::err::impl {
             {
                 const auto arrowSpacing = std::string(lineNumberPrefix.length() + arrowPosition, ' ');
                 // Add arrow with length of the token
-                result += arrowSpacing + std::string(location.length, '^') + '\n';
+                result += arrowSpacing;
+                result += std::string(location.length, '^') + '\n';
                 // Add spacing for the error message
-                result += arrowSpacing + std::string(location.length, ' ');
+                result += arrowSpacing;
+                result += std::string(location.length, ' ');
             }
         }
 
@@ -97,15 +99,15 @@ namespace pl::core::err::impl {
             const std::vector<Location>& trace) {
         std::string errorMessage = "error: " + message + "\n";
 
-        if (location.line > 0 &&location. column > 0) {
+        if (location.line > 0) {
             errorMessage += "  -->   in " + formatLocation(location) + "\n";
         }
 
-        for (const auto &traceLocation: trace) {
+        for (const auto &traceLocation : trace) {
             errorMessage += "   >> from " + formatLocation(traceLocation) + "\n";
         }
 
-        if (location.line > 0 && location.column > 0) {
+        if (location.line > 0) {
             errorMessage += formatLines(location) + "\n";
         }
 

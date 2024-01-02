@@ -212,6 +212,9 @@ namespace pl::core {
             while (!peek(endToken)) {
                 for (auto &statement : parseStatements())
                     program.push_back(std::move(statement));
+
+                if (hasErrors())
+                    break;
             }
 
             this->next();
@@ -357,6 +360,9 @@ namespace pl::core {
         }
 
         bool peek(const Token &token, const i32 index = 0) {
+            if (m_curr + index >= m_endToken)
+                return false;
+
             if (index >= 0) {
                 while (this->m_curr->type == Token::Type::DocComment) {
                     if (auto docComment = parseDocComment(true); docComment.has_value())
