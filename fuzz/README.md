@@ -20,11 +20,12 @@ The binary will be in this source folder.
 The plfuzz binary takes in a file to parse as an argument.
 
 To fuzz you can now follow the AFL++ tutorials on how to effectively fuzz.
-There are some simple inputs in the `inputs` folder that you can use to start fuzzing.  
+There are some simple inputs in the `inputs` folder that you can use to start fuzzing.
+There is also a dictionary file in the `dict` folder that you can use to improve the quality of the fuzzing.
 
 Here is an example of how to start fuzzing:
 ```bash
-afl-fuzz -i inputs -o output -- ./plfuzz @@
+afl-fuzz -i inputs -o output -x ./dict/hexpat.dict -- ./plfuzz @@
 ```
 This will run a simple fuzzing session with the inputs in the `inputs` folder and outputting to the `output` folder.
 
