@@ -37,9 +37,7 @@ target_link_libraries(plcli PUBLIC ${CLI11_LIBRARIES} nlohmann_json libpl libpl-
 if (WIN32)
     set(CMAKE_INSTALL_BINDIR ".")
 
-    INSTALL(CODE "set(CMAKE_INSTALL_BINDIR \"${CMAKE_INSTALL_BINDIR}\")")
-    INSTALL(CODE "get_filename_component(PY_PARENT \"${Python_LIBRARIES}\" DIRECTORY)")
-    INSTALL(CODE "LIST(APPEND DEP_FOLDERS \${PY_PARENT})")
+    install(CODE "set(CMAKE_INSTALL_BINDIR \"${CMAKE_INSTALL_BINDIR}\")")
     install(CODE [[
         file(GET_RUNTIME_DEPENDENCIES
             EXECUTABLES $<TARGET_FILE:plcli>
