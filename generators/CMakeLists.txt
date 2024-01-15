@@ -7,5 +7,3 @@ add_library(libpl-gen INTERFACE)
 
 target_include_directories(libpl-gen INTERFACE include)
 set_target_properties(libpl-gen PROPERTIES PREFIX "")
-
-install(TARGETS libpl-gen DESTINATION lib)

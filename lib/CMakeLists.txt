@@ -82,7 +82,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif ()
 
 target_include_directories(libpl PUBLIC include)
-target_link_libraries(libpl PRIVATE fmt::fmt-header-only)
+target_link_libraries(libpl PRIVATE ${FMT_LIBRARIES})
 target_link_libraries(libpl PUBLIC wolv::io wolv::utils wolv::hash wolv::containers)
 
 set_property(TARGET libpl PROPERTY POSITION_INDEPENDENT_CODE ON)
