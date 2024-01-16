@@ -81,7 +81,7 @@ namespace pl {
          * @param checkResult Whether to check the result of the execution
          * @return True if the execution was successful, false otherwise
          */
-        [[nodiscard]] bool executeString(std::string code, const std::map<std::string, core::Token::Literal> &envVars = {}, const std::map<std::string, core::Token::Literal> &inVariables = {}, bool checkResult = true);
+        [[nodiscard]] bool executeString(const std::string& code, const std::map<std::string, core::Token::Literal> &envVars = {}, const std::map<std::string, core::Token::Literal> &inVariables = {}, bool checkResult = true);
 
         /**
          * @brief Executes a pattern language file

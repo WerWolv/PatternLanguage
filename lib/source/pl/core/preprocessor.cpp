@@ -37,7 +37,10 @@ namespace pl::core {
 
         std::vector<bool> ifDefs;
 
-        std::string_view code = sourceCode;
+        auto fixedLines = wolv::util::replaceStrings(sourceCode, "\r\n", "\n");
+        fixedLines = wolv::util::replaceStrings(fixedLines, "\r", "\n");
+        fixedLines = wolv::util::replaceStrings(fixedLines, "\t", "    ");
+        std::string_view code = fixedLines;
 
         if (initialRun) {
             this->m_onceIncludedFiles.clear();
@@ -49,12 +52,14 @@ namespace pl::core {
             while (std::isblank(code[offset])) {
                 offset += 1;
 
-                if (code[offset] == '\n' || code[offset] == '\r')
+                if (code[offset] == '\n')
                     return std::nullopt;
             }
+            if (code[offset] == '\n')
+                return std::nullopt;
 
             std::string value;
-            while ((allowWhitespace || !std::isblank(code[offset])) && code[offset] != '\n' && code[offset] != '\r') {
+            while ((allowWhitespace || !std::isblank(code[offset])) && code[offset] != '\n') {
                 value += code[offset];
 
                 offset += 1;
@@ -65,12 +70,12 @@ namespace pl::core {
             return wolv::util::trim(value);
         };
 
-        auto getDirective = [&](std::string directive, bool hasArgs = true) {
-            if (hasArgs)
-                directive += " ";
-
+        auto getDirective = [&](const std::string& directive, bool hasArgs = true) {
             if (code.substr(offset, directive.length()) == directive) {
                 offset += directive.length();
+                if (hasArgs && code[offset] != ' ')
+                    err::M0003.throwError("An argument is required");
+                offset++;
                 return true;
             } else return false;
         };
@@ -81,30 +86,6 @@ namespace pl::core {
         try {
             bool startOfLine = true;
             while (offset < code.length()) {
-                if (code.substr(offset, 2) == "//") {
-                    while (offset < code.length() && code[offset] != '\n')
-                        offset += 1;
-
-                    if (code.length() == offset)
-                        break;
-
-                } else if ((code.substr(offset, 2) == "/*" && code.substr(offset, 3) != "/**" && code.substr(offset, 3) != "/*!") || (!initialRun && code.substr(offset, 3) == "/*!")) {
-                    auto commentStartLine = lineNumber;
-                    while (offset < code.length() && code.substr(offset, 2) != "*/") {
-                        if (code[offset] == '\n') {
-                            output += '\n';
-                            lineNumber++;
-                            startOfLine = true;
-                        }
-
-                        offset += 1;
-                    }
-
-                    offset += 2;
-                    if (offset >= code.length())
-                        err::M0001.throwError("Unterminated multiline comment. Expected closing */ sequence.", {}, commentStartLine);
-                }
-
                 if (ifDefs.empty() || ifDefs.back()) {
                     if (offset > 0 && code[offset - 1] != '\\' && code[offset] == '\"')
                         isInString = !isInString;
@@ -112,6 +93,54 @@ namespace pl::core {
                         output += code[offset];
                         offset += 1;
                         continue;
+                    }
+                }
+
+                if (code.substr(offset, 2) == "//") {
+                    auto copy = code[offset + 2] == '/';
+                    auto startOffset = offset;
+                    while (offset < code.length() && code[offset] != '\n')
+                        offset += 1;
+
+                    if (copy) {
+                        output += code.substr(startOffset, offset - startOffset);
+                        lineNumber ++;
+                    }
+
+                    if (code.length() == offset)
+                        break;
+
+                } else if (code.substr(offset, 2) == "/*") {
+                    auto commentStartLine = lineNumber;
+                    auto copy = code[offset + 2] == '*' || (initialRun && code[offset + 2] == '!');
+                    auto startOffset = offset;
+                    auto lineStartOffset = offset;
+                    while (offset < code.length() && code.substr(offset, 2) != "*/") {
+                        if (code[offset] == '\n') {
+                            lineNumber++;
+                            startOfLine = true;
+                            lineStartOffset = offset;
+                        }
+
+                        offset++;
+                    }
+
+                    offset += 2;
+                    if (offset >= code.length())
+                        err::M0001.throwError("Unterminated multiline comment. Expected closing */ sequence.", {}, commentStartLine);
+
+                    if (copy && startOffset + 4 != offset) {
+                        output += code.substr(startOffset, offset - startOffset);
+                    } else {
+                        output += std::string(lineNumber - commentStartLine, '\n');
+                        auto lookaheadOffset = offset;
+                        while (lookaheadOffset < code.length() && code[lookaheadOffset] != '\n') {
+                            if (!std::isblank(code[lookaheadOffset])) {
+                                output += std::string(offset - lineStartOffset, ' ');
+                                break;
+                            }
+                            lookaheadOffset++;
+                        }
                     }
                 }
 
@@ -234,10 +263,16 @@ namespace pl::core {
                                 err::M0007.throwError(error.value());
                             else
                                 err::M0003.throwError("No value given to #error directive");
+                        } else if (ifDefs.empty()) {
+                            err::M0002.throwError("Expected one of: 'include', 'define', 'pragma', 'error', 'ifdef', 'ifndef'");
                         } else {
-                            err::M0002.throwError("Expected 'include', 'define' or 'pragma'");
+                            err::M0002.throwError("Expected one of: 'include', 'define', 'pragma', 'error', 'ifdef', 'ifndef', 'endif'");
                         }
                     }
+                    while (offset < code.length() && std::isblank(code[offset]))
+                        offset++;
+                    if (offset < code.length() && code[offset] != '\n')
+                        err::M0003.throwError("Trailing data found after preprocessor directive");
                 }
 
                 if (offset >= code.length())
