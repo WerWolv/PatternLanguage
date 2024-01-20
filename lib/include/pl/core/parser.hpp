@@ -25,6 +25,67 @@
 
 namespace pl::core {
 
+    template<typename T>
+    class SafePointer : public T {
+    public:
+        using T::T;
+
+        SafePointer(T &&t) : T(std::move(t)) { }
+
+        using Contained = typename T::element_type;
+
+        Contained* operator->() const {
+            return this->get();
+        }
+
+        Contained* operator->() {
+            return this->get();
+        }
+
+        Contained& operator*() const {
+            return *this->get();
+        }
+
+        Contained& operator*() {
+            return *this->get();
+        }
+
+        Contained* get() const {
+            if (this->T::get() == nullptr)
+                throw std::runtime_error("Pointer is null!");
+
+            return this->T::get();
+        }
+
+        operator T&() {
+            if (this->T::get() == nullptr)
+                throw std::runtime_error("Pointer is null!");
+
+            return *this;
+        }
+
+        operator T&() const {
+            if (this->T::get() == nullptr)
+                throw std::runtime_error("Pointer is null!");
+
+            return *this;
+        }
+
+        operator T&&() && {
+            if (this->T::get() == nullptr)
+                throw std::runtime_error("Pointer is null!");
+
+            return *this;
+        }
+        
+    };
+
+    template<typename T>
+    using safe_unique_ptr = SafePointer<std::unique_ptr<T>>;
+
+    template<typename T>
+    using safe_shared_ptr = SafePointer<std::shared_ptr<T>>;
+    
     class Parser : err::ErrorCollector {
     public:
         using TokenIter = hlp::SafeIterator<std::vector<Token>::const_iterator>;
@@ -52,8 +113,8 @@ namespace pl::core {
         TokenIter m_curr;
         TokenIter m_startToken, m_originalPosition, m_partOriginalPosition;
 
-        std::vector<std::shared_ptr<ast::ASTNodeTypeDecl>> m_currTemplateType;
-        std::map<std::string, std::shared_ptr<ast::ASTNodeTypeDecl>> m_types;
+        std::vector<safe_shared_ptr<ast::ASTNodeTypeDecl>> m_currTemplateType;
+        std::map<std::string, safe_shared_ptr<ast::ASTNodeTypeDecl>> m_types;
 
         std::vector<TokenIter> m_matchedOptionals;
         std::vector<std::vector<std::string>> m_currNamespace;
@@ -82,14 +143,14 @@ namespace pl::core {
         }
 
         template<typename T, typename...Ts>
-        std::unique_ptr<T> create(Ts&&... ts) {
+        safe_unique_ptr<T> create(Ts&&... ts) {
             auto temp = std::make_unique<T>(std::forward<Ts>(ts)...);
             temp->setLocation(this->m_curr[-1].location);
             return temp;
         }
 
         template<typename T, typename...Ts>
-        std::shared_ptr<T> createShared(Ts&&... ts) {
+        safe_shared_ptr<T> createShared(Ts&&... ts) {
             auto temp = std::make_shared<T>(std::forward<Ts>(ts)...);
             temp->setLocation(this->m_curr[-1].location);
             return temp;
@@ -131,81 +192,81 @@ namespace pl::core {
             ++this->m_curr;
         }
 
-        std::vector<std::unique_ptr<ast::ASTNode>> parseParameters();
-        std::unique_ptr<ast::ASTNode> parseFunctionCall();
-        std::unique_ptr<ast::ASTNode> parseStringLiteral();
+        std::vector<safe_unique_ptr<ast::ASTNode>> parseParameters();
+        safe_unique_ptr<ast::ASTNode> parseFunctionCall();
+        safe_unique_ptr<ast::ASTNode> parseStringLiteral();
         std::string parseNamespaceResolution();
-        std::unique_ptr<ast::ASTNode> parseScopeResolution();
-        std::unique_ptr<ast::ASTNode> parseRValue();
-        std::unique_ptr<ast::ASTNode> parseRValue(ast::ASTNodeRValue::Path &path);
-        std::unique_ptr<ast::ASTNode> parseFactor();
-        std::unique_ptr<ast::ASTNode> parseCastExpression();
-        std::unique_ptr<ast::ASTNode> parseUnaryExpression();
-        std::unique_ptr<ast::ASTNode> parseMultiplicativeExpression();
-        std::unique_ptr<ast::ASTNode> parseAdditiveExpression();
-        std::unique_ptr<ast::ASTNode> parseShiftExpression();
-        std::unique_ptr<ast::ASTNode> parseBinaryAndExpression();
-        std::unique_ptr<ast::ASTNode> parseBinaryXorExpression();
-        std::unique_ptr<ast::ASTNode> parseBinaryOrExpression(bool inMatchRange);
-        std::unique_ptr<ast::ASTNode> parseBooleanAnd(bool inTemplate, bool inMatchRange);
-        std::unique_ptr<ast::ASTNode> parseBooleanXor(bool inTemplate, bool inMatchRange);
-        std::unique_ptr<ast::ASTNode> parseBooleanOr(bool inTemplate, bool inMatchRange);
-        std::unique_ptr<ast::ASTNode> parseRelationExpression(bool inTemplate, bool inMatchRange);
-        std::unique_ptr<ast::ASTNode> parseEqualityExpression(bool inTemplate, bool inMatchRange);
-        std::unique_ptr<ast::ASTNode> parseTernaryConditional(bool inTemplate, bool inMatchRange);
-        std::unique_ptr<ast::ASTNode> parseMathematicalExpression(bool inTemplate = false, bool inMatchRange = false);
+        safe_unique_ptr<ast::ASTNode> parseScopeResolution();
+        safe_unique_ptr<ast::ASTNode> parseRValue();
+        safe_unique_ptr<ast::ASTNode> parseRValue(ast::ASTNodeRValue::Path &path);
+        safe_unique_ptr<ast::ASTNode> parseFactor();
+        safe_unique_ptr<ast::ASTNode> parseCastExpression();
+        safe_unique_ptr<ast::ASTNode> parseUnaryExpression();
+        safe_unique_ptr<ast::ASTNode> parseMultiplicativeExpression();
+        safe_unique_ptr<ast::ASTNode> parseAdditiveExpression();
+        safe_unique_ptr<ast::ASTNode> parseShiftExpression();
+        safe_unique_ptr<ast::ASTNode> parseBinaryAndExpression();
+        safe_unique_ptr<ast::ASTNode> parseBinaryXorExpression();
+        safe_unique_ptr<ast::ASTNode> parseBinaryOrExpression(bool inMatchRange);
+        safe_unique_ptr<ast::ASTNode> parseBooleanAnd(bool inTemplate, bool inMatchRange);
+        safe_unique_ptr<ast::ASTNode> parseBooleanXor(bool inTemplate, bool inMatchRange);
+        safe_unique_ptr<ast::ASTNode> parseBooleanOr(bool inTemplate, bool inMatchRange);
+        safe_unique_ptr<ast::ASTNode> parseRelationExpression(bool inTemplate, bool inMatchRange);
+        safe_unique_ptr<ast::ASTNode> parseEqualityExpression(bool inTemplate, bool inMatchRange);
+        safe_unique_ptr<ast::ASTNode> parseTernaryConditional(bool inTemplate, bool inMatchRange);
+        safe_unique_ptr<ast::ASTNode> parseMathematicalExpression(bool inTemplate = false, bool inMatchRange = false);
 
-        std::unique_ptr<ast::ASTNode> parseFunctionDefinition();
-        std::unique_ptr<ast::ASTNode> parseFunctionVariableDecl(bool constant = false);
-        std::unique_ptr<ast::ASTNode> parseFunctionStatement(bool needsSemicolon = true);
-        std::unique_ptr<ast::ASTNode> parseFunctionVariableAssignment(const std::string &lvalue);
-        std::unique_ptr<ast::ASTNode> parseFunctionVariableCompoundAssignment(const std::string &lvalue);
-        std::unique_ptr<ast::ASTNode> parseFunctionControlFlowStatement();
-        std::vector<std::unique_ptr<ast::ASTNode>> parseStatementBody(const std::function<std::unique_ptr<ast::ASTNode>()> &memberParser);
-        std::unique_ptr<ast::ASTNode> parseFunctionWhileLoop();
-        std::unique_ptr<ast::ASTNode> parseFunctionForLoop();
+        safe_unique_ptr<ast::ASTNode> parseFunctionDefinition();
+        safe_unique_ptr<ast::ASTNode> parseFunctionVariableDecl(bool constant = false);
+        safe_unique_ptr<ast::ASTNode> parseFunctionStatement(bool needsSemicolon = true);
+        safe_unique_ptr<ast::ASTNode> parseFunctionVariableAssignment(const std::string &lvalue);
+        safe_unique_ptr<ast::ASTNode> parseFunctionVariableCompoundAssignment(const std::string &lvalue);
+        safe_unique_ptr<ast::ASTNode> parseFunctionControlFlowStatement();
+        std::vector<safe_unique_ptr<ast::ASTNode>> parseStatementBody(const std::function<safe_unique_ptr<ast::ASTNode>()> &memberParser);
+        safe_unique_ptr<ast::ASTNode> parseFunctionWhileLoop();
+        safe_unique_ptr<ast::ASTNode> parseFunctionForLoop();
 
         void parseAttribute(ast::Attributable *currNode);
-        std::unique_ptr<ast::ASTNode> parseConditional(const std::function<std::unique_ptr<ast::ASTNode>()> &memberParser);
-        std::pair<std::unique_ptr<ast::ASTNode>, bool> parseCaseParameters(const std::vector<std::unique_ptr<ast::ASTNode>> &condition);
-        std::unique_ptr<ast::ASTNode> parseMatchStatement(const std::function<std::unique_ptr<ast::ASTNode>()> &memberParser);
-        std::unique_ptr<ast::ASTNode> parseTryCatchStatement(const std::function<std::unique_ptr<ast::ASTNode>()> &memberParser);
-        std::unique_ptr<ast::ASTNode> parseWhileStatement();
-        std::unique_ptr<ast::ASTNodeTypeDecl> getCustomType(const std::string &baseTypeName);
-        std::unique_ptr<ast::ASTNodeTypeDecl> parseCustomType();
-        void parseCustomTypeParameters(std::unique_ptr<ast::ASTNodeTypeDecl> &type);
-        std::unique_ptr<ast::ASTNodeTypeDecl> parseType();
-        std::vector<std::shared_ptr<ast::ASTNode>> parseTemplateList();
-        std::shared_ptr<ast::ASTNodeTypeDecl> parseUsingDeclaration();
-        std::unique_ptr<ast::ASTNode> parsePadding();
-        std::unique_ptr<ast::ASTNode> parseMemberVariable(const std::shared_ptr<ast::ASTNodeTypeDecl> &type, bool allowSection, bool constant, const std::string &identifier);
-        std::unique_ptr<ast::ASTNode> parseMemberArrayVariable(const std::shared_ptr<ast::ASTNodeTypeDecl> &type, bool allowSection, bool constant);
-        std::unique_ptr<ast::ASTNode> parseMemberPointerVariable(const std::shared_ptr<ast::ASTNodeTypeDecl> &type);
-        std::unique_ptr<ast::ASTNode> parseMemberPointerArrayVariable(const std::shared_ptr<ast::ASTNodeTypeDecl> &type);
-        std::unique_ptr<ast::ASTNode> parseMember();
-        std::shared_ptr<ast::ASTNodeTypeDecl> parseStruct();
-        std::shared_ptr<ast::ASTNodeTypeDecl> parseUnion();
-        std::shared_ptr<ast::ASTNodeTypeDecl> parseEnum();
-        std::shared_ptr<ast::ASTNodeTypeDecl> parseBitfield();
-        std::unique_ptr<ast::ASTNode> parseBitfieldEntry();
+        safe_unique_ptr<ast::ASTNode> parseConditional(const std::function<safe_unique_ptr<ast::ASTNode>()> &memberParser);
+        std::pair<safe_unique_ptr<ast::ASTNode>, bool> parseCaseParameters(const std::vector<safe_unique_ptr<ast::ASTNode>> &condition);
+        safe_unique_ptr<ast::ASTNode> parseMatchStatement(const std::function<safe_unique_ptr<ast::ASTNode>()> &memberParser);
+        safe_unique_ptr<ast::ASTNode> parseTryCatchStatement(const std::function<safe_unique_ptr<ast::ASTNode>()> &memberParser);
+        safe_unique_ptr<ast::ASTNode> parseWhileStatement();
+        safe_unique_ptr<ast::ASTNodeTypeDecl> getCustomType(const std::string &baseTypeName);
+        safe_unique_ptr<ast::ASTNodeTypeDecl> parseCustomType();
+        void parseCustomTypeParameters(safe_unique_ptr<ast::ASTNodeTypeDecl> &type);
+        safe_unique_ptr<ast::ASTNodeTypeDecl> parseType();
+        std::vector<safe_shared_ptr<ast::ASTNode>> parseTemplateList();
+        safe_shared_ptr<ast::ASTNodeTypeDecl> parseUsingDeclaration();
+        safe_unique_ptr<ast::ASTNode> parsePadding();
+        safe_unique_ptr<ast::ASTNode> parseMemberVariable(const safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool allowSection, bool constant, const std::string &identifier);
+        safe_unique_ptr<ast::ASTNode> parseMemberArrayVariable(const safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool allowSection, bool constant);
+        safe_unique_ptr<ast::ASTNode> parseMemberPointerVariable(const safe_shared_ptr<ast::ASTNodeTypeDecl> &type);
+        safe_unique_ptr<ast::ASTNode> parseMemberPointerArrayVariable(const safe_shared_ptr<ast::ASTNodeTypeDecl> &type);
+        safe_unique_ptr<ast::ASTNode> parseMember();
+        safe_shared_ptr<ast::ASTNodeTypeDecl> parseStruct();
+        safe_shared_ptr<ast::ASTNodeTypeDecl> parseUnion();
+        safe_shared_ptr<ast::ASTNodeTypeDecl> parseEnum();
+        safe_shared_ptr<ast::ASTNodeTypeDecl> parseBitfield();
+        safe_unique_ptr<ast::ASTNode> parseBitfieldEntry();
         void parseForwardDeclaration();
-        std::unique_ptr<ast::ASTNode> parseVariablePlacement(const std::shared_ptr<ast::ASTNodeTypeDecl> &type);
-        std::unique_ptr<ast::ASTNode> parseArrayVariablePlacement(const std::shared_ptr<ast::ASTNodeTypeDecl> &type);
-        std::unique_ptr<ast::ASTNode> parsePointerVariablePlacement(const std::shared_ptr<ast::ASTNodeTypeDecl> &type);
-        std::unique_ptr<ast::ASTNode> parsePointerArrayVariablePlacement(const std::shared_ptr<ast::ASTNodeTypeDecl> &type);
-        std::unique_ptr<ast::ASTNode> parsePlacement();
-        std::unique_ptr<ast::ASTNode> parseImportStatement();
-        std::vector<std::shared_ptr<ast::ASTNode>> parseNamespace();
-        std::vector<std::shared_ptr<ast::ASTNode>> parseStatements();
+        safe_unique_ptr<ast::ASTNode> parseVariablePlacement(const safe_shared_ptr<ast::ASTNodeTypeDecl> &type);
+        safe_unique_ptr<ast::ASTNode> parseArrayVariablePlacement(const safe_shared_ptr<ast::ASTNodeTypeDecl> &type);
+        safe_unique_ptr<ast::ASTNode> parsePointerVariablePlacement(const safe_shared_ptr<ast::ASTNodeTypeDecl> &type);
+        safe_unique_ptr<ast::ASTNode> parsePointerArrayVariablePlacement(const safe_shared_ptr<ast::ASTNodeTypeDecl> &type);
+        safe_unique_ptr<ast::ASTNode> parsePlacement();
+        safe_unique_ptr<ast::ASTNode> parseImportStatement();
+        std::vector<safe_shared_ptr<ast::ASTNode>> parseNamespace();
+        std::vector<safe_shared_ptr<ast::ASTNode>> parseStatements();
 
         std::optional<i32> parseCompoundAssignment(const Token &token);
 
         std::optional<Token::DocComment> parseDocComment(bool global);
 
-        std::shared_ptr<ast::ASTNodeTypeDecl> addType(const std::string &name, std::unique_ptr<ast::ASTNode> &&node, std::optional<std::endian> endian = std::nullopt);
+        safe_shared_ptr<ast::ASTNodeTypeDecl> addType(const std::string &name, safe_unique_ptr<ast::ASTNode> &&node, std::optional<std::endian> endian = std::nullopt);
 
-        std::vector<std::shared_ptr<ast::ASTNode>> parseTillToken(const Token &endToken) {
-            std::vector<std::shared_ptr<ast::ASTNode>> program;
+        std::vector<safe_shared_ptr<ast::ASTNode>> parseTillToken(const Token &endToken) {
+            std::vector<safe_shared_ptr<ast::ASTNode>> program;
 
             while (!peek(endToken)) {
                 for (auto &statement : parseStatements())
