@@ -53,7 +53,7 @@
 namespace pl::core {
 
     template<typename T>
-    std::vector<T> unwrapSafePointerVector(std::vector<SafePointer<T>> &&vec) {
+    std::vector<T> unwrapSafePointerVector(std::vector<hlp::SafePointer<T>> &&vec) {
         std::vector<T> result;
         result.reserve(vec.size());
 
@@ -65,11 +65,15 @@ namespace pl::core {
 
     /* Mathematical expressions */
     // ([(parseMathematicalExpression)|<(parseMathematicalExpression),...>(parseMathematicalExpression)]
-    std::vector<safe_unique_ptr<ast::ASTNode>> Parser::parseParameters() {
-        std::vector<safe_unique_ptr<ast::ASTNode>> params;
+    std::vector<hlp::safe_unique_ptr<ast::ASTNode>> Parser::parseParameters() {
+        std::vector<hlp::safe_unique_ptr<ast::ASTNode>> params;
 
         while (!sequence(tkn::Separator::RightParenthesis)) {
-            params.push_back(parseMathematicalExpression());
+            auto param = parseMathematicalExpression();
+            if (param == nullptr)
+                continue;
+
+            params.push_back(std::move(param));
 
             if (sequence(tkn::Separator::Comma, tkn::Separator::RightParenthesis)) {
                 error("Expected ')' at end of parameter list, got {}.", getFormattedToken(0));
@@ -87,7 +91,7 @@ namespace pl::core {
     }
 
     // Identifier(<parseParameters>)
-    safe_unique_ptr<ast::ASTNode> Parser::parseFunctionCall() {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseFunctionCall() {
         std::string functionName = parseNamespaceResolution();
 
         if (!sequence(tkn::Separator::LeftParenthesis)) {
@@ -100,7 +104,7 @@ namespace pl::core {
         return create<ast::ASTNodeFunctionCall>(functionName, unwrapSafePointerVector(std::move(params)));
     }
 
-    safe_unique_ptr<ast::ASTNode> Parser::parseStringLiteral() {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseStringLiteral() {
         return create<ast::ASTNodeLiteral>(getValue<Token::Literal>(-1));
     }
 
@@ -121,7 +125,7 @@ namespace pl::core {
         return name;
     }
 
-    safe_unique_ptr<ast::ASTNode> Parser::parseScopeResolution() {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseScopeResolution() {
         std::string typeName;
 
         while (true) {
@@ -151,13 +155,13 @@ namespace pl::core {
         return nullptr;
     }
 
-    safe_unique_ptr<ast::ASTNode> Parser::parseRValue() {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseRValue() {
         ast::ASTNodeRValue::Path path;
         return this->parseRValue(path);
     }
 
     // <Identifier[.]...>
-    safe_unique_ptr<ast::ASTNode> Parser::parseRValue(ast::ASTNodeRValue::Path &path) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseRValue(ast::ASTNodeRValue::Path &path) {
         if (peek(tkn::Literal::Identifier, -1))
             path.emplace_back(getValue<Token::Identifier>(-1).get());
         else if (peek(tkn::Keyword::Parent, -1))
@@ -188,7 +192,7 @@ namespace pl::core {
     }
 
     // <Integer|((parseMathematicalExpression))>
-    safe_unique_ptr<ast::ASTNode> Parser::parseFactor() {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseFactor() {
         if (sequence(tkn::Literal::Numeric))
             return create<ast::ASTNodeLiteral>(getValue<Token::Literal>(-1));
         if (oneOf(tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::BoolNot, tkn::Operator::BitNot))
@@ -223,7 +227,7 @@ namespace pl::core {
         if (MATCHES(oneOf(tkn::Operator::AddressOf, tkn::Operator::SizeOf, tkn::Operator::TypeNameOf) && sequence(tkn::Separator::LeftParenthesis))) {
             auto op = getValue<Token::Operator>(-2);
 
-            safe_unique_ptr<ast::ASTNode> result;
+            hlp::safe_unique_ptr<ast::ASTNode> result;
 
             if (oneOf(tkn::Literal::Identifier)) {
                 const auto startToken = this->m_curr;
@@ -236,10 +240,18 @@ namespace pl::core {
 
                 if (result == nullptr) {
                     this->m_curr = startToken;
-                    result = create<ast::ASTNodeTypeOperator>(op, this->parseRValue());
+                    auto rvalue = this->parseRValue();
+                    if (rvalue == nullptr)
+                        return nullptr;
+
+                    result = create<ast::ASTNodeTypeOperator>(op, std::move(rvalue));
                 }
             } else if (oneOf(tkn::Keyword::Parent, tkn::Keyword::This)) {
-                result = create<ast::ASTNodeTypeOperator>(op, this->parseRValue());
+                auto rvalue = this->parseRValue();
+                if (rvalue == nullptr)
+                    return nullptr;
+
+                result = create<ast::ASTNodeTypeOperator>(op, std::move(rvalue));
             } else if (op == Token::Operator::SizeOf && sequence(tkn::ValueType::Any)) {
                 const auto type = getValue<Token::ValueType>(-1);
 
@@ -269,12 +281,16 @@ namespace pl::core {
         }
 
         error("Expected value, got {}.", getFormattedToken(0));
+        next();
         return nullptr;
     }
 
-    safe_unique_ptr<ast::ASTNode> Parser::parseCastExpression() {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseCastExpression() {
         if (peek(tkn::Keyword::BigEndian) || peek(tkn::Keyword::LittleEndian) || peek(tkn::ValueType::Any)) {
             auto type        = parseType();
+            if (type == nullptr)
+                return nullptr;
+
             auto builtinType = dynamic_cast<ast::ASTNodeBuiltinType *>(type->getType().get());
 
             if (builtinType == nullptr) {
@@ -288,6 +304,8 @@ namespace pl::core {
             }
 
             auto node = parseFactor();
+            if (node == nullptr)
+                return nullptr;
 
             return create<ast::ASTNodeCast>(std::move(node), std::move(type));
         }
@@ -296,11 +314,14 @@ namespace pl::core {
     }
 
     // <+|-|!|~> (parseFactor)
-    safe_unique_ptr<ast::ASTNode> Parser::parseUnaryExpression() {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseUnaryExpression() {
         if (oneOf(tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::BoolNot, tkn::Operator::BitNot)) {
             auto op = getValue<Token::Operator>(-1);
+            auto node = this->parseUnaryExpression();
+            if (node == nullptr)
+                return nullptr;
 
-            return create<ast::ASTNodeMathematicalExpression>(create<ast::ASTNodeLiteral>(0), this->parseCastExpression(), op);
+            return create<ast::ASTNodeMathematicalExpression>(create<ast::ASTNodeLiteral>(0), std::move(node), op);
         }
 
         if (sequence(tkn::Literal::String)) {
@@ -311,38 +332,60 @@ namespace pl::core {
     }
 
     // (parseUnaryExpression) <*|/|%> (parseUnaryExpression)
-    safe_unique_ptr<ast::ASTNode> Parser::parseMultiplicativeExpression() {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMultiplicativeExpression() {
         auto node = this->parseUnaryExpression();
+        if (node == nullptr)
+            return nullptr;
 
         while (oneOf(tkn::Operator::Star, tkn::Operator::Slash, tkn::Operator::Percent)) {
             auto op = getValue<Token::Operator>(-1);
-            node    = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseUnaryExpression(), op);
+            auto other = this->parseUnaryExpression();
+            if (other == nullptr)
+                return nullptr;
+
+            node    = create<ast::ASTNodeMathematicalExpression>(std::move(node), std::move(other), op);
         }
 
         return node;
     }
 
     // (parseMultiplicativeExpression) <+|-> (parseMultiplicativeExpression)
-    safe_unique_ptr<ast::ASTNode> Parser::parseAdditiveExpression() {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseAdditiveExpression() {
         auto node = this->parseMultiplicativeExpression();
+        if (node == nullptr)
+            return nullptr;
 
         while (variant(tkn::Operator::Plus, tkn::Operator::Minus)) {
             auto op = getValue<Token::Operator>(-1);
-            node    = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseMultiplicativeExpression(), op);
+            auto other = this->parseMultiplicativeExpression();
+            if (other == nullptr)
+                return nullptr;
+
+            node    = create<ast::ASTNodeMathematicalExpression>(std::move(node), std::move(other), op);
         }
 
         return node;
     }
 
     // (parseAdditiveExpression) < >>|<< > (parseAdditiveExpression)
-    safe_unique_ptr<ast::ASTNode> Parser::parseShiftExpression() {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseShiftExpression() {
         auto node = this->parseAdditiveExpression();
+        if (node == nullptr)
+            return nullptr;
 
         while (true) {
             if (sequence(tkn::Operator::BoolGreaterThan, tkn::Operator::BoolGreaterThan)) {
-                node    = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseAdditiveExpression(), Token::Operator::RightShift);
+                auto other = this->parseAdditiveExpression();
+                if(other == nullptr)
+                    return nullptr;
+
+                node    = create<ast::ASTNodeMathematicalExpression>(std::move(node), std::move(other), Token::Operator::RightShift);
             } else if (sequence(tkn::Operator::BoolLessThan, tkn::Operator::BoolLessThan)) {
-                node    = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseAdditiveExpression(), Token::Operator::LeftShift);
+                auto other = this->parseAdditiveExpression();
+                if(other == nullptr)
+                    return nullptr;
+
+                node    = create<ast::ASTNodeMathematicalExpression>(std::move(node), std::move(other), Token::Operator::LeftShift);
             } else {
                 break;
             }
@@ -352,56 +395,95 @@ namespace pl::core {
     }
 
     // (parseShiftExpression) & (parseShiftExpression)
-    safe_unique_ptr<ast::ASTNode> Parser::parseBinaryAndExpression() {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseBinaryAndExpression() {
         auto node = this->parseShiftExpression();
+        if (node == nullptr)
+            return nullptr;
 
         while (sequence(tkn::Operator::BitAnd)) {
-            node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseShiftExpression(), Token::Operator::BitAnd);
+            auto other = this->parseShiftExpression();
+            if (other == nullptr)
+                return nullptr;
+
+            node = create<ast::ASTNodeMathematicalExpression>(std::move(node), std::move(other), Token::Operator::BitAnd);
         }
 
         return node;
     }
 
     // (parseBinaryAndExpression) ^ (parseBinaryAndExpression)
-    safe_unique_ptr<ast::ASTNode> Parser::parseBinaryXorExpression() {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseBinaryXorExpression() {
         auto node = this->parseBinaryAndExpression();
+        if (node == nullptr)
+            return nullptr;
 
         while (sequence(tkn::Operator::BitXor)) {
-            node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryAndExpression(), Token::Operator::BitXor);
+            auto other = this->parseBinaryAndExpression();
+            if (other == nullptr)
+                return nullptr;
+
+            node = create<ast::ASTNodeMathematicalExpression>(std::move(node), std::move(other), Token::Operator::BitXor);
         }
 
         return node;
     }
 
     // (parseBinaryXorExpression) | (parseBinaryXorExpression)
-    safe_unique_ptr<ast::ASTNode> Parser::parseBinaryOrExpression(const bool inMatchRange) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseBinaryOrExpression(const bool inMatchRange) {
         auto node = this->parseBinaryXorExpression();
+        if (node == nullptr)
+            return nullptr;
 
         if (inMatchRange && peek(tkn::Operator::BitOr))
             return node;
         while (sequence(tkn::Operator::BitOr)) {
-            node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryXorExpression(), Token::Operator::BitOr);
+            auto other = this->parseBinaryXorExpression();
+            if (other == nullptr)
+                return nullptr;
+
+            node = create<ast::ASTNodeMathematicalExpression>(std::move(node), std::move(other), Token::Operator::BitOr);
         }
 
         return node;
     }
 
     // (parseBinaryOrExpression) < >=|<=|>|< > (parseBinaryOrExpression)
-    safe_unique_ptr<ast::ASTNode> Parser::parseRelationExpression(const bool inTemplate, const bool inMatchRange) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseRelationExpression(const bool inTemplate, const bool inMatchRange) {
         auto node = this->parseBinaryOrExpression(inMatchRange);
+        if (node == nullptr)
+            return nullptr;
 
         if (inTemplate && peek(tkn::Operator::BoolGreaterThan))
             return node;
 
         while (true) {
-            if (sequence(tkn::Operator::BoolGreaterThan, tkn::Operator::Assign))
-                node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryOrExpression(inMatchRange), Token::Operator::BoolGreaterThanOrEqual);
-            else if (sequence(tkn::Operator::BoolLessThan, tkn::Operator::Assign))
-                node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryOrExpression(inMatchRange), Token::Operator::BoolLessThanOrEqual);
-            else if (sequence(tkn::Operator::BoolGreaterThan))
-                node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryOrExpression(inMatchRange), Token::Operator::BoolGreaterThan);
-            else if (sequence(tkn::Operator::BoolLessThan))
-                node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBinaryOrExpression(inMatchRange), Token::Operator::BoolLessThan);
+            if (sequence(tkn::Operator::BoolGreaterThan, tkn::Operator::Assign)) {
+                auto other = this->parseBinaryOrExpression(inMatchRange);
+                if (other == nullptr)
+                    return nullptr;
+
+                node = create<ast::ASTNodeMathematicalExpression>(std::move(node), std::move(other), Token::Operator::BoolGreaterThanOrEqual);
+            } else if (sequence(tkn::Operator::BoolLessThan, tkn::Operator::Assign)) {
+                auto other = this->parseBinaryOrExpression(inMatchRange);
+                if (other == nullptr)
+                    return nullptr;
+
+                node = create<ast::ASTNodeMathematicalExpression>(std::move(node), std::move(other), Token::Operator::BoolLessThanOrEqual);
+            }
+            else if (sequence(tkn::Operator::BoolGreaterThan)) {
+                auto other = this->parseBinaryOrExpression(inMatchRange);
+                if (other == nullptr)
+                    return nullptr;
+
+                node = create<ast::ASTNodeMathematicalExpression>(std::move(node), std::move(other), Token::Operator::BoolGreaterThan);
+            }
+            else if (sequence(tkn::Operator::BoolLessThan)) {
+                auto other = this->parseBinaryOrExpression(inMatchRange);
+                if (other == nullptr)
+                    return nullptr;
+
+                node = create<ast::ASTNodeMathematicalExpression>(std::move(node), std::move(other), Token::Operator::BoolLessThan);
+            }
             else
                 break;
         }
@@ -410,53 +492,79 @@ namespace pl::core {
     }
 
     // (parseRelationExpression) <==|!=> (parseRelationExpression)
-    safe_unique_ptr<ast::ASTNode> Parser::parseEqualityExpression(const bool inTemplate, const bool inMatchRange) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseEqualityExpression(const bool inTemplate, const bool inMatchRange) {
         auto node = this->parseRelationExpression(inTemplate, inMatchRange);
+        if (node == nullptr)
+            return nullptr;
 
         while (MATCHES(sequence(tkn::Operator::BoolEqual) || sequence(tkn::Operator::BoolNotEqual))) {
             auto op = getValue<Token::Operator>(-1);
-            node    = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseRelationExpression(inTemplate, inMatchRange), op);
+            auto other = this->parseRelationExpression(inTemplate, inMatchRange);
+            if (other == nullptr)
+                return nullptr;
+
+            node    = create<ast::ASTNodeMathematicalExpression>(std::move(node), std::move(other), op);
         }
 
         return node;
     }
 
     // (parseEqualityExpression) && (parseEqualityExpression)
-    safe_unique_ptr<ast::ASTNode> Parser::parseBooleanAnd(const bool inTemplate, const bool inMatchRange) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseBooleanAnd(const bool inTemplate, const bool inMatchRange) {
         auto node = this->parseEqualityExpression(inTemplate, inMatchRange);
+        if (node == nullptr)
+            return nullptr;
 
         while (sequence(tkn::Operator::BoolAnd)) {
-            node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseEqualityExpression(inTemplate, inMatchRange), Token::Operator::BoolAnd);
+            auto other = this->parseEqualityExpression(inTemplate, inMatchRange);
+            if (other == nullptr)
+                return nullptr;
+
+            node = create<ast::ASTNodeMathematicalExpression>(std::move(node), std::move(other), Token::Operator::BoolAnd);
         }
 
         return node;
     }
 
     // (parseBooleanAnd) ^^ (parseBooleanAnd)
-    safe_unique_ptr<ast::ASTNode> Parser::parseBooleanXor(const bool inTemplate, const bool inMatchRange) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseBooleanXor(const bool inTemplate, const bool inMatchRange) {
         auto node = this->parseBooleanAnd(inTemplate, inMatchRange);
+        if (node == nullptr)
+            return nullptr;
 
         while (sequence(tkn::Operator::BoolXor)) {
-            node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBooleanAnd(inTemplate, inMatchRange), Token::Operator::BoolXor);
+            auto other = this->parseBooleanAnd(inTemplate, inMatchRange);
+            if (other == nullptr)
+                return nullptr;
+
+            node = create<ast::ASTNodeMathematicalExpression>(std::move(node), std::move(other), Token::Operator::BoolXor);
         }
 
         return node;
     }
 
     // (parseBooleanXor) || (parseBooleanXor)
-    safe_unique_ptr<ast::ASTNode> Parser::parseBooleanOr(const bool inTemplate, const bool inMatchRange) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseBooleanOr(const bool inTemplate, const bool inMatchRange) {
         auto node = this->parseBooleanXor(inTemplate, inMatchRange);
+        if (node == nullptr)
+            return nullptr;
 
         while (sequence(tkn::Operator::BoolOr)) {
-            node = create<ast::ASTNodeMathematicalExpression>(std::move(node), this->parseBooleanXor(inTemplate, inMatchRange), Token::Operator::BoolOr);
+            auto other = this->parseBooleanXor(inTemplate, inMatchRange);
+            if (other == nullptr)
+                return nullptr;
+
+            node = create<ast::ASTNodeMathematicalExpression>(std::move(node), std::move(other), Token::Operator::BoolOr);
         }
 
         return node;
     }
 
     // (parseBooleanOr) ? (parseBooleanOr) : (parseBooleanOr)
-    safe_unique_ptr<ast::ASTNode> Parser::parseTernaryConditional(const bool inTemplate, const bool inMatchRange) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseTernaryConditional(const bool inTemplate, const bool inMatchRange) {
         auto node = this->parseBooleanOr(inTemplate, inMatchRange);
+        if (node == nullptr)
+            return nullptr;
 
         while (sequence(tkn::Operator::TernaryConditional)) {
             auto second = this->parseBooleanOr(inTemplate, inMatchRange);
@@ -467,6 +575,9 @@ namespace pl::core {
             }
 
             auto third = this->parseBooleanOr(inTemplate, inMatchRange);
+            if (second == nullptr || third == nullptr)
+                return nullptr;
+
             node = create<ast::ASTNodeTernaryExpression>(std::move(node), std::move(second), std::move(third), Token::Operator::TernaryConditional);
         }
 
@@ -474,7 +585,7 @@ namespace pl::core {
     }
 
     // (parseTernaryConditional)
-    safe_unique_ptr<ast::ASTNode> Parser::parseMathematicalExpression(const bool inTemplate, const bool inMatchRange) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMathematicalExpression(const bool inTemplate, const bool inMatchRange) {
         return this->parseTernaryConditional(inTemplate, inMatchRange);
     }
 
@@ -494,9 +605,13 @@ namespace pl::core {
             auto attribute = parseNamespaceResolution();
 
             if (sequence(tkn::Separator::LeftParenthesis)) {
-                std::vector<safe_unique_ptr<ast::ASTNode>> args;
+                std::vector<hlp::safe_unique_ptr<ast::ASTNode>> args;
                 do {
-                    args.push_back(parseMathematicalExpression());
+                    auto expression = parseMathematicalExpression();
+                    if (expression == nullptr)
+                        continue;
+
+                    args.push_back(std::move(expression));
                 } while (sequence(tkn::Separator::Comma));
 
                 if (!sequence(tkn::Separator::RightParenthesis)) {
@@ -515,7 +630,7 @@ namespace pl::core {
 
     /* Functions */
 
-    safe_unique_ptr<ast::ASTNode> Parser::parseFunctionDefinition() {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseFunctionDefinition() {
         const auto &functionName = getValue<Token::Identifier>(-1).get();
         std::vector<std::pair<std::string, std::unique_ptr<ast::ASTNode>>> params;
         std::optional<std::string> parameterPack;
@@ -527,7 +642,7 @@ namespace pl::core {
         // Parse parameter list
         const bool hasParams        = !peek(tkn::Separator::RightParenthesis);
         u32 unnamedParamCount = 0;
-        std::vector<safe_unique_ptr<ast::ASTNode>> defaultParameters;
+        std::vector<hlp::safe_unique_ptr<ast::ASTNode>> defaultParameters;
 
         while (hasParams) {
             if (sequence(tkn::ValueType::Auto, tkn::Separator::Dot, tkn::Separator::Dot, tkn::Separator::Dot, tkn::Literal::Identifier)) {
@@ -540,6 +655,8 @@ namespace pl::core {
             }
 
             auto type = parseType();
+            if (type == nullptr)
+                return nullptr;
 
             if (sequence(tkn::Literal::Identifier))
                 params.emplace_back(getValue<Token::Identifier>(-1).get(), std::move(type));
@@ -550,7 +667,11 @@ namespace pl::core {
 
             if (sequence(tkn::Operator::Assign)) {
                 // Parse default parameters
-                defaultParameters.push_back(parseMathematicalExpression());
+                auto expression = parseMathematicalExpression();
+                if (expression == nullptr)
+                    return nullptr;
+
+                defaultParameters.push_back(std::move(expression));
             } else {
                 if (!defaultParameters.empty()) {
                     error("Expected default argument value for parameter '{}', got {}.", params.back().first,  getFormattedToken(0));
@@ -575,18 +696,24 @@ namespace pl::core {
 
 
         // Parse function body
-        std::vector<safe_unique_ptr<ast::ASTNode>> body;
+        std::vector<hlp::safe_unique_ptr<ast::ASTNode>> body;
 
         while (!sequence(tkn::Separator::RightBrace)) {
-            body.push_back(this->parseFunctionStatement());
+            auto statement = parseFunctionStatement();
+            if (statement == nullptr)
+                continue;
+
+            body.push_back(std::move(statement));
         }
 
         return create<ast::ASTNodeFunctionDefinition>(getNamespacePrefixedNames(functionName).back(), std::move(params), unwrapSafePointerVector(std::move(body)), parameterPack, unwrapSafePointerVector(std::move(defaultParameters)));
     }
 
-    safe_unique_ptr<ast::ASTNode> Parser::parseFunctionVariableDecl(const bool constant) {
-        safe_unique_ptr<ast::ASTNode> statement;
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseFunctionVariableDecl(const bool constant) {
+        hlp::safe_unique_ptr<ast::ASTNode> statement;
         auto type = parseType();
+        if (type == nullptr)
+            return nullptr;
 
         if (sequence(tkn::Literal::Identifier)) {
             auto identifier = getValue<Token::Identifier>(-1).get();
@@ -599,7 +726,7 @@ namespace pl::core {
                 if (sequence(tkn::Operator::Assign)) {
                     auto expression = parseMathematicalExpression();
 
-                    std::vector<safe_unique_ptr<ast::ASTNode>> compoundStatement;
+                    std::vector<hlp::safe_unique_ptr<ast::ASTNode>> compoundStatement;
                     {
                         compoundStatement.push_back(std::move(statement));
                         compoundStatement.push_back(create<ast::ASTNodeLValueAssignment>(identifier, std::move(expression)));
@@ -616,8 +743,8 @@ namespace pl::core {
         return statement;
     }
 
-    safe_unique_ptr<ast::ASTNode> Parser::parseFunctionStatement(bool needsSemicolon) {
-        safe_unique_ptr<ast::ASTNode> statement;
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseFunctionStatement(bool needsSemicolon) {
+        hlp::safe_unique_ptr<ast::ASTNode> statement;
 
         if (sequence(tkn::Literal::Identifier, tkn::Operator::Assign))
             statement = parseFunctionVariableAssignment(getValue<Token::Identifier>(-2).get());
@@ -688,13 +815,13 @@ namespace pl::core {
         return statement;
     }
 
-    safe_unique_ptr<ast::ASTNode> Parser::parseFunctionVariableAssignment(const std::string &lvalue) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseFunctionVariableAssignment(const std::string &lvalue) {
         auto rvalue = this->parseMathematicalExpression();
 
         return create<ast::ASTNodeLValueAssignment>(lvalue, std::move(rvalue));
     }
 
-    safe_unique_ptr<ast::ASTNode> Parser::parseFunctionVariableCompoundAssignment(const std::string &lvalue) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseFunctionVariableCompoundAssignment(const std::string &lvalue) {
         auto op = getValue<Token::Operator>(-2);
 
         if (op == Token::Operator::BoolLessThan)
@@ -707,7 +834,7 @@ namespace pl::core {
         return create<ast::ASTNodeLValueAssignment>(lvalue, create<ast::ASTNodeMathematicalExpression>(create<ast::ASTNodeRValue>(hlp::moveToVector<ast::ASTNodeRValue::PathSegment>(lvalue)), std::move(rvalue), op));
     }
 
-    safe_unique_ptr<ast::ASTNode> Parser::parseFunctionControlFlowStatement() {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseFunctionControlFlowStatement() {
         ControlFlowStatement type;
         if (peek(tkn::Keyword::Return, -1))
             type = ControlFlowStatement::Return;
@@ -729,8 +856,8 @@ namespace pl::core {
         return nullptr;
     }
 
-    std::vector<safe_unique_ptr<ast::ASTNode>> Parser::parseStatementBody(const std::function<safe_unique_ptr<ast::ASTNode>()> &memberParser) {
-        std::vector<safe_unique_ptr<ast::ASTNode>> body;
+    std::vector<hlp::safe_unique_ptr<ast::ASTNode>> Parser::parseStatementBody(const std::function<hlp::safe_unique_ptr<ast::ASTNode>()> &memberParser) {
+        std::vector<hlp::safe_unique_ptr<ast::ASTNode>> body;
 
         if (sequence(tkn::Separator::LeftBrace)) {
             while (!sequence(tkn::Separator::RightBrace)) {
@@ -743,7 +870,7 @@ namespace pl::core {
         return body;
     }
 
-    safe_unique_ptr<ast::ASTNode> Parser::parseFunctionWhileLoop() {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseFunctionWhileLoop() {
         auto condition = parseMathematicalExpression();
 
         if (!sequence(tkn::Separator::RightParenthesis)) {
@@ -751,12 +878,12 @@ namespace pl::core {
             return nullptr;
         }
 
-        std::vector<safe_unique_ptr<ast::ASTNode>> body = parseStatementBody([&] { return parseFunctionStatement(); });
+        std::vector<hlp::safe_unique_ptr<ast::ASTNode>> body = parseStatementBody([&] { return parseFunctionStatement(); });
 
         return create<ast::ASTNodeWhileStatement>(std::move(condition), unwrapSafePointerVector(std::move(body)));
     }
 
-    safe_unique_ptr<ast::ASTNode> Parser::parseFunctionForLoop() {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseFunctionForLoop() {
         auto preExpression = parseFunctionStatement(false);
 
         if (!sequence(tkn::Separator::Comma)) {
@@ -778,9 +905,9 @@ namespace pl::core {
             return nullptr;
         }
 
-        std::vector<safe_unique_ptr<ast::ASTNode>> body = parseStatementBody([&] { return parseFunctionStatement(); });
+        std::vector<hlp::safe_unique_ptr<ast::ASTNode>> body = parseStatementBody([&] { return parseFunctionStatement(); });
 
-        std::vector<safe_unique_ptr<ast::ASTNode>> compoundStatement;
+        std::vector<hlp::safe_unique_ptr<ast::ASTNode>> compoundStatement;
         {
             compoundStatement.push_back(std::move(preExpression));
             compoundStatement.push_back(create<ast::ASTNodeWhileStatement>(std::move(condition), unwrapSafePointerVector(std::move(body)), std::move(postExpression)));
@@ -792,7 +919,7 @@ namespace pl::core {
     /* Control flow */
 
     // if ((parseMathematicalExpression)) { (parseMember) }
-    safe_unique_ptr<ast::ASTNode> Parser::parseConditional(const std::function<safe_unique_ptr<ast::ASTNode>()> &memberParser) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseConditional(const std::function<hlp::safe_unique_ptr<ast::ASTNode>()> &memberParser) {
         if (!sequence(tkn::Separator::LeftParenthesis)) {
             error("Expected '(' after 'if', got {}.", getFormattedToken(0));
             return nullptr;
@@ -807,15 +934,15 @@ namespace pl::core {
 
         auto trueBody = parseStatementBody(memberParser);
 
-        std::vector<safe_unique_ptr<ast::ASTNode>> falseBody;
+        std::vector<hlp::safe_unique_ptr<ast::ASTNode>> falseBody;
         if (sequence(tkn::Keyword::Else))
             falseBody = parseStatementBody(memberParser);
 
         return create<ast::ASTNodeConditionalStatement>(std::move(condition), unwrapSafePointerVector(std::move(trueBody)), unwrapSafePointerVector(std::move(falseBody)));
     }
 
-    std::pair<safe_unique_ptr<ast::ASTNode>, bool> Parser::parseCaseParameters(const std::vector<safe_unique_ptr<ast::ASTNode>> &matchParameters) {
-        safe_unique_ptr<ast::ASTNode> condition = nullptr;
+    std::pair<hlp::safe_unique_ptr<ast::ASTNode>, bool> Parser::parseCaseParameters(const std::vector<hlp::safe_unique_ptr<ast::ASTNode>> &matchParameters) {
+        hlp::safe_unique_ptr<ast::ASTNode> condition = nullptr;
 
         size_t caseIndex = 0;
         bool isDefault = true;
@@ -825,7 +952,7 @@ namespace pl::core {
                 break;
             }
 
-            safe_unique_ptr<ast::ASTNode> currentCondition = nullptr;
+            hlp::safe_unique_ptr<ast::ASTNode> currentCondition = nullptr;
             if (sequence(tkn::Keyword::Underscore)) {
                 // if '_' is found, act as wildcard, push literal(true)
                 currentCondition = std::make_unique<ast::ASTNodeLiteral>(true);
@@ -887,7 +1014,7 @@ namespace pl::core {
     }
 
     // match ((parseParameters)) { (parseParameters { (parseMember) })*, default { (parseMember) } }
-    safe_unique_ptr<ast::ASTNode> Parser::parseMatchStatement(const std::function<safe_unique_ptr<ast::ASTNode>()> &memberParser) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMatchStatement(const std::function<hlp::safe_unique_ptr<ast::ASTNode>()> &memberParser) {
         if (!sequence(tkn::Separator::LeftParenthesis)) {
             error("Expected '(' after 'match', got {}.", getFormattedToken(0));
             return nullptr;
@@ -931,8 +1058,8 @@ namespace pl::core {
     }
 
     // try { (parseMember) } catch { (parseMember) }
-    safe_unique_ptr<ast::ASTNode> Parser::parseTryCatchStatement(const std::function<safe_unique_ptr<ast::ASTNode>()> &memberParser) {
-        std::vector<safe_unique_ptr<ast::ASTNode>> tryBody, catchBody;
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseTryCatchStatement(const std::function<hlp::safe_unique_ptr<ast::ASTNode>()> &memberParser) {
+        std::vector<hlp::safe_unique_ptr<ast::ASTNode>> tryBody, catchBody;
         while (!sequence(tkn::Separator::RightBrace)) {
             tryBody.emplace_back(memberParser());
         }
@@ -953,7 +1080,7 @@ namespace pl::core {
     }
 
     // while ((parseMathematicalExpression))
-    safe_unique_ptr<ast::ASTNode> Parser::parseWhileStatement() {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseWhileStatement() {
         auto condition = parseMathematicalExpression();
 
         if (!sequence(tkn::Separator::RightParenthesis)) {
@@ -966,7 +1093,7 @@ namespace pl::core {
 
     /* Type declarations */
 
-    safe_unique_ptr<ast::ASTNodeTypeDecl> Parser::getCustomType(const std::string &baseTypeName) {
+    hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> Parser::getCustomType(const std::string &baseTypeName) {
         if (!this->m_currTemplateType.empty())
             for (const auto &templateParameter : this->m_currTemplateType.front()->getTemplateParameters()) {
                 if (const auto templateType = dynamic_cast<ast::ASTNodeTypeDecl*>(templateParameter.get()); templateType != nullptr)
@@ -986,7 +1113,7 @@ namespace pl::core {
     }
 
     // <Identifier[, Identifier]>
-    void Parser::parseCustomTypeParameters(safe_unique_ptr<ast::ASTNodeTypeDecl> &type) {
+    void Parser::parseCustomTypeParameters(hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> &type) {
         if (const auto actualType = dynamic_cast<ast::ASTNodeTypeDecl*>(type->getType().get()); actualType != nullptr)
             if (const auto &templateTypes = actualType->getTemplateParameters(); !templateTypes.empty()) {
                 if (!sequence(tkn::Operator::BoolLessThan)) {
@@ -1030,12 +1157,12 @@ namespace pl::core {
                     return;
                 }
 
-                type = safe_unique_ptr<ast::ASTNodeTypeDecl>(static_cast<ast::ASTNodeTypeDecl*>(type->clone().release()));
+                type = hlp::safe_unique_ptr<ast::ASTNodeTypeDecl>(static_cast<ast::ASTNodeTypeDecl*>(type->clone().release()));
             }
     }
 
     // Identifier
-    safe_unique_ptr<ast::ASTNodeTypeDecl> Parser::parseCustomType() {
+    hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> Parser::parseCustomType() {
         auto baseTypeName = parseNamespaceResolution();
         auto type = getCustomType(baseTypeName);
 
@@ -1050,7 +1177,7 @@ namespace pl::core {
     }
 
     // [be|le] <Identifier|u8|u16|u24|u32|u48|u64|u96|u128|s8|s16|s24|s32|s48|s64|s96|s128|float|double|str>
-    safe_unique_ptr<ast::ASTNodeTypeDecl> Parser::parseType() {
+    hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> Parser::parseType() {
         const bool reference = sequence(tkn::Keyword::Reference);
 
         std::optional<std::endian> endian;
@@ -1059,7 +1186,7 @@ namespace pl::core {
         else if (sequence(tkn::Keyword::BigEndian))
             endian = std::endian::big;
 
-        safe_unique_ptr<ast::ASTNodeTypeDecl> result = nullptr;
+        hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> result = nullptr;
         if (sequence(tkn::Literal::Identifier)) {    // Custom type
             result = parseCustomType();
         } else if (sequence(tkn::ValueType::Any)) {    // Builtin type
@@ -1080,8 +1207,8 @@ namespace pl::core {
     }
 
     // <(parseType), ...>
-    std::vector<safe_shared_ptr<ast::ASTNode>> Parser::parseTemplateList() {
-        std::vector<safe_shared_ptr<ast::ASTNode>> result;
+    std::vector<hlp::safe_shared_ptr<ast::ASTNode>> Parser::parseTemplateList() {
+        std::vector<hlp::safe_shared_ptr<ast::ASTNode>> result;
 
         if (sequence(tkn::Operator::BoolLessThan)) {
             do {
@@ -1106,7 +1233,7 @@ namespace pl::core {
     }
 
     // using Identifier = (parseType)
-    safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseUsingDeclaration() {
+    hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseUsingDeclaration() {
         const auto name = getValue<Token::Identifier>(-1).get();
 
         auto templateList = this->parseTemplateList();
@@ -1137,8 +1264,8 @@ namespace pl::core {
     }
 
     // padding[(parseMathematicalExpression)]
-    safe_unique_ptr<ast::ASTNode> Parser::parsePadding() {
-        safe_unique_ptr<ast::ASTNode> size;
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parsePadding() {
+        hlp::safe_unique_ptr<ast::ASTNode> size;
         if (sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis))
             size = parseWhileStatement();
         else
@@ -1153,10 +1280,10 @@ namespace pl::core {
     }
 
     // (parseType) Identifier
-    safe_unique_ptr<ast::ASTNode> Parser::parseMemberVariable(const safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool allowSection, bool constant, const std::string &identifier) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMemberVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool allowSection, bool constant, const std::string &identifier) {
         if (peek(tkn::Separator::Comma)) {
 
-            std::vector<safe_shared_ptr<ast::ASTNode>> variables;
+            std::vector<hlp::safe_shared_ptr<ast::ASTNode>> variables;
 
             std::string variableName = identifier;
             do {
@@ -1175,8 +1302,8 @@ namespace pl::core {
 
             auto variableName = getValue<Token::Identifier>(-2).get();
 
-            safe_unique_ptr<ast::ASTNode> placementSection;
-            safe_unique_ptr<ast::ASTNode> placementOffset = parseMathematicalExpression();
+            hlp::safe_unique_ptr<ast::ASTNode> placementSection;
+            hlp::safe_unique_ptr<ast::ASTNode> placementOffset = parseMathematicalExpression();
 
             if (sequence(tkn::Keyword::In)) {
                 if (!allowSection) {
@@ -1190,7 +1317,7 @@ namespace pl::core {
             return create<ast::ASTNodeVariableDecl>(variableName, type, std::move(placementOffset), std::move(placementSection), false, false, constant);
         }
         if (sequence(tkn::Operator::Assign)) {
-            std::vector<safe_unique_ptr<ast::ASTNode>> compounds;
+            std::vector<hlp::safe_unique_ptr<ast::ASTNode>> compounds;
             compounds.push_back(create<ast::ASTNodeVariableDecl>(identifier, type, nullptr, create<ast::ASTNodeLiteral>(u128(ptrn::Pattern::PatternLocalSectionId)), false, false, constant));
             compounds.push_back(create<ast::ASTNodeLValueAssignment>(identifier, parseMathematicalExpression()));
 
@@ -1201,10 +1328,10 @@ namespace pl::core {
     }
 
     // (parseType) Identifier[(parseMathematicalExpression)]
-    safe_unique_ptr<ast::ASTNode> Parser::parseMemberArrayVariable(const safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool allowSection, bool constant) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMemberArrayVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool allowSection, bool constant) {
         auto name = getValue<Token::Identifier>(-2).get();
 
-        safe_unique_ptr<ast::ASTNode> size;
+        hlp::safe_unique_ptr<ast::ASTNode> size;
 
         if (!sequence(tkn::Separator::RightBracket)) {
             if (sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis))
@@ -1222,8 +1349,8 @@ namespace pl::core {
             if (constant)
                 error("Cannot mark placed variable as 'const'.", "Variables placed in memory are always implicitly const.");
 
-            safe_unique_ptr<ast::ASTNode> placementSection;
-            safe_unique_ptr<ast::ASTNode> placementOffset = parseMathematicalExpression();
+            hlp::safe_unique_ptr<ast::ASTNode> placementSection;
+            hlp::safe_unique_ptr<ast::ASTNode> placementOffset = parseMathematicalExpression();
 
             if (sequence(tkn::Keyword::In)) {
                 if (!allowSection) {
@@ -1241,7 +1368,7 @@ namespace pl::core {
     }
 
     // (parseType) *Identifier : (parseType)
-    safe_unique_ptr<ast::ASTNode> Parser::parseMemberPointerVariable(const safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMemberPointerVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
         auto sizeType = parseType();
 
@@ -1252,9 +1379,9 @@ namespace pl::core {
     }
 
     // (parseType) *Identifier[[(parseMathematicalExpression)]]  : (parseType)
-    safe_unique_ptr<ast::ASTNode> Parser::parseMemberPointerArrayVariable(const safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMemberPointerArrayVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
-        safe_unique_ptr<ast::ASTNode> size;
+        hlp::safe_unique_ptr<ast::ASTNode> size;
 
         if (!sequence(tkn::Separator::RightBracket)) {
             if (sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis))
@@ -1283,8 +1410,8 @@ namespace pl::core {
     }
 
     // [(parsePadding)|(parseMemberVariable)|(parseMemberArrayVariable)|(parseMemberPointerVariable)|(parseMemberArrayPointerVariable)]
-    safe_unique_ptr<ast::ASTNode> Parser::parseMember() {
-        safe_unique_ptr<ast::ASTNode> member;
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMember() {
+        hlp::safe_unique_ptr<ast::ASTNode> member;
 
         if (sequence(tkn::Operator::Dollar, tkn::Operator::Assign))
             member = parseFunctionVariableAssignment("$");
@@ -1343,6 +1470,9 @@ namespace pl::core {
             return nullptr;
         }
 
+        if (member == nullptr)
+            return nullptr;
+
         if (sequence(tkn::Separator::LeftBracket, tkn::Separator::LeftBracket))
             parseAttribute(dynamic_cast<ast::Attributable *>(member.get()));
 
@@ -1359,10 +1489,13 @@ namespace pl::core {
     }
 
     // struct Identifier { <(parseMember)...> }
-    safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseStruct() {
+    hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseStruct() {
         const auto &typeName = getValue<Token::Identifier>(-1).get();
 
         auto typeDecl   = addType(typeName, create<ast::ASTNodeStruct>());
+        if(typeDecl == nullptr)
+            return nullptr;
+
         const auto structNode = static_cast<ast::ASTNodeStruct *>(typeDecl->getType().get());
 
         typeDecl->setTemplateParameters(unwrapSafePointerVector(this->parseTemplateList()));
@@ -1380,7 +1513,12 @@ namespace pl::core {
                     error("Expected type to inherit from, got {}.", getFormattedToken(0));
                     return nullptr;
                 }
-                structNode->addInheritance(parseCustomType());
+
+                auto customType = parseCustomType();
+                if (customType == nullptr)
+                    continue;
+
+                structNode->addInheritance(std::move(customType));
             } while (sequence(tkn::Separator::Comma));
         }
 
@@ -1390,7 +1528,11 @@ namespace pl::core {
         }
 
         while (!sequence(tkn::Separator::RightBrace)) {
-            structNode->addMember(parseMember());
+            auto member = parseMember();
+            if(member == nullptr)
+                continue;
+
+            structNode->addMember(std::move(member));
         }
         this->m_currTemplateType.pop_back();
 
@@ -1398,7 +1540,7 @@ namespace pl::core {
     }
 
     // union Identifier { <(parseMember)...> }
-    safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseUnion() {
+    hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseUnion() {
         const auto &typeName = getValue<Token::Identifier>(-1).get();
 
         auto typeDecl  = addType(typeName, create<ast::ASTNodeUnion>());
@@ -1421,7 +1563,7 @@ namespace pl::core {
     }
 
     // enum Identifier : (parseType) { <<Identifier|Identifier = (parseMathematicalExpression)[,]>...> }
-    safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseEnum() {
+    hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseEnum() {
         const auto typeName = getValue<Token::Identifier>(-1).get();
 
         if (!sequence(tkn::Operator::Colon)) {
@@ -1430,12 +1572,18 @@ namespace pl::core {
         }
 
         auto underlyingType = parseType();
+        if(underlyingType == nullptr)
+            return nullptr;
+
         if (underlyingType->getEndian().has_value()) {
             errorDesc("Underlying enum type may not have an endian specifier.", "Use the 'be' or 'le' keyword when declaring a variable instead.");
             return nullptr;
         }
 
         auto typeDecl = addType(typeName, create<ast::ASTNodeEnum>(std::move(underlyingType)));
+        if(typeDecl == nullptr)
+            return nullptr;
+
         const auto enumNode = static_cast<ast::ASTNodeEnum *>(typeDecl->getType().get());
 
         if (!sequence(tkn::Separator::LeftBrace)) {
@@ -1443,14 +1591,17 @@ namespace pl::core {
             return nullptr;
         }
 
-        safe_unique_ptr<ast::ASTNode> lastEntry;
+        hlp::safe_unique_ptr<ast::ASTNode> lastEntry;
         while (!sequence(tkn::Separator::RightBrace)) {
-            safe_unique_ptr<ast::ASTNode> enumValue;
+            hlp::safe_unique_ptr<ast::ASTNode> enumValue;
             std::string name;
 
             if (sequence(tkn::Literal::Identifier, tkn::Operator::Assign)) {
                 name  = getValue<Token::Identifier>(-2).get();
                 enumValue = parseMathematicalExpression();
+
+                if(enumValue == nullptr)
+                    return nullptr;
 
                 lastEntry = enumValue->clone();
             } else if (sequence(tkn::Literal::Identifier)) {
@@ -1488,8 +1639,8 @@ namespace pl::core {
 
 
     // [Identifier : (parseMathematicalExpression);|Identifier identifier;|(parseFunctionControlFlowStatement)|(parseIfStatement)|(parseMatchStatement)]
-    safe_unique_ptr<ast::ASTNode> Parser::parseBitfieldEntry() {
-        safe_unique_ptr<ast::ASTNode> member = nullptr;
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseBitfieldEntry() {
+        hlp::safe_unique_ptr<ast::ASTNode> member = nullptr;
 
         if (sequence(tkn::Literal::Identifier, tkn::Operator::Assign)) {
             const auto variableName = getValue<Token::Identifier>(-2).get();
@@ -1505,7 +1656,7 @@ namespace pl::core {
         } else if (sequence(tkn::ValueType::Padding, tkn::Operator::Colon))
             member = create<ast::ASTNodeBitfieldField>("$padding$", parseMathematicalExpression());
         else if (peek(tkn::Literal::Identifier) || peek(tkn::ValueType::Any)) {
-            safe_unique_ptr<ast::ASTNodeTypeDecl> type = nullptr;
+            hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> type = nullptr;
 
             if (sequence(tkn::ValueType::Any)) {
                 const auto typeToken = getValue<Token::ValueType>(-1);
@@ -1534,7 +1685,7 @@ namespace pl::core {
                 // (parseType) Identifier[[(parseMathematicalExpression)|(parseWhileStatement)]];
                 auto fieldName = getValue<Token::Identifier>(-2).get();
 
-                safe_unique_ptr<ast::ASTNode> size;
+                hlp::safe_unique_ptr<ast::ASTNode> size;
                 if (sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis))
                     size = parseWhileStatement();
                 else
@@ -1573,6 +1724,7 @@ namespace pl::core {
             member = parseFunctionControlFlowStatement();
         else {
             error("Invalid bitfield member definition.");
+            next();
             return nullptr;
         }
 
@@ -1593,7 +1745,7 @@ namespace pl::core {
     }
 
     // bitfield Identifier { ... }
-    safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseBitfield() {
+    hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseBitfield() {
         const std::string typeName = getValue<Token::Identifier>(-1).get();
 
         auto typeDecl = addType(typeName, create<ast::ASTNodeBitfield>());
@@ -1627,13 +1779,13 @@ namespace pl::core {
     }
 
     // (parseType) Identifier @ Integer
-    safe_unique_ptr<ast::ASTNode> Parser::parseVariablePlacement(const safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
         bool inVariable  = false;
         bool outVariable = false;
 
         auto name = getValue<Token::Identifier>(-1).get();
 
-        safe_unique_ptr<ast::ASTNode> placementOffset, placementSection;
+        hlp::safe_unique_ptr<ast::ASTNode> placementOffset, placementSection;
         if (sequence(tkn::Operator::At)) {
             placementOffset = parseMathematicalExpression();
 
@@ -1644,7 +1796,7 @@ namespace pl::core {
         } else if (sequence(tkn::Keyword::Out)) {
             outVariable = true;
         } else if (sequence(tkn::Operator::Assign)) {
-            std::vector<safe_unique_ptr<ast::ASTNode>> compounds;
+            std::vector<hlp::safe_unique_ptr<ast::ASTNode>> compounds;
 
             compounds.push_back(create<ast::ASTNodeVariableDecl>(name, type, std::move(placementOffset), nullptr, inVariable, outVariable));
             compounds.push_back(create<ast::ASTNodeLValueAssignment>(name, parseMathematicalExpression()));
@@ -1675,10 +1827,10 @@ namespace pl::core {
     }
 
     // (parseType) Identifier[[(parseMathematicalExpression)]] @ Integer
-    safe_unique_ptr<ast::ASTNode> Parser::parseArrayVariablePlacement(const safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseArrayVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
 
-        safe_unique_ptr<ast::ASTNode> size;
+        hlp::safe_unique_ptr<ast::ASTNode> size;
 
         if (!sequence(tkn::Separator::RightBracket)) {
             if (sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis))
@@ -1692,7 +1844,7 @@ namespace pl::core {
             }
         }
 
-        safe_unique_ptr<ast::ASTNode> placementOffset, placementSection;
+        hlp::safe_unique_ptr<ast::ASTNode> placementOffset, placementSection;
         if (sequence(tkn::Operator::At)) {
             placementOffset = parseMathematicalExpression();
 
@@ -1704,7 +1856,7 @@ namespace pl::core {
     }
 
     // (parseType) *Identifier : (parseType) @ Integer
-    safe_unique_ptr<ast::ASTNode> Parser::parsePointerVariablePlacement(const safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parsePointerVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
 
         auto sizeType = parseType();
@@ -1716,7 +1868,7 @@ namespace pl::core {
 
         auto placementOffset = parseMathematicalExpression();
 
-        safe_unique_ptr<ast::ASTNode> placementSection;
+        hlp::safe_unique_ptr<ast::ASTNode> placementSection;
         if (sequence(tkn::Keyword::In))
             placementSection = parseMathematicalExpression();
 
@@ -1724,16 +1876,19 @@ namespace pl::core {
     }
 
     // (parseType) *Identifier[[(parseMathematicalExpression)]] : (parseType) @ Integer
-    safe_unique_ptr<ast::ASTNode> Parser::parsePointerArrayVariablePlacement(const safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parsePointerArrayVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
 
-        safe_unique_ptr<ast::ASTNode> size;
+        hlp::safe_unique_ptr<ast::ASTNode> size;
 
         if (!sequence(tkn::Separator::RightBracket)) {
             if (sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis))
                 size = parseWhileStatement();
             else
                 size = parseMathematicalExpression();
+
+            if (size == nullptr)
+                return nullptr;
 
             if (!sequence(tkn::Separator::RightBracket)) {
                 error("Expected ']' at end of array declaration, got {}.", getFormattedToken(0));
@@ -1747,6 +1902,8 @@ namespace pl::core {
         }
 
         auto sizeType = parseType();
+        if (sizeType == nullptr)
+            return nullptr;
 
         if (!sequence(tkn::Operator::At)) {
             error("Expected '@' after pointer placement, got {}.", getFormattedToken(0));
@@ -1755,15 +1912,15 @@ namespace pl::core {
 
         auto placementOffset = parseMathematicalExpression();
 
-        safe_unique_ptr<ast::ASTNode> placementSection;
+        hlp::safe_unique_ptr<ast::ASTNode> placementSection;
         if (sequence(tkn::Keyword::In))
             placementSection = parseMathematicalExpression();
 
         return create<ast::ASTNodePointerVariableDecl>(name, createShared<ast::ASTNodeArrayVariableDecl>("", type, std::move(size)), std::move(sizeType), std::move(placementOffset), std::move(placementSection));
     }
 
-    std::vector<safe_shared_ptr<ast::ASTNode>> Parser::parseNamespace() {
-        std::vector<safe_shared_ptr<ast::ASTNode>> statements;
+    std::vector<hlp::safe_shared_ptr<ast::ASTNode>> Parser::parseNamespace() {
+        std::vector<hlp::safe_shared_ptr<ast::ASTNode>> statements;
 
         if (!sequence(tkn::Literal::Identifier)) {
             error("Expected identifier after 'namespace', got {}.", getFormattedToken(0));
@@ -1794,8 +1951,10 @@ namespace pl::core {
         return statements;
     }
 
-    safe_unique_ptr<ast::ASTNode> Parser::parsePlacement() {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parsePlacement() {
         auto type = parseType();
+        if (type == nullptr)
+            return nullptr;
 
         if (sequence(tkn::Literal::Identifier, tkn::Separator::LeftBracket))
             return parseArrayVariablePlacement(std::move(type));
@@ -1814,8 +1973,8 @@ namespace pl::core {
     /* Program */
 
     // <(parseUsingDeclaration)|(parseVariablePlacement)|(parseStruct)>
-    std::vector<safe_shared_ptr<ast::ASTNode>> Parser::parseStatements() {
-        safe_shared_ptr<ast::ASTNode> statement;
+    std::vector<hlp::safe_shared_ptr<ast::ASTNode>> Parser::parseStatements() {
+        hlp::safe_shared_ptr<ast::ASTNode> statement;
         bool requiresSemicolon = true;
 
         if (const auto docComment = parseDocComment(true); docComment.has_value())
@@ -1903,7 +2062,7 @@ namespace pl::core {
         return std::nullopt;
     }
 
-    safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::addType(const std::string &name, safe_unique_ptr<ast::ASTNode> &&node, std::optional<std::endian> endian) {
+    hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::addType(const std::string &name, hlp::safe_unique_ptr<ast::ASTNode> &&node, std::optional<std::endian> endian) {
         auto typeName = getNamespacePrefixedNames(name).back();
 
         if (this->m_types.contains(typeName) && this->m_types.at(typeName)->isForwardDeclared()) {
@@ -1913,7 +2072,7 @@ namespace pl::core {
         }
 
         if (!this->m_types.contains(typeName)) {
-            safe_shared_ptr typeDecl = createShared<ast::ASTNodeTypeDecl>(typeName, std::move(node), endian);
+            hlp::safe_shared_ptr typeDecl = createShared<ast::ASTNodeTypeDecl>(typeName, std::move(node), endian);
             this->m_types.insert({typeName, typeDecl});
 
             return typeDecl;
@@ -1995,7 +2154,7 @@ namespace pl::core {
             return { unwrapSafePointerVector(std::move(program)), this->collectErrors() };
         }
         catch (const std::out_of_range&) { }
-        catch (const std::runtime_error&) { }
+        catch (const UnrecoverableParserException&) { }
 
         return { std::nullopt, this->collectErrors() };
     }

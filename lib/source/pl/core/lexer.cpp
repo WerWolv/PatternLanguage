@@ -79,13 +79,23 @@ namespace pl::core {
                 case 'x': {
                     const char hex[3] = { m_sourceCode[m_cursor], m_sourceCode[m_cursor + 1], 0 };
                     m_cursor += 2;
-                    return static_cast<char>(std::stoul(hex, nullptr, 16));
+                    try {
+                        return static_cast<char>(std::stoul(hex, nullptr, 16));
+                    } catch (const std::invalid_argument&) {
+                        error("Invalid hex escape sequence: {}", hex);
+                        return std::nullopt;
+                    }
                 }
                 case 'u': {
                     const char hex[5] = { m_sourceCode[m_cursor], m_sourceCode[m_cursor + 1], m_sourceCode[m_cursor + 2],
                                     m_sourceCode[m_cursor + 3], 0 };
                     m_cursor += 4;
-                    return static_cast<char>(std::stoul(hex, nullptr, 16));
+                    try {
+                        return static_cast<char>(std::stoul(hex, nullptr, 16));
+                    } catch (const std::invalid_argument&) {
+                        error("Invalid unicode escape sequence: {}", hex);
+                        return std::nullopt;
+                    }
                 }
                 default:
                     error("Unknown escape sequence: {}", m_sourceCode[m_cursor-1]);
@@ -427,12 +437,16 @@ namespace pl::core {
                         }
                     } else {
                         error("Expected '/' after '//' but got '//{}'", type);
+                        // forward
+                        m_cursor++;
                     }
                     continue;
                 }
                 if(category == '*') {
                     if(type != '!' && type != '*') {
                         error("Invalid documentation comment. Expected '/**' or '/*!', got '/*{}", type);
+                        // forward
+                        m_cursor++;
                         continue;
                     }
                     const auto token = parseMultiLineDocComment();
