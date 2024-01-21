@@ -6,7 +6,15 @@
 
 namespace pl::hlp {
 
-    template <typename Iter>
+    template <typename T>
+    concept IteratorLike = requires(T t) {
+        typename T::value_type;
+        typename T::reference;
+        typename T::pointer;
+        typename T::difference_type;
+    };
+
+    template <IteratorLike Iter>
     class SafeIterator {
         using Type = typename Iter::value_type;
         using Reference = typename Iter::reference;
