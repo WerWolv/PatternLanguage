@@ -1260,10 +1260,16 @@ namespace pl::core {
         }
 
         auto type = addType(name, nullptr);
+        if (type == nullptr)
+            return nullptr;
+
         type->setTemplateParameters(unwrapSafePointerVector(std::move(templateList)));
 
         this->m_currTemplateType.push_back(type);
         auto replaceType = parseType();
+        if (replaceType == nullptr)
+            return nullptr;
+
         this->m_currTemplateType.pop_back();
 
 
@@ -1286,6 +1292,9 @@ namespace pl::core {
             size = parseWhileStatement();
         else
             size = parseMathematicalExpression();
+
+        if (size == nullptr)
+            return nullptr;
 
         if (!sequence(tkn::Separator::RightBracket)) {
             error("Expected ']' at end of array declaration, got {}.", getFormattedToken(0));
@@ -1328,6 +1337,8 @@ namespace pl::core {
                 }
 
                 placementSection = parseMathematicalExpression();
+                if (placementSection == nullptr)
+                    return nullptr;
             }
 
             return create<ast::ASTNodeVariableDecl>(variableName, type, std::move(placementOffset), std::move(placementSection), false, false, constant);
@@ -1335,7 +1346,11 @@ namespace pl::core {
         if (sequence(tkn::Operator::Assign)) {
             std::vector<hlp::safe_unique_ptr<ast::ASTNode>> compounds;
             compounds.push_back(create<ast::ASTNodeVariableDecl>(identifier, type, nullptr, create<ast::ASTNodeLiteral>(u128(ptrn::Pattern::PatternLocalSectionId)), false, false, constant));
-            compounds.push_back(create<ast::ASTNodeLValueAssignment>(identifier, parseMathematicalExpression()));
+            auto expression = parseMathematicalExpression();
+            if (expression == nullptr)
+                return nullptr;
+
+            compounds.push_back(create<ast::ASTNodeLValueAssignment>(identifier, std::move(expression)));
 
             return create<ast::ASTNodeCompoundStatement>(unwrapSafePointerVector(std::move(compounds)));
         }
@@ -1354,6 +1369,9 @@ namespace pl::core {
                 size = parseWhileStatement();
             else
                 size = parseMathematicalExpression();
+
+            if (size == nullptr)
+                return nullptr;
 
             if (!sequence(tkn::Separator::RightBracket)) {
                 error("Expected ']' at end of array declaration, got {}.", getFormattedToken(0));
@@ -1375,6 +1393,9 @@ namespace pl::core {
                 }
 
                 placementSection = parseMathematicalExpression();
+
+                if (placementSection == nullptr)
+                    return nullptr;
             }
 
             return create<ast::ASTNodeArrayVariableDecl>(name, type, std::move(size), std::move(placementOffset), std::move(placementSection), constant);
@@ -1388,8 +1409,16 @@ namespace pl::core {
         auto name = getValue<Token::Identifier>(-2).get();
         auto sizeType = parseType();
 
-        if (sequence(tkn::Operator::At))
-            return create<ast::ASTNodePointerVariableDecl>(name, type, std::move(sizeType), parseMathematicalExpression());
+        if (sizeType == nullptr)
+            return nullptr;
+
+        if (sequence(tkn::Operator::At)) {
+            auto expression = parseMathematicalExpression();
+            if (expression == nullptr)
+                return nullptr;
+
+            return create<ast::ASTNodePointerVariableDecl>(name, type, std::move(sizeType), std::move(expression));
+        }
 
         return create<ast::ASTNodePointerVariableDecl>(name, type, std::move(sizeType));
     }
@@ -1405,6 +1434,9 @@ namespace pl::core {
             else
                 size = parseMathematicalExpression();
 
+            if (size == nullptr)
+                return nullptr;
+
             if (!sequence(tkn::Separator::RightBracket)) {
                 error("Expected ']' at end of array declaration, got {}.", getFormattedToken(0));
                 return nullptr;
@@ -1417,10 +1449,18 @@ namespace pl::core {
         }
 
         auto sizeType = parseType();
+        if (sizeType == nullptr)
+            return nullptr;
+
         auto arrayType = createShared<ast::ASTNodeArrayVariableDecl>("", type, std::move(size));
 
-        if (sequence(tkn::Operator::At))
-            return create<ast::ASTNodePointerVariableDecl>(name, std::move(arrayType), std::move(sizeType), parseMathematicalExpression());
+        if (sequence(tkn::Operator::At)) {
+            auto expression = parseMathematicalExpression();
+            if (expression == nullptr)
+                return nullptr;
+
+            return create<ast::ASTNodePointerVariableDecl>(name, std::move(arrayType), std::move(sizeType), std::move(expression));
+        }
 
         return create<ast::ASTNodePointerVariableDecl>(name, std::move(arrayType), std::move(sizeType));
     }
@@ -1560,6 +1600,9 @@ namespace pl::core {
         const auto &typeName = getValue<Token::Identifier>(-1).get();
 
         auto typeDecl  = addType(typeName, create<ast::ASTNodeUnion>());
+        if (typeDecl == nullptr)
+            return nullptr;
+
         const auto unionNode = static_cast<ast::ASTNodeUnion *>(typeDecl->getType().get());
 
         typeDecl->setTemplateParameters(unwrapSafePointerVector(this->parseTemplateList()));
@@ -1571,7 +1614,11 @@ namespace pl::core {
 
         this->m_currTemplateType.push_back(typeDecl);
         while (!sequence(tkn::Separator::RightBrace)) {
-            unionNode->addMember(parseMember());
+            auto member = parseMember();
+            if(member == nullptr)
+                continue;
+
+            unionNode->addMember(std::move(member));
         }
         this->m_currTemplateType.pop_back();
 
@@ -1765,6 +1812,9 @@ namespace pl::core {
         const std::string typeName = getValue<Token::Identifier>(-1).get();
 
         auto typeDecl = addType(typeName, create<ast::ASTNodeBitfield>());
+        if (typeDecl == nullptr)
+            return nullptr;
+
         typeDecl->setTemplateParameters(unwrapSafePointerVector(this->parseTemplateList()));
         const auto bitfieldNode = static_cast<ast::ASTNodeBitfield *>(typeDecl->getType().get());
 
@@ -1774,7 +1824,11 @@ namespace pl::core {
         }
 
         while (!sequence(tkn::Separator::RightBrace)) {
-            bitfieldNode->addEntry(this->parseBitfieldEntry());
+            auto entry = parseBitfieldEntry();
+            if (entry == nullptr)
+                continue;
+
+            bitfieldNode->addEntry(std::move(entry));
 
             // Consume superfluous semicolons
             while (sequence(tkn::Separator::Semicolon))
@@ -1804,9 +1858,14 @@ namespace pl::core {
         hlp::safe_unique_ptr<ast::ASTNode> placementOffset, placementSection;
         if (sequence(tkn::Operator::At)) {
             placementOffset = parseMathematicalExpression();
+            if (placementOffset == nullptr)
+                return nullptr;
 
-            if (sequence(tkn::Keyword::In))
+            if (sequence(tkn::Keyword::In)) {
                 placementSection = parseMathematicalExpression();
+                if (placementSection == nullptr)
+                    return nullptr;
+            }
         } else if (sequence(tkn::Keyword::In)) {
             inVariable = true;
         } else if (sequence(tkn::Keyword::Out)) {
@@ -1815,7 +1874,11 @@ namespace pl::core {
             std::vector<hlp::safe_unique_ptr<ast::ASTNode>> compounds;
 
             compounds.push_back(create<ast::ASTNodeVariableDecl>(name, type, std::move(placementOffset), nullptr, inVariable, outVariable));
-            compounds.push_back(create<ast::ASTNodeLValueAssignment>(name, parseMathematicalExpression()));
+            auto expression = parseMathematicalExpression();
+            if (expression == nullptr)
+                return nullptr;
+
+            compounds.push_back(create<ast::ASTNodeLValueAssignment>(name, std::move(expression)));
 
             return create<ast::ASTNodeCompoundStatement>(unwrapSafePointerVector(std::move(compounds)));
         }
@@ -1854,6 +1917,9 @@ namespace pl::core {
             else
                 size = parseMathematicalExpression();
 
+            if (size == nullptr)
+                return nullptr;
+
             if (!sequence(tkn::Separator::RightBracket)) {
                 errorDesc("Expected ']' at end of array declaration, got {}.", getFormattedToken(0));
                 return nullptr;
@@ -1863,9 +1929,14 @@ namespace pl::core {
         hlp::safe_unique_ptr<ast::ASTNode> placementOffset, placementSection;
         if (sequence(tkn::Operator::At)) {
             placementOffset = parseMathematicalExpression();
+            if (placementOffset == nullptr)
+                return nullptr;
 
-            if (sequence(tkn::Keyword::In))
+            if (sequence(tkn::Keyword::In)) {
                 placementSection = parseMathematicalExpression();
+                if (placementSection == nullptr)
+                    return nullptr;
+            }
         }
 
         return create<ast::ASTNodeArrayVariableDecl>(name, type, std::move(size), std::move(placementOffset), std::move(placementSection));
@@ -1876,6 +1947,8 @@ namespace pl::core {
         auto name = getValue<Token::Identifier>(-2).get();
 
         auto sizeType = parseType();
+        if (sizeType == nullptr)
+            return nullptr;
 
         if (!sequence(tkn::Operator::At)) {
             error("Expected '@' after pointer placement, got {}.", getFormattedToken(0));
@@ -1883,10 +1956,15 @@ namespace pl::core {
         }
 
         auto placementOffset = parseMathematicalExpression();
+        if (placementOffset == nullptr)
+            return nullptr;
 
         hlp::safe_unique_ptr<ast::ASTNode> placementSection;
-        if (sequence(tkn::Keyword::In))
+        if (sequence(tkn::Keyword::In)) {
             placementSection = parseMathematicalExpression();
+            if (placementSection == nullptr)
+                return nullptr;
+        }
 
         return create<ast::ASTNodePointerVariableDecl>(name, type, std::move(sizeType), std::move(placementOffset), std::move(placementSection));
     }
