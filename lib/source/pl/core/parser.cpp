@@ -962,11 +962,17 @@ namespace pl::core {
 
                 do {
                     auto first = parseMathematicalExpression(false, true);
-                    auto nextCondition = [&]() {
+                    if (first == nullptr)
+                        continue;
+
+                    auto nextCondition = [&]() -> hlp::safe_unique_ptr<ast::ASTNode> {
                         if (sequence(tkn::Separator::Dot, tkn::Separator::Dot, tkn::Separator::Dot)) {
                             // range a ... b should compile to
                             // param >= a && param <= b
                             auto last = parseMathematicalExpression(false, true);
+                            if (last == nullptr)
+                                return nullptr;
+
                             auto firstCondition = create<ast::ASTNodeMathematicalExpression>(param->clone(), std::move(first), Token::Operator::BoolGreaterThanOrEqual);
                             auto lastCondition = create<ast::ASTNodeMathematicalExpression>(param->clone(), std::move(last), Token::Operator::BoolLessThanOrEqual);
                             return create<ast::ASTNodeMathematicalExpression>(std::move(firstCondition), std::move(lastCondition), Token::Operator::BoolAnd);
