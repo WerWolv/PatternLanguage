@@ -1067,7 +1067,11 @@ namespace pl::core {
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseTryCatchStatement(const std::function<hlp::safe_unique_ptr<ast::ASTNode>()> &memberParser) {
         std::vector<hlp::safe_unique_ptr<ast::ASTNode>> tryBody, catchBody;
         while (!sequence(tkn::Separator::RightBrace)) {
-            tryBody.emplace_back(memberParser());
+            auto member = memberParser();
+            if (member == nullptr)
+                continue;
+
+            tryBody.emplace_back(std::move(member));
         }
 
         if (sequence(tkn::Keyword::Catch)) {
@@ -1077,7 +1081,11 @@ namespace pl::core {
             }
 
             while (!sequence(tkn::Separator::RightBrace)) {
-                catchBody.emplace_back(memberParser());
+                auto member = memberParser();
+                if (member == nullptr)
+                    continue;
+
+                catchBody.emplace_back(std::move(member));
             }
         }
 
@@ -1088,6 +1096,8 @@ namespace pl::core {
     // while ((parseMathematicalExpression))
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseWhileStatement() {
         auto condition = parseMathematicalExpression();
+        if (condition == nullptr)
+            return nullptr;
 
         if (!sequence(tkn::Separator::RightParenthesis)) {
             error("Expected ')' after while head, got {}.", getFormattedToken(0));
