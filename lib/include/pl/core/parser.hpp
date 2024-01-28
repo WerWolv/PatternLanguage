@@ -227,11 +227,8 @@ namespace pl::core {
 
         /* Token consuming */
 
-        enum class Setting {
-            Normal = 0,
-            Not = 1
-        };
-        using enum Parser::Setting;
+        constexpr static u32 Normal = 0;
+        constexpr static u32 Not    = 1;
 
         bool begin() {
             this->m_originalPosition = this->m_curr;
@@ -259,7 +256,7 @@ namespace pl::core {
             return value;
         }
 
-        template<Setting S = Normal>
+        template<auto S = Normal>
         bool sequenceImpl() {
             if constexpr (S == Normal)
                 return true;
@@ -269,7 +266,7 @@ namespace pl::core {
                 std::unreachable();
         }
 
-        template<Setting S = Normal>
+        template<auto S = Normal>
         bool matchOne(const Token &token) {
             if constexpr (S == Normal) {
                 if (!peek(token)) {
@@ -290,18 +287,18 @@ namespace pl::core {
                 std::unreachable();
         }
 
-        template<Setting S = Normal>
+        template<auto S = Normal>
         bool sequenceImpl(const auto &... args) {
             return (matchOne<S>(args) && ...);
         }
 
-        template<Setting S = Normal>
+        template<auto S = Normal>
         bool sequence(const Token &token, const auto &... args) {
             partBegin();
             return sequenceImpl<S>(token, args...);
         }
 
-        template<Setting S = Normal>
+        template<auto S = Normal>
         bool oneOfImpl(const auto &... args) {
             if constexpr (S == Normal) {
                 if (!(... || peek(args))) {
@@ -324,7 +321,7 @@ namespace pl::core {
                 std::unreachable();
         }
 
-        template<Setting S = Normal>
+        template<auto S = Normal>
         bool oneOf(const Token &token, const auto &... args) {
             partBegin();
             return oneOfImpl<S>(token, args...);
