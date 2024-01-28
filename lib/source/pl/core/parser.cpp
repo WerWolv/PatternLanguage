@@ -2166,7 +2166,7 @@ namespace pl::core {
         }
 
         if (!this->m_types.contains(typeName)) {
-            hlp::safe_shared_ptr typeDecl = createShared<ast::ASTNodeTypeDecl>(typeName, std::move(node), endian);
+            auto typeDecl = createShared<ast::ASTNodeTypeDecl>(typeName, std::move(node), endian);
             this->m_types.insert({typeName, typeDecl});
 
             return typeDecl;
