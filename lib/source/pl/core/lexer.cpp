@@ -398,7 +398,8 @@ namespace pl::core {
 
                     addToken(tkn::Literal::DocComment(false, std::string(code.substr(commentStart, offset - commentStart))));
 
-                    offset += 2;
+                    line+=1;
+                    offset += 1;
                 } else if (c == '=') {
                     addToken(tkn::Operator::Assign);
                     offset += 1;
