@@ -28,6 +28,8 @@ namespace pl::gen::fmt {
 
     class FormatterPatternVisitor : public pl::PatternVisitor {
     public:
+        virtual ~FormatterPatternVisitor() = default;
+
         void enableMetaInformation(bool enable) { this->m_metaInformation = enable; }
         [[nodiscard]] bool isMetaInformationEnabled() const { return this->m_metaInformation; }
 

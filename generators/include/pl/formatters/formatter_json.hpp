@@ -1,12 +1,13 @@
-#include <pl/formatters/formatter.hpp>
+#pragma once
 
-#include <wolv/utils/string.hpp>
+#include <pl/formatters/formatter.hpp>
 
 namespace pl::gen::fmt {
 
     class JsonPatternVisitor : public FormatterPatternVisitor {
     public:
         JsonPatternVisitor() = default;
+        ~JsonPatternVisitor() override = default;
 
         void visit(pl::ptrn::PatternArrayDynamic& pattern)  override { formatArray(&pattern);       }
         void visit(pl::ptrn::PatternArrayStatic& pattern)   override { formatArray(&pattern);       }
@@ -56,8 +57,10 @@ namespace pl::gen::fmt {
             this->m_inArray = false;
         }
 
-        void formatString(pl::ptrn::Pattern *pattern) {
-            auto string = pattern->toString();
+        void formatString(const pl::ptrn::Pattern *pattern) {
+            if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
+
+            const auto string = pattern->toString();
 
             std::string result;
             for (char c : string) {
@@ -72,6 +75,8 @@ namespace pl::gen::fmt {
 
         template<typename T>
         void formatArray(T *pattern) {
+            if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
+
             addLine(pattern->getVariableName(), "[");
             pushIndent();
             pattern->forEachEntry(0, pattern->getEntryCount(), [&](u64, auto member) {
@@ -83,6 +88,8 @@ namespace pl::gen::fmt {
         }
 
         void formatPointer(ptrn::PatternPointer *pattern) {
+            if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
+
             addLine(pattern->getVariableName(), "{");
             pushIndent();
             pattern->getPointedAtPattern()->accept(*this);
@@ -92,6 +99,8 @@ namespace pl::gen::fmt {
 
         template<typename T>
         void formatObject(T *pattern) {
+            if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
+
             if (pattern->isSealed()) {
                 formatValue(pattern);
             } else {
@@ -109,8 +118,10 @@ namespace pl::gen::fmt {
             }
         }
 
-        void formatValue(pl::ptrn::Pattern *pattern) {
-            if (auto functionName = pattern->getReadFormatterFunction(); !functionName.empty())
+        void formatValue(const pl::ptrn::Pattern *pattern) {
+            if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
+
+            if (const auto &functionName = pattern->getReadFormatterFunction(); !functionName.empty())
                 formatString(pattern);
             else if (!pattern->isSealed()) {
                 auto literal = pattern->getValue();
