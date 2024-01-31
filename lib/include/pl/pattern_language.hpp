@@ -196,13 +196,13 @@ namespace pl {
          * @brief Gets the number of created patterns during the last execution
          * @return Number of patterns
          */
-        [[nodiscard]] u32 getCreatedPatternCount() const;
+        [[nodiscard]] u64 getCreatedPatternCount() const;
 
         /**
          * @brief Gets the maximum number of patterns allowed to be created
          * @return Maximum number of patterns
          */
-        [[nodiscard]] u32 getMaximumPatternCount() const;
+        [[nodiscard]] u64 getMaximumPatternCount() const;
 
         /**
          * @brief Gets the memory of a custom section that was created
