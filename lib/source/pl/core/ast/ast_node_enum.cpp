@@ -28,7 +28,7 @@ namespace pl::core::ast {
             err::E0005.throwError("'auto' can only be used with parameters.", { }, this);
         auto &underlying = nodes.front();
 
-        auto pattern = std::make_shared<ptrn::PatternEnum>(evaluator, underlying->getOffset(), 0);
+        auto pattern = std::make_shared<ptrn::PatternEnum>(evaluator, underlying->getOffset(), 0, getLine());
 
         pattern->setSection(evaluator->getSectionId());
 

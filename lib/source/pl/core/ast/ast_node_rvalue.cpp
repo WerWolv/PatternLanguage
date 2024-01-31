@@ -54,12 +54,13 @@ namespace pl::core::ast {
 
         if (this->getPath().size() == 1) {
             if (auto name = std::get_if<std::string>(&this->getPath().front()); name != nullptr) {
-                if (*name == "$") return std::unique_ptr<ASTNode>(new ASTNodeLiteral(u128(evaluator->getReadOffset())));
-                else if (*name == "null") return std::unique_ptr<ASTNode>(new ASTNodeLiteral(std::make_shared<ptrn::PatternPadding>(evaluator, 0, 0)));
+                if (*name == "$") return std::make_unique<ASTNodeLiteral>(u128(evaluator->getReadOffset()));
+                else if (*name == "null") return std::make_unique<ASTNodeLiteral>(
+                    std::make_shared<ptrn::PatternPadding>(evaluator, 0, 0, getLine()));
 
                 auto parameterPack = evaluator->getScope(0).parameterPack;
                 if (parameterPack && *name == parameterPack->name)
-                    return std::unique_ptr<ASTNode>(new ASTNodeParameterPack(std::move(parameterPack->values)));
+                    return std::make_unique<ASTNodeParameterPack>(std::move(parameterPack->values));
             }
         } else if (this->getPath().size() == 2) {
             if (auto name = std::get_if<std::string>(this->getPath().data()); name != nullptr) {
@@ -72,7 +73,7 @@ namespace pl::core::ast {
 
                             u8 byte = 0x00;
                             evaluator->readData(offset, &byte, 1, ptrn::Pattern::MainSectionId);
-                            return std::unique_ptr<ASTNode>(new ASTNodeLiteral(u128(byte)));
+                            return std::make_unique<ASTNodeLiteral>(u128(byte));
                         }
                     }
                 }

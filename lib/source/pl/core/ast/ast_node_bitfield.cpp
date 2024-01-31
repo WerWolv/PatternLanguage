@@ -26,7 +26,7 @@ namespace pl::core::ast {
         evaluator->updateRuntime(this);
 
         auto position = evaluator->getBitwiseReadOffset();
-        auto bitfieldPattern = std::make_shared<ptrn::PatternBitfield>(evaluator, position.byteOffset, position.bitOffset, 0);
+        auto bitfieldPattern = std::make_shared<ptrn::PatternBitfield>(evaluator, position.byteOffset, position.bitOffset, 0, getLine());
 
         bitfieldPattern->setSection(evaluator->getSectionId());
 

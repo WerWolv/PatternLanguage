@@ -8,8 +8,8 @@ namespace pl::ptrn {
                                 public IInlinable,
                                 public IIndexable {
     public:
-        PatternArrayDynamic(core::Evaluator *evaluator, u64 offset, size_t size)
-            : Pattern(evaluator, offset, size) { }
+        PatternArrayDynamic(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
+            : Pattern(evaluator, offset, size, line) { }
 
         PatternArrayDynamic(const PatternArrayDynamic &other) : Pattern(other) {
             std::vector<std::shared_ptr<Pattern>> entries;
@@ -25,9 +25,10 @@ namespace pl::ptrn {
 
         void setColor(u32 color) override {
             Pattern::setColor(color);
-            for (auto &entry : this->m_entries)
+            for (auto &entry : this->m_entries) {
                 if (!entry->hasOverriddenColor())
                     entry->setColor(color);
+            }
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
@@ -133,6 +134,7 @@ namespace pl::ptrn {
             for (auto &entry : this->m_entries) {
                 if (!entry->hasOverriddenColor())
                     entry->setBaseColor(this->getColor());
+                entry->setParent(this);
             }
 
             if (!this->m_entries.empty())
