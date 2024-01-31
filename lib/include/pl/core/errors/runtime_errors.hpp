@@ -10,7 +10,7 @@ namespace pl::core::err {
         class EvaluatorError : public RuntimeError<const ast::ASTNode *> {
         public:
             EvaluatorError(u32 errorCode, std::string title) noexcept :
-                    RuntimeError('E', errorCode, std::move(title)) { }
+                    RuntimeError(errorCode, std::move(title)) { }
         };
     }
 

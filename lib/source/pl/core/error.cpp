@@ -1,11 +1,7 @@
 #include <pl/core/errors/error.hpp>
 #include <pl/api.hpp>
 
-#include <pl/helpers/utils.hpp>
-
 #include <wolv/utils/string.hpp>
-
-#include <fmt/format.h>
 
 namespace pl::core::err::impl {
 
@@ -50,10 +46,7 @@ namespace pl::core::err::impl {
                 const auto arrowSpacing = std::string(lineNumberPrefix.length() + arrowPosition, ' ');
                 // Add arrow with length of the token
                 result += arrowSpacing;
-                result += std::string(location.length, '^') + '\n';
-                // Add spacing for the error message
-                result += arrowSpacing;
-                result += std::string(location.length, ' ');
+                result += std::string(location.length, '^');
             }
         }
 
@@ -61,32 +54,32 @@ namespace pl::core::err::impl {
     }
 
     std::string formatRuntimeErrorShort(
-        char prefix,
-        const std::string &title,
+        const std::string &message,
         const std::string &description)
     {
-        return fmt::format("runtime error: {}\n{}", prefix, title, description);
+        if(description.empty())
+            return fmt::format("runtime error: {}", message);
+
+        return fmt::format("runtime error: {}\n{}", message, description);
     }
 
     std::string formatRuntimeError(
             const Location& location,
-            char prefix,
-            const std::string &title,
-            const std::string &description,
-            const std::string &hint)
+            const std::string &message,
+            const std::string &description)
     {
-        std::string errorMessage;
+        std::string errorMessage = "runtime error: " + message + "\n";
 
-        errorMessage += fmt::format("runtime error: {}\n", prefix, title);
-
-        if (location.line > 0 && location.column > 0) {
-            errorMessage += formatLocation(location) + description + '\n';
-        } else {
-            errorMessage += description + '\n';
+        if (location.line > 0) {
+            errorMessage += "  -->   in " + formatLocation(location) + "\n";
         }
 
-        if (!hint.empty()) {
-            errorMessage += fmt::format("hint: {}", hint);
+        if (location.line > 0) {
+            errorMessage += formatLines(location);
+        }
+
+        if (!description.empty()) {
+            errorMessage += "\n\n" + description;
         }
 
         return errorMessage;
@@ -108,11 +101,11 @@ namespace pl::core::err::impl {
         }
 
         if (location.line > 0) {
-            errorMessage += formatLines(location) + "\n";
+            errorMessage += formatLines(location);
         }
 
         if (!description.empty()) {
-            errorMessage += "\n" + description + "\n";
+            errorMessage += "\n\n" + description;
         }
 
         return errorMessage;

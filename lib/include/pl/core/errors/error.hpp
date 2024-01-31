@@ -14,14 +14,11 @@ namespace pl::core::err {
     namespace impl {
         std::string formatRuntimeError(
                 const Location &location,
-                char prefix,
-                const std::string &title,
-                const std::string &description,
-                const std::string &hint);
+                const std::string &message,
+                const std::string &description);
 
         std::string formatRuntimeErrorShort(
-                char prefix,
-                const std::string &title,
+                const std::string &message,
                 const std::string &description);
 
         std::string formatCompilerError(
@@ -63,9 +60,9 @@ namespace pl::core::err {
     public:
         class Exception : public std::exception, public UserData<T> {
         public:
-            Exception(char prefix, u32 errorCode, std::string title, std::string description, std::string hint, UserData<T> userData = {}) :
-                    UserData<T>(userData), m_prefix(prefix), m_errorCode(errorCode), m_title(std::move(title)), m_description(std::move(description)), m_hint(std::move(hint)) {
-                this->m_shortMessage = impl::formatRuntimeErrorShort(this->m_prefix, this->m_title, this->m_description);
+            Exception(u32 errorCode, std::string title, std::string description, std::string hint, UserData<T> userData = {}) :
+                    UserData<T>(userData), m_errorCode(errorCode), m_title(std::move(title)), m_description(std::move(description)), m_hint(std::move(hint)) {
+                this->m_shortMessage = impl::formatRuntimeErrorShort(this->m_description, this->m_hint);
             }
 
             [[nodiscard]] const char *what() const noexcept override {
@@ -73,26 +70,25 @@ namespace pl::core::err {
             }
 
             [[nodiscard]] std::string format(const Location& location) const {
-                return impl::formatRuntimeError(location, this->m_prefix, this->m_title, this->m_description, this->m_hint);
+                return impl::formatRuntimeError(location, this->m_description, this->m_hint);
             }
 
         private:
-            char m_prefix;
             u32 m_errorCode;
             std::string m_shortMessage;
             std::string m_title, m_description, m_hint;
         };
 
-        RuntimeError(char prefix, u32 errorCode, std::string title) : m_prefix(prefix), m_errorCode(errorCode), m_title(std::move(title)) {
+        RuntimeError(u32 errorCode, std::string title) : m_errorCode(errorCode), m_title(std::move(title)) {
 
         }
 
         [[nodiscard]] std::string format(const std::string &description, const std::string &hint = { }, UserData<T> userData = { }) const {
-            return Exception(this->m_prefix, this->m_errorCode, this->m_title, description, hint, userData).what();
+            return Exception(this->m_errorCode, this->m_title, description, hint, userData).what();
         }
 
         [[noreturn]] void throwError(const std::string &description, const std::string &hint = { }, UserData<T> userData = { }) const {
-            throw Exception(this->m_prefix, this->m_errorCode, this->m_title, description, hint, userData);
+            throw Exception(this->m_errorCode, this->m_title, description, hint, userData);
         }
 
     private:
