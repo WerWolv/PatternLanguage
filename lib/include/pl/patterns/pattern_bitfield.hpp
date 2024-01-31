@@ -11,10 +11,10 @@ namespace pl::ptrn {
 
         virtual void setParentBitfield(PatternBitfieldMember *parent) = 0;
 
-        [[nodiscard]] virtual PatternBitfieldMember const* getParentBitfield() const = 0;
+        [[nodiscard]] virtual const PatternBitfieldMember* getParentBitfield() const = 0;
 
-        [[nodiscard]] PatternBitfieldMember const& getTopmostBitfield() const {
-            pl::ptrn::PatternBitfieldMember const* topBitfield = this;
+        [[nodiscard]] const PatternBitfieldMember& getTopmostBitfield() const {
+            const pl::ptrn::PatternBitfieldMember* topBitfield = this;
             while (auto parentBitfield = topBitfield->getParentBitfield())
                 topBitfield = parentBitfield;
             return *topBitfield;
@@ -51,8 +51,8 @@ namespace pl::ptrn {
 
     class PatternBitfieldField : public PatternBitfieldMember {
     public:
-        PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, PatternBitfieldMember *parentBitfield = nullptr)
-                : PatternBitfieldMember(evaluator, offset, (bitOffset + bitSize + 7) / 8), m_parentBitfield(parentBitfield), m_bitOffset(bitOffset), m_bitSize(bitSize) { }
+        PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, PatternBitfieldMember *parentBitfield = nullptr)
+                : PatternBitfieldMember(evaluator, offset, (bitOffset + bitSize + 7) / 8, line), m_parentBitfield(parentBitfield), m_bitOffset(bitOffset), m_bitSize(bitSize) { }
 
         PatternBitfieldField(const PatternBitfieldField &other) : PatternBitfieldMember(other) {
             this->m_padding = other.m_padding;
@@ -269,8 +269,8 @@ namespace pl::ptrn {
                                  public IInlinable,
                                  public IIndexable {
     public:
-        PatternBitfieldArray(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize)
-                : PatternBitfieldMember(evaluator, offset, (totalBitSize + 7) / 8), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
+        PatternBitfieldArray(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize, u32 line)
+                : PatternBitfieldMember(evaluator, offset, (totalBitSize + 7) / 8, line), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
 
         PatternBitfieldArray(const PatternBitfieldArray &other) : PatternBitfieldMember(other) {
             std::vector<std::shared_ptr<Pattern>> entries;
@@ -291,7 +291,7 @@ namespace pl::ptrn {
             this->m_parentBitfield = parentBitfield;
         }
 
-        PatternBitfieldMember const *getParentBitfield() const override {
+        const PatternBitfieldMember* getParentBitfield() const override {
             return this->m_parentBitfield;
         }
 
@@ -322,9 +322,10 @@ namespace pl::ptrn {
 
         void setColor(u32 color) override {
             Pattern::setColor(color);
-            for (auto &entry : this->m_entries)
+            for (auto &entry : this->m_entries) {
                 if (!entry->hasOverriddenColor())
                     entry->setColor(color);
+            }
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
@@ -430,6 +431,8 @@ namespace pl::ptrn {
             for (auto &entry : this->m_entries) {
                 if (!entry->hasOverriddenColor())
                     entry->setBaseColor(this->getColor());
+
+                entry->setParent(this);
 
                 this->m_sortedEntries.push_back(entry.get());
             }
@@ -550,8 +553,8 @@ namespace pl::ptrn {
                             public IInlinable,
                             public IIterable {
     public:
-        PatternBitfield(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize)
-                : PatternBitfieldMember(evaluator, offset, (totalBitSize + 7) / 8), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
+        PatternBitfield(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize, u32 line)
+                : PatternBitfieldMember(evaluator, offset, (totalBitSize + 7) / 8, line), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
 
         PatternBitfield(const PatternBitfield &other) : PatternBitfieldMember(other) {
             for (auto &field : other.m_fields)
@@ -570,7 +573,7 @@ namespace pl::ptrn {
             this->m_parentBitfield = parentBitfield;
         }
 
-        PatternBitfieldMember const *getParentBitfield() const override {
+        const PatternBitfieldMember* getParentBitfield() const override {
             return this->m_parentBitfield;
         }
 
@@ -629,9 +632,10 @@ namespace pl::ptrn {
 
         void setColor(u32 color) override {
             Pattern::setColor(color);
-            for (auto &entry : this->m_fields)
+            for (auto &entry : this->m_fields) {
                 if (!entry->hasOverriddenColor())
                     entry->setColor(color);
+            }
         }
 
         void setLocal(bool local) override {

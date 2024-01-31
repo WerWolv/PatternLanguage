@@ -19,7 +19,6 @@ if (LIBPL_BUILD_CLI_AS_EXECUTABLE)
     target_compile_definitions(plcli PRIVATE LIBPL_CLI_AS_EXECUTABLE)
 else ()
     add_library(plcli STATIC ${PLCLI_SOURCES})
-    set_property(TARGET plcli PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif ()
 
 if (NOT USE_SYSTEM_CLI11)

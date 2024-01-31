@@ -1,3 +1,5 @@
+#pragma once
+
 #include <pl/formatters/formatter.hpp>
 
 namespace pl::gen::fmt {
@@ -21,7 +23,9 @@ namespace pl::gen::fmt {
                 return "";
 
             std::string content;
-            for (auto *pattern : patterns) {
+            for (const auto *pattern : patterns) {
+                if (pattern->getVisibility() == ptrn::Visibility::Hidden) continue;
+
                 content += ::fmt::format(R"html({} {} | {}<br>)html", pattern->getFormattedName(), pattern->getVariableName(), pattern->toString());
             }
 
@@ -32,13 +36,20 @@ namespace pl::gen::fmt {
         }
 
         static std::string generateCell(u64 address, const PatternLanguage &runtime) {
-            auto patterns = runtime.getPatternsAtAddress(address);
+            const auto patterns = runtime.getPatternsAtAddress(address);
 
             u8 byte = 0;
             runtime.getInternals().evaluator->readData(address, &byte, sizeof(byte), ptrn::Pattern::MainSectionId);
 
+            bool isHighlighted = false;
+            for (const auto pattern : patterns) {
+                if (pattern->getVisibility() != ptrn::Visibility::Visible) continue;
+
+                isHighlighted = true;
+            }
+
             return ::fmt::format(R"html(<div class="pattern_language_cell" style="background-color: #{}">{:02X}{}</div>)html",
-                                 patterns.empty() ? "transparent" : ::fmt::format("{:08X}", hlp::changeEndianess(patterns.front()->getColor(), std::endian::big)),
+                                 !isHighlighted ? "transparent" : ::fmt::format("{:08X}", hlp::changeEndianess(patterns.front()->getColor(), std::endian::big)),
                                  byte,
                                  generateTooltip(patterns)
                                  );

@@ -10,8 +10,8 @@ namespace pl::ptrn {
     class PatternWideString : public Pattern,
                               public IIndexable {
     public:
-        PatternWideString(core::Evaluator *evaluator, u64 offset, size_t size)
-            : Pattern(evaluator, offset, size) { }
+        PatternWideString(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
+            : Pattern(evaluator, offset, size, line) { }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
             return std::unique_ptr<Pattern>(new PatternWideString(*this));
@@ -81,7 +81,7 @@ namespace pl::ptrn {
         }
 
         std::shared_ptr<Pattern> getEntry(size_t index) const override {
-            auto result = std::make_shared<PatternWideCharacter>(this->getEvaluator(), this->getOffset() + index * sizeof(char16_t));
+            auto result = std::make_shared<PatternWideCharacter>(this->getEvaluator(), this->getOffset() + index * sizeof(char16_t), getLine());
             result->setSection(this->getSection());
 
             return result;

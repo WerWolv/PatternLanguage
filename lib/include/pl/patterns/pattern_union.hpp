@@ -8,8 +8,8 @@ namespace pl::ptrn {
                          public IInlinable,
                          public IIterable {
     public:
-        PatternUnion(core::Evaluator *evaluator, u64 offset, size_t size)
-            : Pattern(evaluator, offset, size) { }
+        PatternUnion(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
+            : Pattern(evaluator, offset, size, line) { }
 
         PatternUnion(const PatternUnion &other) : Pattern(other) {
             for (const auto &member : other.m_members) {
@@ -36,8 +36,10 @@ namespace pl::ptrn {
             this->m_members = std::move(entries);
             this->m_sortedMembers.clear();
 
-            for (const auto &member : this->m_members)
+            for (const auto &member : this->m_members) {
                 this->m_sortedMembers.push_back(member.get());
+                member->setParent(this);
+            }
         }
 
         void forEachEntry(u64 start, u64 end, const std::function<void(u64, Pattern*)>& fn) override {

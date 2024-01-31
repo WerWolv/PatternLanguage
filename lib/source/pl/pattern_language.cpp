@@ -270,11 +270,11 @@ namespace pl {
     }
 
 
-    u32 PatternLanguage::getCreatedPatternCount() const {
+    u64 PatternLanguage::getCreatedPatternCount() const {
         return this->m_internals.evaluator->getPatternCount();
     }
 
-    u32 PatternLanguage::getMaximumPatternCount() const {
+    u64 PatternLanguage::getMaximumPatternCount() const {
         return this->m_internals.evaluator->getPatternLimit();
     }
 

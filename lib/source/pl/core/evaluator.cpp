@@ -191,7 +191,7 @@ namespace pl::core {
 
         this->setBitwiseReadOffset(startOffset);
 
-        auto pattern = new ptrn::PatternArrayDynamic(this, 0, typePattern->getSize() * entryCount);
+        auto pattern = new ptrn::PatternArrayDynamic(this, 0, typePattern->getSize() * entryCount, 0);
 
         if (section == ptrn::Pattern::HeapSectionId) {
             typePattern->setLocal(true);
@@ -297,19 +297,19 @@ namespace pl::core {
         if (auto builtinType = getBuiltinType(type); builtinType != nullptr && builtinType->getType() == Token::ValueType::Auto) {
             // Handle auto variables
             if (!value.has_value())
-                pattern = std::make_shared<ptrn::PatternPadding>(this, 0, 0);
+                pattern = std::make_shared<ptrn::PatternPadding>(this, 0, 0, 0);
             else if (std::get_if<u128>(&value.value()) != nullptr)
-                pattern = std::make_shared<ptrn::PatternUnsigned>(this, 0, sizeof(u128));
+                pattern = std::make_shared<ptrn::PatternUnsigned>(this, 0, sizeof(u128), 0);
             else if (std::get_if<i128>(&value.value()) != nullptr)
-                pattern = std::make_shared<ptrn::PatternSigned>(this, 0, sizeof(i128));
+                pattern = std::make_shared<ptrn::PatternSigned>(this, 0, sizeof(i128), 0);
             else if (std::get_if<double>(&value.value()) != nullptr)
-                pattern = std::make_shared<ptrn::PatternFloat>(this, 0, sizeof(double));
+                pattern = std::make_shared<ptrn::PatternFloat>(this, 0, sizeof(double), 0);
             else if (std::get_if<bool>(&value.value()) != nullptr)
-                pattern = std::make_shared<ptrn::PatternBoolean>(this, 0);
+                pattern = std::make_shared<ptrn::PatternBoolean>(this, 0, 0);
             else if (std::get_if<char>(&value.value()) != nullptr)
-                pattern = std::make_shared<ptrn::PatternCharacter>(this, 0);
+                pattern = std::make_shared<ptrn::PatternCharacter>(this, 0, 0);
             else if (auto string = std::get_if<std::string>(&value.value()); string != nullptr)
-                pattern = std::make_shared<ptrn::PatternString>(this, 0, string->size());
+                pattern = std::make_shared<ptrn::PatternString>(this, 0, string->size(), 0);
             else if (auto patternValue = std::get_if<std::shared_ptr<ptrn::Pattern>>(&value.value()); patternValue != nullptr) {
                 if (reference && !templateVariable)
                     pattern = *patternValue;
@@ -322,7 +322,7 @@ namespace pl::core {
             if (builtinType != nullptr)
                 pattern = builtinType->createPatterns(this).front();
             else {
-                pattern = std::make_shared<ptrn::PatternPadding>(this, 0, 0);
+                pattern = std::make_shared<ptrn::PatternPadding>(this, 0, 0, 0);
 
                 if (auto typeName = findTypeName(type); typeName.has_value())
                     pattern->setTypeName(typeName.value());
@@ -617,32 +617,32 @@ namespace pl::core {
 
             std::visit(wolv::util::overloaded {
                 [&](const u128 &value) {
-                    changePatternType(pattern, std::make_shared<ptrn::PatternUnsigned>(this, 0, 16));
+                    changePatternType(pattern, std::make_shared<ptrn::PatternUnsigned>(this, 0, 16, 0));
 
                     auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
                     copyToStorage(adjustedValue);
                 },
                 [&](const i128 &value) {
-                    changePatternType(pattern, std::make_shared<ptrn::PatternSigned>(this, 0, 16));
+                    changePatternType(pattern, std::make_shared<ptrn::PatternSigned>(this, 0, 16, 0));
 
                     auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
                     adjustedValue = hlp::signExtend(pattern->getSize() * 8, adjustedValue);
                     copyToStorage(adjustedValue);
                 },
                 [&](const bool &value) {
-                    changePatternType(pattern, std::make_shared<ptrn::PatternBoolean>(this, 0));
+                    changePatternType(pattern, std::make_shared<ptrn::PatternBoolean>(this, 0, 0));
 
                     auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
                     copyToStorage(adjustedValue);
                 },
                 [&](const char &value) {
-                    changePatternType(pattern, std::make_shared<ptrn::PatternCharacter>(this, 0));
+                    changePatternType(pattern, std::make_shared<ptrn::PatternCharacter>(this, 0, 0));
 
                     auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
                     copyToStorage(adjustedValue);
                 },
                 [&](const double &value) {
-                    changePatternType(pattern, std::make_shared<ptrn::PatternFloat>(this, 0, 8));
+                    changePatternType(pattern, std::make_shared<ptrn::PatternFloat>(this, 0, 8, 0));
 
                     if (pattern->getSize() == sizeof(float)) {
                         auto floatValue = float(value);
@@ -660,7 +660,7 @@ namespace pl::core {
                     }
                 },
                 [&](const std::string &value) {
-                    changePatternType(pattern, std::make_shared<ptrn::PatternString>(this, 0, value.length()));
+                    changePatternType(pattern, std::make_shared<ptrn::PatternString>(this, 0, value.length(), 0));
 
                     pattern->setSize(value.size());
 

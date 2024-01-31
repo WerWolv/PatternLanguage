@@ -1,3 +1,5 @@
+#pragma once
+
 #include <pl/formatters/formatter.hpp>
 
 #include <wolv/utils/string.hpp>
@@ -53,6 +55,8 @@ namespace pl::gen::fmt {
 
         template<typename T>
         void formatArray(T *pattern) {
+            if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
+
             addLine(pattern->getVariableName());
             pushIndent();
             pattern->forEachEntry(0, pattern->getEntryCount(), [&](u64, auto member) {
@@ -63,6 +67,8 @@ namespace pl::gen::fmt {
         }
 
         void formatPointer(ptrn::PatternPointer *pattern) {
+            if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
+
             addLine(pattern->getVariableName());
             pushIndent();
             pattern->getPointedAtPattern()->accept(*this);
@@ -71,6 +77,8 @@ namespace pl::gen::fmt {
 
         template<typename T>
         void formatObject(T *pattern) {
+            if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
+
             if (pattern->isSealed()) {
                 formatString(pattern);
             } else {
@@ -87,18 +95,22 @@ namespace pl::gen::fmt {
             }
         }
 
-        void formatString(pl::ptrn::Pattern *pattern) {
+        void formatString(const pl::ptrn::Pattern *pattern) {
+            if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
+
             auto result = pattern->toString();
 
             result = wolv::util::replaceStrings(result, "\n", " ");
             addLine(pattern->getVariableName(), ::fmt::format("\"{}\"", hlp::encodeByteString({ result.begin(), result.end() })));
         }
 
-        void formatValue(pl::ptrn::Pattern *pattern) {
+        void formatValue(const pl::ptrn::Pattern *pattern) {
+            if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
+
             auto result = pattern->toString();
 
-            bool number = std::all_of(result.begin(), result.end(), [](char c) { return std::isdigit(c) || c == '.' || c == '-' || c == '+'; });
-            bool needsEscape = std::any_of(result.begin(), result.end(), [](char c) { return std::ispunct(c) || !std::isprint(c); });
+            const bool number = std::ranges::all_of(result, [](char c) { return std::isdigit(c) || c == '.' || c == '-' || c == '+'; });
+            const bool needsEscape = std::ranges::any_of(result, [](char c) { return std::ispunct(c) || !std::isprint(c); });
 
             if (!number && needsEscape)
                 formatString(pattern);

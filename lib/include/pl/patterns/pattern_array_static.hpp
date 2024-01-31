@@ -8,8 +8,8 @@ namespace pl::ptrn {
                                public IInlinable,
                                public IIndexable {
     public:
-        PatternArrayStatic(core::Evaluator *evaluator, u64 offset, size_t size)
-            : Pattern(evaluator, offset, size) { }
+        PatternArrayStatic(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
+            : Pattern(evaluator, offset, size, line) { }
 
         PatternArrayStatic(const PatternArrayStatic &other) : Pattern(other) {
             this->setEntries(other.getTemplate()->clone(), other.getEntryCount());
@@ -155,6 +155,7 @@ namespace pl::ptrn {
 
         void setEntries(std::unique_ptr<Pattern> &&templatePattern, size_t count) {
             this->m_template          = std::move(templatePattern);
+            this->m_template->setParent(this);
             this->m_highlightTemplates.push_back(this->m_template->clone());
             this->m_entryCount        = count;
 

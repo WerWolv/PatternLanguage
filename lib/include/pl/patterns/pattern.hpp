@@ -61,8 +61,8 @@ namespace pl::ptrn {
         constexpr static u64 PatternLocalSectionId  = 0xFFFF'FFFF'FFFF'FFFE;
         constexpr static u64 InstantiationSectionId = 0xFFFF'FFFF'FFFF'FFFD;
 
-        Pattern(core::Evaluator *evaluator, u64 offset, size_t size)
-            : m_evaluator(evaluator), m_offset(offset), m_size(size) {
+        Pattern(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
+            : m_evaluator(evaluator), m_line(line), m_offset(offset), m_size(size) {
 
             if (evaluator != nullptr) {
                 this->m_color       = evaluator->getNextPatternColor();
@@ -84,6 +84,8 @@ namespace pl::ptrn {
             this->m_variableName = other.m_variableName;
             this->m_typeName = other.m_typeName;
             this->m_reference = other.m_reference;
+            this->m_parent = other.m_parent;
+            this->m_line = other.m_line;
 
             if (other.m_cachedDisplayValue != nullptr)
                 this->m_cachedDisplayValue = std::make_unique<std::string>(*other.m_cachedDisplayValue);
@@ -486,6 +488,15 @@ namespace pl::ptrn {
             this->m_initialized = initialized;
         }
 
+        [[nodiscard]] const Pattern* getParent() const {
+            return m_parent;
+        }
+
+        void setParent(const Pattern *parent) {
+            m_parent = parent;
+        }
+
+        [[nodiscard]] u32 getLine() const { return m_line; }
 
     protected:
         std::optional<std::endian> m_endian;
@@ -568,6 +579,8 @@ namespace pl::ptrn {
         core::Evaluator *m_evaluator;
 
         std::unique_ptr<std::map<std::string, std::vector<core::Token::Literal>>> m_attributes;
+        const Pattern *m_parent = nullptr;
+        u32 m_line = 0;
 
         std::string m_variableName;
         std::string m_typeName;
