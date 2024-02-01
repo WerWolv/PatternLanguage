@@ -737,7 +737,7 @@ namespace pl::core {
         this->m_scopes.pop_back();
     }
 
-    std::vector<ast::ASTNode*> unpackCompoundStatements(const std::vector<std::unique_ptr<ast::ASTNode>> &nodes) {
+    std::vector<ast::ASTNode*> unpackCompoundStatements(const std::vector<std::shared_ptr<ast::ASTNode>> &nodes) {
         std::vector<ast::ASTNode*> result;
 
         for (const auto &node : nodes) {

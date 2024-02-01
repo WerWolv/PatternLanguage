@@ -59,6 +59,7 @@ int runTests(int argc, char **argv) {
         fmt::print("{}\n", message);
     });
 
+    // Include test
     (void)runtime.addVirtualSource(R"(
         #include <B>
         #include <C>
@@ -77,6 +78,28 @@ int runTests(int argc, char **argv) {
 
         fn c() {};
     )", "C");
+
+    // Imports test
+    (void)runtime.addVirtualSource(R"(
+        import IB;
+        import IC as C;
+
+        fn a() {};
+    )", "IA");
+
+    (void)runtime.addVirtualSource(R"(
+        #pragma namespace B
+
+        import IC as C;
+
+        fn b() {};
+    )", "IB");
+
+    (void)runtime.addVirtualSource(R"(
+        #pragma once
+
+        fn c() {};
+    )", "IC");
 
     auto &test = testPatterns[testName];
 

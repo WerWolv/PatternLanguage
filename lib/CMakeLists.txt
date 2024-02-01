@@ -55,6 +55,7 @@ add_library(libpl ${LIBRARY_TYPE}
         source/pl/core/parser.cpp
         source/pl/core/preprocessor.cpp
         source/pl/core/validator.cpp
+        source/pl/core/parser_manager.cpp
 
         source/pl/core/resolver.cpp
         source/pl/core/error.cpp

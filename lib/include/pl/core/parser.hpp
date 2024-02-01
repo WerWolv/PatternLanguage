@@ -36,16 +36,12 @@ namespace pl::core {
         explicit Parser() = default;
         ~Parser() override = default;
 
-        hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> parse(const std::vector<Token> &tokens);
+        hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> parse(const std::vector<Token> &tokens, const std::vector<std::string>& prefixNamespace = {});
 
         const auto &getTypes() { return this->m_types; }
 
         [[nodiscard]] const std::vector<std::string>& getGlobalDocComments() const {
             return this->m_globalDocComments;
-        }
-
-        void addNamespace(const std::vector<std::string>& path) {
-            this->m_currNamespace.push_back(path);
         }
 
         void setParserManager(ParserManager* parserManager) {
@@ -181,6 +177,7 @@ namespace pl::core {
         void parseCustomTypeParameters(hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> &type);
         hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> parseType();
         std::vector<hlp::safe_shared_ptr<ast::ASTNode>> parseTemplateList();
+        hlp::safe_unique_ptr<ast::ASTNode> parseImportStatement();
         hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> parseUsingDeclaration();
         hlp::safe_unique_ptr<ast::ASTNode> parsePadding();
         hlp::safe_unique_ptr<ast::ASTNode> parseMemberVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool allowSection, bool constant, const std::string &identifier);
@@ -199,7 +196,6 @@ namespace pl::core {
         hlp::safe_unique_ptr<ast::ASTNode> parsePointerVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type);
         hlp::safe_unique_ptr<ast::ASTNode> parsePointerArrayVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type);
         hlp::safe_unique_ptr<ast::ASTNode> parsePlacement();
-        hlp::safe_unique_ptr<ast::ASTNode> parseImportStatement();
         std::vector<hlp::safe_shared_ptr<ast::ASTNode>> parseNamespace();
         std::vector<hlp::safe_shared_ptr<ast::ASTNode>> parseStatements();
 

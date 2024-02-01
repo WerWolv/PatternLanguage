@@ -1248,6 +1248,59 @@ namespace pl::core {
         return result;
     }
 
+    // import (String | ( Identifier [dot Identifier] )) (parseNamespaceResolution)? (as parseNamespaceResolution)?
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseImportStatement() {
+        std::string path;
+
+        if (sequence(tkn::Literal::String)) {
+            path = std::get<std::string>(getValue<Token::Literal>(-1));
+        } else if (sequence(tkn::Literal::Identifier)) {
+            path = getValue<Token::Identifier>(-1).get();
+
+            while (sequence(tkn::Separator::Dot, tkn::Literal::Identifier))
+                path += "/" + getValue<Token::Identifier>(-1).get();
+        } else {
+            error("Expected string or identifier after 'import', got {}.", getFormattedToken(0));
+        }
+
+        // TODO: struct import
+
+        std::string alias = "";
+
+        if (sequence(tkn::Keyword::As)) {
+            if (!sequence(tkn::Literal::Identifier)) {
+                error("Expected identifier after 'as', got {}.", getFormattedToken(0));
+                return nullptr;
+            }
+
+            alias = parseNamespaceResolution();
+        }
+
+        const auto& resolver = m_parserManager->getResolver();
+        if (!resolver) {
+            errorDesc("No valid resolver set", "This is a parser bug, please report it.");
+            return nullptr;
+        }
+
+        auto [resolvedSource, resolverErrors] = resolver(path);
+        if (!resolverErrors.empty()) {
+            for (const auto & resolverError : resolverErrors)
+                error("Failed to resolve import: {}", resolverError);
+            return nullptr;
+        }
+
+        auto [parsedAst, parserErrors] = m_parserManager->parse(resolvedSource.value(), alias);
+        if (!parserErrors.empty()) {
+            for (auto & parserError : parserErrors)
+                error(parserError); // rethrow
+            return nullptr;
+        }
+
+        // use ast in a virtual compound statement
+        return create<ast::ASTNodeCompoundStatement>(std::move(parsedAst.value()), false);
+    }
+
+
     // using Identifier = (parseType)
     hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseUsingDeclaration() {
         const auto name = getValue<Token::Identifier>(-1).get();
@@ -2084,6 +2137,8 @@ namespace pl::core {
             statement = parseUsingDeclaration();
         else if (sequence(tkn::Keyword::Using, tkn::Literal::Identifier))
             parseForwardDeclaration();
+        else if (sequence(tkn::Keyword::Import))
+            statement = parseImportStatement();
         else if (peek(tkn::Keyword::BigEndian) || peek(tkn::Keyword::LittleEndian) || peek(tkn::ValueType::Any))
             statement = parsePlacement();
         else if (peek(tkn::Literal::Identifier) && !peek(tkn::Operator::Assign, 1) && !peek(tkn::Separator::Dot, 1)  && !peek(tkn::Separator::LeftBracket, 1)) {
@@ -2227,7 +2282,7 @@ namespace pl::core {
     }
 
     // <(parseNamespace)...> EndOfProgram
-    hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> Parser::parse(const std::vector<Token> &tokens) {
+    hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> Parser::parse(const std::vector<Token> &tokens, const std::vector<std::string>& prefixNamespace) {
 
         this->m_curr = this->m_startToken = this->m_originalPosition = this->m_partOriginalPosition
             = TokenIter(tokens.begin(), tokens.end());
@@ -2239,6 +2294,8 @@ namespace pl::core {
 
         this->m_currNamespace.clear();
         this->m_currNamespace.emplace_back();
+        if(!prefixNamespace.empty())
+            this->m_currNamespace.push_back(prefixNamespace);
 
         try {
             auto program = parseTillToken(tkn::Separator::EndOfProgram);

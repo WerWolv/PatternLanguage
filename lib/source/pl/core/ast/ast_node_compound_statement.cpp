@@ -5,7 +5,13 @@
 
 namespace pl::core::ast {
 
-    ASTNodeCompoundStatement::ASTNodeCompoundStatement(std::vector<std::unique_ptr<ASTNode>> &&statements, bool newScope) : m_statements(std::move(statements)), m_newScope(newScope) {
+    ASTNodeCompoundStatement::ASTNodeCompoundStatement(std::vector<std::unique_ptr<ASTNode>> &&statements, bool newScope) :  m_newScope(newScope) {
+        for (auto &statement : statements) {
+            this->m_statements.emplace_back(std::move(statement));
+        }
+    }
+
+    ASTNodeCompoundStatement::ASTNodeCompoundStatement(std::vector<std::shared_ptr<ASTNode>> &&statements, bool newScope) : m_statements(statements), m_newScope(newScope) {
     }
 
     ASTNodeCompoundStatement::ASTNodeCompoundStatement(const ASTNodeCompoundStatement &other) : ASTNode(other), Attributable(other) {

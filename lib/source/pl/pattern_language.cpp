@@ -305,6 +305,7 @@ namespace pl {
 
         this->m_currError.reset();
         this->m_compileErrors.clear();
+        this->m_parserManager.reset();
         this->m_internals.validator->setRecursionDepth(32);
 
         this->m_internals.evaluator->getConsole().clear();
@@ -314,6 +315,7 @@ namespace pl {
         this->m_internals.evaluator->setPatternLimit(0x20000);
         this->m_internals.evaluator->setLoopLimit(0x1000);
         this->m_internals.evaluator->setDebugMode(false);
+        this->m_internals.parser->setParserManager(&m_parserManager);
         this->m_patternsValid = false;
 
         this->m_resolvers.setDefaultResolver([this](const std::string& path) {
@@ -326,6 +328,7 @@ namespace pl {
 
         this->m_internals.preprocessor->setResolver(resolver);
         this->m_parserManager.setResolver(resolver);
+        this->m_parserManager.setPatternLanguage(this);
     }
 
 

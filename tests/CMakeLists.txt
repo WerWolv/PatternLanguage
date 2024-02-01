@@ -22,6 +22,7 @@ set(AVAILABLE_TESTS
         RValues
         Namespaces
         Include
+        Import
         ExtraSemicolon
         Pointers
         Arrays
@@ -33,6 +34,7 @@ set(AVAILABLE_TESTS
 add_executable(pattern_language_tests
     source/main.cpp
     source/tests.cpp
+        include/test_patterns/test_pattern_import.hpp
 )
 
 

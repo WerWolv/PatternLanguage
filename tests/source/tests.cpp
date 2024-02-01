@@ -22,6 +22,7 @@
 #include "test_patterns/test_pattern_doc_comments.hpp"
 #include "test_patterns/test_pattern_strings.hpp"
 #include "test_patterns/test_pattern_include.hpp"
+#include "test_patterns/test_pattern_import.hpp"
 
 std::array Tests = {
     TEST(Placement),
@@ -41,6 +42,7 @@ std::array Tests = {
     TEST(RValues),
     TEST(Namespaces),
     TEST(Include),
+    TEST(Import),
     TEST(ExtraSemicolon),
     TEST(Pointers),
     TEST(Arrays),
