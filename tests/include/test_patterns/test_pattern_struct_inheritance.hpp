@@ -12,10 +12,10 @@ namespace pl::test {
     class TestPatternStructInheritance : public TestPattern {
     public:
         TestPatternStructInheritance() : TestPattern("StructInheritance") {
-            auto childStruct = create<PatternStruct>("Child", "test", 0x0, sizeof(u32) * 2);
+            auto childStruct = create<PatternStruct>("Child", "test", 0x0, sizeof(u32) * 2, 0);
 
-            auto inheritedVariable = create<PatternUnsigned>("u32", "inherited", 0x0, sizeof(u32));
-            auto ownVariable       = create<PatternUnsigned>("u32", "own", 0x0 + sizeof(u32), sizeof(u32));
+            auto inheritedVariable = create<PatternUnsigned>("u32", "inherited", 0x0, sizeof(u32), 0);
+            auto ownVariable       = create<PatternUnsigned>("u32", "own", 0x0 + sizeof(u32), sizeof(u32), 0);
 
             std::vector<std::shared_ptr<Pattern>> structMembers;
             {

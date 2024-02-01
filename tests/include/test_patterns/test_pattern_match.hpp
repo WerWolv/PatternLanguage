@@ -10,13 +10,13 @@ namespace pl::test {
     class TestPatternMatching : public TestPattern {
     public:
         TestPatternMatching() : TestPattern("Matching") {
-            auto testStruct = create<PatternStruct>("a", "b", 0x100, 3);
+            auto testStruct = create<PatternStruct>("a", "b", 0x100, 3, 0);
 
             std::vector<std::shared_ptr<Pattern>> members;
             {
-                members.push_back(create<PatternUnsigned>("u8", "c", 0x100, sizeof(u8)));
-                members.push_back(create<PatternUnsigned>("u8", "d", 0x101, sizeof(u8)));
-                members.push_back(create<PatternUnsigned>("u8", "l", 0x102, sizeof(u8)));
+                members.push_back(create<PatternUnsigned>("u8", "c", 0x100, sizeof(u8), 0));
+                members.push_back(create<PatternUnsigned>("u8", "d", 0x101, sizeof(u8), 0));
+                members.push_back(create<PatternUnsigned>("u8", "l", 0x102, sizeof(u8), 0));
             }
 
             testStruct->setMembers(std::move(members));

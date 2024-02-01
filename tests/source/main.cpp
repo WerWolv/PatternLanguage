@@ -18,6 +18,8 @@
 using namespace pl;
 using namespace pl::test;
 
+std::map<std::string, TestPattern *> TestPattern::s_tests;
+
 int runTests(int argc, char **argv) {
     auto &testPatterns = TestPattern::getTests();
 

@@ -18,20 +18,20 @@ namespace pl::test {
             const size_t BODY_START = HEADER_SIZE;
             const size_t BODY_SIZE = 0x89 - 1;
 
-            auto data = create<PatternStruct>("Data", "data", HEADER_START, HEADER_SIZE + BODY_SIZE);
+            auto data = create<PatternStruct>("Data", "data", HEADER_START, HEADER_SIZE + BODY_SIZE, 0);
             {
-                auto hdr = create<PatternStruct>("Header", "hdr", HEADER_START, HEADER_SIZE);
+                auto hdr = create<PatternStruct>("Header", "hdr", HEADER_START, HEADER_SIZE, 0);
                 {
                     std::vector<std::shared_ptr<Pattern>> hdrMembers {
-                        std::shared_ptr(create<PatternUnsigned>("u8", "len", HEADER_START, sizeof(u8)))
+                        std::shared_ptr(create<PatternUnsigned>("u8", "len", HEADER_START, sizeof(u8), 0))
                     };
                     hdr->setMembers(std::move(hdrMembers));
                 }
 
-                auto body = create<PatternStruct>("Body", "body", BODY_START, BODY_SIZE);
+                auto body = create<PatternStruct>("Body", "body", BODY_START, BODY_SIZE, 0);
                 {
-                    auto bodyArray = create<PatternArrayStatic>("u8", "arr", BODY_START, BODY_SIZE);
-                    bodyArray->setEntries(create<PatternUnsigned>("u8", "", BODY_START, sizeof(u8)), BODY_SIZE);
+                    auto bodyArray = create<PatternArrayStatic>("u8", "arr", BODY_START, BODY_SIZE, 0);
+                    bodyArray->setEntries(create<PatternUnsigned>("u8", "", BODY_START, sizeof(u8), 0), BODY_SIZE);
                     std::vector<std::shared_ptr<Pattern>> bodyMembers {
                         std::shared_ptr(std::move(bodyArray))
                     };

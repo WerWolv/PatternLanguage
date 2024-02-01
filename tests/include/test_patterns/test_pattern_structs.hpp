@@ -12,11 +12,11 @@ namespace pl::test {
     class TestPatternStructs : public TestPattern {
     public:
         TestPatternStructs() : TestPattern("Structs") {
-            auto testStruct = create<PatternStruct>("TestStruct", "testStruct", 0x100, sizeof(i32) + sizeof(u8[0x10]));
+            auto testStruct = create<PatternStruct>("TestStruct", "testStruct", 0x100, sizeof(i32) + sizeof(u8[0x10]), 0);
 
-            auto variable = create<PatternSigned>("s32", "variable", 0x100, sizeof(i32));
-            auto array    = create<PatternArrayStatic>("u8", "array", 0x100 + sizeof(i32), sizeof(u8[0x10]));
-            array->setEntries(create<PatternUnsigned>("u8", "", 0x100 + sizeof(i32), sizeof(u8)), 0x10);
+            auto variable = create<PatternSigned>("s32", "variable", 0x100, sizeof(i32), 0);
+            auto array    = create<PatternArrayStatic>("u8", "array", 0x100 + sizeof(i32), sizeof(u8[0x10]), 0);
+            array->setEntries(create<PatternUnsigned>("u8", "", 0x100 + sizeof(i32), sizeof(u8), 0), 0x10);
 
             std::vector<std::shared_ptr<Pattern>> structMembers;
             {
