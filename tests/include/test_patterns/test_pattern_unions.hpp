@@ -12,11 +12,11 @@ namespace pl::test {
     class TestPatternUnions : public TestPattern {
     public:
         TestPatternUnions() : TestPattern("Unions") {
-            auto testUnion = create<PatternUnion>("TestUnion", "testUnion", 0x200, sizeof(u128));
+            auto testUnion = create<PatternUnion>("TestUnion", "testUnion", 0x200, sizeof(u128), 0);
 
-            auto array = create<PatternArrayStatic>("s32", "array", 0x200, sizeof(i32[2]));
-            array->setEntries(create<PatternSigned>("s32", "", 0x200, sizeof(i32)), 2);
-            auto variable = create<PatternUnsigned>("u128", "variable", 0x200, sizeof(u128));
+            auto array = create<PatternArrayStatic>("s32", "array", 0x200, sizeof(i32[2]), 0);
+            array->setEntries(create<PatternSigned>("s32", "", 0x200, sizeof(i32), 0), 2);
+            auto variable = create<PatternUnsigned>("u128", "variable", 0x200, sizeof(u128), 0);
 
             std::vector<std::shared_ptr<Pattern>> unionMembers;
             {

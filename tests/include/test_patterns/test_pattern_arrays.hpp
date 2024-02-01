@@ -13,13 +13,13 @@ namespace pl::test {
     class TestPatternArrays : public TestPattern {
     public:
         TestPatternArrays() : TestPattern("Arrays") {
-            auto first = create<PatternArrayStatic>("u8", "first", 0x0, sizeof(u8[4]));
-            first->setEntries(create<PatternUnsigned>("u8", "", 0x0, sizeof(u8)), 4);
+            auto first = create<PatternArrayStatic>("u8", "first", 0x0, sizeof(u8[4]), 0);
+            first->setEntries(create<PatternUnsigned>("u8", "", 0x0, sizeof(u8), 0), 4);
 
-            auto second = create<PatternArrayStatic>("u8", "second", 0x4, sizeof(u8[4]));
-            second->setEntries(create<PatternUnsigned>("u8", "", 0x4, sizeof(u8)), 4);
+            auto second = create<PatternArrayStatic>("u8", "second", 0x4, sizeof(u8[4]), 0);
+            second->setEntries(create<PatternUnsigned>("u8", "", 0x4, sizeof(u8), 0), 4);
 
-            auto testStruct = create<PatternStruct>("Signature", "sign", 0x0, sizeof(u8[8]));
+            auto testStruct = create<PatternStruct>("Signature", "sign", 0x0, sizeof(u8[8]), 0);
             std::vector<std::shared_ptr<Pattern>> structMembers;
             {
                 structMembers.push_back(std::move(first));
