@@ -8,14 +8,14 @@ namespace pl::test {
     public:
         TestPatternDocComments() : TestPattern("DocComments") {
 
-            auto variablePattern = create<PatternUnsigned>("u8", "documentedVariable", 0x00, sizeof(u8));
+            auto variablePattern = create<PatternUnsigned>("u8", "documentedVariable", 0x00, sizeof(u8), 0);
 
-            auto structPattern = create<PatternStruct>("DocumentedStruct", "documentedStruct", 0x00, sizeof(u8) + sizeof(u8));
+            auto structPattern = create<PatternStruct>("DocumentedStruct", "documentedStruct", 0x00, sizeof(u8) + sizeof(u8), 0);
 
             std::vector<std::shared_ptr<Pattern>> structMembers;
             {
-                structMembers.push_back(create<PatternUnsigned>("u8", "documentedVariable", 0x00, sizeof(u8)));
-                structMembers.push_back(create<PatternUnsigned>("u8", "documentedVariable2", 0x01, sizeof(u8)));
+                structMembers.push_back(create<PatternUnsigned>("u8", "documentedVariable", 0x00, sizeof(u8), 0));
+                structMembers.push_back(create<PatternUnsigned>("u8", "documentedVariable2", 0x01, sizeof(u8), 0));
             }
 
             structPattern->setMembers(std::move(structMembers));
