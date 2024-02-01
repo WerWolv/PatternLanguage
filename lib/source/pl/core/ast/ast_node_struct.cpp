@@ -18,7 +18,7 @@ namespace pl::core::ast {
         evaluator->updateRuntime(this);
 
         evaluator->alignToByte();
-        auto pattern = std::make_shared<ptrn::PatternStruct>(evaluator, evaluator->getReadOffset(), 0, getLine());
+        auto pattern = std::make_shared<ptrn::PatternStruct>(evaluator, evaluator->getReadOffset(), 0, getLocation().line);
 
         auto startOffset = evaluator->getReadOffset();
         std::vector<std::shared_ptr<ptrn::Pattern>> memberPatterns;
