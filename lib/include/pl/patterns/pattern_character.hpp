@@ -6,11 +6,11 @@ namespace pl::ptrn {
 
     class PatternCharacter : public Pattern {
     public:
-        PatternCharacter(core::Evaluator *evaluator, u64 offset)
-            : Pattern(evaluator, offset, 1) { }
+        PatternCharacter(core::Evaluator *evaluator, u64 offset, u32 line)
+            : Pattern(evaluator, offset, 1, line) { }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternCharacter(*this));
+            return std::make_unique<PatternCharacter>(*this);
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {

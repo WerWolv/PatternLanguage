@@ -6,8 +6,8 @@ namespace pl::ptrn {
 
     class PatternBoolean : public Pattern {
     public:
-        explicit PatternBoolean(core::Evaluator *evaluator, u64 offset)
-            : Pattern(evaluator, offset, 1) { }
+        explicit PatternBoolean(core::Evaluator *evaluator, u64 offset, u32 line)
+            : Pattern(evaluator, offset, 1, line) { }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
             return std::unique_ptr<Pattern>(new PatternBoolean(*this));
