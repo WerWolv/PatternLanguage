@@ -59,7 +59,7 @@ namespace pl::test {
         std::vector<std::unique_ptr<ptrn::Pattern>> m_patterns;
         Mode m_mode;
 
-        static std::map<std::string, TestPattern *> s_tests;
+        static inline std::map<std::string, TestPattern *> s_tests;
     };
 
 }
