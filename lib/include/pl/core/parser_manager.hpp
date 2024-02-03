@@ -32,9 +32,18 @@ namespace pl::core {
         }
 
     private:
+        struct OnceIncludePair {
+            api::Source* source;
+            std::string alias;
+
+            auto operator<=>(const OnceIncludePair& other) const {
+                return std::tie(*this->source, this->alias) <=> std::tie(*other.source, other.alias);
+            }
+        };
+
+        std::set<OnceIncludePair> m_onceIncluded {};
         api::Resolver m_resolver = nullptr;
         PatternLanguage* m_patternLanguage = nullptr;
-        std::set<api::Source*> m_onceIncluded;
     };
 
 }

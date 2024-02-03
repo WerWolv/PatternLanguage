@@ -35,11 +35,23 @@ namespace pl::api {
     struct Source {
         std::string content;
         std::string source;
+        u32 id = 0;
+
+        static u32 idCounter;
+
+        Source(std::string content, std::string source) :
+            content(std::move(content)), source(std::move(source)), id(idCounter++) { }
+
+        Source() = default;
 
         static constexpr auto DefaultSource = "<Source Code>";
         static constexpr Source* NoSource = nullptr;
         static constexpr Source Empty() {
             return { "", "" };
+        }
+
+        constexpr auto operator<=>(const Source& other) const {
+            return this->id <=> other.id;
         }
 
     };

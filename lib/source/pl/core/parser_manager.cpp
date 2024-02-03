@@ -13,7 +13,7 @@ pl::hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>>
 ParserManager::parse(api::Source *source, const std::string &namespacePrefix) {
     using result_t = hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>>;
 
-    if(m_onceIncluded.contains(source))
+    if(m_onceIncluded.contains( { source, namespacePrefix } ))
         return result_t::good({});
 
     auto parser = Parser();
@@ -44,7 +44,7 @@ ParserManager::parse(api::Source *source, const std::string &namespacePrefix) {
     source->content = preprocessedCode.value();
 
     if(preprocessor->shouldOnlyIncludeOnce())
-        m_onceIncluded.insert(source);
+        m_onceIncluded.insert( { source, namespacePrefix } );
 
     auto [tokens, lexerErrors] = lexer->lex(source);
 
