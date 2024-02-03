@@ -39,14 +39,14 @@ namespace pl::api {
 
         static u32 idCounter;
 
-        Source(std::string content, std::string source) :
+        Source(std::string content, std::string source = DefaultSource) :
             content(std::move(content)), source(std::move(source)), id(idCounter++) { }
 
         Source() = default;
 
         static constexpr auto DefaultSource = "<Source Code>";
         static constexpr Source* NoSource = nullptr;
-        static constexpr Source Empty() {
+        static Source Empty() {
             return { "", "" };
         }
 
