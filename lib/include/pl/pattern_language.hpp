@@ -13,6 +13,9 @@
 #include <pl/core/log_console.hpp>
 #include <pl/core/token.hpp>
 #include <pl/core/errors/error.hpp>
+#include <pl/core/resolver.hpp>
+#include <pl/core/resolvers.hpp>
+#include <pl/core/parser_manager.hpp>
 
 #include <pl/helpers/types.hpp>
 
@@ -67,11 +70,20 @@ namespace pl {
         };
 
         /**
+        * @brief Lexes a pattern language code string and returns the generated tokens
+        * @param code Code to parse
+        * @param source Source of the code
+        * @return Generated Tokens
+        */
+        [[nodiscard]] std::optional<std::vector<pl::core::Token>> lexString(const std::string &code, const std::string &source);
+
+        /**
          * @brief Parses a pattern language code string and returns the generated AST
          * @param code Code to parse
+         * @param source Source of the code
          * @return Generated AST
          */
-        [[nodiscard]] std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> parseString(const std::string &code);
+        [[nodiscard]] std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> parseString(const std::string &code, const std::string &source);
 
         /**
          * @brief Executes a pattern language code string
@@ -81,7 +93,7 @@ namespace pl {
          * @param checkResult Whether to check the result of the execution
          * @return True if the execution was successful, false otherwise
          */
-        [[nodiscard]] bool executeString(std::string code, const std::map<std::string, core::Token::Literal> &envVars = {}, const std::map<std::string, core::Token::Literal> &inVariables = {}, bool checkResult = true);
+        [[nodiscard]] bool executeString(std::string code, const std::string& source, const std::map<std::string, core::Token::Literal> &envVars = {}, const std::map<std::string, core::Token::Literal> &inVariables = {}, bool checkResult = true);
 
         /**
          * @brief Executes a pattern language file
@@ -101,8 +113,16 @@ namespace pl {
         [[nodiscard]] std::pair<bool, std::optional<core::Token::Literal>> executeFunction(const std::string &code);
 
         /**
-         * @brief Aborts the currently running execution asynchronously
+         * @brief Adds a virtual source file under the path
+         * @param code the code of the source
+         * @param source the source of the code
+         * @return the source that was added or that already existed
          */
+        [[nodiscard]] api::Source* addVirtualSource(const std::string& code, const std::string& source) const;
+
+        /**
+         * @brief Aborts the currently running execution asynchronously
+        */
         void abort();
 
         /**
@@ -163,7 +183,13 @@ namespace pl {
          * @brief Sets the include paths for where to look for include files
          * @param paths List of paths to look in
          */
-        void setIncludePaths(std::vector<std::fs::path> paths) const;
+        void setIncludePaths(const std::vector<std::fs::path>& paths) const;
+
+        /**
+         * @brief Sets the source resolver of the pattern language
+         * @param resolver Resolver to use
+         */
+        void setResolver(const core::Resolver& resolver);
 
         /**
          * @brief Registers a callback to be called when a dangerous function is being executed
@@ -178,13 +204,15 @@ namespace pl {
          * @brief Sets the console log callback
          * @param callback Callback to call
          */
-        void setLogCallback(const core::LogConsole::Callback &callback);
+        void setLogCallback(const core::LogConsole::Callback &callback) const;
 
         /**
          * @brief Gets the error that occurred during the last execution
          * @return Error
          */
         [[nodiscard]] const std::optional<core::err::PatternLanguageError> &getError() const;
+
+        [[nodiscard]] const std::vector<core::err::CompileError>& getCompileErrors() const;
 
         /**
          * @brief Gets a map of all out variables and their values that have been defined in the last execution
@@ -290,6 +318,22 @@ namespace pl {
         }
 
         /**
+         * @brief Gets the source resolver of the pattern language
+         * @return Mutable reference to the Resolver
+         */
+        [[nodiscard]] core::Resolver& getResolver() {
+            return this->m_resolvers;
+        }
+
+        /**
+         * @brief Gets the source resolver of the pattern language
+         * @return Resolver
+         */
+        [[nodiscard]] const core::Resolver& getResolver() const {
+            return this->m_resolvers;
+        }
+
+        /**
          * Adds a new cleanup callback that is called when the runtime is reset
          * @note This is useful for built-in functions that need to clean up their state
          * @param callback Callback to call
@@ -324,7 +368,12 @@ namespace pl {
     private:
 
         Internals m_internals;
+        std::vector<core::err::CompileError> m_compileErrors;
         std::optional<core::err::PatternLanguageError> m_currError;
+
+        core::Resolver m_resolvers;
+        core::resolvers::FileResolver m_fileResolver;
+        core::ParserManager m_parserManager;
 
         std::map<u64, std::vector<std::shared_ptr<ptrn::Pattern>>> m_patterns;
         std::map<u64, wolv::container::IntervalTree<ptrn::Pattern*, u64, 5>> m_flattenedPatterns;

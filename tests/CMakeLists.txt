@@ -5,6 +5,8 @@ project(pattern_language_tests)
 
 # Add new tests here #
 set(AVAILABLE_TESTS
+        DocComments
+        Strings
         Placement
         Structs
         Unions
@@ -19,6 +21,8 @@ set(AVAILABLE_TESTS
         Math
         RValues
         Namespaces
+        Include
+        Import
         ExtraSemicolon
         Pointers
         Arrays
@@ -30,6 +34,7 @@ set(AVAILABLE_TESTS
 add_executable(pattern_language_tests
     source/main.cpp
     source/tests.cpp
+        include/test_patterns/test_pattern_import.hpp
 )
 
 

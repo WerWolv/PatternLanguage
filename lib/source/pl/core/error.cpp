@@ -1,57 +1,111 @@
 #include <pl/core/errors/error.hpp>
-
-#include <pl/helpers/utils.hpp>
+#include <pl/api.hpp>
 
 #include <wolv/utils/string.hpp>
 
-#include <fmt/format.h>
+namespace pl::core::err::impl {
 
-namespace pl::core::err {
-
-    std::string formatShortImpl(
-            char prefix,
-            u32 errorCode,
-            const std::string &title,
-            const std::string &description)
-    {
-        return fmt::format("error[{}{:04}]: {}\n{}", prefix, errorCode, title, description);
+    std::string formatLocation(Location location) {
+        if (location.line > 0 && location.column > 0) {
+            return fmt::format("{}:{}:{}", location.source->source, location.line, location.column);
+        }
+        return "";
     }
 
-    std::string formatImpl(
-            const std::string &sourceCode,
-            u32 line, u32 column,
-            char prefix,
-            u32 errorCode,
-            const std::string &title,
-            const std::string &description,
-            const std::string &hint)
-    {
-        std::string errorMessage;
+    std::string formatLines(Location location) {
+        std::string result;
 
-        errorMessage += fmt::format("error[{}{:04}]: {}\n", prefix, errorCode, title);
+        const auto lines = wolv::util::splitString(location.source->content, "\n");
 
-        if (line > 0 && column > 0) {
-            errorMessage += fmt::format("  --> <Source Code>:{}:{}\n", line, column);
+        if (location.line < lines.size() + 1) {
+            const auto lineNumberPrefix = fmt::format("{} | ", location.line);
+            auto errorLine = wolv::util::replaceStrings(lines[location.line - 1], "\r", "");
+            u32 arrowPosition = location.column - 1;
 
-            auto lines = wolv::util::splitString(sourceCode, "\n");
-
-            if ((line - 1) < lines.size()) {
-                const auto &errorLine = lines[line - 1];
-                const auto lineNumberPrefix = fmt::format("{} | ", line);
-                errorMessage += fmt::format("{}{}\n", lineNumberPrefix, errorLine);
-
-                {
-                    const auto descriptionSpacing = std::string(lineNumberPrefix.length() + column - 1, ' ');
-                    errorMessage += descriptionSpacing + "^\n";
-                    errorMessage += descriptionSpacing + description + "\n\n";
+            // Trim to size
+            if (errorLine.length() > 40) { // shrink to [column - 20; column + 20]
+                const auto column = location.column;
+                auto start = column > 20 ? column - 20 : 0;
+                auto end = column + 20 < errorLine.length() ? column + 20 : errorLine.length();
+                // Search for whitespaces on both sides until a maxium of 10 characters and change start/end accordingly
+                for(auto i = 0; i < 10; ++i) {
+                    if(start > 0 && errorLine[start] != ' ') {
+                        --start;
+                    }
+                    if(end < errorLine.length() && errorLine[end] != ' ') {
+                        ++end;
+                    }
                 }
+                errorLine = errorLine.substr(start, end - start);
+                arrowPosition = column - start;
             }
-        } else {
-            errorMessage += description + "\n";
+
+            result += fmt::format("{}{}\n", lineNumberPrefix, errorLine);
+
+            {
+                const auto arrowSpacing = std::string(lineNumberPrefix.length() + arrowPosition, ' ');
+                // Add arrow with length of the token
+                result += arrowSpacing;
+                result += std::string(location.length, '^');
+            }
         }
 
-        if (!hint.empty()) {
-            errorMessage += fmt::format("hint: {}", hint);
+        return result;
+    }
+
+    std::string formatRuntimeErrorShort(
+        const std::string &message,
+        const std::string &description)
+    {
+        if(description.empty())
+            return fmt::format("runtime error: {}", message);
+
+        return fmt::format("runtime error: {}\n{}", message, description);
+    }
+
+    std::string formatRuntimeError(
+            const Location& location,
+            const std::string &message,
+            const std::string &description)
+    {
+        std::string errorMessage = "runtime error: " + message + "\n";
+
+        if (location.line > 0) {
+            errorMessage += "  -->   in " + formatLocation(location) + "\n";
+        }
+
+        if (location.line > 0) {
+            errorMessage += formatLines(location);
+        }
+
+        if (!description.empty()) {
+            errorMessage += "\n\n" + description;
+        }
+
+        return errorMessage;
+    }
+
+    std::string formatCompilerError(
+            const Location& location,
+            const std::string& message,
+            const std::string& description,
+            const std::vector<Location>& trace) {
+        std::string errorMessage = "error: " + message + "\n";
+
+        if (location.line > 0) {
+            errorMessage += "  -->   in " + formatLocation(location) + "\n";
+        }
+
+        for (const auto &traceLocation : trace) {
+            errorMessage += "   >> from " + formatLocation(traceLocation) + "\n";
+        }
+
+        if (location.line > 0) {
+            errorMessage += formatLines(location);
+        }
+
+        if (!description.empty()) {
+            errorMessage += "\n\n" + description;
         }
 
         return errorMessage;

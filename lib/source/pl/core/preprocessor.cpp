@@ -1,28 +1,36 @@
 #include <pl/core/preprocessor.hpp>
 
-#include <fmt/format.h>
-
-#include <wolv/io/file.hpp>
 #include <wolv/utils/string.hpp>
 
 namespace pl::core {
 
-    Preprocessor::Preprocessor() {
+    Preprocessor::Preprocessor() : ErrorCollector() {
         this->addPragmaHandler("once", [this](PatternLanguage&, const std::string &value) {
             this->m_onlyIncludeOnce = true;
 
             return value.empty();
         });
+
+        // register directive handlers
+        registerDirectiveHandler("ifdef", &Preprocessor::handleIfDef);
+        registerDirectiveHandler("ifndef", &Preprocessor::handleIfNDef);
+        registerDirectiveHandler("define", &Preprocessor::handleDefine);
+        registerDirectiveHandler("pragma", &Preprocessor::handlePragma);
+        registerDirectiveHandler("include", &Preprocessor::handleInclude);
+        registerDirectiveHandler("error", &Preprocessor::handleError);
     }
 
-    Preprocessor::Preprocessor(const Preprocessor &other) {
+    Preprocessor::Preprocessor(const Preprocessor &other) : ErrorCollector(other) {
         this->m_defines = other.m_defines;
         this->m_pragmas = other.m_pragmas;
         this->m_onceIncludedFiles = other.m_onceIncludedFiles;
-        this->m_includePaths = other.m_includePaths;
+        this->m_resolver = other.m_resolver;
         this->m_onlyIncludeOnce = false;
         this->m_pragmaHandlers = other.m_pragmaHandlers;
+        this->m_directiveHandlers = other.m_directiveHandlers;
+        this->m_runtime = other.m_runtime;
 
+        // need to update, because old handler points to old `this`
         this->addPragmaHandler("once", [this](PatternLanguage&, const std::string &value) {
             this->m_onlyIncludeOnce = true;
 
@@ -30,14 +38,297 @@ namespace pl::core {
         });
     }
 
-    std::optional<std::string> Preprocessor::preprocess(PatternLanguage &runtime, const std::string &sourceCode, bool initialRun) {
-        u32 offset      = 0;
-        u32 lineNumber  = 1;
-        bool isInString = false;
+    std::optional<std::string> Preprocessor::getDirectiveValue(const bool allowWhitespace) {
+        while (std::isblank(peek())) {
+            m_offset++;
+            if (peek() == '\n' || peek() == '\r')
+                return std::nullopt;
+        }
 
-        std::vector<bool> ifDefs;
+        std::string value;
+        char c = peek();
+        while ((allowWhitespace || !std::isblank(c)) && c != '\n' && c != '\r') {
+            value += c;
 
-        std::string_view code = sourceCode;
+            c = m_code[++m_offset];
+            if (m_offset >= m_code.length())
+                break;
+        }
+
+        return wolv::util::trim(value);
+    }
+
+    std::string Preprocessor::parseDirectiveName() {
+        const std::string_view view = &m_code[m_offset];
+        auto end = view.find_first_of(" \t\n\r");
+
+        if(end == std::string_view::npos)
+            end = view.length();
+
+        m_offset += end;
+
+        return std::string(view.substr(0, end));
+    }
+
+    void Preprocessor::parseComment() {
+        char type = peek(1);
+        if(type == '/') {
+            while(peek() != 0 && peek() != '\n') m_offset++;
+        } else if(type == '*') {
+            char next = peek(2);
+            if(next == '*' || next == '!')
+                return;
+            while(peek() != 0 && (peek() != '*' || peek(1) != '/')) {
+                // update lines
+                if(peek() == '\n') {
+                    m_lineNumber++;
+                    m_lineBeginOffset = m_offset;
+                }
+
+                m_offset++;
+            }
+
+            m_offset += 2;
+        }
+    }
+
+    void Preprocessor::processIfDef(const bool add) {
+        // find the next #endif
+        const Location start = location();
+        u32 depth = 1;
+        while(peek() != 0 && depth > 0) {
+            if(m_code.substr(m_offset, 6) == "#endif" && !m_inString && m_startOfLine) {
+                m_offset += 6;
+                depth--;
+            }
+            if(add) process();
+            else {
+                char c = peek();
+                if(c == '\n') {
+                    m_lineNumber++;
+                    m_lineBeginOffset = m_offset;
+                    m_startOfLine = true;
+                } else if (c == '#' && !m_inString && m_startOfLine) {
+                    m_offset++;
+                    // handle ifdef and ifndef
+                    std::string name = parseDirectiveName();
+                    if(name == "ifdef" || name == "ifndef") {
+                        depth++;
+                    }
+                } else if(!std::isspace(c)) {
+                    m_startOfLine = false;
+                } else if(c == '"') {
+                    m_inString = !m_inString;
+                }
+
+                m_offset++;
+            }
+        }
+
+        // if we didn't find an #endif, we have an error
+        if(depth > 0) {
+            errorAt(start, "#ifdef without #endif");
+        }
+    }
+
+    void Preprocessor::handleIfDef() {
+        auto name = getDirectiveValue();
+
+        if(!name.has_value()) {
+            error("Expected identifier after #ifdef");
+            return;
+        }
+
+        processIfDef(m_defines.contains(name.value()));
+    }
+
+    void Preprocessor::handleIfNDef() {
+        auto name = getDirectiveValue();
+
+        if(!name.has_value()) {
+            error("Expected identifier after #ifndef");
+            return;
+        }
+
+        processIfDef(!m_defines.contains(name.value()));
+    }
+
+    void Preprocessor::handleDefine() {
+        auto name = getDirectiveValue();
+
+        if(!name.has_value()) {
+            error("Expected identifier after #define");
+            return;
+        }
+
+        auto value = getDirectiveValue(true);
+
+        if(!value.has_value()) {
+            error("Expected value after #define");
+            return;
+        }
+
+        m_defines[name.value()] = { value.value(), m_lineNumber };
+    }
+
+    void Preprocessor::handlePragma() {
+        auto key = getDirectiveValue();
+
+        if(!key.has_value()) {
+            errorDesc("No instruction given in #pragma directive.", "A #pragma directive expects a instruction followed by an optional value in the form of #pragma <instruction> <value>.");
+            return;
+        }
+
+        auto value = getDirectiveValue(true);
+
+        this->m_pragmas[key.value()].emplace_back(value.value_or(""), m_lineNumber);
+    }
+
+    void Preprocessor::handleInclude() {
+        const auto includeFile = getDirectiveValue();
+
+        if (!includeFile.has_value()) {
+            errorDesc("No file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
+            return;
+        }
+
+        if (includeFile->starts_with('"') && includeFile->ends_with('"'))
+            ; // Parsed path wrapped in ""
+        else if (includeFile->starts_with('<') && includeFile->ends_with('>'))
+            ; // Parsed path wrapped in <>
+        else {
+            errorDesc("Invalid file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
+            return;
+        }
+
+        const std::string includePath = includeFile->substr(1, includeFile->length() - 2);
+
+        // determine if we should include this file
+        if (this->m_onceIncludedFiles.contains(includePath))
+            return;
+
+        if(!m_resolver) {
+            errorDesc("Unable to lookup results", "No include resolver was set.");
+            return;
+        }
+
+        auto [resolved, error] = this->m_resolver(includePath);
+
+        if(!resolved.has_value()) {
+            for (const auto &item: error) {
+                this->error(item);
+            }
+            return;
+        }
+
+        Preprocessor preprocessor(*this);
+        preprocessor.m_pragmas.clear();
+
+        auto result = preprocessor.preprocess(m_runtime, resolved.value(), false);
+
+        if (result.hasErrs()) {
+            for (auto &item: result.errs) {
+                this->error(item);
+            }
+            return;
+        }
+
+        resolved.value()->content = result.unwrap(); // cache result
+
+        bool shouldInclude = true;
+        if (preprocessor.shouldOnlyIncludeOnce()) {
+            auto [iter, added] = this->m_onceIncludedFiles.insert(includePath);
+            if (!added) {
+                shouldInclude = false;
+            }
+        }
+
+        std::ranges::copy(preprocessor.m_onceIncludedFiles.begin(), preprocessor.m_onceIncludedFiles.end(), std::inserter(this->m_onceIncludedFiles, this->m_onceIncludedFiles.begin()));
+        std::ranges::copy(preprocessor.m_defines.begin(), preprocessor.m_defines.end(), std::inserter(this->m_defines, this->m_defines.begin()));
+        std::ranges::copy(preprocessor.m_pragmas.begin(), preprocessor.m_pragmas.end(), std::inserter(this->m_pragmas, this->m_pragmas.begin()));
+
+        if (shouldInclude) {
+            auto content = result.unwrap();
+
+            std::ranges::replace(content.begin(), content.end(), '\n', ' ');
+            std::ranges::replace(content.begin(), content.end(), '\r', ' ');
+
+            content = wolv::util::trim(content);
+
+            if (!content.empty())
+                m_output += "/*! DOCS IGNORE ON **/ " + content + " /*! DOCS IGNORE OFF **/";
+        }
+    }
+
+    bool Preprocessor::process() {
+        char c = peek();
+
+        if(c == '\0')
+            return false;
+
+        if(c == '/') { // comment case
+            parseComment();
+        }
+
+        if (peek() == '#' && m_startOfLine && !m_inString) {
+            m_offset += 1;
+
+            std::string name = parseDirectiveName();
+
+            auto handler = m_directiveHandlers.find(name);
+
+            if(handler == m_directiveHandlers.end()) {
+                error("Unknown directive '{}'", name);
+                return true;
+            } else {
+                handler->second(this);
+            }
+        }
+
+        if (m_offset >= m_code.length())
+            return false;
+
+        c = peek();
+
+        if (c == '\n') {
+            m_lineNumber++;
+            m_lineBeginOffset = m_offset;
+            m_startOfLine = true;
+        }
+
+        if (!std::isspace(c))
+            m_startOfLine = false;
+
+        if(c == '"' and peek(-1) != '\\') {
+            m_inString = !m_inString;
+        }
+
+        m_output += c;
+        m_offset += 1;
+
+        return true;
+    }
+
+    void Preprocessor::handleError() {
+        auto message = getDirectiveValue(true);
+
+        if(message.has_value()) {
+            error(message.value());
+        } else {
+            error("No message given in #error directive.");
+        }
+    }
+
+    hlp::CompileResult<std::string> Preprocessor::preprocess(PatternLanguage* runtime, api::Source* source, bool initialRun) {
+        m_startOfLine = true;
+        m_offset      = 0;
+        m_lineNumber  = 1;
+        m_code        = source->content;
+        m_source      = source;
+        m_inString    = false;
+        m_runtime     = runtime;
+        m_lineBeginOffset = 0;
+        m_output.clear();
 
         if (initialRun) {
             this->m_onceIncludedFiles.clear();
@@ -45,260 +336,48 @@ namespace pl::core {
             this->m_pragmas.clear();
         }
 
-        auto getDirectiveValue = [&](bool allowWhitespace = false) -> std::optional<std::string> {
-            while (std::isblank(code[offset])) {
-                offset += 1;
+        m_output.reserve(m_code.size());
 
-                if (code[offset] == '\n' || code[offset] == '\r')
-                    return std::nullopt;
-            }
+        while (m_offset < m_code.length()) {
+            if (!process())
+                break;
+        }
 
-            std::string value;
-            while ((allowWhitespace || !std::isblank(code[offset])) && code[offset] != '\n' && code[offset] != '\r') {
-                value += code[offset];
+        // Apply defines
+        std::vector<std::tuple<std::string, std::string, u32>> sortedDefines;
+        std::ranges::for_each(this->m_defines.begin(), this->m_defines.end(), [&sortedDefines](const auto &entry){
+            const auto &[key, data] = entry;
+            const auto &[value, line] = data;
 
-                offset += 1;
-                if (offset >= code.length())
-                    break;
-            }
+            sortedDefines.emplace_back(key, value, line);
+        });
+        std::ranges::sort(sortedDefines.begin(), sortedDefines.end(), [](const auto &left, const auto &right) {
+            return std::get<0>(left).size() > std::get<0>(right).size();
+        });
 
-            return wolv::util::trim(value);
-        };
+        for (const auto &[define, value, defineLine] : sortedDefines) {
+            if (value.empty())
+                continue;
 
-        auto getDirective = [&](std::string directive, bool hasArgs = true) {
-            if (hasArgs)
-                directive += " ";
+            m_output = wolv::util::replaceStrings(m_output, define, value);
+        }
 
-            if (code.substr(offset, directive.length()) == directive) {
-                offset += directive.length();
-                return true;
-            } else return false;
-        };
-
-        std::string output;
-        output.reserve(sourceCode.size());
-
-        try {
-            bool startOfLine = true;
-            while (offset < code.length()) {
-                if (code.substr(offset, 2) == "//") {
-                    while (offset < code.length() && code[offset] != '\n')
-                        offset += 1;
-
-                    if (code.length() == offset)
-                        break;
-
-                } else if ((code.substr(offset, 2) == "/*" && code.substr(offset, 3) != "/**" && code.substr(offset, 3) != "/*!") || (!initialRun && code.substr(offset, 3) == "/*!")) {
-                    auto commentStartLine = lineNumber;
-                    while (offset < code.length() && code.substr(offset, 2) != "*/") {
-                        if (code[offset] == '\n') {
-                            output += '\n';
-                            lineNumber++;
-                            startOfLine = true;
-                        }
-
-                        offset += 1;
-                    }
-
-                    offset += 2;
-                    if (offset >= code.length())
-                        err::M0001.throwError("Unterminated multiline comment. Expected closing */ sequence.", {}, commentStartLine);
-                }
-
-                if (ifDefs.empty() || ifDefs.back()) {
-                    if (offset > 0 && code[offset - 1] != '\\' && code[offset] == '\"')
-                        isInString = !isInString;
-                    else if (isInString) {
-                        output += code[offset];
-                        offset += 1;
-                        continue;
-                    }
-                }
-
-                if (code[offset] == '#' && startOfLine) {
-                    offset += 1;
-
-                    if (getDirective("ifdef")) {
-                        auto defineName = getDirectiveValue();
-                        if (!defineName.has_value())
-                            err::M0003.throwError("No define name given to #ifdef directive.");
-
-                        if (!ifDefs.empty() && !ifDefs.back())
-                            ifDefs.push_back(false);
-                        else
-                            ifDefs.push_back(this->m_defines.contains(*defineName));
-                    } else if (getDirective("ifndef")) {
-                        auto defineName = getDirectiveValue();
-                        if (!defineName.has_value())
-                            err::M0003.throwError("No define name given to #ifdef directive.");
-
-                        if (!ifDefs.empty() && !ifDefs.back())
-                            ifDefs.push_back(false);
-                        else
-                            ifDefs.push_back(!this->m_defines.contains(*defineName));
-                    } else if (getDirective("endif", false)) {
-                         if (ifDefs.empty())
-                             err::M0003.throwError("#endif without #ifdef.");
-                         else
-                             ifDefs.pop_back();
-                    } else if (ifDefs.empty() || ifDefs.back()) {
-                        if (getDirective("include")) {
-                            auto includeFile = getDirectiveValue();
-
-                            if (!includeFile.has_value())
-                                err::M0003.throwError("No file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
-
-                            if (includeFile->starts_with('"') && includeFile->ends_with('"'))
-                                ; // Parsed path wrapped in ""
-                            else if (includeFile->starts_with('<') && includeFile->ends_with('>'))
-                                ; // Parsed path wrapped in <>
-                            else
-                                err::M0003.throwError("Expected path wrapped in \"path\" or <path>.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
-
-                            std::fs::path includePath = includeFile->substr(1, includeFile->length() - 2);
-
-                            if (includePath.is_relative()) {
-                                for (const auto &dir : this->m_includePaths) {
-                                    std::fs::path potentialPath = dir / includePath;
-                                    if (wolv::io::fs::isRegularFile(potentialPath)) {
-                                        includePath = potentialPath;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if (!wolv::io::fs::isRegularFile(includePath)) {
-                                if (includePath.parent_path().filename().string() == "std")
-                                    err::M0004.throwError("Path doesn't point to a valid file.", "This file might be part of the standard library. Make sure it's installed.");
-                                else
-                                    err::M0004.throwError("Path doesn't point to a valid file.");
-                            }
-
-                            wolv::io::File file(includePath, wolv::io::File::Mode::Read);
-                            if (!file.isValid()) {
-                                err::M0005.throwError(fmt::format("Failed to open file.", *includeFile));
-                            }
-
-                            Preprocessor preprocessor(*this);
-                            preprocessor.m_pragmas.clear();
-
-                            auto preprocessedInclude = preprocessor.preprocess(runtime, file.readString(), false);
-
-                            if (!preprocessedInclude.has_value()) {
-                                throw err::PatternLanguageError(*preprocessor.m_error);
-                            }
-
-                            bool shouldInclude = true;
-                            if (preprocessor.shouldOnlyIncludeOnce()) {
-                                auto [iter, added] = this->m_onceIncludedFiles.insert(includePath);
-                                if (!added) {
-                                    shouldInclude = false;
-                                }
-                            }
-
-                            std::copy(preprocessor.m_onceIncludedFiles.begin(), preprocessor.m_onceIncludedFiles.end(), std::inserter(this->m_onceIncludedFiles, this->m_onceIncludedFiles.begin()));
-                            std::copy(preprocessor.m_defines.begin(), preprocessor.m_defines.end(), std::inserter(this->m_defines, this->m_defines.begin()));
-                            std::copy(preprocessor.m_pragmas.begin(), preprocessor.m_pragmas.end(), std::inserter(this->m_pragmas, this->m_pragmas.begin()));
-
-                            if (shouldInclude) {
-                                auto content = preprocessedInclude.value();
-
-                                std::replace(content.begin(), content.end(), '\n', ' ');
-                                std::replace(content.begin(), content.end(), '\r', ' ');
-                                
-                                content = wolv::util::trim(content);
-
-                                if (!content.empty())
-                                    output += "/*! DOCS IGNORE ON **/ " + content + " /*! DOCS IGNORE OFF **/";
-                            }
-                        } else if (getDirective("define")) {
-                            auto defineName = getDirectiveValue();
-                            if (!defineName.has_value())
-                                err::M0003.throwError("No name given in #define directive.", "A #define directive expects a name and a value in the form of #define NAME VALUE");
-
-                            auto defineValue = getDirectiveValue(true);
-
-                            this->m_defines[*defineName] = { defineValue.value_or(""), lineNumber };
-                        } else if (getDirective("pragma")) {
-                            auto pragmaKey = getDirectiveValue();
-                            if (!pragmaKey.has_value())
-                                err::M0003.throwError("No instruction given in #pragma directive.", "A #pragma directive expects a instruction followed by an optional value in the form of #pragma <instruction> <value>.");
-
-                            auto pragmaValue = getDirectiveValue(true);
-
-                            this->m_pragmas[*pragmaKey].emplace_back(pragmaValue.value_or(""), lineNumber);
-                        } else if (getDirective("error")) {
-                            auto error = getDirectiveValue(true);
-
-                            if (error.has_value())
-                                err::M0007.throwError(error.value());
-                            else
-                                err::M0003.throwError("No value given to #error directive");
-                        } else {
-                            err::M0002.throwError("Expected 'include', 'define' or 'pragma'");
-                        }
-                    }
-                }
-
-                if (offset >= code.length())
-                    break;
-
-                if (code[offset] == '\n') {
-                    lineNumber++;
-                    startOfLine = true;
-                } else if (!std::isspace(code[offset]))
-                    startOfLine = false;
-
-                if (ifDefs.empty() || ifDefs.back() || code[offset] == '\n')
-                    output += code[offset];
-
-                offset += 1;
-            }
-
-            // Apply defines
-            std::vector<std::tuple<std::string, std::string, u32>> sortedDefines;
-            std::for_each(this->m_defines.begin(), this->m_defines.end(), [&sortedDefines](const auto &entry){
-                const auto &[key, data] = entry;
+        // Handle pragmas
+        for (const auto &[type, datas] : this->m_pragmas) {
+            for (const auto &data : datas) {
                 const auto &[value, line] = data;
 
-                sortedDefines.emplace_back(key, value, line);
-            });
-            std::sort(sortedDefines.begin(), sortedDefines.end(), [](const auto &left, const auto &right) {
-                return std::get<0>(left).size() > std::get<0>(right).size();
-            });
-
-            for (const auto &[define, value, defineLine] : sortedDefines) {
-                if (value.empty())
-                    continue;
-
-                output = wolv::util::replaceStrings(output, define, value);
-            }
-
-            // Handle pragmas
-            for (const auto &[type, datas] : this->m_pragmas) {
-                for (const auto &data : datas) {
-                    const auto &[value, line] = data;
-
-                    if (this->m_pragmaHandlers.contains(type)) {
-                        if (!this->m_pragmaHandlers[type](runtime, value))
-                            err::M0006.throwError(fmt::format("Value '{}' cannot be used with the '{}' pragma directive.", value, type), { }, line);
-                    }
+                if (this->m_pragmaHandlers.contains(type)) {
+                    if (!this->m_pragmaHandlers[type](*runtime, value))
+                        errorAt(Location { m_source, line, 1, value.length() },
+                                 "Value '{}' cannot be used with the '{}' pragma directive.", value, type);
                 }
             }
-        } catch (err::PreprocessorError::Exception &e) {
-            auto line = e.getUserData() == 0 ? lineNumber : e.getUserData();
-            this->m_error = err::PatternLanguageError(e.format(sourceCode, line, 1), line, 1);
-
-            return std::nullopt;
-        } catch (err::PatternLanguageError &e) {
-            this->m_error = e;
-
-            return std::nullopt;
         }
 
         this->m_defines.clear();
 
-        return output;
+        return { m_output, collectErrors() };
     }
 
     void Preprocessor::addDefine(const std::string &name, const std::string &value) {
@@ -309,8 +388,26 @@ namespace pl::core {
         this->m_pragmaHandlers[pragmaType] = handler;
     }
 
+    void Preprocessor::addDirectiveHandler(const std::string &directiveType, const api::DirectiveHandler &handler) {
+        this->m_directiveHandlers[directiveType] = handler;
+    }
+
     void Preprocessor::removePragmaHandler(const std::string &pragmaType) {
         this->m_pragmaHandlers.erase(pragmaType);
+    }
+
+    void Preprocessor::removeDirectiveHandler(const std::string &directiveType) {
+        this->m_directiveHandlers.erase(directiveType);
+    }
+
+    Location Preprocessor::location() {
+        return { m_source, m_lineNumber, (u32) (m_offset - m_lineBeginOffset), 1 };
+    }
+
+    void Preprocessor::registerDirectiveHandler(const std::string& name, auto memberFunction) {
+        this->m_directiveHandlers[name] = [memberFunction](Preprocessor* preprocessor) {
+            (preprocessor->*memberFunction)();
+        };
     }
 
 }

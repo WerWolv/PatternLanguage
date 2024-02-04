@@ -12,6 +12,8 @@
 #include <type_traits>
 #include <variant>
 #include <vector>
+#include <algorithm>
+#include <ranges>
 
 #include <pl/helpers/types.hpp>
 #include <pl/helpers/concepts.hpp>
@@ -38,6 +40,12 @@ namespace pl::hlp {
         }
 
         return bytes;
+    }
+
+    inline bool stringEndsWithOneOf(const std::string_view &string, const std::vector<std::string_view> &suffixes) {
+        return std::ranges::any_of(suffixes, [&string](const std::string_view &suffix) {
+            return string.ends_with(suffix);
+        });
     }
 
     std::string encodeByteString(const std::vector<u8> &bytes);

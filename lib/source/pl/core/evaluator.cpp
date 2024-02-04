@@ -737,7 +737,7 @@ namespace pl::core {
         this->m_scopes.pop_back();
     }
 
-    std::vector<ast::ASTNode*> unpackCompoundStatements(const std::vector<std::unique_ptr<ast::ASTNode>> &nodes) {
+    std::vector<ast::ASTNode*> unpackCompoundStatements(const std::vector<std::shared_ptr<ast::ASTNode>> &nodes) {
         std::vector<ast::ASTNode*> result;
 
         for (const auto &node : nodes) {
@@ -873,7 +873,7 @@ namespace pl::core {
         return this->m_sections.size();
     }
 
-    bool Evaluator::evaluate(const std::string &sourceCode, const std::vector<std::shared_ptr<ast::ASTNode>> &ast) {
+    bool Evaluator::evaluate(const std::vector<std::shared_ptr<ast::ASTNode>> &ast) {
         this->m_readOrderReversed = false;
         this->m_currBitOffset = 0;
 
@@ -1025,10 +1025,9 @@ namespace pl::core {
 
             auto node = e.getUserData();
 
-            const auto line = node == nullptr ? 0 : node->getLine();
-            const auto column = node == nullptr ? 0 : node->getColumn();
-
-            this->getConsole().setHardError(err::PatternLanguageError(e.format(sourceCode, line, column), line, column));
+            const auto location = node == nullptr ? Location::Empty() : node->getLocation();
+            this->getConsole().setHardError(err::PatternLanguageError(e.format(location),
+                location.line, location.column));
 
             // Don't clear patterns on error if debug mode is enabled
             if (this->m_debugMode)
@@ -1050,7 +1049,7 @@ namespace pl::core {
 
         this->handleAbort();
 
-        auto line = node->getLine();
+        const auto line = node->getLocation().line;
         if (this->m_shouldPauseNextLine && this->m_lastPauseLine != line) {
             this->m_shouldPauseNextLine = false;
             this->m_lastPauseLine = line;

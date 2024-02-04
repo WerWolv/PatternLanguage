@@ -59,16 +59,62 @@ int runTests(int argc, char **argv) {
         fmt::print("{}\n", message);
     });
 
+    // Include test
+    (void)runtime.addVirtualSource(R"(
+        #include <B>
+        #include <C>
+
+        fn a() {};
+    )", "A");
+
+    (void)runtime.addVirtualSource(R"(
+        #include <C>
+
+        fn b() {};
+    )", "B");
+
+    (void)runtime.addVirtualSource(R"(
+        #pragma once
+
+        fn c() {};
+    )", "C");
+
+    // Imports test
+    (void)runtime.addVirtualSource(R"(
+        import IB;
+        import IC as C;
+
+        fn a() {};
+    )", "IA");
+
+    (void)runtime.addVirtualSource(R"(
+        #pragma namespace B
+
+        import IC as C;
+
+        fn b() {};
+    )", "IB");
+
+    (void)runtime.addVirtualSource(R"(
+        #pragma once
+
+        fn c() {};
+    )", "IC");
+
     auto &test = testPatterns[testName];
 
-    auto result = runtime.executeString(test->getSourceCode());
+    auto result = runtime.executeString(test->getSourceCode(), "<test: " + testName + ">");
 
     // Check if compilation succeeded
     if (!result) {
-        fmt::print("Error during compilation!\n");
+        fmt::print("Error during test!\n");
 
         if (auto error = runtime.getError(); error.has_value())
-            fmt::print("Compile error: {}:{} : {}\n", error->line, error->column, error->message);
+            fmt::print("Error: {}:{} : {}\n", error->line, error->column, error->message);
+
+        for (const auto& error : runtime.getCompileErrors()) {
+            fmt::print("{}", error.format());
+        }
 
         return failing ? EXIT_SUCCESS : EXIT_FAILURE;
     }

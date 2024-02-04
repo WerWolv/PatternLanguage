@@ -10,6 +10,7 @@ namespace pl::core::ast {
     class ASTNodeCompoundStatement : public ASTNode,
                                      public Attributable {
     public:
+        explicit ASTNodeCompoundStatement(std::vector<std::shared_ptr<ASTNode>> &&statements, bool newScope = false);
         explicit ASTNodeCompoundStatement(std::vector<std::unique_ptr<ASTNode>> &&statements, bool newScope = false);
         ASTNodeCompoundStatement(const ASTNodeCompoundStatement &other);
 
@@ -17,7 +18,7 @@ namespace pl::core::ast {
             return std::unique_ptr<ASTNode>(new ASTNodeCompoundStatement(*this));
         }
 
-        [[nodiscard]] const std::vector<std::unique_ptr<ASTNode>>& getStatements() const { return this->m_statements; }
+        [[nodiscard]] const std::vector<std::shared_ptr<ASTNode>>& getStatements() const { return this->m_statements; }
 
         [[nodiscard]] std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override;
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override;
@@ -25,7 +26,7 @@ namespace pl::core::ast {
         void addAttribute(std::unique_ptr<ASTNodeAttribute> &&attribute) override;
 
     public:
-        std::vector<std::unique_ptr<ASTNode>> m_statements;
+        std::vector<std::shared_ptr<ASTNode>> m_statements;
         bool m_newScope = false;
     };
 

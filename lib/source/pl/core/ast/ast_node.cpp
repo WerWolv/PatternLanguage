@@ -5,12 +5,12 @@
 
 namespace pl::core::ast {
 
-    [[nodiscard]] u32 ASTNode::getLine() const { return this->m_line; }
-    [[nodiscard]] u32 ASTNode::getColumn() const { return this->m_column; }
+    const Location& ASTNode::getLocation() const {
+        return m_location;
+    }
 
-    [[maybe_unused]] void ASTNode::setSourceLocation(u32 line, u32 column) {
-        this->m_line = line;
-        this->m_column = column;
+    void ASTNode::setLocation(const Location& location) {
+        this->m_location = location;
     }
 
     [[nodiscard]] std::unique_ptr<ASTNode> ASTNode::evaluate(Evaluator *evaluator) const {

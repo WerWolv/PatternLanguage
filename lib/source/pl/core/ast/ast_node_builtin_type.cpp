@@ -25,21 +25,21 @@ namespace pl::core::ast {
 
         std::unique_ptr<ptrn::Pattern> pattern;
         if (Token::isUnsigned(this->m_type))
-            pattern = std::make_unique<ptrn::PatternUnsigned>(evaluator, offset, size, getLine());
+            pattern = std::make_unique<ptrn::PatternUnsigned>(evaluator, offset, size, getLocation().line);
         else if (Token::isSigned(this->m_type))
-            pattern = std::make_unique<ptrn::PatternSigned>(evaluator, offset, size, getLine());
+            pattern = std::make_unique<ptrn::PatternSigned>(evaluator, offset, size, getLocation().line);
         else if (Token::isFloatingPoint(this->m_type))
-            pattern = std::make_unique<ptrn::PatternFloat>(evaluator, offset, size, getLine());
+            pattern = std::make_unique<ptrn::PatternFloat>(evaluator, offset, size, getLocation().line);
         else if (this->m_type == Token::ValueType::Boolean)
-            pattern = std::make_unique<ptrn::PatternBoolean>(evaluator, offset, getLine());
+            pattern = std::make_unique<ptrn::PatternBoolean>(evaluator, offset, getLocation().line);
         else if (this->m_type == Token::ValueType::Character)
-            pattern = std::make_unique<ptrn::PatternCharacter>(evaluator, offset, getLine());
+            pattern = std::make_unique<ptrn::PatternCharacter>(evaluator, offset, getLocation().line);
         else if (this->m_type == Token::ValueType::Character16)
-            pattern = std::make_unique<ptrn::PatternWideCharacter>(evaluator, offset, getLine());
+            pattern = std::make_unique<ptrn::PatternWideCharacter>(evaluator, offset, getLocation().line);
         else if (this->m_type == Token::ValueType::Padding)
-            pattern = std::make_unique<ptrn::PatternPadding>(evaluator, offset, 1, getLine());
+            pattern = std::make_unique<ptrn::PatternPadding>(evaluator, offset, 1, getLocation().line);
         else if (this->m_type == Token::ValueType::String)
-            pattern = std::make_unique<ptrn::PatternString>(evaluator, offset, 0, getLine());
+            pattern = std::make_unique<ptrn::PatternString>(evaluator, offset, 0, getLocation().line);
         else if (this->m_type == Token::ValueType::Auto)
             return { };
         else

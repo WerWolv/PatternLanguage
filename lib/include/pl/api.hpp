@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pl/core/token.hpp>
+#include <pl/core/errors/result.hpp>
 #include <pl/helpers/types.hpp>
 
 #include <cmath>
@@ -13,7 +14,10 @@ namespace pl {
 
     class PatternLanguage;
 
-    namespace core { class Evaluator; }
+    namespace core {
+        class Evaluator;
+        class Preprocessor;
+    }
 
 }
 
@@ -23,6 +27,34 @@ namespace pl::api {
      * @brief A pragma handler is a function that is called when a pragma is encountered.
      */
     using PragmaHandler = std::function<bool(PatternLanguage&, const std::string &)>;
+
+    using DirectiveHandler = std::function<void(core::Preprocessor*)>;
+
+    using Resolver = std::function<hlp::Result<Source*, std::string>(const std::string&)>;
+
+    struct Source {
+        std::string content;
+        std::string source;
+        u32 id = 0;
+
+        static u32 idCounter;
+
+        Source(std::string content, std::string source = DefaultSource) :
+            content(std::move(content)), source(std::move(source)), id(idCounter++) { }
+
+        Source() = default;
+
+        static constexpr auto DefaultSource = "<Source Code>";
+        static constexpr Source* NoSource = nullptr;
+        static Source Empty() {
+            return { "", "" };
+        }
+
+        constexpr auto operator<=>(const Source& other) const {
+            return this->id <=> other.id;
+        }
+
+    };
 
     /**
      * @brief A type representing a custom section

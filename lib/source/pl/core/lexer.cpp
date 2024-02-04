@@ -1,628 +1,531 @@
 #include <pl/core/lexer.hpp>
+#include <pl/core/tokens.hpp>
+#include <pl/helpers/utils.hpp>
+#include <pl/api.hpp>
 
-#include <fmt/format.h>
-
-#include <algorithm>
-#include <charconv>
-#include <functional>
 #include <optional>
-#include <vector>
 
 namespace pl::core {
+    using namespace tkn;
 
-    std::string matchTillInvalid(const char *characters, const std::function<bool(char)> &predicate) {
-        std::string ret;
+    static constexpr char integerSeparator = '\'';
 
-        while (*characters != 0x00) {
-            ret += *characters;
-            characters++;
-
-            if (!predicate(*characters))
-                break;
-        }
-
-        return ret;
-    }
-
-    bool isIdentifierCharacter(char c) {
+    static bool isIdentifierCharacter(const char c) {
         return std::isalnum(c) || c == '_';
     }
 
-    size_t getIntegerLiteralLength(std::string_view string) {
-        auto count = string.find_first_not_of("0123456789ABCDEFabcdef'xXoOpP.uU");
+    static bool isIntegerCharacter(const char c, const int base) {
+        switch (base) {
+            case 16:
+                return std::isxdigit(c);
+            case 10:
+                return std::isdigit(c);
+            case 8:
+                return c >= '0' && c <= '7';
+            case 2:
+                return c == '0' || c == '1';
+            default:
+                return false;
+        }
+    }
+
+    static int characterValue(const char c) {
+        if (c >= '0' && c <= '9') {
+            return c - '0';
+        }
+        if (c >= 'a' && c <= 'f') {
+            return c - 'a' + 10;
+        }
+        if (c >= 'A' && c <= 'F') {
+            return c - 'A' + 10;
+        }
+
+        return 0;
+    }
+
+    static size_t getIntegerLiteralLength(const std::string_view& literal) {
+        const auto count = literal.find_first_not_of("0123456789ABCDEFabcdef'xXoOpP.uU");
         if (count == std::string_view::npos)
-            return string.size();
-        else
-            return count;
+            return literal.size();
+
+        return count;
     }
 
-    std::optional<Token::Literal> lexIntegerLiteral(std::string_view string) {
-        bool hasFloatSuffix = string.ends_with('D') || string.ends_with('F') || string.ends_with('d') || string.ends_with('f');
-        bool isFloat        = std::count(string.begin(), string.end(), '.') == 1 || (!string.starts_with("0x") && hasFloatSuffix);
 
-        if (isFloat) {
-            // Parse double
-            char suffix = 0x00;
-            if (hasFloatSuffix) {
-                suffix = string.back();
-                string = string.substr(0, string.length() - 1);
-            }
-
-            char *end    = nullptr;
-            double value = std::strtod(string.begin(), &end);
-
-            if (end == string.end()) {
-                switch (suffix) {
-                    case 'd':
-                    case 'D':
-                        return double(value);
-                    case 'f':
-                    case 'F':
-                        return float(value);
-                    default:
-                        return value;
-                }
-            }
-        } else {
-            bool isUnsigned = false;
-            if (string.ends_with('U') || string.ends_with('u')) {
-                isUnsigned = true;
-                string     = string.substr(0, string.length() - 1);
-            }
-
-            u8 prefixOffset = 0;
-            u8 base         = 10;
-
-            if (string.starts_with("0x") || string.starts_with("0X")) {
-                // Parse hexadecimal
-                prefixOffset = 2;
-                base         = 16;
-            } else if (string.starts_with("0o") || string.starts_with("0O")) {
-                // Parse octal
-                prefixOffset = 2;
-                base         = 8;
-            } else if (string.starts_with("0b") || string.starts_with("0B")) {
-                // Parse binary
-                prefixOffset = 2;
-                base         = 2;
-            } else {
-                // Parse decimal
-                prefixOffset = 0;
-                base         = 10;
-            }
-
-            u128 value = 0x00;
-            for (char c : string.substr(prefixOffset)) {
-                bool validChar = [c, base]{
-                    if (base == 10)
-                        return c >= '0' && c <= '9';
-                    else if (base == 2)
-                        return c >= '0' && c <= '1';
-                    else if (base == 8)
-                        return c >= '0' && c <= '7';
-                    else if (base == 16)
-                        return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
-                    else
-                        return false;
-                }();
-
-                if (!validChar)
-                    err::L0003.throwError(fmt::format("Invalid character '{}' found in base {} integer literal", c, base));
-
-                value *= base;
-                value += [&] {
-                    if (c >= '0' && c <= '9') return c - '0';
-                    else if (c >= 'A' && c <= 'F') return 0xA + (c - 'A');
-                    else if (c >= 'a' && c <= 'f') return 0xA + (c - 'a');
-                    else
-                        err::L0003.throwError("Invalid integer sequence.");
-                }();
-            }
-
-            if (isUnsigned)
-                return value;
-            else
-                return i128(value);
-        }
-
-        err::L0003.throwError("Invalid sequence");
-    }
-
-    std::optional<Token::Literal> lexIntegerLiteralWithSeparator(std::string_view string) {
-
-        if (string.starts_with('\'') || string.ends_with('\''))
-            err::L0003.throwError("Integer literal cannot start or end with separator character '");
-        else if (string.find('\'') == std::string_view::npos)
-            return lexIntegerLiteral(string);
-        else {
-            auto preprocessedString = std::string(string);
-            preprocessedString.erase(std::remove(preprocessedString.begin(), preprocessedString.end(), '\''), preprocessedString.end());
-            return lexIntegerLiteral(preprocessedString);
-        }
-    }
-
-    std::optional<std::pair<char, size_t>> getCharacter(std::string_view string) {
-
-        if (string.length() < 1)
-            err::L0001.throwError("Expected character");
-
-        // Escape sequences
-        if (string[0] == '\\') {
-
-            if (string.length() < 2)
-                err::L0001.throwError("Invalid escape sequence");
-
-            // Handle simple escape sequences
-            switch (string[1]) {
+    std::optional<char> Lexer::parseCharacter() {
+        const char& c = m_sourceCode[m_cursor++];
+        if (c == '\\') {
+            switch (m_sourceCode[m_cursor++]) {
                 case 'a':
-                    return {
-                        {'\a', 2}
-                    };
+                    return '\a';
                 case 'b':
-                    return {
-                        {'\b', 2}
-                    };
+                    return '\b';
                 case 'f':
-                    return {
-                        {'\f', 2}
-                    };
+                    return '\f';
                 case 'n':
-                    return {
-                        {'\n', 2}
-                    };
-                case 'r':
-                    return {
-                        {'\r', 2}
-                    };
+                    return '\n';
                 case 't':
-                    return {
-                        {'\t', 2}
-                    };
-                case 'v':
-                    return {
-                        {'\v', 2}
-                    };
-                case '\\':
-                    return {
-                        {'\\', 2}
-                    };
+                    return '\t';
+                case 'r':
+                    return '\r';
+                case '0':
+                    return '\0';
                 case '\'':
-                    return {
-                        {'\'', 2}
-                    };
-                case '\"':
-                    return {
-                        {'\"', 2}
-                    };
+                    return '\'';
+                case '"':
+                    return '"';
+                case '\\':
+                    return '\\';
+                case 'x': {
+                    const char hex[3] = { m_sourceCode[m_cursor], m_sourceCode[m_cursor + 1], 0 };
+                    m_cursor += 2;
+                    try {
+                        return static_cast<char>(std::stoul(hex, nullptr, 16));
+                    } catch (const std::invalid_argument&) {
+                        error("Invalid hex escape sequence: {}", hex);
+                        return std::nullopt;
+                    }
+                }
+                case 'u': {
+                    const char hex[5] = { m_sourceCode[m_cursor], m_sourceCode[m_cursor + 1], m_sourceCode[m_cursor + 2],
+                                    m_sourceCode[m_cursor + 3], 0 };
+                    m_cursor += 4;
+                    try {
+                        return static_cast<char>(std::stoul(hex, nullptr, 16));
+                    } catch (const std::invalid_argument&) {
+                        error("Invalid unicode escape sequence: {}", hex);
+                        return std::nullopt;
+                    }
+                }
+                default:
+                    error("Unknown escape sequence: {}", m_sourceCode[m_cursor-1]);
+                return std::nullopt;
             }
-
-            // Hexadecimal number
-            if (string[1] == 'x') {
-                if (string.length() < 4)
-                    return std::nullopt;
-
-                if (!isxdigit(string[2]) || !isxdigit(string[3]))
-                    return std::nullopt;
-
-                return {
-                    { std::strtoul(&string[2], nullptr, 16), 4 }
-                };
-            }
-
-            // Octal number
-            if (string[1] == 'o') {
-                if (string.length() != 5)
-                    return {};
-
-                if (string[2] < '0' || string[2] > '7' || string[3] < '0' || string[3] > '7' || string[4] < '0' || string[4] > '7')
-                    return {};
-
-                return {
-                    {std::strtoul(&string[2], nullptr, 8), 5}
-                };
-            }
-
-            err::L0001.throwError(fmt::format("Unknown escape sequence '\\{}'", string[1]));
-        } else return {
-            {string[0], 1}
- };
+        }
+        return c;
     }
 
-    std::optional<std::pair<std::string, size_t>> getStringLiteral(std::string_view string) {
-        if (!string.starts_with('\"'))
-            err::L0002.throwError(fmt::format("Expected opening \" character, got {}", string[0]));
-
-        size_t size = 1;
-
+    std::optional<Token> Lexer::parseStringLiteral() {
         std::string result;
-        while (size < string.size() && string[size] != '\"') {
-            auto character = getCharacter(string.substr(size));
+        auto location = this->location();
 
-            if (!character.has_value())
-                return {};
+        m_cursor++; // Skip opening "
 
-            auto &[c, charSize] = character.value();
+        while (m_sourceCode[m_cursor] != '\"') {
+            char c = peek();
+            if (c == '\n' || c == '\0') {
+                error(c == '\n' ? "Unexpected newline in string literal" : "Unexpected end of file in string literal");
+                return std::nullopt;
+            }
 
-            result += c;
-            size += charSize;
+            auto character = parseCharacter();
+            if (!character.has_value()) {
+                return std::nullopt;
+            }
 
-            if (size >= string.length())
-                err::L0002.throwError("Expected closing \" before end of input");
+            result += character.value();
         }
 
-        return {
-            {result, size + 1}
-        };
+        m_cursor++;
+
+        return makeTokenAt(Literal::makeString(result), location, result.size() + 2);
     }
 
-    std::optional<std::pair<char, size_t>> getCharacterLiteral(std::string_view string) {
-        if (string.empty())
-            err::L0001.throwError("Reached end of input");
+    std::optional<u128> Lexer::parseInteger(std::string_view literal) {
+        u8 base = 10;
 
-        if (string[0] != '\'')
-            err::L0001.throwError(fmt::format("Expected opening ', got {}", string[0]));
-
-
-        auto character = getCharacter(string.substr(1));
-
-        if (!character.has_value())
-            return {};
-
-        auto &[c, charSize] = character.value();
-
-        if (string.length() >= charSize + 2 && string[charSize + 1] != '\'')
-            return {};
-
-        return {
-            {c, charSize + 2}
-        };
-    }
-
-    std::optional<std::vector<Token>> Lexer::lex(const std::string &sourceCode, const std::string &preprocessedSourceCode) {
-        std::vector<Token> tokens;
-        u32 offset = 0;
-
-        u32 line = 1;
-        u32 lineStartOffset = 0;
-
-        const auto addToken = [&](Token token) {
-            token.line = line;
-            token.column = (offset - lineStartOffset) + 1;
-            
-            tokens.emplace_back(std::move(token));
-        };
-        
-        const std::string_view code = preprocessedSourceCode;
-
-        try {
-
-            while (offset < preprocessedSourceCode.length()) {
-                const char &c = code[offset];
-
-                if (c == 0x00)
-                    break;
-
-                if (std::isblank(c) || std::isspace(c)) {
-                    if (code[offset] == '\n') {
-                        line++;
-                        lineStartOffset = offset + 1;
-                    }
-                    offset += 1;
-                } else if (c == ';') {
-                    addToken(tkn::Separator::Semicolon);
-                    offset += 1;
-                } else if (c == '(') {
-                    addToken(tkn::Separator::LeftParenthesis);
-                    offset += 1;
-                } else if (c == ')') {
-                    addToken(tkn::Separator::RightParenthesis);
-                    offset += 1;
-                } else if (c == '{') {
-                    addToken(tkn::Separator::LeftBrace);
-                    offset += 1;
-                } else if (c == '}') {
-                    addToken(tkn::Separator::RightBrace);
-                    offset += 1;
-                } else if (c == '[') {
-                    addToken(tkn::Separator::LeftBracket);
-                    offset += 1;
-                } else if (c == ']') {
-                    addToken(tkn::Separator::RightBracket);
-                    offset += 1;
-                } else if (c == ',') {
-                    addToken(tkn::Separator::Comma);
-                    offset += 1;
-                } else if (c == '.') {
-                    addToken(tkn::Separator::Dot);
-                    offset += 1;
-                } else if (code.substr(offset, 2) == "::") {
-                    addToken(tkn::Operator::ScopeResolution);
-                    offset += 2;
-                } else if (c == '@') {
-                    addToken(tkn::Operator::At);
-                    offset += 1;
-                } else if (code.substr(offset, 2) == "==") {
-                    addToken(tkn::Operator::BoolEqual);
-                    offset += 2;
-                } else if (code.substr(offset, 2) == "!=") {
-                    addToken(tkn::Operator::BoolNotEqual);
-                    offset += 2;
-                } else if (code.substr(offset, 2) == "&&") {
-                    addToken(tkn::Operator::BoolAnd);
-                    offset += 2;
-                } else if (code.substr(offset, 2) == "||") {
-                    addToken(tkn::Operator::BoolOr);
-                    offset += 2;
-                } else if (code.substr(offset, 2) == "^^") {
-                    addToken(tkn::Operator::BoolXor);
-                    offset += 2;
-                } else if (code.substr(offset, 2) == "/*") {
-                    offset += 2;
-
-                    bool global;
-                    if (code[offset] == '*')
-                        global = false;
-                    else if (code[offset] == '!')
-                        global = true;
-                    else
-                        err::L0004.throwError(fmt::format("Invalid documentation comment. Expected '/**' or '/*!', got '/*{}'", code[offset]));
-
-                    offset += 1;
-
-                    auto commentStart = offset;
-                    while (code.substr(offset, 2) != "*/") {
-                        if (code[offset] == '\n') {
-                            line++;
-                            lineStartOffset = offset + 1;
-                        }
-
-                        offset += 1;
-
-                        if (offset >= code.length())
-                            err::L0004.throwError("Reached end of input while parsing documentation comment");
-                    }
-
-                    addToken(tkn::Literal::DocComment(global, std::string(code.substr(commentStart, offset - commentStart))));
-
-                    offset += 2;
-                } else if (code.substr(offset, 3) == "///") {
-                    offset += 3;
-
-                    auto commentStart = offset;
-                    while (code[offset] != '\n') {
-                        offset += 1;
-
-                        if (offset >= code.length())
-                            err::L0004.throwError("Reached end of input while parsing documentation comment");
-                    }
-
-                    addToken(tkn::Literal::DocComment(false, std::string(code.substr(commentStart, offset - commentStart))));
-
-                    offset += 2;
-                } else if (c == '=') {
-                    addToken(tkn::Operator::Assign);
-                    offset += 1;
-                } else if (c == ':') {
-                    addToken(tkn::Operator::Colon);
-                    offset += 1;
-                } else if (c == '+') {
-                    addToken(tkn::Operator::Plus);
-                    offset += 1;
-                } else if (c == '-') {
-                    addToken(tkn::Operator::Minus);
-                    offset += 1;
-                } else if (c == '*') {
-                    addToken(tkn::Operator::Star);
-                    offset += 1;
-                } else if (c == '/') {
-                    addToken(tkn::Operator::Slash);
-                    offset += 1;
-                } else if (c == '%') {
-                    addToken(tkn::Operator::Percent);
-                    offset += 1;
-                } else if (c == '>') {
-                    addToken(tkn::Operator::BoolGreaterThan);
-                    offset += 1;
-                } else if (c == '<') {
-                    addToken(tkn::Operator::BoolLessThan);
-                    offset += 1;
-                } else if (c == '!') {
-                    addToken(tkn::Operator::BoolNot);
-                    offset += 1;
-                } else if (c == '|') {
-                    addToken(tkn::Operator::BitOr);
-                    offset += 1;
-                } else if (c == '&') {
-                    addToken(tkn::Operator::BitAnd);
-                    offset += 1;
-                } else if (c == '^') {
-                    addToken(tkn::Operator::BitXor);
-                    offset += 1;
-                } else if (c == '~') {
-                    addToken(tkn::Operator::BitNot);
-                    offset += 1;
-                } else if (c == '?') {
-                    addToken(tkn::Operator::TernaryConditional);
-                    offset += 1;
-                } else if (c == '$') {
-                    addToken(tkn::Operator::Dollar);
-                    offset += 1;
-                } else if (code.substr(offset, 9) == "addressof" && !isIdentifierCharacter(code[offset + 9])) {
-                    addToken(tkn::Operator::AddressOf);
-                    offset += 9;
-                } else if (code.substr(offset, 6) == "sizeof" && !isIdentifierCharacter(code[offset + 6])) {
-                    addToken(tkn::Operator::SizeOf);
-                    offset += 6;
-                } else if (code.substr(offset, 10) == "typenameof" && !isIdentifierCharacter(code[offset + 10])) {
-                    addToken(tkn::Operator::TypeNameOf);
-                    offset += 10;
-                } else if (c == '\'') {
-                    auto lexedCharacter = getCharacterLiteral(code.substr(offset));
-
-                    if (!lexedCharacter.has_value())
-                        err::L0001.throwError("Invalid character literal");
-
-                    auto [character, charSize] = lexedCharacter.value();
-
-                    addToken(tkn::Literal::NumericValue(character));
-                    offset += charSize;
-                } else if (c == '\"') {
-                    auto string = getStringLiteral(code.substr(offset));
-
-                    if (!string.has_value())
-                        err::L0002.throwError("Invalid string literal");
-
-                    auto [s, stringSize] = string.value();
-
-                    addToken(tkn::Literal::StringValue(s));
-                    offset += stringSize;
-                } else if (isIdentifierCharacter(c) && !std::isdigit(c)) {
-                    std::string identifier = matchTillInvalid(&code[offset], isIdentifierCharacter);
-
-                    // Check for reserved keywords
-
-                    if (identifier == "struct")
-                        addToken(tkn::Keyword::Struct);
-                    else if (identifier == "union")
-                        addToken(tkn::Keyword::Union);
-                    else if (identifier == "using")
-                        addToken(tkn::Keyword::Using);
-                    else if (identifier == "enum")
-                        addToken(tkn::Keyword::Enum);
-                    else if (identifier == "bitfield")
-                        addToken(tkn::Keyword::Bitfield);
-                    else if (identifier == "unsigned")
-                        addToken(tkn::Keyword::Unsigned);
-                    else if (identifier == "signed")
-                        addToken(tkn::Keyword::Signed);
-                    else if (identifier == "be")
-                        addToken(tkn::Keyword::BigEndian);
-                    else if (identifier == "le")
-                        addToken(tkn::Keyword::LittleEndian);
-                    else if (identifier == "if")
-                        addToken(tkn::Keyword::If);
-                    else if (identifier == "match")
-                        addToken(tkn::Keyword::Match);
-                    else if (identifier == "else")
-                        addToken(tkn::Keyword::Else);
-                    else if (identifier == "false")
-                        addToken(tkn::Literal::NumericValue(false));
-                    else if (identifier == "true")
-                        addToken(tkn::Literal::NumericValue(true));
-                    else if (identifier == "parent")
-                        addToken(tkn::Keyword::Parent);
-                    else if (identifier == "this")
-                        addToken(tkn::Keyword::This);
-                    else if (identifier == "while")
-                        addToken(tkn::Keyword::While);
-                    else if (identifier == "for")
-                        addToken(tkn::Keyword::For);
-                    else if (identifier == "fn")
-                        addToken(tkn::Keyword::Function);
-                    else if (identifier == "return")
-                        addToken(tkn::Keyword::Return);
-                    else if (identifier == "namespace")
-                        addToken(tkn::Keyword::Namespace);
-                    else if (identifier == "in")
-                        addToken(tkn::Keyword::In);
-                    else if (identifier == "out")
-                        addToken(tkn::Keyword::Out);
-                    else if (identifier == "break")
-                        addToken(tkn::Keyword::Break);
-                    else if (identifier == "continue")
-                        addToken(tkn::Keyword::Continue);
-                    else if (identifier == "ref")
-                        addToken(tkn::Keyword::Reference);
-                    else if (identifier == "null")
-                        addToken(tkn::Keyword::Null);
-                    else if (identifier == "const")
-                        addToken(tkn::Keyword::Const);
-                    else if (identifier == "_")
-                        addToken(tkn::Keyword::Underscore);
-                    else if (identifier == "try")
-                        addToken(tkn::Keyword::Try);
-                    else if (identifier == "catch")
-                        addToken(tkn::Keyword::Catch);
-
-                    // Check for built-in types
-                    else if (identifier == "u8")
-                        addToken(tkn::ValueType::Unsigned8Bit);
-                    else if (identifier == "s8")
-                        addToken(tkn::ValueType::Signed8Bit);
-                    else if (identifier == "u16")
-                        addToken(tkn::ValueType::Unsigned16Bit);
-                    else if (identifier == "s16")
-                        addToken(tkn::ValueType::Signed16Bit);
-                    else if (identifier == "u24")
-                        addToken(tkn::ValueType::Unsigned24Bit);
-                    else if (identifier == "s24")
-                        addToken(tkn::ValueType::Signed24Bit);
-                    else if (identifier == "u32")
-                        addToken(tkn::ValueType::Unsigned32Bit);
-                    else if (identifier == "s32")
-                        addToken(tkn::ValueType::Signed32Bit);
-                    else if (identifier == "u48")
-                        addToken(tkn::ValueType::Unsigned48Bit);
-                    else if (identifier == "s48")
-                        addToken(tkn::ValueType::Signed48Bit);
-                    else if (identifier == "u64")
-                        addToken(tkn::ValueType::Unsigned64Bit);
-                    else if (identifier == "s64")
-                        addToken(tkn::ValueType::Signed64Bit);
-                    else if (identifier == "u96")
-                        addToken(tkn::ValueType::Unsigned96Bit);
-                    else if (identifier == "s96")
-                        addToken(tkn::ValueType::Signed96Bit);
-                    else if (identifier == "u128")
-                        addToken(tkn::ValueType::Unsigned128Bit);
-                    else if (identifier == "s128")
-                        addToken(tkn::ValueType::Signed128Bit);
-                    else if (identifier == "float")
-                        addToken(tkn::ValueType::Float);
-                    else if (identifier == "double")
-                        addToken(tkn::ValueType::Double);
-                    else if (identifier == "char")
-                        addToken(tkn::ValueType::Character);
-                    else if (identifier == "char16")
-                        addToken(tkn::ValueType::Character16);
-                    else if (identifier == "bool")
-                        addToken(tkn::ValueType::Boolean);
-                    else if (identifier == "str")
-                        addToken(tkn::ValueType::String);
-                    else if (identifier == "padding")
-                        addToken(tkn::ValueType::Padding);
-                    else if (identifier == "auto")
-                        addToken(tkn::ValueType::Auto);
-
-                    // If it's not a keyword and a builtin type, it has to be an identifier
-
-                    else
-                        addToken(tkn::Literal::IdentifierValue(identifier));
-
-                    offset += identifier.length();
-                } else if (std::isdigit(c)) {
-                    auto integerLength = getIntegerLiteralLength(&code[offset]);
-                    auto integer       = lexIntegerLiteralWithSeparator(std::string_view(&code[offset], integerLength));
-
-                    if (!integer.has_value())
-                        err::L0003.throwError("Invalid integer literal");
-
-
-                    addToken(tkn::Literal::NumericValue(integer.value()));
-                    offset += integerLength;
-                } else
-                    err::L0004.throwError("Unknown sequence");
+        u128 value = 0;
+        if(literal[0] == '0') {
+            if(literal.size() == 1) {
+                return 0;
             }
+            bool hasPrefix = true;
+            switch (literal[1]) {
+                case 'x':
+                case 'X':
+                    base = 16;
+                break;
+                case 'o':
+                case 'O':
+                    base = 8;
+                break;
+                case 'b':
+                case 'B':
+                    base = 2;
+                break;
+                default:
+                    hasPrefix = false;
+                break;
+            }
+            if (hasPrefix) {
+                literal = literal.substr(2);
+            }
+        }
 
-            addToken(tkn::Separator::EndOfProgram);
-        } catch (err::LexerError::Exception &e) {
-            auto column = (offset - lineStartOffset) + 1;
-            this->m_error = err::PatternLanguageError(e.format(sourceCode, line, column), line, column);
+        for (const char c : literal) {
+            if(c == integerSeparator) continue;
 
+            if (!isIntegerCharacter(c, base)) {
+                error("Invalid integer literal: {}", literal);
+                return std::nullopt;
+            }
+            value = value * base + characterValue(c);
+        }
+
+        return value;
+    }
+
+    std::optional<double> Lexer::parseFloatingPoint(std::string_view literal, const char suffix) {
+        char *end = nullptr;
+        double val = std::strtod(literal.data(), &end);
+
+        if(end != literal.data() + literal.size()) {
+            error("Invalid float literal: {}", literal);
             return std::nullopt;
         }
 
+        switch (suffix) {
+            case 'f':
+            case 'F':
+                return float(val);
+            case 'd':
+            case 'D':
+            default:
+                return val;
+        }
+    }
 
-        return tokens;
+    std::optional<Token::Literal> Lexer::parseIntegerLiteral(std::string_view literal) {
+        // parse a c like numeric literal
+        const bool floatSuffix = hlp::stringEndsWithOneOf(literal, { "f", "F", "d", "D" });
+        const bool unsignedSuffix = hlp::stringEndsWithOneOf(literal, { "u", "U" });
+        const bool isFloat = literal.find('.') != std::string_view::npos
+                       || (!literal.starts_with("0x") && floatSuffix);
+        const bool isUnsigned = unsignedSuffix;
+
+        if(isFloat) {
+
+            char suffix = 0;
+            if(floatSuffix) {
+                // remove suffix
+                suffix = literal.back();
+                literal = literal.substr(0, literal.size() - 1);
+            }
+
+            auto floatingPoint = parseFloatingPoint(literal, suffix);
+
+            if(!floatingPoint.has_value()) return std::nullopt;
+
+            return floatingPoint.value();
+
+        }
+
+        if(unsignedSuffix) {
+            // remove suffix
+            literal = literal.substr(0, literal.size() - 1);
+        }
+
+        const auto integer = parseInteger(literal);
+
+        if(!integer.has_value()) return std::nullopt;
+
+        u128 value = integer.value();
+        if(isUnsigned) {
+            return value;
+        }
+
+        return i128(value);
+    }
+
+    std::optional<Token> Lexer::parseOneLineDocComment() {
+        auto location = this->location();
+        const auto begin = m_cursor;
+        m_cursor += 3;
+
+        std::string result;
+        while(m_sourceCode[m_cursor] != '\n') {
+            result += peek();
+            m_cursor++;
+
+            if(peek(1) == 0) {
+                error("Unexpected end of file while parsing one line doc comment");
+                return std::nullopt;
+            }
+        }
+
+        return makeTokenAt(Literal::makeDocComment(false, result), location, m_cursor - begin);
+    }
+
+    std::optional<Token> Lexer::parseMultiLineDocComment() {
+        auto location = this->location();
+        const auto begin = m_cursor;
+        const bool global = peek(2) == '!';
+        std::string result;
+
+        m_cursor += 3;
+        while(true) {
+            if(peek(0) == '\n') {
+                m_line++;
+                m_lineBegin = m_cursor;
+            }
+
+            if(peek(1) == '\x00') {
+                error("Unexpected end of file while parsing multi line doc comment");
+                return std::nullopt;
+            }
+
+            if(peek(1) == '*' && peek(2) == '/') {
+                m_cursor += 2;
+                break;
+            }
+
+            result += m_sourceCode[m_cursor++];
+        }
+
+        return makeTokenAt(Literal::makeDocComment(global, result), location, m_cursor - begin);
+    }
+
+    std::optional<Token> Lexer::parseOperator() {
+        auto location = this->location();
+        const auto begin = m_cursor;
+        const auto operators = Token::Operators();
+        std::optional<Token> lastMatch = std::nullopt;
+
+        for (int i = 1; i <= Operator::maxOperatorLength; ++i) {
+            const auto view = std::string_view { &m_sourceCode[begin], static_cast<size_t>(i) };
+            if (auto operatorToken = operators.find(view); operatorToken != operators.end()) {
+                m_cursor++;
+                lastMatch = operatorToken->second;
+            }
+        }
+
+        return lastMatch ? makeTokenAt(lastMatch.value(), location, m_cursor - begin) : lastMatch;
+    }
+
+    std::optional<Token> Lexer::parseSeparator() {
+        auto location = this->location();
+        const auto begin = m_cursor;
+
+        if (const auto separatorToken = Token::Seperators().find(m_sourceCode[m_cursor]);
+            separatorToken != Token::Seperators().end()) {
+            m_cursor++;
+            return makeTokenAt(separatorToken->second, location, m_cursor - begin);
+            }
+
+        return std::nullopt;
+    }
+
+    std::optional<Token> Lexer::parseKeyword(const std::string_view &identifier) {
+        const auto keywords = Token::Keywords();
+        if (const auto keywordToken = keywords.find(identifier); keywordToken != keywords.end()) {
+            return makeToken(keywordToken->second, identifier.length());
+        }
+        return std::nullopt;
+    }
+
+    std::optional<Token> Lexer::parseType(const std::string_view &identifier) {
+        auto types = Token::Types();
+        if (const auto typeToken = types.find(identifier); typeToken != types.end()) {
+            return makeToken(typeToken->second, identifier.length());
+        }
+        return std::nullopt;
+    }
+
+    std::optional<Token> Lexer::parseNamedOperator(const std::string_view &identifier) {
+        auto operators = Token::Operators();
+        if (const auto operatorToken = operators.find(identifier); operatorToken != operators.end()) {
+            return makeToken(operatorToken->second, identifier.length());
+        }
+        return std::nullopt;
+    }
+
+    std::optional<Token> Lexer::parseConstant(const std::string_view &identifier) {
+        if (const auto constantToken = constants.find(identifier); constantToken != constants.end()) {
+            return makeToken(Literal::makeNumeric(constantToken->second), identifier.length());
+        }
+        return std::nullopt;
+    }
+
+    Token Lexer::makeToken(const Token &token, const size_t length) {
+        auto location = this->location();
+        location.length = length;
+        return { token.type, token.value, location };
+    }
+
+    Token Lexer::makeTokenAt(const Token &token, Location& location, const size_t length) {
+        location.length = length;
+        return { token.type, token.value, location };
+    }
+
+    void Lexer::addToken(const Token &token) {
+        m_tokens.emplace_back(token);
+    }
+
+    hlp::CompileResult<std::vector<Token>> Lexer::lex(const api::Source *source) {
+        this->m_sourceCode = source->content;
+        this->m_source = source;
+        this->m_cursor = 0;
+        this->m_line = 1;
+        this->m_lineBegin = 0;
+
+        const size_t end = this->m_sourceCode.size();
+
+        m_tokens.clear();
+
+        while(this->m_cursor < end) {
+            const char& c = this->m_sourceCode[this->m_cursor];
+
+            if (c == '\x00') break; // end of string
+
+            if (std::isblank(c) || std::isspace(c)) {
+                if(c == '\n') {
+                    m_line++;
+                    m_lineBegin = m_cursor;
+                }
+                m_cursor++;
+                continue;
+            }
+
+            if(isIdentifierCharacter(c) && !std::isdigit(c)) {
+                size_t length = 0;
+                while (isIdentifierCharacter(peek(length))) {
+                    length++;
+                }
+
+                auto identifier = std::string_view { &m_sourceCode[m_cursor], length };
+
+                // process keywords, named operators and types
+                if (processToken(&Lexer::parseKeyword, identifier) ||
+                    processToken(&Lexer::parseNamedOperator, identifier) ||
+                    processToken(&Lexer::parseType, identifier) ||
+                    processToken(&Lexer::parseConstant, identifier)) {
+                    continue;
+                    }
+
+                // not a predefined token, so it must be an identifier
+                addToken(makeToken(Literal::makeIdentifier(std::string(identifier)), length));
+                this->m_cursor += length;
+
+                continue;
+            }
+
+            if(std::isdigit(c)) {
+                auto literal = &m_sourceCode[m_cursor];
+                size_t size = getIntegerLiteralLength(literal);
+
+                const auto integer = parseIntegerLiteral({ literal, size });
+
+                if(integer.has_value()) {
+                    addToken(makeToken(Literal::makeNumeric(integer.value()), size));
+                    this->m_cursor += size;
+                    continue;
+                }
+
+                this->m_cursor += size;
+                continue;
+            }
+
+            // comment cases
+            if(c == '/') {
+                const char category = peek(1);
+                char type = peek(2);
+                if(category == '/') {
+                    if(type == '/') {
+                        const auto token = parseOneLineDocComment();
+                        if(token.has_value()) {
+                            addToken(token.value());
+                        }
+                    } else {
+                        error("Expected '/' after '//' but got '//{}'", type);
+                        // forward
+                        m_cursor++;
+                    }
+                    continue;
+                }
+                if(category == '*') {
+                    if(type != '!' && type != '*') {
+                        error("Invalid documentation comment. Expected '/**' or '/*!', got '/*{}", type);
+                        // forward
+                        m_cursor++;
+                        continue;
+                    }
+                    const auto token = parseMultiLineDocComment();
+                    if(token.has_value()) {
+                        addToken(token.value());
+                    }
+                    m_cursor++; // skip closing /
+                    continue;
+                }
+            }
+
+            const auto operatorToken = parseOperator();
+            if (operatorToken.has_value()) {
+                addToken(operatorToken.value());
+                continue;
+            }
+
+            const auto separatorToken = parseSeparator();
+            if (separatorToken.has_value()) {
+                addToken(separatorToken.value());
+                continue;
+            }
+
+            // literals
+            if (c == '"') {
+                const auto string = parseStringLiteral();
+
+                if (string.has_value()) {
+                    addToken(string.value());
+                    continue;
+                }
+            } else if(c == '\'') {
+                auto location = this->location();
+                const auto begin = m_cursor;
+                m_cursor++; // skip opening '
+                const auto character = parseCharacter();
+
+                if (character.has_value()) {
+                    if(m_sourceCode[m_cursor] != '\'') {
+                        error("Expected closing '");
+                        continue;
+                    }
+
+                    m_cursor++; // skip closing '
+
+                    addToken(makeTokenAt(Literal::makeNumeric(character.value()), location, m_cursor - begin));
+                    continue;
+                }
+            } else {
+                error("Unexpected character: {}", c);
+            }
+
+            m_cursor++;
+        }
+
+        addToken(makeToken(Separator::EndOfProgram));
+
+        return { m_tokens, collectErrors() };
+    }
+
+    inline char Lexer::peek(const size_t p) const {
+        return m_cursor + p < m_sourceCode.size() ? m_sourceCode[m_cursor + p] : '\0';
+    }
+
+    bool Lexer::processToken(auto parserFunction, const std::string_view& identifier) {
+        const auto token = (this->*parserFunction)(identifier);
+        if (token.has_value()) {
+            m_tokens.emplace_back(token.value());
+            m_cursor += identifier.size();
+            return true;
+        }
+        return false;
+    }
+
+    Location Lexer::location() {
+        u32 column = m_cursor - m_lineBegin;
+        if(column == 0) {
+            column = 1;
+        }
+        return Location { m_source, m_line, column, 0 };
     }
 }

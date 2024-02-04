@@ -55,7 +55,9 @@ add_library(libpl ${LIBRARY_TYPE}
         source/pl/core/parser.cpp
         source/pl/core/preprocessor.cpp
         source/pl/core/validator.cpp
+        source/pl/core/parser_manager.cpp
 
+        source/pl/core/resolver.cpp
         source/pl/core/error.cpp
 
         source/pl/lib/std/pragmas.cpp
@@ -68,6 +70,8 @@ add_library(libpl ${LIBRARY_TYPE}
         source/pl/lib/std/core.cpp
         source/pl/lib/std/hash.cpp
         source/pl/lib/std/random.cpp
+        source/pl/core/resolvers.cpp
+        source/pl/core/api.cpp
 )
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")

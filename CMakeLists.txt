@@ -67,4 +67,8 @@ if (LIBPL_ENABLE_CLI)
     add_subdirectory(cli)
 endif ()
 
+if (LIBPL_ENABLE_FUZZING)
+    add_subdirectory(fuzz EXCLUDE_FROM_ALL)
+endif ()
+
 add_library(pl::libpl ALIAS libpl)
