@@ -2092,11 +2092,8 @@ namespace pl::core {
                 break;
         }
 
-        if(isAliased) {
-            // if aliased skip this namespace
+        if(isAliased) // if aliased skip this namespace
             this->m_currNamespace.pop_back();
-            return { };
-        }
 
         if (!sequence(tkn::Separator::LeftBrace)) {
             error("Expected '{{' at beginning of namespace, got {}.", getFormattedToken(0));
@@ -2108,7 +2105,8 @@ namespace pl::core {
             std::ranges::move(newStatements, std::back_inserter(statements));
         }
 
-        this->m_currNamespace.pop_back();
+        if(!isAliased) // if aliased already done this
+            this->m_currNamespace.pop_back();
 
         return statements;
     }
