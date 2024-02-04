@@ -2,6 +2,8 @@
 
 #include <pl/api.hpp>
 #include <pl/core/ast/ast_node.hpp>
+#include <pl/core/ast/ast_node_type_decl.hpp>
+#include <pl/helpers/safe_pointer.hpp>
 
 #include <pl/core/errors/result.hpp>
 
@@ -13,7 +15,12 @@ namespace pl::core {
     public:
         explicit ParserManager() = default;
 
-        hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> parse(api::Source* source, const std::string &namespacePrefix = "");
+        struct ParsedData {
+            std::vector<std::shared_ptr<ast::ASTNode>> astNodes;
+            std::map<std::string, hlp::safe_shared_ptr<ast::ASTNodeTypeDecl>> types;
+        };
+
+        hlp::CompileResult<ParsedData> parse(api::Source* source, const std::string &namespacePrefix = "");
 
         void setResolver(const api::Resolver& resolver) {
             m_resolver = resolver;

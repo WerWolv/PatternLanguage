@@ -1289,15 +1289,19 @@ namespace pl::core {
             return nullptr;
         }
 
-        auto [parsedAst, parserErrors] = m_parserManager->parse(resolvedSource.value(), alias);
+        auto [parsedData, parserErrors] = m_parserManager->parse(resolvedSource.value(), alias);
         if (!parserErrors.empty()) {
             for (auto & parserError : parserErrors)
                 error(parserError); // rethrow
             return nullptr;
         }
 
-        // use ast in a virtual compound statement
-        return create<ast::ASTNodeCompoundStatement>(std::move(parsedAst.value()), false);
+        // Merge type definitions together
+        for (const auto &[typeName, typeDecl] : parsedData.value().types)
+            this->m_types[typeName] = std::move(typeDecl);
+
+        // Use ast in a virtual compound statement
+        return create<ast::ASTNodeCompoundStatement>(std::move(parsedData.value().astNodes), false);
     }
 
 

@@ -9,11 +9,10 @@
 
 using namespace pl::core;
 
-pl::hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>>
-ParserManager::parse(api::Source *source, const std::string &namespacePrefix) {
-    using result_t = hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>>;
+pl::hlp::CompileResult<ParserManager::ParsedData> ParserManager::parse(api::Source *source, const std::string &namespacePrefix) {
+    using result_t = hlp::CompileResult<ParsedData>;
 
-    if(m_onceIncluded.contains( { source, namespacePrefix } ))
+    if (m_onceIncluded.contains( { source, namespacePrefix } ))
         return result_t::good({});
 
     auto parser = Parser();
@@ -51,7 +50,7 @@ ParserManager::parse(api::Source *source, const std::string &namespacePrefix) {
 
     auto result = parser.parse(tokens.value());
     if (result.hasErrs())
-        return result;
+        return result_t::err(result.errs);
 
     // if its ok validate before returning
     auto [validated, validatorErrors] = validator->validate(*result.ok);
@@ -59,5 +58,10 @@ ParserManager::parse(api::Source *source, const std::string &namespacePrefix) {
         return result_t::err(validatorErrors);
     }
 
-    return result;
+    ParsedData parsedData = {
+        .astNodes = result.unwrap(),
+        .types = parser.getTypes()
+    };
+
+    return result_t::good(std::move(parsedData));
 }
