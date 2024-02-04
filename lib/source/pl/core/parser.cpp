@@ -2088,8 +2088,9 @@ namespace pl::core {
         }
 
         if (sequence(tkn::Separator::Semicolon)) {
-            // default namespace declaration
+            // Default namespace declaration
             if (!m_defaultNamespace.empty()) {
+                this->m_currNamespace.pop_back();
                 return { };
             }
 
