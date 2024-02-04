@@ -36,7 +36,7 @@ namespace pl::core {
         explicit Parser() = default;
         ~Parser() override = default;
 
-        hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> parse(const std::vector<Token> &tokens, const std::vector<std::string>& prefixNamespace = {});
+        hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> parse(const std::vector<Token> &tokens);
 
         const auto &getTypes() { return this->m_types; }
 
@@ -46,6 +46,10 @@ namespace pl::core {
 
         void setParserManager(ParserManager* parserManager) {
             this->m_parserManager = parserManager;
+        }
+
+        void setDefaultNamespace(const std::vector<std::string> &defaultNamespace) {
+            this->m_defaultNamespace = defaultNamespace;
         }
 
     private:
@@ -63,6 +67,8 @@ namespace pl::core {
         std::vector<TokenIter> m_processedDocComments;
 
         ParserManager* m_parserManager = nullptr;
+
+        std::vector<std::string> m_defaultNamespace;
 
         Location location() override;
         // error helpers

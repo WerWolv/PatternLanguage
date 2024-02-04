@@ -2083,6 +2083,17 @@ namespace pl::core {
                 break;
         }
 
+        if (sequence(tkn::Separator::Semicolon)) {
+            // default namespace declaration
+            if (!m_defaultNamespace.empty()) {
+                return { };
+            }
+
+            this->m_defaultNamespace = this->m_currNamespace.back();
+
+            return { };
+        }
+
         if (!sequence(tkn::Separator::LeftBrace)) {
             error("Expected '{{' at beginning of namespace, got {}.", getFormattedToken(0));
             return { };
@@ -2282,7 +2293,7 @@ namespace pl::core {
     }
 
     // <(parseNamespace)...> EndOfProgram
-    hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> Parser::parse(const std::vector<Token> &tokens, const std::vector<std::string>& prefixNamespace) {
+    hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> Parser::parse(const std::vector<Token> &tokens) {
 
         this->m_curr = this->m_startToken = this->m_originalPosition = this->m_partOriginalPosition
             = TokenIter(tokens.begin(), tokens.end());
@@ -2294,8 +2305,8 @@ namespace pl::core {
 
         this->m_currNamespace.clear();
         this->m_currNamespace.emplace_back();
-        if(!prefixNamespace.empty())
-            this->m_currNamespace.push_back(prefixNamespace);
+        if (!this->m_defaultNamespace.empty())
+            this->m_currNamespace.back() = this->m_defaultNamespace;
 
         try {
             auto program = parseTillToken(tkn::Separator::EndOfProgram);

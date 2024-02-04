@@ -88,7 +88,7 @@ int runTests(int argc, char **argv) {
     )", "IA");
 
     (void)runtime.addVirtualSource(R"(
-        #pragma namespace B
+        namespace B;
 
         import IC as C;
 

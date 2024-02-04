@@ -27,12 +27,6 @@ ParserManager::parse(api::Source *source, const std::string &namespacePrefix) {
 
     const auto& preprocessor = internals.preprocessor;
 
-    preprocessor->addPragmaHandler("namespace", [&](auto&, const std::string& value) {
-        if(namespacePrefix.empty())
-            namespaces = wolv::util::splitString(value, "::");
-        return true;
-    });
-
     const auto& lexer = internals.lexer;
     const auto& validator = internals.validator;
 
@@ -53,8 +47,9 @@ ParserManager::parse(api::Source *source, const std::string &namespacePrefix) {
     }
 
     parser.setParserManager(this);
+    parser.setDefaultNamespace(namespaces);
 
-    auto result = parser.parse(tokens.value(), namespaces);
+    auto result = parser.parse(tokens.value());
     if (result.hasErrs())
         return result;
 
