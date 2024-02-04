@@ -48,8 +48,8 @@ namespace pl::core {
             this->m_parserManager = parserManager;
         }
 
-        void setDefaultNamespace(const std::vector<std::string> &defaultNamespace) {
-            this->m_defaultNamespace = defaultNamespace;
+        void setAliasNamespace(const std::vector<std::string> &defaultNamespace) {
+            this->m_aliasNamespace = defaultNamespace;
         }
 
     private:
@@ -68,7 +68,7 @@ namespace pl::core {
 
         ParserManager* m_parserManager = nullptr;
 
-        std::vector<std::string> m_defaultNamespace;
+        std::vector<std::string> m_aliasNamespace;
 
         Location location() override;
         // error helpers

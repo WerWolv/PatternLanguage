@@ -88,11 +88,14 @@ int runTests(int argc, char **argv) {
     )", "IA");
 
     (void)runtime.addVirtualSource(R"(
-        namespace B;
+        // auto means will be skipped if alias is set, effectively acting as a fallback
+        namespace auto B {
 
-        import IC as C;
+            import IC as C;
 
-        fn b() {};
+            fn b() {};
+
+        }
     )", "IB");
 
     (void)runtime.addVirtualSource(R"(

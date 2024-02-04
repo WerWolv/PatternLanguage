@@ -2073,6 +2073,11 @@ namespace pl::core {
     std::vector<hlp::safe_shared_ptr<ast::ASTNode>> Parser::parseNamespace() {
         std::vector<hlp::safe_shared_ptr<ast::ASTNode>> statements;
 
+        bool isAliased = false;
+        if (sequence(tkn::ValueType::Auto)) {
+            isAliased = !this->m_aliasNamespace.empty();
+        }
+
         if (!sequence(tkn::Literal::Identifier)) {
             error("Expected identifier after 'namespace', got {}.", getFormattedToken(0));
             return { };
@@ -2087,15 +2092,9 @@ namespace pl::core {
                 break;
         }
 
-        if (sequence(tkn::Separator::Semicolon)) {
-            // Default namespace declaration
-            if (!m_defaultNamespace.empty()) {
-                this->m_currNamespace.pop_back();
-                return { };
-            }
-
-            this->m_defaultNamespace = this->m_currNamespace.back();
-
+        if(isAliased) {
+            // if aliased skip this namespace
+            this->m_currNamespace.pop_back();
             return { };
         }
 
@@ -2310,8 +2309,8 @@ namespace pl::core {
 
         this->m_currNamespace.clear();
         this->m_currNamespace.emplace_back();
-        if (!this->m_defaultNamespace.empty())
-            this->m_currNamespace.back() = this->m_defaultNamespace;
+        if (!this->m_aliasNamespace.empty())
+            this->m_currNamespace.push_back(this->m_aliasNamespace);
 
         try {
             auto program = parseTillToken(tkn::Separator::EndOfProgram);

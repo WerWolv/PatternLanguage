@@ -46,7 +46,7 @@ pl::hlp::CompileResult<ParserManager::ParsedData> ParserManager::parse(api::Sour
     }
 
     parser.setParserManager(this);
-    parser.setDefaultNamespace(namespaces);
+    parser.setAliasNamespace(namespaces);
 
     auto result = parser.parse(tokens.value());
     if (result.hasErrs())
