@@ -624,6 +624,42 @@ namespace pl::core {
                     return;
                 }
 
+                // do special handling for certain attributes
+                static constexpr std::array<std::string_view, 9> specialAttributes = {
+                    "format", "format_read", "format_write", "format_entries", "format_entries_read",
+                    "format_entries_write", "transform", "transform_entries", "pointer_base"
+                };
+                if (std::ranges::find(specialAttributes, attribute) != specialAttributes.end()) {
+                    if (args.size() != 1) {
+                        error("Expected 1 argument for attribute '{}', got {}.", attribute, args.size());
+                        return;
+                    }
+
+                    // get the string
+                    if (auto literal = dynamic_cast<ast::ASTNodeLiteral *>(args[0].get()); literal != nullptr) {
+                        auto value = literal->getValue();
+                        if (!value.isString()) {
+                            error("Expected string argument for attribute '{}', got {}", attribute,
+                                literal->getValue().toString());
+                            return;
+                        }
+
+                        auto string = value.toString();
+
+                        // we need to check if the beginning of the string is the auto namespace
+                        if (string.starts_with(m_autoNamespace)) {
+                            // replace auto namespace with alias namespace
+                            string = m_aliasNamespaceString + string.substr(m_autoNamespace.size());
+                        }
+
+                        // patch string back in
+                        args[0] = create<ast::ASTNodeLiteral>(string);
+                    } else {
+                        error("Expected string argument for attribute '{}', got {}.", attribute, getFormattedToken(0));
+                        return;
+                    }
+                }
+
                 currNode->addAttribute(create<ast::ASTNodeAttribute>(attribute, unwrapSafePointerVector(std::move(args))));
             } else
                 currNode->addAttribute(create<ast::ASTNodeAttribute>(attribute));
