@@ -114,6 +114,11 @@ namespace pl::core {
         while (true) {
             name += getValue<Token::Identifier>(-1).get();
 
+            if(m_autoNamespace == name) {
+                // replace auto namespace with alias namespace
+                name = m_aliasNamespaceString;
+            }
+
             if (sequence(tkn::Operator::ScopeResolution, tkn::Literal::Identifier)) {
                 name += "::";
                 continue;
@@ -2085,15 +2090,22 @@ namespace pl::core {
 
         this->m_currNamespace.push_back(this->m_currNamespace.back());
 
+        std::string name;
         while (true) {
             this->m_currNamespace.back().push_back(getValue<Token::Identifier>(-1).get());
+            name += getValue<Token::Identifier>(-1).get();
 
-            if (!sequence(tkn::Operator::ScopeResolution, tkn::Literal::Identifier))
+            if (sequence(tkn::Operator::ScopeResolution, tkn::Literal::Identifier)) {
+                name += "::";
+            } else {
                 break;
+            }
         }
 
-        if(isAliased) // if aliased skip this namespace
+        if(isAliased) {
+            this->m_autoNamespace = name;
             this->m_currNamespace.pop_back();
+        }
 
         if (!sequence(tkn::Separator::LeftBrace)) {
             error("Expected '{{' at beginning of namespace, got {}.", getFormattedToken(0));
