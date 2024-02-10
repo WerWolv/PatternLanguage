@@ -109,27 +109,36 @@ namespace pl::core {
         return std::holds_alternative<std::shared_ptr<ptrn::Pattern>>(*this);
     }
 
-    bool Token::Literal::operator==(const Literal &other) const {
+    std::strong_ordering Token::Literal::operator<=>(const Literal &other) const {
         return std::visit(wolv::util::overloaded {
-            []<typename T>(T lhs, T rhs) {
-                return lhs == rhs;
+            []<typename T>(T lhs, T rhs) -> std::strong_ordering {
+                if (lhs == rhs) return std::strong_ordering::equal;
+                if (lhs < rhs) return std::strong_ordering::less;
+                return std::strong_ordering::greater;
             },
-            [](pl::integral auto lhs, pl::integral auto rhs) {
+            [](pl::integral auto lhs, pl::integral auto rhs) -> std::strong_ordering {
                 if constexpr (std::same_as<decltype(lhs), char> || std::same_as<decltype(rhs), char>)
-                    return char(lhs) == char(rhs);
+                    return char(lhs) <=> char(rhs);
                 else if constexpr (std::same_as<decltype(lhs), bool> || std::same_as<decltype(rhs), bool>)
-                    return bool(lhs) == bool(rhs);
-                else
-                    return std::cmp_equal(lhs, rhs);
+                    return bool(lhs) <=> bool(rhs);
+                else {
+                    if (std::cmp_equal(lhs, rhs)) return std::strong_ordering::equal;
+                    if (std::cmp_less(lhs, rhs)) return std::strong_ordering::less;
+                    return std::strong_ordering::greater;
+                }
             },
-            [](pl::integral auto lhs, pl::floating_point auto rhs) {
-                return lhs == rhs;
+            [](pl::integral auto lhs, pl::floating_point auto rhs) -> std::strong_ordering {
+                if (lhs == rhs) return std::strong_ordering::equal;
+                if (lhs < rhs) return std::strong_ordering::less;
+                return std::strong_ordering::greater;
             },
-            [](pl::floating_point auto lhs, pl::integral auto rhs) {
-                return lhs == rhs;
+            [](pl::floating_point auto lhs, pl::integral auto rhs) -> std::strong_ordering {
+                if (lhs == rhs) return std::strong_ordering::equal;
+                if (lhs < rhs) return std::strong_ordering::less;
+                return std::strong_ordering::greater;
             },
-            [](auto, auto) {
-                return false;
+            [](auto, auto) -> std::strong_ordering {
+                return std::strong_ordering::less;
             }
         }, *this, other);
     }

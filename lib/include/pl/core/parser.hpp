@@ -50,6 +50,7 @@ namespace pl::core {
 
         void setAliasNamespace(const std::vector<std::string> &defaultNamespace) {
             this->m_aliasNamespace = defaultNamespace;
+            this->m_aliasNamespaceString = fmt::format("{}", fmt::join(this->m_aliasNamespace, "::"));
         }
 
     private:
@@ -69,6 +70,8 @@ namespace pl::core {
         ParserManager* m_parserManager = nullptr;
 
         std::vector<std::string> m_aliasNamespace;
+        std::string m_aliasNamespaceString;
+        std::string m_autoNamespace;
 
         Location location() override;
         // error helpers
