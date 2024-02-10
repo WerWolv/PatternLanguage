@@ -444,7 +444,7 @@ namespace pl::core {
                 }
                 if(category == '*') {
                     if(type != '!' && type != '*') {
-                        error("Invalid documentation comment. Expected '/**' or '/*!', got '/*{}", type);
+                        error("Invalid documentation comment. Expected '/**' or '/*!', got '/*{}'", type);
                         // forward
                         m_cursor++;
                         continue;

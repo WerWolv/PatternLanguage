@@ -4,6 +4,15 @@
 
 namespace pl::core {
 
+    static bool isNameIdentifier(std::optional<std::string> name) {
+        if (!name.has_value() || name->empty())
+            return false;
+        for (auto letter:*name)
+            if (!std::isalnum(letter) && letter != '_')
+                return false;
+        return true;
+    }
+
     Preprocessor::Preprocessor() : ErrorCollector() {
         this->addPragmaHandler("once", [this](PatternLanguage&, const std::string &value) {
             this->m_onlyIncludeOnce = true;
@@ -15,6 +24,7 @@ namespace pl::core {
         registerDirectiveHandler("ifdef", &Preprocessor::handleIfDef);
         registerDirectiveHandler("ifndef", &Preprocessor::handleIfNDef);
         registerDirectiveHandler("define", &Preprocessor::handleDefine);
+        registerDirectiveHandler("undef", &Preprocessor::handleUnDefine);
         registerDirectiveHandler("pragma", &Preprocessor::handlePragma);
         registerDirectiveHandler("include", &Preprocessor::handleInclude);
         registerDirectiveHandler("error", &Preprocessor::handleError);
@@ -22,6 +32,9 @@ namespace pl::core {
 
     Preprocessor::Preprocessor(const Preprocessor &other) : ErrorCollector(other) {
         this->m_defines = other.m_defines;
+        this->m_replacements = other.m_replacements;
+        this->m_unDefines = other.m_unDefines;
+        this->m_docComments = other.m_docComments;
         this->m_pragmas = other.m_pragmas;
         this->m_onceIncludedFiles = other.m_onceIncludedFiles;
         this->m_resolver = other.m_resolver;
@@ -70,17 +83,64 @@ namespace pl::core {
         return std::string(view.substr(0, end));
     }
 
+    void Preprocessor::saveDocComment() {
+        std::string comment = "";
+        u32 lineCount = 0;
+        if (peek() == '/' && peek(1) =='/' && peek(2) == '/') {
+            comment += "///";
+            m_offset += 3;
+            while (peek() != 0 && peek() != '\n') {
+                comment += peek();
+                m_offset++;
+            }
+            m_offset++;
+            lineCount = 1;
+        } else {
+            comment += "/*";
+            this->m_offset += 2;
+            comment += peek();
+            this->m_offset++;
+            while (peek() != 0 && (peek() != '*' || peek(1) != '/')) {
+                if (peek() == '\n') {
+                    this->m_lineNumber++;
+                    this->m_lineBeginOffset = this->m_offset;
+                    lineCount++;
+                }
+                comment += peek();
+                this->m_offset++;
+            }
+            comment += "*/";
+            this->m_offset += 2;
+        }
+        this->m_docComments.push_back(comment);
+        this->m_output += (char) 0x80;
+        this->m_output += this->m_docComments.size();
+        this->m_output += std::string(lineCount, '\n');
+    }
+
+    // Avoid define replacements in doc comments by saving them to
+    // a container and placing a marker and newlines to preserve line numbers
     void Preprocessor::parseComment() {
         char type = peek(1);
-        if(type == '/') {
-            while(peek() != 0 && peek() != '\n') m_offset++;
-        } else if(type == '*') {
-            char next = peek(2);
-            if(next == '*' || next == '!')
+        char next = peek(2);
+
+        if (type == '/') {
+            if (next == '/') {
+                saveDocComment();
                 return;
-            while(peek() != 0 && (peek() != '*' || peek(1) != '/')) {
+            } else
+                while (peek() != 0 && peek() != '\n') m_offset++;
+
+        } else if (type == '*') {
+
+            if ((next == '*' && peek(3) != '/') || next == '!') {
+                saveDocComment();
+                return;
+            }
+            while (peek() != 0 && (peek() != '*' || peek(1) != '/')) {
                 // update lines
-                if(peek() == '\n') {
+                if (peek() == '\n') {
+                    m_output += '\n';
                     m_lineNumber++;
                     m_lineBeginOffset = m_offset;
                 }
@@ -89,6 +149,26 @@ namespace pl::core {
             }
 
             m_offset += 2;
+            // add spaces to ensure column location of errors is correct.
+            u32 i = 0;
+            bool needsSpaces = false;
+            const std::string_view view = &m_code[m_offset];
+            auto end = view.find_first_of("\0\n\r");
+
+            if(end == std::string_view::npos)
+                end = view.length();
+
+            while (i < end) {
+                if (!std::isspace(view[i])) {
+                    needsSpaces = true;
+                    break;
+                }
+                i++;
+            }
+            if (needsSpaces) {
+                u32 spaceCount = m_offset - m_lineBeginOffset;
+                m_output += std::string(spaceCount, ' ');
+            }
         }
     }
 
@@ -108,6 +188,7 @@ namespace pl::core {
                     m_lineNumber++;
                     m_lineBeginOffset = m_offset;
                     m_startOfLine = true;
+                    m_output += c;
                 } else if (c == '#' && !m_inString && m_startOfLine) {
                     m_offset++;
                     // handle ifdef and ifndef
@@ -134,7 +215,7 @@ namespace pl::core {
     void Preprocessor::handleIfDef() {
         auto name = getDirectiveValue();
 
-        if(!name.has_value()) {
+        if(!name.has_value() || !isNameIdentifier(name)) {
             error("Expected identifier after #ifdef");
             return;
         }
@@ -145,7 +226,7 @@ namespace pl::core {
     void Preprocessor::handleIfNDef() {
         auto name = getDirectiveValue();
 
-        if(!name.has_value()) {
+        if(!name.has_value() || !isNameIdentifier(name)) {
             error("Expected identifier after #ifndef");
             return;
         }
@@ -156,7 +237,7 @@ namespace pl::core {
     void Preprocessor::handleDefine() {
         auto name = getDirectiveValue();
 
-        if(!name.has_value()) {
+        if(!name.has_value() || !isNameIdentifier(name)) {
             error("Expected identifier after #define");
             return;
         }
@@ -167,8 +248,31 @@ namespace pl::core {
             error("Expected value after #define");
             return;
         }
+        if (m_unDefines.contains(name.value()))
+            m_unDefines.erase(name.value());
+        else if (m_defines.contains(name.value()) && value.value() != m_defines[name.value()].first) {
+            m_replacements[m_defines[name.value()].second] =
+                    { name.value(), m_defines[name.value()].first,m_lineNumber };
+            ::fmt::print("[WARN] : Macro {} was redefined in line {} from its previous value in line and {} \n", name.value(), m_lineNumber, m_defines[name.value()].second);
+        }
 
         m_defines[name.value()] = { value.value(), m_lineNumber };
+    }
+
+    void Preprocessor::handleUnDefine() {
+        auto name = getDirectiveValue();
+
+        if(!name.has_value() || !isNameIdentifier(name)) {
+            error("Expected identifier after #undef");
+            return;
+        }
+
+        if (m_defines.contains(name.value())) {
+            m_replacements[m_defines[name.value()].second] = { name.value(), m_defines[name.value()].first, m_lineNumber };
+            m_defines.erase(name.value());
+        }
+
+        m_unDefines[name.value()] = m_lineNumber;
     }
 
     void Preprocessor::handlePragma() {
@@ -266,6 +370,23 @@ namespace pl::core {
         if(c == '\0')
             return false;
 
+        if (c == '\\') {
+            if (m_inString) {
+                m_output += m_code.substr(m_offset, 2);
+                m_offset += 2;
+                return true;
+            } else
+                return false;
+        }
+
+        if(c == '"') {
+            m_inString = !m_inString;
+        } else if (m_inString) {
+            m_output += peek();
+            m_offset += 1;
+            return true;
+        }
+
         if(c == '/') { // comment case
             parseComment();
         }
@@ -282,6 +403,8 @@ namespace pl::core {
                 return true;
             } else {
                 handler->second(this);
+                if (peek() == '#')
+                    return true;
             }
         }
 
@@ -299,9 +422,6 @@ namespace pl::core {
         if (!std::isspace(c))
             m_startOfLine = false;
 
-        if(c == '"' and peek(-1) != '\\') {
-            m_inString = !m_inString;
-        }
 
         m_output += c;
         m_offset += 1;
@@ -317,6 +437,19 @@ namespace pl::core {
         } else {
             error("No message given in #error directive.");
         }
+    }
+
+    void Preprocessor::replaceSkippingStrings(std::string &input, const std::string &find, const std::string &replace) {
+        auto parts = wolv::util::splitString(input, "\"");
+
+        for (u32 i = 0; i < parts.size(); i += 2) {
+            while (1 < i && i < parts.size() && !parts[i - 1].empty() && parts[i - 1].ends_with('\\')) {
+                parts[i - 1] = wolv::util::combineStrings({parts[i - 1], parts[i]}, "\"");
+                parts.erase(parts.begin() + i);
+            }
+            parts[i] = wolv::util::replaceStrings(parts[i], find, replace);
+        }
+        input = wolv::util::combineStrings(parts, "\"");
     }
 
     hlp::CompileResult<std::string> Preprocessor::preprocess(PatternLanguage* runtime, api::Source* source, bool initialRun) {
@@ -342,24 +475,54 @@ namespace pl::core {
             if (!process())
                 break;
         }
+        // defines from included files apply to entire file and can be identified
+        // from a line number of zero.
+        std::vector<std::pair<std::string, std::string >> includedDefines;
+        for (auto define:m_defines) {
+            if (define.second.second != 0)
+                m_replacements[define.second.second] = {define.first, define.second.first, m_lineNumber };
+            else
+                includedDefines.emplace_back(define.first, define.second.first);
+        }
 
         // Apply defines
-        std::vector<std::tuple<std::string, std::string, u32>> sortedDefines;
-        std::ranges::for_each(this->m_defines.begin(), this->m_defines.end(), [&sortedDefines](const auto &entry){
-            const auto &[key, data] = entry;
-            const auto &[value, line] = data;
+        auto lines = wolv::util::splitString(m_output, "\n");
+        // first defines from included files. order is not important.
+        for (auto &[name, value]: includedDefines) {
+            if (m_output.find(name) != std::string::npos)
+                for (auto line = lines.begin(); line != lines.end(); line++)
+                    replaceSkippingStrings(*line, name, value);
+        }
 
-            sortedDefines.emplace_back(key, value, line);
-        });
-        std::ranges::sort(sortedDefines.begin(), sortedDefines.end(), [](const auto &left, const auto &right) {
-            return std::get<0>(left).size() > std::get<0>(right).size();
-        });
 
-        for (const auto &[define, value, defineLine] : sortedDefines) {
-            if (value.empty())
-                continue;
+        for (auto &[start, data]: this->m_replacements) {
+            auto [name, value, end] = data;
+            u32 i = 0;
+            end = std::min(end, (u32) lines.size());
+            for ( i = start; i < end; i++) {
+                auto &line = lines[i];
+                if (!line.empty() && line.find(name) != std::string::npos)
+                    replaceSkippingStrings(line, name, value);
+            }
+        }
 
-            m_output = wolv::util::replaceStrings(m_output, define, value);
+        m_output = wolv::util::combineStrings(lines, "\n");
+
+
+        // restore doc comments
+        unsigned long long pos = 0;
+        while ((pos = m_output.find((char) 0x80, pos)) != std::string::npos) {
+            if ( pos + 1 < m_output.length()) {
+                unsigned commentIndex = m_output[pos + 1]-1;
+                if (commentIndex < m_docComments.size()) {
+                    auto comment = m_docComments[commentIndex];
+                    auto linesInComment = std::count(comment.begin(), comment.end(), '\n');
+                    m_output.replace(pos, 2 + linesInComment, m_docComments[commentIndex]);
+                    pos += m_docComments[commentIndex].length();
+                } else
+                    break;
+            } else
+                break;
         }
 
         // Handle pragmas
@@ -376,6 +539,8 @@ namespace pl::core {
         }
 
         this->m_defines.clear();
+        this->m_unDefines.clear();
+        this->m_replacements.clear();
 
         return { m_output, collectErrors() };
     }

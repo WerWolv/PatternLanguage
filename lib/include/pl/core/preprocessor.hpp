@@ -32,6 +32,8 @@ namespace pl::core {
         void removeDirectiveHandler(const std::string &directiveType);
 
         std::optional<std::string> getDirectiveValue(bool allowWhitespace = false);
+        void replaceSkippingStrings(std::string &input, const std::string &find, const std::string &replace);
+        void saveDocComment();
 
         [[nodiscard]] bool shouldOnlyIncludeOnce() const {
             return this->m_onlyIncludeOnce;
@@ -59,6 +61,7 @@ namespace pl::core {
         void handleIfDef();
         void handleIfNDef();
         void handleDefine();
+        void handleUnDefine();
         void handlePragma();
         void handleInclude();
         void handleError();
@@ -72,6 +75,9 @@ namespace pl::core {
         std::unordered_map<std::string, api::DirectiveHandler> m_directiveHandlers;
 
         std::unordered_map<std::string, std::pair<std::string, u32>> m_defines;
+        std::map<u32, std::tuple<std::string, std::string, u32 >> m_replacements;
+        std::unordered_map<std::string, u32> m_unDefines;
+        std::vector<std::string> m_docComments;
         std::unordered_map<std::string, std::vector<std::pair<std::string, u32>>> m_pragmas;
 
         std::set<std::string> m_onceIncludedFiles;
