@@ -714,7 +714,7 @@ namespace pl::core {
 
         const auto &heap = this->getHeap();
 
-        this->m_scopes.push_back({ parent, &scope, std::nullopt, heap.size() });
+        this->m_scopes.emplace_back(std::make_unique<Scope>(parent, &scope, std::nullopt, heap.size()));
 
         if (this->isDebugModeEnabled())
             this->getConsole().log(LogConsole::Level::Debug, fmt::format("Entering new scope #{}. Parent: '{}', Heap Size: {}.", this->m_scopes.size(), parent == nullptr ? "None" : parent->getVariableName(), heap.size()));

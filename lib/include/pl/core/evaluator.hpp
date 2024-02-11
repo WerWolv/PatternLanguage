@@ -79,19 +79,19 @@ namespace pl::core {
         void popScope();
 
         [[nodiscard]] Scope &getScope(i32 index) {
-            return this->m_scopes[this->m_scopes.size() - 1 + index];
+            return *this->m_scopes[this->m_scopes.size() - 1 + index];
         }
 
         [[nodiscard]] const Scope &getScope(i32 index) const {
-            return this->m_scopes[this->m_scopes.size() - 1 + index];
+            return *this->m_scopes[this->m_scopes.size() - 1 + index];
         }
 
         [[nodiscard]] Scope &getGlobalScope() {
-            return this->m_scopes.front();
+            return *this->m_scopes.front();
         }
 
         [[nodiscard]] const Scope &getGlobalScope() const {
-            return this->m_scopes.front();
+            return *this->m_scopes.front();
         }
 
         [[nodiscard]] size_t getScopeCount() {
@@ -394,7 +394,7 @@ namespace pl::core {
         std::map<u64, api::Section> m_sections;
         u64 m_sectionId = 0;
 
-        std::vector<Scope> m_scopes;
+        std::vector<std::unique_ptr<Scope>> m_scopes;
         std::unordered_map <std::string, api::Function> m_customFunctions;
         std::unordered_map <std::string, api::Function> m_builtinFunctions;
         std::vector<std::unique_ptr<ast::ASTNode>> m_customFunctionDefinitions;
