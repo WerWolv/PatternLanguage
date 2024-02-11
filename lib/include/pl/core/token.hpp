@@ -193,7 +193,7 @@ namespace pl::core {
 
             [[nodiscard]] ValueType getType() const;
 
-            [[nodiscard]] bool operator==(const Literal &other) const;
+            [[nodiscard]] std::strong_ordering operator<=>(const Literal &other) const;
         };
 
         using ValueTypes = std::variant<Keyword, Identifier, Operator, Literal, ValueType, Separator, DocComment>;
