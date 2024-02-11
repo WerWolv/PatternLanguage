@@ -4,7 +4,7 @@
 
 namespace pl::core {
 
-    static bool isNameIdentifier(std::optional<std::string> name) {
+    static bool isNameValid(std::optional<std::string> name) {
         if (!name.has_value() || name->empty())
             return false;
         for (auto letter:*name)
@@ -215,7 +215,7 @@ namespace pl::core {
     void Preprocessor::handleIfDef() {
         auto name = getDirectiveValue();
 
-        if(!name.has_value() || !isNameIdentifier(name)) {
+        if(!isNameValid(name)) {
             error("Expected identifier after #ifdef");
             return;
         }
@@ -226,7 +226,7 @@ namespace pl::core {
     void Preprocessor::handleIfNDef() {
         auto name = getDirectiveValue();
 
-        if(!name.has_value() || !isNameIdentifier(name)) {
+        if(!isNameValid(name)) {
             error("Expected identifier after #ifndef");
             return;
         }
@@ -237,7 +237,7 @@ namespace pl::core {
     void Preprocessor::handleDefine() {
         auto name = getDirectiveValue();
 
-        if(!name.has_value() || !isNameIdentifier(name)) {
+        if(!isNameValid(name)) {
             error("Expected identifier after #define");
             return;
         }
@@ -251,9 +251,11 @@ namespace pl::core {
         if (m_unDefines.contains(name.value()))
             m_unDefines.erase(name.value());
         else if (m_defines.contains(name.value()) && value.value() != m_defines[name.value()].first) {
-            m_replacements[m_defines[name.value()].second] =
-                    { name.value(), m_defines[name.value()].first,m_lineNumber };
-            ::fmt::print("[WARN] : Macro {} was redefined in line {} from its previous value in line and {} \n", name.value(), m_lineNumber, m_defines[name.value()].second);
+            m_replacements[m_defines[name.value()].second] = { name.value(), m_defines[name.value()].first,m_lineNumber };
+            errorAt(Location { m_source, m_lineNumber, 1, name.value().length() },
+                    "Previous definition occurs at line '{}'.", m_defines[name.value()].second);
+            errorAt(Location { m_source, m_defines[name.value()].second, 1, name.value().length() },
+                    "Macro '{}' is redefined in line '{}'.", name.value(), m_lineNumber);
         }
 
         m_defines[name.value()] = { value.value(), m_lineNumber };
@@ -262,7 +264,7 @@ namespace pl::core {
     void Preprocessor::handleUnDefine() {
         auto name = getDirectiveValue();
 
-        if(!name.has_value() || !isNameIdentifier(name)) {
+        if(!isNameValid(name)) {
             error("Expected identifier after #undef");
             return;
         }
