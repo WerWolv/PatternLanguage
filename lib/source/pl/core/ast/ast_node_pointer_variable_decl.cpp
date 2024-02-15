@@ -106,6 +106,11 @@ namespace pl::core::ast {
             this->execute(evaluator);
             return { };
         } else {
+            if (this->m_placementSection != nullptr && !evaluator->isGlobalScope()) {
+                evaluator->addPattern(std::move(pattern));
+                return {};
+            }
+
             return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
         }
     }

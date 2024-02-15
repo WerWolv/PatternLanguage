@@ -54,6 +54,10 @@ namespace pl::core {
             return this->m_patterns;
         }
 
+        void addPattern(std::shared_ptr<ptrn::Pattern> &&pattern) {
+            this->m_patterns.push_back(std::move(pattern));
+        }
+
         [[nodiscard]] LogConsole &getConsole() {
             return this->m_console;
         }

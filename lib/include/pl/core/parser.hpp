@@ -189,8 +189,8 @@ namespace pl::core {
         hlp::safe_unique_ptr<ast::ASTNode> parseImportStatement();
         hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> parseUsingDeclaration();
         hlp::safe_unique_ptr<ast::ASTNode> parsePadding();
-        hlp::safe_unique_ptr<ast::ASTNode> parseMemberVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool allowSection, bool constant, const std::string &identifier);
-        hlp::safe_unique_ptr<ast::ASTNode> parseMemberArrayVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool allowSection, bool constant);
+        hlp::safe_unique_ptr<ast::ASTNode> parseMemberVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool constant, const std::string &identifier);
+        hlp::safe_unique_ptr<ast::ASTNode> parseMemberArrayVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool constant);
         hlp::safe_unique_ptr<ast::ASTNode> parseMemberPointerVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type);
         hlp::safe_unique_ptr<ast::ASTNode> parseMemberPointerArrayVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type);
         hlp::safe_unique_ptr<ast::ASTNode> parseMember();

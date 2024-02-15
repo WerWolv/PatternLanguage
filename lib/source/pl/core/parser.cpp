@@ -760,9 +760,9 @@ namespace pl::core {
             auto identifier = getValue<Token::Identifier>(-1).get();
 
             if (MATCHES(sequence(tkn::Separator::LeftBracket) && !peek(tkn::Separator::LeftBracket))) {
-                statement = parseMemberArrayVariable(std::move(type), true, constant);
+                statement = parseMemberArrayVariable(std::move(type), constant);
             } else {
-                statement = parseMemberVariable(std::move(type), true, constant, identifier);
+                statement = parseMemberVariable(std::move(type), constant, identifier);
 
                 if (sequence(tkn::Operator::Assign)) {
                     auto expression = parseMathematicalExpression();
@@ -1403,7 +1403,7 @@ namespace pl::core {
     }
 
     // (parseType) Identifier
-    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMemberVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool allowSection, bool constant, const std::string &identifier) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMemberVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool constant, const std::string &identifier) {
         if (peek(tkn::Separator::Comma)) {
 
             std::vector<hlp::safe_shared_ptr<ast::ASTNode>> variables;
@@ -1429,11 +1429,6 @@ namespace pl::core {
             hlp::safe_unique_ptr<ast::ASTNode> placementOffset = parseMathematicalExpression();
 
             if (sequence(tkn::Keyword::In)) {
-                if (!allowSection) {
-                    error("Cannot place a member variable in a separate section.");
-                    return nullptr;
-                }
-
                 placementSection = parseMathematicalExpression();
                 if (placementSection == nullptr)
                     return nullptr;
@@ -1457,7 +1452,7 @@ namespace pl::core {
     }
 
     // (parseType) Identifier[(parseMathematicalExpression)]
-    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMemberArrayVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool allowSection, bool constant) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMemberArrayVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool constant) {
         auto name = getValue<Token::Identifier>(-2).get();
 
         hlp::safe_unique_ptr<ast::ASTNode> size;
@@ -1485,11 +1480,6 @@ namespace pl::core {
             hlp::safe_unique_ptr<ast::ASTNode> placementOffset = parseMathematicalExpression();
 
             if (sequence(tkn::Keyword::In)) {
-                if (!allowSection) {
-                    error("Cannot place a member variable in a separate section.");
-                    return nullptr;
-                }
-
                 placementSection = parseMathematicalExpression();
 
                 if (placementSection == nullptr)
@@ -1598,15 +1588,15 @@ namespace pl::core {
                 auto type = parseType();
 
                 if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Separator::LeftBracket) && sequence<Not>(tkn::Separator::LeftBracket)))
-                    member = parseMemberArrayVariable(std::move(type), false, false);
+                    member = parseMemberArrayVariable(std::move(type), false);
                 else if (sequence(tkn::Operator::Star, tkn::Literal::Identifier, tkn::Operator::Colon))
                     member = parseMemberPointerVariable(std::move(type));
                 else if (sequence(tkn::Operator::Star, tkn::Literal::Identifier, tkn::Separator::LeftBracket))
                     member = parseMemberPointerArrayVariable(std::move(type));
                 else if (sequence(tkn::Literal::Identifier))
-                    member = parseMemberVariable(std::move(type), false, false, getValue<Token::Identifier>(-1).get());
+                    member = parseMemberVariable(std::move(type), false, getValue<Token::Identifier>(-1).get());
                 else
-                    member = parseMemberVariable(std::move(type), false, false, "");
+                    member = parseMemberVariable(std::move(type), false, "");
             }
         } else if (sequence(tkn::ValueType::Padding, tkn::Separator::LeftBracket))
             member = parsePadding();
@@ -1870,7 +1860,7 @@ namespace pl::core {
                 if (sequence(tkn::Operator::Colon))
                     member = create<ast::ASTNodeBitfieldFieldSizedType>(variableName, std::move(type), parseMathematicalExpression());
                 else
-                    member = parseMemberVariable(std::move(type), false, false, variableName);
+                    member = parseMemberVariable(std::move(type), false, variableName);
             } else {
                 error("Expected a variable name, got {}.", getFormattedToken(0));
                 return nullptr;
