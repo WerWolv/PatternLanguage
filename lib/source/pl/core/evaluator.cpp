@@ -121,7 +121,7 @@ namespace pl::core {
     void Evaluator::writeBits(u128 byteOffset, u8 bitOffset, u64 bitSize, u64 section, std::endian endianness, u128 value) {
         size_t writeSize = (bitOffset + bitSize + 7) / 8;
         writeSize = std::min(writeSize, sizeof(value));
-        value = hlp::changeEndianess(value, sizeof(value), endianness);
+        value = hlp::changeEndianess(value, writeSize, endianness);
 
         size_t offset = endianness == std::endian::little ? bitOffset : (sizeof(value) * 8) - bitOffset - bitSize;
         auto mask = hlp::bitmask(bitSize);
