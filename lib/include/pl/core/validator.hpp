@@ -24,7 +24,7 @@ namespace pl::core {
         Result validate(const std::vector<std::shared_ptr<ast::ASTNode>> &ast);
 
         void setRecursionDepth(const u32 limit) {
-            this->m_maxRecursionDepth = limit;
+            this->m_maxRecursionDepth = std::min<u32>(limit, 255);
         }
 
     private:
