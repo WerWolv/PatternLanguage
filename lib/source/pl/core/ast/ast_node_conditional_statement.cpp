@@ -21,7 +21,7 @@ namespace pl::core::ast {
     }
 
     [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeConditionalStatement::createPatterns(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto &scope = *evaluator->getScope(0).scope;
         auto &body  = evaluateCondition(getCondition(), evaluator) ? this->m_trueBody : this->m_falseBody;
@@ -40,7 +40,7 @@ namespace pl::core::ast {
     }
 
     ASTNode::FunctionResult ASTNodeConditionalStatement::execute(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto &body = evaluateCondition(getCondition(), evaluator) ? this->m_trueBody : this->m_falseBody;
 

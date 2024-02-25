@@ -29,7 +29,7 @@ namespace pl::core::ast {
     }
 
     [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeBitfieldField::createPatterns(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto node = this->m_size->evaluate(evaluator);
         auto literal = dynamic_cast<ASTNodeLiteral *>(node.get());

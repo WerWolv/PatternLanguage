@@ -20,7 +20,7 @@ namespace pl::core::ast {
     }
 
     [[nodiscard]] std::unique_ptr<ASTNode> ASTNodeMathematicalExpression::evaluate(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         if (this->getLeftOperand() == nullptr || this->getRightOperand() == nullptr)
             err::E0002.throwError("Void expression used in ternary expression.", "If you used a function for one of the operands, make sure it returned a value.", this);

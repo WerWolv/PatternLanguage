@@ -41,7 +41,7 @@ namespace pl::core::ast {
     }
 
     [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeArrayVariableDecl::createPatterns(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto startOffset = evaluator->getBitwiseReadOffset();
 
@@ -112,7 +112,7 @@ namespace pl::core::ast {
     }
 
     ASTNode::FunctionResult ASTNodeArrayVariableDecl::execute(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         if (this->m_size == nullptr)
             err::E0004.throwError("Function arrays cannot be unsized.", {}, this);

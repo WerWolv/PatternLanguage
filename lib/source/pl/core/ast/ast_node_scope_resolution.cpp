@@ -17,7 +17,7 @@ namespace pl::core::ast {
 
 
     [[nodiscard]] std::unique_ptr<ASTNode> ASTNodeScopeResolution::evaluate(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto type = this->m_type->evaluate(evaluator);
 

@@ -18,7 +18,7 @@ namespace pl::core::ast {
     : ASTNode(), m_type(type) { }
 
     [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeBuiltinType::createPatterns(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto size   = Token::getTypeSize(this->m_type);
         auto offset = evaluator->getReadOffsetAndIncrement(size);

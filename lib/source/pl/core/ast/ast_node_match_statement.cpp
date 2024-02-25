@@ -22,7 +22,7 @@ namespace pl::core::ast {
     }
 
     [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeMatchStatement::createPatterns(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto &scope = *evaluator->getScope(0).scope;
         auto body   = this->getCaseBody(evaluator);
@@ -43,7 +43,7 @@ namespace pl::core::ast {
     }
 
     ASTNode::FunctionResult ASTNodeMatchStatement::execute(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto body = this->getCaseBody(evaluator);
         if (body == nullptr) return std::nullopt;

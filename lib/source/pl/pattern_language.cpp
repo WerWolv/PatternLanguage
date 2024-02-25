@@ -141,7 +141,28 @@ namespace pl {
         evaluator->setReadOffset(this->m_startAddress.value_or(evaluator->getDataBaseAddress()));
 
         if (!evaluator->evaluate(this->m_currAST)) {
-            this->m_currError = evaluator->getConsole().getLastHardError();
+            auto &console = evaluator->getConsole();
+
+            this->m_currError = console.getLastHardError();
+
+            console.log(core::LogConsole::Level::Error, "[ Stack Trace ]");
+
+            const auto &callStack = evaluator->getCallStack();
+            u32 lastLine = 0;
+            for (const auto &entry : callStack | std::views::reverse) {
+                if (entry == nullptr)
+                    continue;
+
+                auto location = entry->getLocation();
+                if (lastLine == location.line)
+                    continue;
+
+                console.log(core::LogConsole::Level::Error, core::err::impl::formatLocation(location));
+                console.log(core::LogConsole::Level::Error, core::err::impl::formatLines(location));
+                lastLine = location.line;
+            }
+            console.log(core::LogConsole::Level::Error, "\n");
+
             return false;
         }
 

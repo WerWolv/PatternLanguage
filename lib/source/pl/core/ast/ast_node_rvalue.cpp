@@ -50,7 +50,7 @@ namespace pl::core::ast {
     }
 
     [[nodiscard]] std::unique_ptr<ASTNode> ASTNodeRValue::evaluate(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         if (this->getPath().size() == 1) {
             if (auto name = std::get_if<std::string>(&this->getPath().front()); name != nullptr) {
@@ -148,7 +148,7 @@ namespace pl::core::ast {
     }
 
     [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeRValue::createPatterns(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         std::vector<std::shared_ptr<ptrn::Pattern>> searchScope;
         std::shared_ptr<ptrn::Pattern> currPattern;

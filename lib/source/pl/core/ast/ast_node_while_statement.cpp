@@ -21,7 +21,7 @@ namespace pl::core::ast {
     }
 
     ASTNode::FunctionResult ASTNodeWhileStatement::execute(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         u64 loopIterations = 0;
         while (evaluateCondition(evaluator)) {
@@ -68,7 +68,7 @@ namespace pl::core::ast {
     }
 
     [[nodiscard]] bool ASTNodeWhileStatement::evaluateCondition(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         const auto node    = this->getCondition()->evaluate(evaluator);
         const auto literal = dynamic_cast<ASTNodeLiteral *>(node.get());

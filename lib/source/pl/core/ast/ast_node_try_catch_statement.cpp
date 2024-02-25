@@ -17,7 +17,7 @@ namespace pl::core::ast {
     }
 
     [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeTryCatchStatement::createPatterns(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto startOffset = evaluator->getReadOffset();
         auto &scope = evaluator->getScope(0);
@@ -58,7 +58,7 @@ namespace pl::core::ast {
 
 
     ASTNode::FunctionResult ASTNodeTryCatchStatement::execute(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto variables     = *evaluator->getScope(0).scope;
         auto parameterPack = evaluator->getScope(0).parameterPack;

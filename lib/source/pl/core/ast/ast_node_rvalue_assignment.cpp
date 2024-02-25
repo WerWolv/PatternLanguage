@@ -23,7 +23,7 @@ namespace pl::core::ast {
     }
 
     ASTNode::FunctionResult ASTNodeRValueAssignment::execute(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto lhs = this->getLValue()->createPatterns(evaluator);
         auto rhs = this->getRValue()->evaluate(evaluator);

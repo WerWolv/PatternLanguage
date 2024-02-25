@@ -79,6 +79,13 @@ namespace pl::core {
             std::vector<u8> data;
         };
 
+        struct UpdateHandler {
+            UpdateHandler(Evaluator *evaluator, const ast::ASTNode *node);
+            ~UpdateHandler();
+
+            Evaluator *evaluator;
+        };
+
         void pushScope(const std::shared_ptr<ptrn::Pattern> &parent, std::vector<std::shared_ptr<ptrn::Pattern>> &scope);
         void popScope();
 
@@ -98,12 +105,16 @@ namespace pl::core {
             return *this->m_scopes.front();
         }
 
-        [[nodiscard]] size_t getScopeCount() {
+        [[nodiscard]] size_t getScopeCount() const {
             return this->m_scopes.size();
         }
 
-        [[nodiscard]] bool isGlobalScope() {
+        [[nodiscard]] bool isGlobalScope() const {
             return this->m_scopes.size() == 1;
+        }
+
+        [[nodiscard]] const std::vector<const ast::ASTNode *>& getCallStack() const {
+            return this->m_callStack;
         }
 
         void pushTemplateParameters() {
@@ -347,7 +358,7 @@ namespace pl::core {
             this->m_mainSectionEditsAllowed = true;
         }
 
-        void updateRuntime(const ast::ASTNode *node);
+        [[nodiscard]] std::unique_ptr<Evaluator::UpdateHandler> updateRuntime(const ast::ASTNode *node);
 
         void addBreakpoint(u64 line);
         void removeBreakpoint(u64 line);
@@ -417,6 +428,7 @@ namespace pl::core {
         std::function<void()> m_breakpointHitCallback = []{ };
         std::atomic<DangerousFunctionPermission> m_allowDangerousFunctions = DangerousFunctionPermission::Ask;
         ControlFlowStatement m_currControlFlowStatement = ControlFlowStatement::None;
+        std::vector<const ast::ASTNode*> m_callStack;
 
         std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;
 
@@ -450,6 +462,7 @@ namespace pl::core {
 
         friend class pl::ptrn::PatternCreationLimiter;
         friend class pl::ptrn::Pattern;
+        friend struct UpdateHandler;
     };
 
 }

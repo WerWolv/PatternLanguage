@@ -26,6 +26,9 @@ namespace pl::core::err {
             const std::string &message,
             const std::string &description,
             const std::vector<Location> &trace);
+
+        std::string formatLocation(Location location);
+        std::string formatLines(Location location);
     }
 
     template<typename T = void>
