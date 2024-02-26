@@ -111,7 +111,7 @@ namespace pl::core::ast {
     }
 
     [[nodiscard]] std::unique_ptr<ASTNode> ASTNodeCast::evaluate(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto startOffset = evaluator->getBitwiseReadOffset();
         ON_SCOPE_EXIT { evaluator->setBitwiseReadOffset(startOffset); };

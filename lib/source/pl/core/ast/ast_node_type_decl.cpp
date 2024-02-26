@@ -46,7 +46,7 @@ namespace pl::core::ast {
     }
 
     [[nodiscard]] std::unique_ptr<ASTNode> ASTNodeTypeDecl::evaluate(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto type = this->getType()->evaluate(evaluator);
 
@@ -64,7 +64,7 @@ namespace pl::core::ast {
     }
 
     [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeTypeDecl::createPatterns(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         std::vector<std::unique_ptr<ASTNodeLiteral>> templateParamLiterals(this->m_templateParameters.size());
 

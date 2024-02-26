@@ -16,7 +16,7 @@ namespace pl::core::ast {
 
 
     [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeMultiVariableDecl::createPatterns(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
 
@@ -29,7 +29,7 @@ namespace pl::core::ast {
     }
 
     ASTNode::FunctionResult ASTNodeMultiVariableDecl::execute(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         for (auto &variable : this->m_variables) {
             auto variableDecl = dynamic_cast<ASTNodeVariableDecl *>(variable.get());

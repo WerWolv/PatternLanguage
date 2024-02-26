@@ -24,7 +24,7 @@ namespace pl::core::ast {
     }
 
     ASTNode::FunctionResult ASTNodeLValueAssignment::execute(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         const auto node    = this->getRValue()->evaluate(evaluator);
         const auto literal = dynamic_cast<ASTNodeLiteral *>(node.get());

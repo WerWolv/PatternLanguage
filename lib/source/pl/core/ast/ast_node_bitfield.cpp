@@ -23,7 +23,7 @@ namespace pl::core::ast {
     }
 
     [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeBitfield::createPatterns(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto position = evaluator->getBitwiseReadOffset();
         auto bitfieldPattern = std::make_shared<ptrn::PatternBitfield>(evaluator, position.byteOffset, position.bitOffset, 0, getLocation().line);

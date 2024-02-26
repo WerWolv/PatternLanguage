@@ -20,7 +20,7 @@ namespace pl::core::ast {
     }
 
     [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeBitfieldArrayVariableDecl::createPatterns(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto startOffset = evaluator->getBitwiseReadOffset();
 

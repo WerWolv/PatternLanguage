@@ -23,7 +23,7 @@ namespace pl::core::ast {
     }
 
     [[nodiscard]] std::unique_ptr<ASTNode> ASTNodeCompoundStatement::evaluate(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         std::unique_ptr<ASTNode> result = nullptr;
 
@@ -35,7 +35,7 @@ namespace pl::core::ast {
     }
 
     [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeCompoundStatement::createPatterns(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         std::vector<std::shared_ptr<ptrn::Pattern>> result;
 
@@ -48,7 +48,7 @@ namespace pl::core::ast {
     }
 
     ASTNode::FunctionResult ASTNodeCompoundStatement::execute(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         FunctionResult result;
         auto variables         = *evaluator->getScope(0).scope;

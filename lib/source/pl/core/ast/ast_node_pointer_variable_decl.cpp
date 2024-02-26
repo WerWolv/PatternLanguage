@@ -25,7 +25,7 @@ namespace pl::core::ast {
     }
 
     [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodePointerVariableDecl::createPatterns(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto startOffset = evaluator->getBitwiseReadOffset();
 
@@ -106,6 +106,11 @@ namespace pl::core::ast {
             this->execute(evaluator);
             return { };
         } else {
+            if (this->m_placementSection != nullptr && !evaluator->isGlobalScope()) {
+                evaluator->addPattern(std::move(pattern));
+                return {};
+            }
+
             return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
         }
     }

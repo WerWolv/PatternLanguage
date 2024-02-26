@@ -14,19 +14,19 @@ namespace pl::core::ast {
     }
 
     [[nodiscard]] std::unique_ptr<ASTNode> ASTNode::evaluate(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         return this->clone();
     }
 
     [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNode::createPatterns(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         return {};
     }
 
     ASTNode::FunctionResult ASTNode::execute(Evaluator *evaluator) const {
-        evaluator->updateRuntime(this);
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         err::E0001.throwError("Cannot execute non-functional statement.", "This is a evaluator bug!", this);
     }

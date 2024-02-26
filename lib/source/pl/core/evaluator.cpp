@@ -121,7 +121,7 @@ namespace pl::core {
     void Evaluator::writeBits(u128 byteOffset, u8 bitOffset, u64 bitSize, u64 section, std::endian endianness, u128 value) {
         size_t writeSize = (bitOffset + bitSize + 7) / 8;
         writeSize = std::min(writeSize, sizeof(value));
-        value = hlp::changeEndianess(value, sizeof(value), endianness);
+        value = hlp::changeEndianess(value, writeSize, endianness);
 
         size_t offset = endianness == std::endian::little ? bitOffset : (sizeof(value) * 8) - bitOffset - bitSize;
         auto mask = hlp::bitmask(bitSize);
@@ -714,7 +714,7 @@ namespace pl::core {
 
         const auto &heap = this->getHeap();
 
-        this->m_scopes.push_back({ parent, &scope, std::nullopt, heap.size() });
+        this->m_scopes.emplace_back(std::make_unique<Scope>(parent, &scope, std::nullopt, heap.size()));
 
         if (this->isDebugModeEnabled())
             this->getConsole().log(LogConsole::Level::Debug, fmt::format("Entering new scope #{}. Parent: '{}', Heap Size: {}.", this->m_scopes.size(), parent == nullptr ? "None" : parent->getVariableName(), heap.size()));
@@ -886,6 +886,7 @@ namespace pl::core {
         this->m_patterns.clear();
 
         this->m_scopes.clear();
+        this->m_callStack.clear();
         this->m_heap.clear();
         this->m_patternLocalStorage.clear();
         this->m_templateParameters.clear();
@@ -1043,23 +1044,38 @@ namespace pl::core {
         return true;
     }
 
-    void Evaluator::updateRuntime(const ast::ASTNode *node) {
-        if (this->m_evaluated)
+    Evaluator::UpdateHandler::UpdateHandler(Evaluator *evaluator, const ast::ASTNode *node) : evaluator(evaluator) {
+        if (evaluator->m_evaluated)
             return;
 
-        this->handleAbort();
+        evaluator->handleAbort();
 
         const auto line = node->getLocation().line;
-        if (this->m_shouldPauseNextLine && this->m_lastPauseLine != line) {
-            this->m_shouldPauseNextLine = false;
-            this->m_lastPauseLine = line;
-            this->m_breakpointHitCallback();
-        } else if (this->m_breakpoints.contains(line)) {
-            if (this->m_lastPauseLine != line) {
-                this->m_lastPauseLine = line;
-                this->m_breakpointHitCallback();
+        if (evaluator->m_shouldPauseNextLine && evaluator->m_lastPauseLine != line) {
+            evaluator->m_shouldPauseNextLine = false;
+            evaluator->m_lastPauseLine = line;
+            evaluator->m_breakpointHitCallback();
+        } else if (evaluator->m_breakpoints.contains(line)) {
+            if (evaluator->m_lastPauseLine != line) {
+                evaluator->m_lastPauseLine = line;
+                evaluator->m_breakpointHitCallback();
             }
         }
+
+        evaluator->m_callStack.push_back(node);
+    }
+
+    Evaluator::UpdateHandler::~UpdateHandler() {
+        // Don't pop scopes if an exception is currently being thrown so we can generate
+        // a stack tace
+        if (std::uncaught_exceptions() > 0)
+            return;
+
+        evaluator->m_callStack.pop_back();
+    }
+
+    std::unique_ptr<Evaluator::UpdateHandler> Evaluator::updateRuntime(const ast::ASTNode *node) {
+        return std::make_unique<UpdateHandler>(this, node);
     }
 
     void Evaluator::addBreakpoint(u64 line) { this->m_breakpoints.insert(line); }
