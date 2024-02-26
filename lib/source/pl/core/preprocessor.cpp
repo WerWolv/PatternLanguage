@@ -230,8 +230,8 @@ namespace pl::core {
             return;
         }
 
-        if (!includeFile.starts_with('"') || !includeFile.ends_with('"') ||
-            !includeFile.starts_with('<') || !includeFile.ends_with('>')) {
+        if ((!includeFile.starts_with('"') || !includeFile.ends_with('"')) &&
+            (!includeFile.starts_with('<') || !includeFile.ends_with('>'))) {
             errorDesc("Invalid file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
             return;
         }
