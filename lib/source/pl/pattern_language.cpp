@@ -55,42 +55,34 @@ namespace pl {
 
         auto internalSource = addVirtualSource(code, source); // add virtual source to file resolver
 
-        auto [preprocessedCode, preprocessorErrors] = this->m_internals.preprocessor->preprocess(this, internalSource);
-        if (!preprocessorErrors.empty()) {
+        auto [tokens, preprocessorErrors] = this->m_internals.preprocessor->preprocess(this, internalSource, true);
+        if (!preprocessorErrors.empty())
             this->m_compileErrors = std::move(preprocessorErrors);
+        if (!tokens.has_value() || tokens->empty())
             return std::nullopt;
-        }
-
-        internalSource->content = std::move(preprocessedCode.value()); // update source object with preprocessed code
-
-        auto [tokens, lexerErrors] = this->m_internals.lexer->lex(internalSource);
-
-        if (!lexerErrors.empty()) {
-            this->m_compileErrors = std::move(lexerErrors);
-            return std::nullopt;
-        }
 
         return tokens;
     }
 
     std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> PatternLanguage::parseString(const std::string &code, const std::string &source) {
         auto tokens = this->lexString(code, source);
-        if (!tokens.has_value()) {
+        if (!tokens.has_value() || tokens->empty())
             return std::nullopt;
-        }
 
         auto [ast, parserErrors] = this->m_internals.parser->parse(tokens.value());
-        if (!parserErrors.empty()) {
+        if (!parserErrors.empty())
             this->m_compileErrors = std::move(parserErrors);
-            return std::nullopt;
-        }
 
-        auto [validated, validatorErrors] = this->m_internals.validator->validate(*ast);
-        wolv::util::unused(validated);
-        if (!validatorErrors.empty()) {
-            this->m_compileErrors = std::move(validatorErrors);
+        if(!ast.has_value() || ast->empty())
             return std::nullopt;
-        }
+
+        auto [validated, validatorErrors] = this->m_internals.validator->validate(ast.value());
+        wolv::util::unused(validated);
+        if (!validatorErrors.empty())
+            this->m_compileErrors = std::move(validatorErrors);
+
+        if (ast->empty() || !ast.has_value())
+            return std::nullopt;
 
         return ast;
     }

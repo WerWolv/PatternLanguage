@@ -21,9 +21,10 @@ namespace pl::core {
     class Token {
     public:
         static std::map<std::string_view, Token>& Operators();
-        static std::map<char,             Token>& Seperators();
+        static std::map<char,             Token>& Separators();
         static std::map<std::string_view, Token>& Keywords();
         static std::map<std::string_view, Token>& Types();
+        static std::map<std::string_view, Token>& Directives();
 
         Token() = default;
 
@@ -35,7 +36,9 @@ namespace pl::core {
             String,
             Identifier,
             Separator,
-            DocComment
+            DocComment,
+            Comment,
+            Directive
         };
 
         enum class Keyword {
@@ -153,6 +156,17 @@ namespace pl::core {
             EndOfProgram
         };
 
+        enum class Directive {
+            Include,
+            Define,
+            IfDef,
+            IfNDef,
+            EndIf,
+            Undef,
+            Error,
+            Pragma
+        };
+
         struct Identifier {
             explicit Identifier(std::string identifier) : m_identifier(std::move(identifier)) { }
 
@@ -169,6 +183,12 @@ namespace pl::core {
             std::string comment;
 
             constexpr bool operator==(const DocComment &) const = default;
+        };
+
+        struct Comment {
+            std::string comment;
+
+            constexpr bool operator==(const Comment &) const = default;
         };
 
         struct Literal : std::variant<char, bool, u128, i128, double, std::string, std::shared_ptr<ptrn::Pattern>> {
@@ -196,7 +216,7 @@ namespace pl::core {
             [[nodiscard]] std::strong_ordering operator<=>(const Literal &other) const;
         };
 
-        using ValueTypes = std::variant<Keyword, Identifier, Operator, Literal, ValueType, Separator, DocComment>;
+        using ValueTypes = std::variant<Keyword, Identifier, Operator, Literal, ValueType, Separator, Comment, DocComment, Directive>;
 
         constexpr Token(const Type type, auto value, const Location location) : type(type), value(std::move(value)), location(location) {}
 

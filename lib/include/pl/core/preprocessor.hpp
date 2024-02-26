@@ -5,6 +5,7 @@
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <atomic>
 
 #include <pl/api.hpp>
 #include <pl/helpers/types.hpp>
@@ -23,7 +24,7 @@ namespace pl::core {
 
         ~Preprocessor() override = default;
 
-        hlp::CompileResult<std::string> preprocess(PatternLanguage *runtime, api::Source* source, bool initialRun = true);
+        hlp::CompileResult<std::vector<pl::core::Token>> preprocess(PatternLanguage *runtime, api::Source* source, bool initialRun = true);
 
         void addDefine(const std::string &name, const std::string &value = "");
         void addPragmaHandler(const std::string &pragmaType, const api::PragmaHandler &handler);
@@ -31,12 +32,14 @@ namespace pl::core {
         void removePragmaHandler(const std::string &pragmaType);
         void removeDirectiveHandler(const std::string &directiveType);
 
-        std::optional<std::string> getDirectiveValue(bool allowWhitespace = false);
-        void replaceSkippingStrings(std::string &input, const std::string &find, const std::string &replace);
-        void saveDocComment();
+        std::optional<pl::core::Token> getDirectiveValue(unsigned line);
 
         [[nodiscard]] bool shouldOnlyIncludeOnce() const {
             return this->m_onlyIncludeOnce;
+        }
+
+        bool isInitialized() const {
+            return m_initialized;
         }
 
         void setResolver(const api::Resolver& resolvers) {
@@ -46,27 +49,25 @@ namespace pl::core {
     private:
         Preprocessor(const Preprocessor &);
 
-    private:
         Location location() override;
 
-        inline char peek(i32 p = 0) const {
-            if(m_offset + p >= m_code.size()) return '\0';
-            return m_code[m_offset + p];
+        inline std::string peek(i32 p = 0) const {
+            if( (m_token + p)  >=  m_result.unwrap().end()) return "EOF";
+            return (m_token+p)->getFormattedValue();
         }
 
         std::string parseDirectiveName();
-        void parseComment();
 
         // directive handlers
-        void handleIfDef();
-        void handleIfNDef();
-        void handleDefine();
-        void handleUnDefine();
-        void handlePragma();
-        void handleInclude();
-        void handleError();
+        void handleIfDef(unsigned line);
+        void handleIfNDef(unsigned line);
+        void handleDefine(unsigned line);
+        void handleUnDefine(unsigned line);
+        void handlePragma(unsigned line);
+        void handleInclude(unsigned line);
+        void handleError(unsigned line);
 
-        bool process();
+        void process();
         void processIfDef(bool add);
 
         void registerDirectiveHandler(const std::string& name, auto memberFunction);
@@ -74,10 +75,7 @@ namespace pl::core {
         std::unordered_map<std::string, api::PragmaHandler> m_pragmaHandlers;
         std::unordered_map<std::string, api::DirectiveHandler> m_directiveHandlers;
 
-        std::unordered_map<std::string, std::pair<std::string, u32>> m_defines;
-        std::map<u32, std::tuple<std::string, std::string, u32 >> m_replacements;
-        std::unordered_map<std::string, u32> m_unDefines;
-        std::vector<std::string> m_docComments;
+        std::unordered_map<std::string, std::vector<pl::core::Token>> m_defines;
         std::unordered_map<std::string, std::vector<std::pair<std::string, u32>>> m_pragmas;
 
         std::set<std::string> m_onceIncludedFiles;
@@ -85,14 +83,12 @@ namespace pl::core {
         api::Resolver m_resolver = nullptr;
         PatternLanguage *m_runtime = nullptr;
 
-        size_t m_offset = 0;
-        u32 m_lineNumber = 1;
-        u32 m_lineBeginOffset = 0;
-        bool m_inString = false;
-        bool m_startOfLine = true;
-        std::string m_output;
+        std::vector<pl::core::Token> m_keys;
+        std::atomic<bool> m_initialized = false;
+        __gnu_cxx::__normal_iterator<pl::core::Token *, std::vector<pl::core::Token>> m_token;
+        hlp::CompileResult<std::vector<pl::core::Token>> m_result;
+        std::vector<pl::core::Token> m_output;
 
-        std::string m_code;
         api::Source* m_source = nullptr;
 
         bool m_onlyIncludeOnce = false;

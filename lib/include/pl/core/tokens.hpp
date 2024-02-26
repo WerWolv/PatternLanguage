@@ -76,6 +76,10 @@ namespace pl::core::tkn {
             return { core::Token::Type::DocComment, Token::DocComment { global, value }, Location::Empty() };
         }
 
+        inline Token makeComment(const std::string &value) {
+            return { core::Token::Type::Comment, Token::Comment { value }, Location::Empty() };
+        }
+
         const auto Identifier = makeToken(core::Token::Type::Identifier, { });
         const auto Numeric    = makeToken(core::Token::Type::Integer, { });
         const auto String     = makeToken(core::Token::Type::String,  { });
@@ -176,7 +180,7 @@ namespace pl::core::tkn {
 
         inline Token makeSeparator(const Token::Separator& value, char name) {
             auto token = makeToken(Token::Type::Separator, value);
-            Token::Seperators()[name] = token;
+            Token::Separators()[name] = token;
             return token;
         }
 
@@ -192,6 +196,24 @@ namespace pl::core::tkn {
 
         const auto EndOfProgram = makeToken(Token::Type::Separator, Token::Separator::EndOfProgram);
 
+    }
+
+    namespace Directive {
+
+        inline Token makeDirective(const Token::Directive& value, const std::string_view& name) {
+            auto token = makeToken(core::Token::Type::Directive, value);
+            Token::Directives()[name] = token;
+            return token;
+        }
+
+        const auto Include = makeDirective(Token::Directive::Include, "#include");
+        const auto Define = makeDirective(Token::Directive::Define, "#define");
+        const auto Undef = makeDirective(Token::Directive::Undef, "#undef");
+        const auto IfDef = makeDirective(Token::Directive::IfDef, "#ifdef");
+        const auto IfNDef = makeDirective(Token::Directive::IfNDef, "#ifndef");
+        const auto EndIf = makeDirective(Token::Directive::EndIf, "#endif");
+        const auto Error = makeDirective(Token::Directive::Error, "#error");
+        const auto Pragma = makeDirective(Token::Directive::Pragma, "#pragma");
     }
 
 }
