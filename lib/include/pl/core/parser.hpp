@@ -48,11 +48,6 @@ namespace pl::core {
             this->m_parserManager = parserManager;
         }
 
-        void setAliasNamespace(const std::vector<std::string> &defaultNamespace) {
-            this->m_aliasNamespace = defaultNamespace;
-            this->m_aliasNamespaceString = fmt::format("{}", fmt::join(this->m_aliasNamespace, "::"));
-        }
-
     private:
         TokenIter m_curr;
         TokenIter m_startToken, m_originalPosition, m_partOriginalPosition;
@@ -381,6 +376,8 @@ namespace pl::core {
 
             return this->m_curr[index].type == token.type && this->m_curr[index] == token.value;
         }
+
+        friend class ParserManager;
     };
 
 }

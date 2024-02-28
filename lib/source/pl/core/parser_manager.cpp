@@ -12,8 +12,12 @@ using namespace pl::core;
 pl::hlp::CompileResult<ParserManager::ParsedData> ParserManager::parse(api::Source *source, const std::string &namespacePrefix) {
     using result_t = hlp::CompileResult<ParsedData>;
 
-    if (m_onceIncluded.contains( { source, namespacePrefix } ))
-        return result_t::good({});
+    OnceIncludePair key = { source, namespacePrefix };
+
+    if (m_onceIncluded.contains( key )) {
+        const auto& types = m_parsedTypes[key];
+        return result_t::good({ {}, types });
+    }
 
     auto parser = Parser();
 
@@ -45,8 +49,9 @@ pl::hlp::CompileResult<ParserManager::ParsedData> ParserManager::parse(api::Sour
         return result_t::err(lexerErrors);
     }
 
-    parser.setParserManager(this);
-    parser.setAliasNamespace(namespaces);
+    parser.m_parserManager = this;
+    parser.m_aliasNamespace = namespaces;
+    parser.m_aliasNamespaceString = namespacePrefix;
 
     auto result = parser.parse(tokens.value());
     if (result.hasErrs())
@@ -58,10 +63,12 @@ pl::hlp::CompileResult<ParserManager::ParsedData> ParserManager::parse(api::Sour
         return result_t::err(validatorErrors);
     }
 
+    m_parsedTypes[key] = parser.m_types;
+
     ParsedData parsedData = {
         .astNodes = result.unwrap(),
-        .types = parser.getTypes()
+        .types = parser.m_types
     };
 
-    return result_t::good(std::move(parsedData));
+    return result_t::good(parsedData);
 }
