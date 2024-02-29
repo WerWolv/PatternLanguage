@@ -1,3 +1,7 @@
 #include <pl/api.hpp>
 
-pl::u32 pl::api::Source::idCounter;
+namespace pl::api {
+
+    u32 Source::idCounter;
+
+}
