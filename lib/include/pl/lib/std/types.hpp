@@ -11,7 +11,7 @@ namespace pl::lib::libstd::types {
                 case 1: this->m_endian = std::endian::big;      break;
                 case 2: this->m_endian = std::endian::little;   break;
                 default:
-                    core::err::E0012.throwError("Invalid endian value.", "Try one of the values in the std::core::Endian enum.");
+                    ::pl::core::err::E0012.throwError("Invalid endian value.", "Try one of the values in the std::core::Endian enum.");
             }
         }
 

@@ -55,8 +55,15 @@ namespace pl {
 
         auto internalSource = addVirtualSource(code, source); // add virtual source to file resolver
 
+        // add defines to preprocessor
+        for (const auto &[name, value] : this->m_defines)
+            this->m_internals.preprocessor->addDefine(name, value);
+
+        // add pragmas to preprocessor
+        for (const auto &[name, callback] : this->m_pragmas)
+            this->m_internals.preprocessor->addPragmaHandler(name, callback);
         auto [tokens, preprocessorErrors] = this->m_internals.preprocessor->preprocess(this, internalSource, true);
-        if (!preprocessorErrors.empty())
+        if (!preprocessorErrors.empty()) 
             this->m_compileErrors = std::move(preprocessorErrors);
         if (!tokens.has_value() || tokens->empty())
             return std::nullopt;
@@ -217,16 +224,20 @@ namespace pl {
         this->m_resolvers = resolver;
     }
 
-    void PatternLanguage::addPragma(const std::string &name, const api::PragmaHandler &callback) const {
-        this->m_internals.preprocessor->addPragmaHandler(name, callback);
+    void PatternLanguage::addPragma(const std::string &name, const api::PragmaHandler &callback) {
+        this->m_pragmas[name] = callback;
     }
 
-    void PatternLanguage::removePragma(const std::string &name) const {
-        this->m_internals.preprocessor->removePragmaHandler(name);
+    void PatternLanguage::removePragma(const std::string &name) {
+        this->m_pragmas.erase(name);
     }
 
-    void PatternLanguage::addDefine(const std::string &name, const std::string &value) const {
-        this->m_internals.preprocessor->addDefine(name, value);
+    void PatternLanguage::addDefine(const std::string &name, const std::string &value) {
+        this->m_defines[name] = value;
+    }
+
+    void PatternLanguage::removeDefine(const std::string &name) {
+        this->m_defines.erase(name);
     }
 
     void PatternLanguage::setDataSource(u64 baseAddress, u64 size, std::function<void(u64, u8*, size_t)> readFunction, std::optional<std::function<void(u64, const u8*, size_t)>> writeFunction) const {

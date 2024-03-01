@@ -12,8 +12,12 @@ using namespace pl::core;
 pl::hlp::CompileResult<ParserManager::ParsedData> ParserManager::parse(api::Source *source, const std::string &namespacePrefix) {
     using result_t = hlp::CompileResult<ParsedData>;
 
-    if (m_onceIncluded.contains( { source, namespacePrefix } ))
-        return result_t::good({});
+    OnceIncludePair key = { source, namespacePrefix };
+
+    if (m_onceIncluded.contains( key )) {
+        const auto& types = m_parsedTypes[key];
+        return result_t::good({ {}, types });
+    }
 
     auto parser = Parser();
 
@@ -24,7 +28,13 @@ pl::hlp::CompileResult<ParserManager::ParsedData> ParserManager::parse(api::Sour
 
     const auto& internals = m_patternLanguage->getInternals();
 
-    const auto& preprocessor = internals.preprocessor;
+    auto preprocessor = Preprocessor();
+    for (const auto& [name, value] : m_patternLanguage->getDefines()) {
+        preprocessor.addDefine(name, value);
+    }
+    for (const auto& [name, handler]: m_patternLanguage->getPragmas()) {
+        preprocessor.addPragmaHandler(name, handler);
+    }
 
     const auto& validator = internals.validator;
 
@@ -38,6 +48,7 @@ pl::hlp::CompileResult<ParserManager::ParsedData> ParserManager::parse(api::Sour
 
     parser.setParserManager(this);
     parser.setAliasNamespace(namespaces);
+    parser.m_aliasNamespaceString = namespacePrefix;
 
     auto result = parser.parse(tokens.value());
     if (result.hasErrs())
@@ -49,10 +60,12 @@ pl::hlp::CompileResult<ParserManager::ParsedData> ParserManager::parse(api::Sour
         return result_t::err(validatorErrors);
     }
 
-    ParsedData parsedData = {
-        .astNodes = result.unwrap(),
-        .types = parser.getTypes()
-    };
+    const auto& types = parser.m_types;
+    for (auto& type : types) {
+        type.second->setCompleted(false); // de-complete the types
+    }
 
-    return result_t::good(std::move(parsedData));
+    m_parsedTypes[key] = types;
+
+    return result_t::good({ result.unwrap(), types });
 }

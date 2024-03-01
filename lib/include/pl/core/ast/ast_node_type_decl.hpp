@@ -52,8 +52,8 @@ namespace pl::core::ast {
             return this->m_reference;
         }
 
-        void setCompleted() {
-            this->m_completed = true;
+        void setCompleted(bool completed = true) {
+            this->m_completed = completed;
         }
 
         void setType(std::shared_ptr<ASTNode> type, bool templateType = false) {

@@ -48,6 +48,7 @@ namespace pl::core {
             }
         };
 
+        std::map<OnceIncludePair, std::map<std::string, hlp::safe_shared_ptr<ast::ASTNodeTypeDecl>>> m_parsedTypes {};
         std::set<OnceIncludePair> m_onceIncluded {};
         api::Resolver m_resolver = nullptr;
         PatternLanguage* m_patternLanguage = nullptr;

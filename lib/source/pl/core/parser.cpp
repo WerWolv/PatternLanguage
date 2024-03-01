@@ -1188,6 +1188,8 @@ namespace pl::core {
                     auto parameter = templateTypes[index];
                     if (const auto typeDecl = dynamic_cast<ast::ASTNodeTypeDecl*>(parameter.get()); typeDecl != nullptr) {
                         auto newType = parseType();
+                        if (newType == nullptr)
+                            return;
                         if (newType->isForwardDeclared()) {
                             error("Cannot use forward declared type as template parameter.");
                         }
@@ -1306,7 +1308,7 @@ namespace pl::core {
 
         // TODO: struct import
 
-        std::string alias = "";
+        std::string alias;
 
         if (sequence(tkn::Keyword::As)) {
             if (!sequence(tkn::Literal::Identifier)) {
@@ -1338,7 +1340,7 @@ namespace pl::core {
         }
 
         // Merge type definitions together
-        for (const auto &[typeName, typeDecl] : parsedData.value().types)
+        for (auto &[typeName, typeDecl] : parsedData.value().types)
             this->m_types[typeName] = std::move(typeDecl);
 
         // Use ast in a virtual compound statement
@@ -1593,9 +1595,10 @@ namespace pl::core {
                     member = parseMemberPointerVariable(std::move(type));
                 else if (sequence(tkn::Operator::Star, tkn::Literal::Identifier, tkn::Separator::LeftBracket))
                     member = parseMemberPointerArrayVariable(std::move(type));
-                else if (sequence(tkn::Literal::Identifier))
-                    member = parseMemberVariable(std::move(type), false, getValue<Token::Identifier>(-1).get());
-                else
+                else if (sequence(tkn::Literal::Identifier)) {
+                    auto identifier = getValue<Token::Identifier>(-1).get();
+                    member = parseMemberVariable(std::move(type), false, identifier);
+                } else
                     member = parseMemberVariable(std::move(type), false, "");
             }
         } else if (sequence(tkn::ValueType::Padding, tkn::Separator::LeftBracket))

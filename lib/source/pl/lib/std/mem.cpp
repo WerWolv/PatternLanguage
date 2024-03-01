@@ -12,7 +12,7 @@
 
 namespace pl::lib::libstd::mem {
 
-    static std::optional<u128> findSequence(core::Evaluator *ctx, u64 occurrenceIndex, u64 offsetFrom, u64 offsetTo, const std::vector<u8> &sequence) {
+    static std::optional<u128> findSequence(::pl::core::Evaluator *ctx, u64 occurrenceIndex, u64 offsetFrom, u64 offsetTo, const std::vector<u8> &sequence) {
         std::vector<u8> bytes(sequence.size(), 0x00);
         u32 occurrences      = 0;
         const u64 bufferSize = ctx->getDataSize();
