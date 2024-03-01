@@ -74,6 +74,15 @@ add_library(libpl ${LIBRARY_TYPE}
         source/pl/core/api.cpp
 )
 
+file(GLOB_RECURSE TARGET_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/include/**/*.hpp")
+set(SYSTEM_INCLUDES "<algorithm>;<array>;<atomic>;<chrono>;<cmath>;<cstddef>;<cstdint>;<cstdio>;<cstdlib>;<cstring>;<exception>;<filesystem>;<functional>;<iterator>;<limits>;<list>;<map>;<memory>;<optional>;<ranges>;<set>;<stdexcept>;<string>;<string_view>;<thread>;<tuple>;<type_traits>;<unordered_map>;<unordered_set>;<utility>;<variant>;<vector>")
+set(INCLUDES "${SYSTEM_INCLUDES};${TARGET_INCLUDES}")
+string(REPLACE ">" "$<ANGLE-R>" INCLUDES "${INCLUDES}")
+target_precompile_headers(libpl
+        PUBLIC
+        "$<$<COMPILE_LANGUAGE:CXX>:${INCLUDES}>"
+)
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(libpl PRIVATE -Wall -Wextra -Werror -Wpedantic -Wno-unknown-pragmas -Wno-array-bounds)
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
