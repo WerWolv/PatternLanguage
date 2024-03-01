@@ -28,19 +28,25 @@ pl::hlp::CompileResult<ParserManager::ParsedData> ParserManager::parse(api::Sour
 
     const auto& internals = m_patternLanguage->getInternals();
 
-    const auto& preprocessor = internals.preprocessor;
+    auto preprocessor = Preprocessor();
+    for (const auto& [name, value] : m_patternLanguage->getDefines()) {
+        preprocessor.addDefine(name, value);
+    }
+    for (const auto& [name, handler]: m_patternLanguage->getPragmas()) {
+        preprocessor.addPragmaHandler(name, handler);
+    }
 
     const auto& lexer = internals.lexer;
     const auto& validator = internals.validator;
 
-    auto [preprocessedCode, preprocessorErrors] = preprocessor->preprocess(this->m_patternLanguage, source);
+    auto [preprocessedCode, preprocessorErrors] = preprocessor.preprocess(this->m_patternLanguage, source);
     if (!preprocessorErrors.empty()) {
         return result_t::err(preprocessorErrors);
     }
 
     source->content = preprocessedCode.value();
 
-    if(preprocessor->shouldOnlyIncludeOnce())
+    if(preprocessor.shouldOnlyIncludeOnce())
         m_onceIncluded.insert( { source, namespacePrefix } );
 
     auto [tokens, lexerErrors] = lexer->lex(source);

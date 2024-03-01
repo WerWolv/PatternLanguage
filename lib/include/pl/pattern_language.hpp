@@ -164,20 +164,26 @@ namespace pl {
          * @param name Name of the pragma
          * @param callback Callback to execute when the pragma is encountered
          */
-        void addPragma(const std::string &name, const api::PragmaHandler &callback) const;
+        void addPragma(const std::string &name, const api::PragmaHandler &callback);
 
         /**
          * @brief Removes a pragma preprocessor instruction
          * @param name Name of the pragma
          */
-        void removePragma(const std::string &name) const;
+        void removePragma(const std::string &name);
 
         /**
          * @brief Adds a define to the preprocessor
          * @param name Name of the define
          * @param value Value of the define
          */
-        void addDefine(const std::string &name, const std::string &value = "") const;
+        void addDefine(const std::string &name, const std::string &value = "");
+
+        /**
+         * @brief Removes a define from the preprocessor
+         * @param name Name of the define
+         */
+        void removeDefine(const std::string &name);
 
         /**
          * @brief Sets the include paths for where to look for include files
@@ -317,6 +323,14 @@ namespace pl {
             return this->m_internals;
         }
 
+        [[nodiscard]] const std::map<std::string, std::string>& getDefines() const {
+            return this->m_defines;
+        }
+
+        [[nodiscard]] const std::map<std::string, api::PragmaHandler>& getPragmas() const {
+            return this->m_pragmas;
+        }
+
         /**
          * @brief Gets the source resolver of the pattern language
          * @return Mutable reference to the Resolver
@@ -370,6 +384,8 @@ namespace pl {
         Internals m_internals;
         std::vector<core::err::CompileError> m_compileErrors;
         std::optional<core::err::PatternLanguageError> m_currError;
+        std::map<std::string, std::string> m_defines;
+        std::map<std::string, api::PragmaHandler> m_pragmas;
 
         core::Resolver m_resolvers;
         core::resolvers::FileResolver m_fileResolver;
