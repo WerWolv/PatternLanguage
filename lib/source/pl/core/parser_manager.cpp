@@ -63,12 +63,12 @@ pl::hlp::CompileResult<ParserManager::ParsedData> ParserManager::parse(api::Sour
         return result_t::err(validatorErrors);
     }
 
-    m_parsedTypes[key] = parser.m_types;
+    const auto& types = parser.m_types;
+    for (auto& type : types) {
+        type.second->setCompleted(false); // de-complete the types
+    }
 
-    ParsedData parsedData = {
-        .astNodes = result.unwrap(),
-        .types = parser.m_types
-    };
+    m_parsedTypes[key] = types;
 
-    return result_t::good(parsedData);
+    return result_t::good({ result.unwrap(), types });
 }

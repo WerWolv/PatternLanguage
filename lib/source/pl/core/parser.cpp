@@ -1188,6 +1188,8 @@ namespace pl::core {
                     auto parameter = templateTypes[index];
                     if (const auto typeDecl = dynamic_cast<ast::ASTNodeTypeDecl*>(parameter.get()); typeDecl != nullptr) {
                         auto newType = parseType();
+                        if (newType == nullptr)
+                            return;
                         if (newType->isForwardDeclared()) {
                             error("Cannot use forward declared type as template parameter.");
                         }
@@ -1306,7 +1308,7 @@ namespace pl::core {
 
         // TODO: struct import
 
-        std::string alias = "";
+        std::string alias;
 
         if (sequence(tkn::Keyword::As)) {
             if (!sequence(tkn::Literal::Identifier)) {
