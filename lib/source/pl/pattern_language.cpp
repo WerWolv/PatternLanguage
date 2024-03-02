@@ -50,7 +50,7 @@ namespace pl {
         this->m_running.exchange(other.m_running.load());
     }
 
-    std::optional<api::Source*> PatternLanguage::preprocessString(const std::string& code, const std::string& source) {
+    [[nodiscard]] std::optional<std::vector<pl::core::Token>> PatternLanguage::preprocessString(const std::string& code, const std::string& source) {
         this->reset();
 
         auto internalSource = addVirtualSource(code, source); // add virtual source to file resolver
@@ -71,7 +71,7 @@ namespace pl {
     }
 
     std::optional<std::vector<std::shared_ptr<core::ast::ASTNode>>> PatternLanguage::parseString(const std::string &code, const std::string &source) {
-        auto tokens = this->lexString(code, source);
+        auto tokens = this->preprocessString(code, source);
         if (!tokens.has_value() || tokens->empty())
             return std::nullopt;
 
