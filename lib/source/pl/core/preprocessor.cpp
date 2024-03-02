@@ -17,13 +17,13 @@ namespace pl::core {
         });
 
         // register directive handlers
-        registerDirectiveHandler("#ifdef", &Preprocessor::handleIfDef);
-        registerDirectiveHandler("#ifndef", &Preprocessor::handleIfNDef);
-        registerDirectiveHandler("#define", &Preprocessor::handleDefine);
-        registerDirectiveHandler("#undef", &Preprocessor::handleUnDefine);
-        registerDirectiveHandler("#pragma", &Preprocessor::handlePragma);
-        registerDirectiveHandler("#include", &Preprocessor::handleInclude);
-        registerDirectiveHandler("#error", &Preprocessor::handleError);
+        registerDirectiveHandler(Token::Directive::IfDef, &Preprocessor::handleIfDef);
+        registerDirectiveHandler(Token::Directive::IfNDef, &Preprocessor::handleIfNDef);
+        registerDirectiveHandler(Token::Directive::Define, &Preprocessor::handleDefine);
+        registerDirectiveHandler(Token::Directive::Undef, &Preprocessor::handleUnDefine);
+        registerDirectiveHandler(Token::Directive::Pragma, &Preprocessor::handlePragma);
+        registerDirectiveHandler(Token::Directive::Include, &Preprocessor::handleInclude);
+        registerDirectiveHandler(Token::Directive::Error, &Preprocessor::handleError);
     }
 
     Preprocessor::Preprocessor(const Preprocessor &other) : ErrorCollector(other) {
@@ -86,12 +86,12 @@ namespace pl::core {
     }
 
     void removeValue(std::vector<pl::core::Token> &vec,const std::string &name) {
-        for (unsigned i = 0; i < vec.size(); i++)
+        for (u32 i = 0; i < vec.size(); i++)
             if (getTokenValue(vec[i]) == name)
                 vec.erase(vec.begin() + i);
     }
 
-    std::optional<pl::core::Token> Preprocessor::getDirectiveValue(unsigned line) {
+    std::optional<pl::core::Token> Preprocessor::getDirectiveValue(u32 line) {
         const pl::core::Token &token = *m_token;
         if (m_token->location.line != line || m_token >= m_result.unwrap().end())
             return std::nullopt;
@@ -99,32 +99,34 @@ namespace pl::core {
         return token;
     }
 
-    std::string Preprocessor::parseDirectiveName() {
-        auto result = m_token->getFormattedValue();
-        m_token++;
-        return result;
-    }
-
     void Preprocessor::processIfDef(const bool add) {
         // find the next #endif
         const Location start = location();
         u32 depth = 1;
-        while(peek() != "EOF" && depth > 0) {
-            if(m_token->getFormattedValue() == "#endif") {
-                m_token++;
-                depth--;
+        while(m_token != m_result.unwrap().end() && depth > 0) {
+            if (m_token->type == pl::core::Token::Type::Directive) {
+                Token::Directive directive = get<Token::Directive>(m_token->value);
+                if (directive == pl::core::Token::Directive::EndIf) {
+                    m_token++;
+                    depth--;
+                }
             }
             if(add) process();
             else {
-                std::string name = parseDirectiveName();
-                if(name == "#ifdef" || name == "#ifndef")
-                    depth++;
-                else if(name == "#endif") {
-                    if (depth > 0)
-                        depth--;
-                    else
-                        m_token--;
-                }
+                if (m_token->type == pl::core::Token::Type::Directive) {
+                    Token::Directive directive = get<Token::Directive>(m_token->value);
+                    if (directive == pl::core::Token::Directive::IfDef ||
+                        directive == pl::core::Token::Directive::IfNDef) {
+                        depth++;
+                        m_token++;
+                    } else if (directive == pl::core::Token::Directive::EndIf) {
+                        if (depth > 0) {
+                            m_token++;
+                            depth--;
+                        }
+                    }
+                } else
+                    m_token++;
             }
         }
 
@@ -134,7 +136,7 @@ namespace pl::core {
         }
     }
 
-    void Preprocessor::handleIfDef(unsigned line) {
+    void Preprocessor::handleIfDef(u32 line) {
         auto token = getDirectiveValue(line);
 
         if(!isNameValid(token)) {
@@ -145,7 +147,7 @@ namespace pl::core {
         processIfDef(m_defines.contains( getOptionalValue(token)));
     }
 
-    void Preprocessor::handleIfNDef(unsigned line) {
+    void Preprocessor::handleIfNDef(u32 line) {
         auto token = getDirectiveValue(line);
 
         if(!isNameValid(token)) {
@@ -156,7 +158,7 @@ namespace pl::core {
         processIfDef(!m_defines.contains(getOptionalValue(token)));
     }
 
-    void Preprocessor::handleDefine(unsigned line) {
+    void Preprocessor::handleDefine(u32 line) {
         auto token = getDirectiveValue(line);
 
         if(!isNameValid(token)) {
@@ -188,7 +190,7 @@ namespace pl::core {
         }
     }
 
-    void Preprocessor::handleUnDefine(unsigned line) {
+    void Preprocessor::handleUnDefine(u32 line) {
         auto token = getDirectiveValue(line);
 
         if(!isNameValid(token)) {
@@ -202,7 +204,7 @@ namespace pl::core {
         }
     }
 
-    void Preprocessor::handlePragma(unsigned line) {
+    void Preprocessor::handlePragma(u32 line) {
         auto token = getDirectiveValue(line);
 
         if(!token.has_value()) {
@@ -217,7 +219,7 @@ namespace pl::core {
             this->m_pragmas[key].emplace_back(getOptionalValue(token), line);
     }
 
-    void Preprocessor::handleInclude(unsigned line) {
+    void Preprocessor::handleInclude(u32 line) {
         auto token = getDirectiveValue(line);
         if (!token.has_value()) {
             errorDesc("No file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
@@ -230,8 +232,7 @@ namespace pl::core {
             return;
         }
 
-        if ((!includeFile.starts_with('"') || !includeFile.ends_with('"')) &&
-            (!includeFile.starts_with('<') || !includeFile.ends_with('>'))) {
+        if (!((includeFile.starts_with('"') && includeFile.ends_with('"')) || (includeFile.starts_with('<') && includeFile.ends_with('>')))) {
             errorDesc("Invalid file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
             return;
         }
@@ -297,20 +298,22 @@ namespace pl::core {
     }
 
     void Preprocessor::process() {
-        unsigned line = m_token->location.line;
+        u32 line = m_token->location.line;
 
-        if (m_token->type == pl::core::Token::Type::Directive) {
-            std::string name = parseDirectiveName();
-            auto handler = m_directiveHandlers.find(name);
-            if (name == "#endif") {
+        if (m_token->type == Token::Type::Directive) {
+            Token::Directive directive = get<Token::Directive>(m_token->value);
+            auto handler = m_directiveHandlers.find(directive);
+            if (directive == Token::Directive::EndIf) {
                 // happens in nested #ifdefs
-                m_token--;
                 return;
             } else if(handler == m_directiveHandlers.end()) {
-                error("Unknown directive '{}'", name);
+                error("Unknown directive '{}'", m_token->getFormattedValue());
+                m_token++;
                 return;
-            } else
-                handler->second(this,line);
+            } else {
+                m_token++;
+                handler->second(this, line);
+            }
 
         } else if (m_token->type == pl::core::Token::Type::Comment)
             m_token++;
@@ -334,9 +337,10 @@ namespace pl::core {
                 m_output.push_back(value);
             m_token++;
         }
+        return;
     }
 
-    void Preprocessor::handleError(unsigned line) {
+    void Preprocessor::handleError(u32 line) {
         auto token = getDirectiveValue(line);
 
         if(token.has_value()) {
@@ -347,7 +351,7 @@ namespace pl::core {
         }
     }
 
-    hlp::CompileResult<std::vector<pl::core::Token>> Preprocessor::preprocess(PatternLanguage* runtime, api::Source* source, bool initialRun) {
+    hlp::CompileResult<std::vector<Token>> Preprocessor::preprocess(PatternLanguage* runtime, api::Source* source, bool initialRun) {
         m_source = source;
         m_source->content = wolv::util::replaceStrings(m_source->content, "\r\n", "\n");
         m_source->content = wolv::util::replaceStrings(m_source->content, "\r", "\n");
@@ -355,6 +359,7 @@ namespace pl::core {
 
         m_runtime = runtime;
         m_output.clear();
+
 
         auto lexer = runtime->getInternals().lexer.get();
 
@@ -364,6 +369,7 @@ namespace pl::core {
             this->m_keys.clear();
             this->m_onlyIncludeOnce = false;
             this->m_pragmas.clear();
+
         }
 
         m_result = lexer->lex(m_source);
@@ -401,7 +407,7 @@ namespace pl::core {
         this->m_pragmaHandlers[pragmaType] = handler;
     }
 
-    void Preprocessor::addDirectiveHandler(const std::string &directiveType, const api::DirectiveHandler &handler) {
+    void Preprocessor::addDirectiveHandler(const Token::Directive &directiveType, const api::DirectiveHandler &handler) {
         this->m_directiveHandlers[directiveType] = handler;
     }
 
@@ -409,7 +415,7 @@ namespace pl::core {
         this->m_pragmaHandlers.erase(pragmaType);
     }
 
-    void Preprocessor::removeDirectiveHandler(const std::string &directiveType) {
+    void Preprocessor::removeDirectiveHandler(const Token::Directive &directiveType) {
         this->m_directiveHandlers.erase(directiveType);
     }
 
@@ -420,8 +426,8 @@ namespace pl::core {
             return {nullptr, 0, 0, 0 };
     }
 
-    void Preprocessor::registerDirectiveHandler(const std::string& name, auto memberFunction) {
-        this->m_directiveHandlers[name] = [memberFunction](Preprocessor* preprocessor, unsigned line){
+    void Preprocessor::registerDirectiveHandler(const Token::Directive& name, auto memberFunction) {
+        this->m_directiveHandlers[name] = [memberFunction](Preprocessor* preprocessor, u32 line){
             (preprocessor->*memberFunction)(line);
         };
     }

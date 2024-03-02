@@ -24,15 +24,15 @@ namespace pl::core {
 
         ~Preprocessor() override = default;
 
-        hlp::CompileResult<std::vector<pl::core::Token>> preprocess(PatternLanguage *runtime, api::Source* source, bool initialRun = true);
+        hlp::CompileResult<std::vector<Token>> preprocess(PatternLanguage *runtime, api::Source* source, bool initialRun = true);
 
         void addDefine(const std::string &name, const std::string &value = "");
         void addPragmaHandler(const std::string &pragmaType, const api::PragmaHandler &handler);
-        void addDirectiveHandler(const std::string &directiveType, const api::DirectiveHandler &handler);
+        void addDirectiveHandler(const Token::Directive &directiveType, const api::DirectiveHandler &handler);
         void removePragmaHandler(const std::string &pragmaType);
-        void removeDirectiveHandler(const std::string &directiveType);
+        void removeDirectiveHandler(const Token::Directive &directiveType);
 
-        std::optional<pl::core::Token> getDirectiveValue(unsigned line);
+        std::optional<Token> getDirectiveValue(u32 line);
 
         [[nodiscard]] bool shouldOnlyIncludeOnce() const {
             return this->m_onlyIncludeOnce;
@@ -51,31 +51,24 @@ namespace pl::core {
 
         Location location() override;
 
-        inline std::string peek(i32 p = 0) const {
-            if( (m_token + p)  >=  m_result.unwrap().end()) return "EOF";
-            return (m_token+p)->getFormattedValue();
-        }
-
-        std::string parseDirectiveName();
-
         // directive handlers
-        void handleIfDef(unsigned line);
-        void handleIfNDef(unsigned line);
-        void handleDefine(unsigned line);
-        void handleUnDefine(unsigned line);
-        void handlePragma(unsigned line);
-        void handleInclude(unsigned line);
-        void handleError(unsigned line);
+        void handleIfDef(u32 line);
+        void handleIfNDef(u32 line);
+        void handleDefine(u32 line);
+        void handleUnDefine(u32 line);
+        void handlePragma(u32 line);
+        void handleInclude(u32 line);
+        void handleError(u32 line);
 
         void process();
         void processIfDef(bool add);
 
-        void registerDirectiveHandler(const std::string& name, auto memberFunction);
+        void registerDirectiveHandler(const Token::Directive &name, auto memberFunction);
 
         std::unordered_map<std::string, api::PragmaHandler> m_pragmaHandlers;
-        std::unordered_map<std::string, api::DirectiveHandler> m_directiveHandlers;
+        std::unordered_map<Token::Directive, api::DirectiveHandler> m_directiveHandlers;
 
-        std::unordered_map<std::string, std::vector<pl::core::Token>> m_defines;
+        std::unordered_map<std::string, std::vector<Token>> m_defines;
         std::unordered_map<std::string, std::vector<std::pair<std::string, u32>>> m_pragmas;
 
         std::set<std::string> m_onceIncludedFiles;
@@ -83,11 +76,11 @@ namespace pl::core {
         api::Resolver m_resolver = nullptr;
         PatternLanguage *m_runtime = nullptr;
 
-        std::vector<pl::core::Token> m_keys;
+        std::vector<Token> m_keys;
         std::atomic<bool> m_initialized = false;
-        __gnu_cxx::__normal_iterator<pl::core::Token *, std::vector<pl::core::Token>> m_token;
-        hlp::CompileResult<std::vector<pl::core::Token>> m_result;
-        std::vector<pl::core::Token> m_output;
+        std::vector<Token>::iterator m_token;
+        hlp::CompileResult<std::vector<Token>> m_result;
+        std::vector<Token> m_output;
 
         api::Source* m_source = nullptr;
 

@@ -106,12 +106,10 @@ namespace pl::core {
     }
 
     std::optional<Token> Lexer::parseDirectiveName(const std::string_view &identifier) {
-        auto directives = Token::Directives();
-
-        if (const auto directiveToken = directives.find(identifier); directiveToken != directives.end())
-
+        const auto &directives = Token::Directives();
+        if (const auto directiveToken = directives.find(identifier); directiveToken != directives.end()) {
             return makeToken(directiveToken->second, identifier.length());
-
+        }
         return std::nullopt;
     }
 
@@ -149,10 +147,9 @@ namespace pl::core {
         while (m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\0') {
 
             auto character = parseCharacter();
-
-            if (!character.has_value())
-
+            if (!character.has_value()) {
                 return std::nullopt;
+            }
 
             result += character.value();
         }
@@ -329,7 +326,6 @@ namespace pl::core {
             m_cursor++;
 
         }
-
         if (m_sourceCode[m_cursor] == '\n') {
             m_line++;
             m_lineBegin = m_cursor;
@@ -583,7 +579,7 @@ namespace pl::core {
 
             if (c == '#' && (m_tokens.empty() ||  m_tokens.back().location.line < m_line)) {
                 size_t length = 1;
-                unsigned line = m_line;
+                u32 line = m_line;
                 while (isIdentifierCharacter(peek(length)))
                     length++;
                 auto directiveName = std::string_view{&m_sourceCode[m_cursor], length};
