@@ -38,16 +38,16 @@ pl::hlp::CompileResult<ParserManager::ParsedData> ParserManager::parse(api::Sour
 
     const auto& validator = internals.validator;
 
-    auto [tokens, preprocessorErrors] = preprocessor->preprocess(this->m_patternLanguage, source, true);
+    auto [tokens, preprocessorErrors] = preprocessor.preprocess(this->m_patternLanguage, source, true);
     if (!preprocessorErrors.empty()) {
         return result_t::err(preprocessorErrors);
     }
 
-    if(preprocessor->shouldOnlyIncludeOnce())
+    if(preprocessor.shouldOnlyIncludeOnce())
         m_onceIncluded.insert( { source, namespacePrefix } );
 
-    parser.setParserManager(this);
-    parser.setAliasNamespace(namespaces);
+    parser.m_parserManager = this;
+    parser.m_aliasNamespace = namespaces;
     parser.m_aliasNamespaceString = namespacePrefix;
 
     auto result = parser.parse(tokens.value());
