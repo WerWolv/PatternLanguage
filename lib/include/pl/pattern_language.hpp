@@ -70,8 +70,16 @@ namespace pl {
         };
 
         /**
+        * @brief Preprocesses a pattern language code string and returns the preprocessed code
+        * @param code Code to preprocess
+        * @param source Source of the code
+        * @return Preprocessed source
+        */
+        [[nodiscard]] std::optional<api::Source*> preprocessString(const std::string &code, const std::string &source);
+
+        /**
         * @brief Lexes a pattern language code string and returns the generated tokens
-        * @param code Code to parse
+        * @param code Code to lex
         * @param source Source of the code
         * @return Generated Tokens
         */
