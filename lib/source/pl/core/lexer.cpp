@@ -321,7 +321,7 @@ namespace pl::core {
         m_cursor += 3;
 
         std::string result;
-        while(m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\0') {
+        while (m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\0') {
             result += peek();
             m_cursor++;
 
@@ -353,7 +353,7 @@ namespace pl::core {
                 return std::nullopt;
             }
 
-            if(peek(0) == '*' && peek(1) == '/') {
+            if (peek(0) == '*' && peek(1) == '/') {
                 m_cursor += 2;
                 break;
             }
@@ -550,7 +550,7 @@ namespace pl::core {
                     }
                     continue;
                 }
-                if(category == '*') {
+                if (category == '*') {
                     if (type != '!' && (type != '*' || peek(3) == '/' )) {
                         const auto token = parseMultiLineComment();
                         if(token.has_value())
@@ -558,7 +558,7 @@ namespace pl::core {
                         continue;
                     }
                     const auto token = parseMultiLineDocComment();
-                    if(token.has_value()) {
+                    if (token.has_value()) {
                         addToken(token.value());
                     }
                     continue;

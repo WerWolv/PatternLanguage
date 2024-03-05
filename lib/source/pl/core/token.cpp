@@ -421,7 +421,7 @@ namespace pl::core {
         return s_types;
     }
 
-    std::map<std::string_view, Token> &Token::Directives() {
+    std::map<std::string_view, Token>& Token::Directives() {
         static std::map<std::string_view, Token> s_directives;
 
         return s_directives;

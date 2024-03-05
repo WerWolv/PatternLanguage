@@ -48,7 +48,7 @@ namespace pl::core {
         });
     }
 
-    std::string getTokenValue(const Token& token) {
+    std::string getTokenValue(const Token &token) {
         auto identifier = token.getFormattedValue();
         if (identifier.length() > 1 )
             return identifier.substr(1, identifier.length() - 2);
@@ -76,7 +76,7 @@ namespace pl::core {
         return true;
     }
 
-    bool operator==(const std::vector<pl::core::Token>& a, const std::vector<pl::core::Token>& b) {
+    bool operator==(const std::vector<pl::core::Token> &a, const std::vector<pl::core::Token> &b) {
         if (a.size() != b.size())
             return false;
         for (u32 i = 0; i < a.size(); i++)
@@ -103,7 +103,7 @@ namespace pl::core {
         // find the next #endif
         const Location start = location();
         u32 depth = 1;
-        while(m_token != m_result.unwrap().end() && depth > 0) {
+        while (m_token != m_result.unwrap().end() && depth > 0) {
             if (m_token->type == pl::core::Token::Type::Directive) {
                 Token::Directive directive = get<Token::Directive>(m_token->value);
                 if (directive == pl::core::Token::Directive::EndIf) {
@@ -125,8 +125,9 @@ namespace pl::core {
                             depth--;
                         }
                     }
-                } else
+                } else {
                     m_token++;
+                }
             }
         }
 
@@ -139,7 +140,7 @@ namespace pl::core {
     void Preprocessor::handleIfDef(u32 line) {
         auto token = getDirectiveValue(line);
 
-        if(!isNameValid(token)) {
+        if (!isNameValid(token)) {
             error("Expected identifier after #ifdef");
             return;
         }
@@ -150,7 +151,7 @@ namespace pl::core {
     void Preprocessor::handleIfNDef(u32 line) {
         auto token = getDirectiveValue(line);
 
-        if(!isNameValid(token)) {
+        if (!isNameValid(token)) {
             error("Expected identifier after #ifndef");
             return;
         }
@@ -161,12 +162,14 @@ namespace pl::core {
     void Preprocessor::handleDefine(u32 line) {
         auto token = getDirectiveValue(line);
 
-        if(!isNameValid(token)) {
+        if (!isNameValid(token)) {
             error("Expected identifier after #define");
             return;
         }
+
         auto tokenValue = token.value();
         auto name = getTokenValue(tokenValue);
+
         std::vector<Token> values;
         auto replacement = getDirectiveValue(line);
         while (replacement.has_value()) {
@@ -197,6 +200,7 @@ namespace pl::core {
             error("Expected identifier after #undef");
             return;
         }
+
         auto name = getOptionalValue(token);
         if (m_defines.contains(name)) {
             m_defines.erase(name);
@@ -207,10 +211,11 @@ namespace pl::core {
     void Preprocessor::handlePragma(u32 line) {
         auto token = getDirectiveValue(line);
 
-        if(!token.has_value()) {
+        if (!token.has_value()) {
             errorDesc("No instruction given in #pragma directive.", "A #pragma directive expects a instruction followed by an optional value in the form of #pragma <instruction> <value>.");
             return;
         }
+
         auto key = getOptionalValue(token);
         token = getDirectiveValue(line);
         if (!token.has_value())
@@ -225,6 +230,7 @@ namespace pl::core {
             errorDesc("No file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
             return;
         }
+
         auto includeFile = getOptionalValue(token);
 
         if (includeFile.empty()){
@@ -304,7 +310,7 @@ namespace pl::core {
             Token::Directive directive = get<Token::Directive>(m_token->value);
             auto handler = m_directiveHandlers.find(directive);
             if (directive == Token::Directive::EndIf) {
-                // happens in nested #ifdefs
+                // Happens in nested #ifdefs
                 return;
             } else if(handler == m_directiveHandlers.end()) {
                 error("Unknown directive '{}'", m_token->getFormattedValue());
@@ -333,6 +339,7 @@ namespace pl::core {
                 values = resultValues;
                 resultValues.clear();
             }
+
             for (const auto &value: values)
                 m_output.push_back(value);
             m_token++;
@@ -343,7 +350,7 @@ namespace pl::core {
     void Preprocessor::handleError(u32 line) {
         auto token = getDirectiveValue(line);
 
-        if(token.has_value()) {
+        if (token.has_value()) {
             auto message = token.value().getFormattedValue();
             error(message);
         } else {
@@ -400,7 +407,18 @@ namespace pl::core {
     }
 
     void Preprocessor::addDefine(const std::string &name, const std::string &value) {
-        m_defines[name] = {pl::core::Token { pl::core::Token::Type::Directive, name, location() },pl::core::Token { pl::core::Token::Type::String, value, location() } };
+        m_defines[name] = { 
+            pl::core::Token { 
+                pl::core::Token::Type::Directive, 
+                name, 
+                location() 
+            }, 
+            pl::core::Token { 
+                pl::core::Token::Type::String, 
+                value, 
+                location() 
+            } 
+        };
     }
 
     void Preprocessor::addPragmaHandler(const std::string &pragmaType, const api::PragmaHandler &handler) {
@@ -423,10 +441,10 @@ namespace pl::core {
         if (isInitialized())
             return m_token->location;
         else
-            return {nullptr, 0, 0, 0 };
+            return { nullptr, 0, 0, 0 };
     }
 
-    void Preprocessor::registerDirectiveHandler(const Token::Directive& name, auto memberFunction) {
+    void Preprocessor::registerDirectiveHandler(const Token::Directive &name, auto memberFunction) {
         this->m_directiveHandlers[name] = [memberFunction](Preprocessor* preprocessor, u32 line){
             (preprocessor->*memberFunction)(line);
         };

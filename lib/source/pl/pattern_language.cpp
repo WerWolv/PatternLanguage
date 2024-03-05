@@ -79,7 +79,7 @@ namespace pl {
         if (!parserErrors.empty())
             this->m_compileErrors = std::move(parserErrors);
 
-        if(!ast.has_value() || ast->empty())
+        if (!ast.has_value() || ast->empty())
             return std::nullopt;
 
         auto [validated, validatorErrors] = this->m_internals.validator->validate(ast.value());
