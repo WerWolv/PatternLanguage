@@ -105,6 +105,64 @@ namespace pl::core {
         return c;
     }
 
+    std::optional<Token> Lexer::parseDirectiveName(const std::string_view &identifier) {
+        const auto &directives = Token::Directives();
+        if (const auto directiveToken = directives.find(identifier); directiveToken != directives.end()) {
+            return makeToken(directiveToken->second, identifier.length());
+        }
+        return std::nullopt;
+    }
+
+    std::optional<Token> Lexer::parseDirectiveValue() {
+        std::string result;
+
+        m_cursor++; // Skip space
+        auto location = this->location();
+
+        while (!std::isblank(m_sourceCode[m_cursor]) && !std::isspace(m_sourceCode[m_cursor]) ) {
+
+            auto character = parseCharacter();
+            if (!character.has_value()) {
+                return std::nullopt;
+            }
+
+            result += character.value();
+        }
+
+        if (m_sourceCode[m_cursor] == '\n') {
+            m_line++;
+            m_lineBegin = m_cursor;
+            m_cursor++;
+        }
+
+        return makeTokenAt(Literal::makeString(result), location, result.size());
+    }
+
+    std::optional<Token> Lexer::parseDirectiveArgument() {
+        std::string result;
+
+        m_cursor++; // Skip space
+        auto location = this->location();
+
+        while (m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\0') {
+
+            auto character = parseCharacter();
+            if (!character.has_value()) {
+                return std::nullopt;
+            }
+
+            result += character.value();
+        }
+
+        if (m_sourceCode[m_cursor] == '\n') {
+            m_line++;
+            m_lineBegin = m_cursor;
+            m_cursor++;
+        }
+
+        return makeTokenAt(Literal::makeString(result), location, result.size());
+    }
+
     std::optional<Token> Lexer::parseStringLiteral() {
         std::string result;
         auto location = this->location();
@@ -237,20 +295,41 @@ namespace pl::core {
         return i128(value);
     }
 
+    std::optional<Token> Lexer::parseOneLineComment() {
+        auto location = this->location();
+        const auto begin = m_cursor;
+        m_cursor += 2;
+
+        std::string result;
+        while(m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\0') {
+            result += peek();
+            m_cursor++;
+        }
+
+        if (m_sourceCode[m_cursor] == '\n') {
+            m_line++;
+            m_lineBegin = m_cursor;
+            m_cursor++;
+        }
+
+        return makeTokenAt(Literal::makeComment(result), location, m_cursor - begin);
+    }
+
     std::optional<Token> Lexer::parseOneLineDocComment() {
         auto location = this->location();
         const auto begin = m_cursor;
         m_cursor += 3;
 
         std::string result;
-        while(m_sourceCode[m_cursor] != '\n') {
+        while (m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\0') {
             result += peek();
             m_cursor++;
 
-            if(peek(1) == 0) {
-                error("Unexpected end of file while parsing one line doc comment");
-                return std::nullopt;
-            }
+        }
+        if (m_sourceCode[m_cursor] == '\n') {
+            m_line++;
+            m_lineBegin = m_cursor;
+            m_cursor++;
         }
 
         return makeTokenAt(Literal::makeDocComment(false, result), location, m_cursor - begin);
@@ -274,7 +353,7 @@ namespace pl::core {
                 return std::nullopt;
             }
 
-            if(peek(1) == '*' && peek(2) == '/') {
+            if (peek(0) == '*' && peek(1) == '/') {
                 m_cursor += 2;
                 break;
             }
@@ -283,6 +362,34 @@ namespace pl::core {
         }
 
         return makeTokenAt(Literal::makeDocComment(global, result), location, m_cursor - begin);
+    }
+
+    std::optional<Token> Lexer::parseMultiLineComment() {
+        auto location = this->location();
+        const auto begin = m_cursor;
+        std::string result;
+
+        m_cursor += 2;
+        while(true) {
+            if(peek(0) == '\n') {
+                m_line++;
+                m_lineBegin = m_cursor;
+            }
+
+            if(peek(1) == '\x00') {
+                error("Unexpected end of file while parsing multi line doc comment");
+                return std::nullopt;
+            }
+
+            if(peek(0) == '*' && peek(1) == '/') {
+                m_cursor += 2;
+                break;
+            }
+
+            result += m_sourceCode[m_cursor++];
+        }
+
+        return makeTokenAt(Literal::makeComment(result), location, m_cursor - begin);
     }
 
     std::optional<Token> Lexer::parseOperator() {
@@ -306,8 +413,8 @@ namespace pl::core {
         auto location = this->location();
         const auto begin = m_cursor;
 
-        if (const auto separatorToken = Token::Seperators().find(m_sourceCode[m_cursor]);
-            separatorToken != Token::Seperators().end()) {
+        if (const auto separatorToken = Token::Separators().find(m_sourceCode[m_cursor]);
+            separatorToken != Token::Separators().end()) {
             m_cursor++;
             return makeTokenAt(separatorToken->second, location, m_cursor - begin);
             }
@@ -436,24 +543,24 @@ namespace pl::core {
                             addToken(token.value());
                         }
                     } else {
-                        error("Expected '/' after '//' but got '//{}'", type);
-                        // forward
-                        m_cursor++;
+                        const auto token = parseOneLineComment();
+                        if(token.has_value()) {
+                            addToken(token.value());
+                        }
                     }
                     continue;
                 }
-                if(category == '*') {
-                    if(type != '!' && type != '*') {
-                        error("Invalid documentation comment. Expected '/**' or '/*!', got '/*{}", type);
-                        // forward
-                        m_cursor++;
+                if (category == '*') {
+                    if (type != '!' && (type != '*' || peek(3) == '/' )) {
+                        const auto token = parseMultiLineComment();
+                        if(token.has_value())
+                            addToken(token.value());
                         continue;
                     }
                     const auto token = parseMultiLineDocComment();
-                    if(token.has_value()) {
+                    if (token.has_value()) {
                         addToken(token.value());
                     }
-                    m_cursor++; // skip closing /
                     continue;
                 }
             }
@@ -468,6 +575,44 @@ namespace pl::core {
             if (separatorToken.has_value()) {
                 addToken(separatorToken.value());
                 continue;
+            }
+
+            if (c == '#' && (m_tokens.empty() ||  m_tokens.back().location.line < m_line)) {
+                size_t length = 1;
+                u32 line = m_line;
+                while (isIdentifierCharacter(peek(length)))
+                    length++;
+                auto directiveName = std::string_view{&m_sourceCode[m_cursor], length};
+
+                if (processToken(&Lexer::parseDirectiveName, directiveName)) {
+                    if (m_line != line || directiveName == "#define") {
+                        continue;
+                    }
+                    if (peek(0) == '\n') {
+                        m_line++;
+                        m_lineBegin = m_cursor;
+                        m_cursor++;
+                        continue;
+                    }
+                    auto string = parseDirectiveValue();
+                    if (string.has_value()) {
+                        addToken(string.value());
+                        if (m_line != line) {
+                            continue;
+                        }
+                        if (peek(0) == '\n') {
+                            m_line++;
+                            m_lineBegin = m_cursor;
+                            m_cursor++;
+                            continue;
+                        }
+                        string = parseDirectiveArgument();
+                        if (string.has_value()) {
+                            addToken(string.value());
+                        }
+                    }
+                    continue;
+                }
             }
 
             // literals

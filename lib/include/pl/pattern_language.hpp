@@ -70,20 +70,13 @@ namespace pl {
         };
 
         /**
-        * @brief Preprocesses a pattern language code string and returns the preprocessed code
+        * @brief Lexes and preprocesses a pattern language code string and returns a token stream
         * @param code Code to preprocess
         * @param source Source of the code
-        * @return Preprocessed source
+        * @return token stream
         */
-        [[nodiscard]] std::optional<api::Source*> preprocessString(const std::string &code, const std::string &source);
+        [[nodiscard]] std::optional<std::vector<pl::core::Token>> preprocessString(const std::string &code, const std::string &source);
 
-        /**
-        * @brief Lexes a pattern language code string and returns the generated tokens
-        * @param code Code to lex
-        * @param source Source of the code
-        * @return Generated Tokens
-        */
-        [[nodiscard]] std::optional<std::vector<pl::core::Token>> lexString(const std::string &code, const std::string &source);
 
         /**
          * @brief Parses a pattern language code string and returns the generated AST

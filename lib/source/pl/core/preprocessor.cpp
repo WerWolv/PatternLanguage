@@ -2,6 +2,11 @@
 
 #include <wolv/utils/string.hpp>
 
+#include <pl/pattern_language.hpp>
+#include <pl/core/lexer.hpp>
+#include <pl/core/tokens.hpp>
+#include <pl/core/parser.hpp>
+
 namespace pl::core {
 
     Preprocessor::Preprocessor() : ErrorCollector() {
@@ -12,12 +17,13 @@ namespace pl::core {
         });
 
         // register directive handlers
-        registerDirectiveHandler("ifdef", &Preprocessor::handleIfDef);
-        registerDirectiveHandler("ifndef", &Preprocessor::handleIfNDef);
-        registerDirectiveHandler("define", &Preprocessor::handleDefine);
-        registerDirectiveHandler("pragma", &Preprocessor::handlePragma);
-        registerDirectiveHandler("include", &Preprocessor::handleInclude);
-        registerDirectiveHandler("error", &Preprocessor::handleError);
+        registerDirectiveHandler(Token::Directive::IfDef, &Preprocessor::handleIfDef);
+        registerDirectiveHandler(Token::Directive::IfNDef, &Preprocessor::handleIfNDef);
+        registerDirectiveHandler(Token::Directive::Define, &Preprocessor::handleDefine);
+        registerDirectiveHandler(Token::Directive::Undef, &Preprocessor::handleUnDefine);
+        registerDirectiveHandler(Token::Directive::Pragma, &Preprocessor::handlePragma);
+        registerDirectiveHandler(Token::Directive::Include, &Preprocessor::handleInclude);
+        registerDirectiveHandler(Token::Directive::Error, &Preprocessor::handleError);
     }
 
     Preprocessor::Preprocessor(const Preprocessor &other) : ErrorCollector(other) {
@@ -29,6 +35,10 @@ namespace pl::core {
         this->m_pragmaHandlers = other.m_pragmaHandlers;
         this->m_directiveHandlers = other.m_directiveHandlers;
         this->m_runtime = other.m_runtime;
+        this->m_keys = other.m_keys;
+        this->m_initialized = false;
+        this->m_source = other.m_source;
+        this->m_output.clear();
 
         // need to update, because old handler points to old `this`
         this->addPragmaHandler("once", [this](PatternLanguage&, const std::string &value) {
@@ -38,90 +48,86 @@ namespace pl::core {
         });
     }
 
-    std::optional<std::string> Preprocessor::getDirectiveValue(const bool allowWhitespace) {
-        while (std::isblank(peek())) {
-            m_offset++;
-            if (peek() == '\n' || peek() == '\r')
-                return std::nullopt;
-        }
-
-        std::string value;
-        char c = peek();
-        while ((allowWhitespace || !std::isblank(c)) && c != '\n' && c != '\r') {
-            value += c;
-
-            c = m_code[++m_offset];
-            if (m_offset >= m_code.length())
-                break;
-        }
-
-        return wolv::util::trim(value);
+    std::string getTokenValue(const Token &token) {
+        auto identifier = token.getFormattedValue();
+        if (identifier.length() > 1 )
+            return identifier.substr(1, identifier.length() - 2);
+        else
+            return identifier;
     }
 
-    std::string Preprocessor::parseDirectiveName() {
-        const std::string_view view = &m_code[m_offset];
-        auto end = view.find_first_of(" \t\n\r");
-
-        if(end == std::string_view::npos)
-            end = view.length();
-
-        m_offset += end;
-
-        return std::string(view.substr(0, end));
+    std::string getOptionalValue(std::optional<Token> token) {
+        if (!token.has_value())
+            return "";
+        return getTokenValue(token.value());
     }
 
-    void Preprocessor::parseComment() {
-        char type = peek(1);
-        if(type == '/') {
-            while(peek() != 0 && peek() != '\n') m_offset++;
-        } else if(type == '*') {
-            char next = peek(2);
-            if(next == '*' || next == '!')
-                return;
-            while(peek() != 0 && (peek() != '*' || peek(1) != '/')) {
-                // update lines
-                if(peek() == '\n') {
-                    m_lineNumber++;
-                    m_lineBeginOffset = m_offset;
-                }
+    static bool isNameValid(const std::optional<pl::core::Token> &token) {
+        if (!token.has_value())
+            return false;
+        auto name = getOptionalValue(token);
+        if (name.empty())
+            return false;
+        // replace with std::ranges::all_of when available
+        std::ranges::all_of(name, [](char c) {
+            return std::isalnum(c) || c == '_';
+        });
 
-                m_offset++;
-            }
+        return true;
+    }
 
-            m_offset += 2;
-        }
+    bool operator==(const std::vector<pl::core::Token> &a, const std::vector<pl::core::Token> &b) {
+        if (a.size() != b.size())
+            return false;
+        for (u32 i = 0; i < a.size(); i++)
+            if (getTokenValue(a[i]) != getTokenValue(b[i]))
+                return false;
+        return true;
+    }
+
+    void removeValue(std::vector<pl::core::Token> &vec,const std::string &name) {
+        for (u32 i = 0; i < vec.size(); i++)
+            if (getTokenValue(vec[i]) == name)
+                vec.erase(vec.begin() + i);
+    }
+
+    std::optional<pl::core::Token> Preprocessor::getDirectiveValue(u32 line) {
+        const pl::core::Token &token = *m_token;
+        if (m_token->location.line != line || m_token >= m_result.unwrap().end())
+            return std::nullopt;
+        m_token++;
+        return token;
     }
 
     void Preprocessor::processIfDef(const bool add) {
         // find the next #endif
         const Location start = location();
         u32 depth = 1;
-        while(peek() != 0 && depth > 0) {
-            if(m_code.substr(m_offset, 6) == "#endif" && !m_inString && m_startOfLine) {
-                m_offset += 6;
-                depth--;
+        while (m_token != m_result.unwrap().end() && depth > 0) {
+            if (m_token->type == pl::core::Token::Type::Directive) {
+                Token::Directive directive = get<Token::Directive>(m_token->value);
+                if (directive == pl::core::Token::Directive::EndIf) {
+                    m_token++;
+                    depth--;
+                }
             }
             if(add) process();
             else {
-                char c = peek();
-                if(c == '\n') {
-                    m_lineNumber++;
-                    m_lineBeginOffset = m_offset;
-                    m_startOfLine = true;
-                } else if (c == '#' && !m_inString && m_startOfLine) {
-                    m_offset++;
-                    // handle ifdef and ifndef
-                    std::string name = parseDirectiveName();
-                    if(name == "ifdef" || name == "ifndef") {
+                if (m_token->type == pl::core::Token::Type::Directive) {
+                    Token::Directive directive = get<Token::Directive>(m_token->value);
+                    if (directive == pl::core::Token::Directive::IfDef ||
+                        directive == pl::core::Token::Directive::IfNDef) {
                         depth++;
+                        m_token++;
+                    } else if (directive == pl::core::Token::Directive::EndIf) {
+                        if (depth > 0) {
+                            m_token++;
+                            depth--;
+                        }
                     }
-                } else if(!std::isspace(c)) {
-                    m_startOfLine = false;
-                } else if(c == '"') {
-                    m_inString = !m_inString;
+                } else {
+                    m_token++;
                 }
-
-                m_offset++;
             }
         }
 
@@ -131,77 +137,113 @@ namespace pl::core {
         }
     }
 
-    void Preprocessor::handleIfDef() {
-        auto name = getDirectiveValue();
+    void Preprocessor::handleIfDef(u32 line) {
+        auto token = getDirectiveValue(line);
 
-        if(!name.has_value()) {
+        if (!isNameValid(token)) {
             error("Expected identifier after #ifdef");
             return;
         }
 
-        processIfDef(m_defines.contains(name.value()));
+        processIfDef(m_defines.contains( getOptionalValue(token)));
     }
 
-    void Preprocessor::handleIfNDef() {
-        auto name = getDirectiveValue();
+    void Preprocessor::handleIfNDef(u32 line) {
+        auto token = getDirectiveValue(line);
 
-        if(!name.has_value()) {
+        if (!isNameValid(token)) {
             error("Expected identifier after #ifndef");
             return;
         }
 
-        processIfDef(!m_defines.contains(name.value()));
+        processIfDef(!m_defines.contains(getOptionalValue(token)));
     }
 
-    void Preprocessor::handleDefine() {
-        auto name = getDirectiveValue();
+    void Preprocessor::handleDefine(u32 line) {
+        auto token = getDirectiveValue(line);
 
-        if(!name.has_value()) {
+        if (!isNameValid(token)) {
             error("Expected identifier after #define");
             return;
         }
 
-        auto value = getDirectiveValue(true);
+        auto tokenValue = token.value();
+        auto name = getTokenValue(tokenValue);
 
-        if(!value.has_value()) {
-            error("Expected value after #define");
+        std::vector<Token> values;
+        auto replacement = getDirectiveValue(line);
+        while (replacement.has_value()) {
+            values.push_back(replacement.value());
+            replacement = getDirectiveValue(line);
+        }
+
+        if (m_defines.contains(name)) {
+            bool isValueNew = m_defines[name] == values;
+            if (isValueNew) {
+                errorAt(values[0].location, "Previous definition occurs at line '{}'.", m_defines[name][0].location.line);
+                errorAt(m_defines[name][0].location, "Macro '{}' is redefined in line '{}'.", name, values[0].location.line);
+                m_defines[name].clear();
+                m_defines[name] = values;
+                removeValue(m_keys, name);
+                m_keys.emplace_back(tokenValue);
+            }
+        } else {
+            m_defines[name] = values;
+            m_keys.emplace_back(tokenValue);
+        }
+    }
+
+    void Preprocessor::handleUnDefine(u32 line) {
+        auto token = getDirectiveValue(line);
+
+        if(!isNameValid(token)) {
+            error("Expected identifier after #undef");
             return;
         }
 
-        m_defines[name.value()] = { value.value(), m_lineNumber };
+        auto name = getOptionalValue(token);
+        if (m_defines.contains(name)) {
+            m_defines.erase(name);
+            removeValue(m_keys, name);
+        }
     }
 
-    void Preprocessor::handlePragma() {
-        auto key = getDirectiveValue();
+    void Preprocessor::handlePragma(u32 line) {
+        auto token = getDirectiveValue(line);
 
-        if(!key.has_value()) {
+        if (!token.has_value()) {
             errorDesc("No instruction given in #pragma directive.", "A #pragma directive expects a instruction followed by an optional value in the form of #pragma <instruction> <value>.");
             return;
         }
 
-        auto value = getDirectiveValue(true);
-
-        this->m_pragmas[key.value()].emplace_back(value.value_or(""), m_lineNumber);
+        auto key = getOptionalValue(token);
+        token = getDirectiveValue(line);
+        if (!token.has_value())
+            this->m_pragmas[key].emplace_back("", line);
+        else
+            this->m_pragmas[key].emplace_back(getOptionalValue(token), line);
     }
 
-    void Preprocessor::handleInclude() {
-        const auto includeFile = getDirectiveValue();
-
-        if (!includeFile.has_value()) {
+    void Preprocessor::handleInclude(u32 line) {
+        auto token = getDirectiveValue(line);
+        if (!token.has_value()) {
             errorDesc("No file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
             return;
         }
 
-        if (includeFile->starts_with('"') && includeFile->ends_with('"'))
-            ; // Parsed path wrapped in ""
-        else if (includeFile->starts_with('<') && includeFile->ends_with('>'))
-            ; // Parsed path wrapped in <>
-        else {
+        auto includeFile = getOptionalValue(token);
+
+        if (includeFile.empty()){
+            errorDesc("No file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
+            return;
+        }
+
+        if (!((includeFile.starts_with('"') && includeFile.ends_with('"')) || (includeFile.starts_with('<') && includeFile.ends_with('>')))) {
             errorDesc("Invalid file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
             return;
         }
 
-        const std::string includePath = includeFile->substr(1, includeFile->length() - 2);
+        const std::string includePath = includeFile.substr(1, includeFile.length() - 2);
 
         // determine if we should include this file
         if (this->m_onceIncludedFiles.contains(includePath))
@@ -233,8 +275,6 @@ namespace pl::core {
             return;
         }
 
-        resolved.value()->content = result.unwrap(); // cache result
-
         bool shouldInclude = true;
         if (preprocessor.shouldOnlyIncludeOnce()) {
             auto [iter, added] = this->m_onceIncludedFiles.insert(includePath);
@@ -246,121 +286,107 @@ namespace pl::core {
         std::ranges::copy(preprocessor.m_onceIncludedFiles.begin(), preprocessor.m_onceIncludedFiles.end(), std::inserter(this->m_onceIncludedFiles, this->m_onceIncludedFiles.begin()));
         std::ranges::copy(preprocessor.m_defines.begin(), preprocessor.m_defines.end(), std::inserter(this->m_defines, this->m_defines.begin()));
         std::ranges::copy(preprocessor.m_pragmas.begin(), preprocessor.m_pragmas.end(), std::inserter(this->m_pragmas, this->m_pragmas.begin()));
+        std::ranges::copy(preprocessor.m_keys.begin(), preprocessor.m_keys.end(), std::inserter(this->m_keys, this->m_keys.begin()));
 
         if (shouldInclude) {
             auto content = result.unwrap();
 
-            std::ranges::replace(content.begin(), content.end(), '\n', ' ');
-            std::ranges::replace(content.begin(), content.end(), '\r', ' ');
-
-            content = wolv::util::trim(content);
-
             if (!content.empty())
-                m_output += "/*! DOCS IGNORE ON **/ " + content + " /*! DOCS IGNORE OFF **/";
+                for (auto entry : content) {
+                    if (entry.type == pl::core::Token::Type::Separator) {
+                        if (get<pl::core::Token::Separator>(entry.value) == pl::core::Token::Separator::EndOfProgram)
+                            continue;
+                    }
+                    if (entry.type != pl::core::Token::Type::DocComment)
+                        m_output.push_back(entry);
+                }
         }
     }
 
-    bool Preprocessor::process() {
-        char c = peek();
+    void Preprocessor::process() {
+        u32 line = m_token->location.line;
 
-        if(c == '\0')
-            return false;
-
-        if(c == '/') { // comment case
-            parseComment();
-        }
-
-        if (peek() == '#' && m_startOfLine && !m_inString) {
-            m_offset += 1;
-
-            std::string name = parseDirectiveName();
-
-            auto handler = m_directiveHandlers.find(name);
-
-            if(handler == m_directiveHandlers.end()) {
-                error("Unknown directive '{}'", name);
-                return true;
+        if (m_token->type == Token::Type::Directive) {
+            Token::Directive directive = get<Token::Directive>(m_token->value);
+            auto handler = m_directiveHandlers.find(directive);
+            if (directive == Token::Directive::EndIf) {
+                // Happens in nested #ifdefs
+                return;
+            } else if(handler == m_directiveHandlers.end()) {
+                error("Unknown directive '{}'", m_token->getFormattedValue());
+                m_token++;
+                return;
             } else {
-                handler->second(this);
+                m_token++;
+                handler->second(this, line);
             }
+
+        } else if (m_token->type == pl::core::Token::Type::Comment)
+            m_token++;
+        else {
+            std::vector<pl::core::Token> values;
+            std::vector<pl::core::Token> resultValues;
+            values.push_back(*m_token);
+            for (const auto &key: m_keys) {
+                for (const auto &value: values) {
+
+                    if (getTokenValue(value) == getTokenValue(key)) {
+                        for (const auto &newToken: m_defines[getTokenValue(key)])
+                            resultValues.push_back(newToken);
+                    } else
+                        resultValues.push_back(value);
+                }
+                values = resultValues;
+                resultValues.clear();
+            }
+
+            for (const auto &value: values)
+                m_output.push_back(value);
+            m_token++;
         }
-
-        if (m_offset >= m_code.length())
-            return false;
-
-        c = peek();
-
-        if (c == '\n') {
-            m_lineNumber++;
-            m_lineBeginOffset = m_offset;
-            m_startOfLine = true;
-        }
-
-        if (!std::isspace(c))
-            m_startOfLine = false;
-
-        if(c == '"' and peek(-1) != '\\') {
-            m_inString = !m_inString;
-        }
-
-        m_output += c;
-        m_offset += 1;
-
-        return true;
+        return;
     }
 
-    void Preprocessor::handleError() {
-        auto message = getDirectiveValue(true);
+    void Preprocessor::handleError(u32 line) {
+        auto token = getDirectiveValue(line);
 
-        if(message.has_value()) {
-            error(message.value());
+        if (token.has_value()) {
+            auto message = token.value().getFormattedValue();
+            error(message);
         } else {
             error("No message given in #error directive.");
         }
     }
 
-    hlp::CompileResult<std::string> Preprocessor::preprocess(PatternLanguage* runtime, api::Source* source, bool initialRun) {
-        m_startOfLine = true;
-        m_offset      = 0;
-        m_lineNumber  = 1;
-        m_code        = source->content;
-        m_source      = source;
-        m_inString    = false;
-        m_runtime     = runtime;
-        m_lineBeginOffset = 0;
+    hlp::CompileResult<std::vector<Token>> Preprocessor::preprocess(PatternLanguage* runtime, api::Source* source, bool initialRun) {
+        m_source = source;
+        m_source->content = wolv::util::replaceStrings(m_source->content, "\r\n", "\n");
+        m_source->content = wolv::util::replaceStrings(m_source->content, "\r", "\n");
+        m_source->content = wolv::util::replaceStrings(m_source->content, "\t", "    ");
+
+        m_runtime = runtime;
         m_output.clear();
+
+
+        auto lexer = runtime->getInternals().lexer.get();
 
         if (initialRun) {
             this->m_onceIncludedFiles.clear();
+            this->m_defines.clear();
+            this->m_keys.clear();
             this->m_onlyIncludeOnce = false;
             this->m_pragmas.clear();
+
         }
 
-        m_output.reserve(m_code.size());
-
-        while (m_offset < m_code.length()) {
-            if (!process())
-                break;
-        }
-
-        // Apply defines
-        std::vector<std::tuple<std::string, std::string, u32>> sortedDefines;
-        std::ranges::for_each(this->m_defines.begin(), this->m_defines.end(), [&sortedDefines](const auto &entry){
-            const auto &[key, data] = entry;
-            const auto &[value, line] = data;
-
-            sortedDefines.emplace_back(key, value, line);
-        });
-        std::ranges::sort(sortedDefines.begin(), sortedDefines.end(), [](const auto &left, const auto &right) {
-            return std::get<0>(left).size() > std::get<0>(right).size();
-        });
-
-        for (const auto &[define, value, defineLine] : sortedDefines) {
-            if (value.empty())
-                continue;
-
-            m_output = wolv::util::replaceStrings(m_output, define, value);
-        }
+        m_result = lexer->lex(m_source);
+        if (m_result.hasErrs())
+            return m_result;
+        m_token = m_result.unwrap().begin();
+        auto tokenEnd = m_result.unwrap().end();
+        m_initialized = true;
+        while (m_token < tokenEnd)
+            process();
 
         // Handle pragmas
         for (const auto &[type, datas] : this->m_pragmas) {
@@ -381,14 +407,25 @@ namespace pl::core {
     }
 
     void Preprocessor::addDefine(const std::string &name, const std::string &value) {
-        this->m_defines[name] = { value, 0 };
+        m_defines[name] = { 
+            pl::core::Token { 
+                pl::core::Token::Type::Directive, 
+                name, 
+                location() 
+            }, 
+            pl::core::Token { 
+                pl::core::Token::Type::String, 
+                value, 
+                location() 
+            } 
+        };
     }
 
     void Preprocessor::addPragmaHandler(const std::string &pragmaType, const api::PragmaHandler &handler) {
         this->m_pragmaHandlers[pragmaType] = handler;
     }
 
-    void Preprocessor::addDirectiveHandler(const std::string &directiveType, const api::DirectiveHandler &handler) {
+    void Preprocessor::addDirectiveHandler(const Token::Directive &directiveType, const api::DirectiveHandler &handler) {
         this->m_directiveHandlers[directiveType] = handler;
     }
 
@@ -396,17 +433,20 @@ namespace pl::core {
         this->m_pragmaHandlers.erase(pragmaType);
     }
 
-    void Preprocessor::removeDirectiveHandler(const std::string &directiveType) {
+    void Preprocessor::removeDirectiveHandler(const Token::Directive &directiveType) {
         this->m_directiveHandlers.erase(directiveType);
     }
 
     Location Preprocessor::location() {
-        return { m_source, m_lineNumber, (u32) (m_offset - m_lineBeginOffset), 1 };
+        if (isInitialized())
+            return m_token->location;
+        else
+            return { nullptr, 0, 0, 0 };
     }
 
-    void Preprocessor::registerDirectiveHandler(const std::string& name, auto memberFunction) {
-        this->m_directiveHandlers[name] = [memberFunction](Preprocessor* preprocessor) {
-            (preprocessor->*memberFunction)();
+    void Preprocessor::registerDirectiveHandler(const Token::Directive &name, auto memberFunction) {
+        this->m_directiveHandlers[name] = [memberFunction](Preprocessor* preprocessor, u32 line){
+            (preprocessor->*memberFunction)(line);
         };
     }
 
