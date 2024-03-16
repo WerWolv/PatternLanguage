@@ -585,9 +585,10 @@ namespace pl::core {
                 auto directiveName = std::string_view{&m_sourceCode[m_cursor], length};
 
                 if (processToken(&Lexer::parseDirectiveName, directiveName)) {
-                    if (m_line != line || directiveName == "#define") {
+                    Token::Directive directive = get<Token::Directive>(m_tokens.back().value);
+                    if (m_line != line || directive == Token::Directive::Define || directive == Token::Directive::Undef ||
+                         peek(0) == 0  || directive == Token::Directive::IfDef  || directive == Token::Directive::IfNDef)
                         continue;
-                    }
                     if (peek(0) == '\n') {
                         m_line++;
                         m_lineBegin = m_cursor;
@@ -597,9 +598,8 @@ namespace pl::core {
                     auto string = parseDirectiveValue();
                     if (string.has_value()) {
                         addToken(string.value());
-                        if (m_line != line) {
+                        if (m_line != line || peek(0) == 0)
                             continue;
-                        }
                         if (peek(0) == '\n') {
                             m_line++;
                             m_lineBegin = m_cursor;
@@ -668,8 +668,9 @@ namespace pl::core {
 
     Location Lexer::location() {
         u32 column = m_cursor - m_lineBegin;
-        if(column == 0) {
-            column = 1;
+        // There is no newline before the first line so add 1 to the column
+        if(m_line==1) {
+            column += 1;
         }
         return Location { m_source, m_line, column, 0 };
     }

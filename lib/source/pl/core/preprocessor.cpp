@@ -62,7 +62,7 @@ namespace pl::core {
         return getTokenValue(token.value());
     }
 
-    static bool isNameValid(const std::optional<pl::core::Token> &token) {
+    static bool isNameValid(const std::optional<Token> &token) {
         if (!token.has_value())
             return false;
         auto name = getOptionalValue(token);
@@ -76,7 +76,7 @@ namespace pl::core {
         return true;
     }
 
-    bool operator==(const std::vector<pl::core::Token> &a, const std::vector<pl::core::Token> &b) {
+    bool operator==(const std::vector<Token>& a, const std::vector<Token>& b) {
         if (a.size() != b.size())
             return false;
         for (u32 i = 0; i < a.size(); i++)
@@ -85,15 +85,15 @@ namespace pl::core {
         return true;
     }
 
-    void removeValue(std::vector<pl::core::Token> &vec,const std::string &name) {
+    void removeValue(std::vector<Token> &vec,const std::string &name) {
         for (u32 i = 0; i < vec.size(); i++)
             if (getTokenValue(vec[i]) == name)
                 vec.erase(vec.begin() + i);
     }
 
-    std::optional<pl::core::Token> Preprocessor::getDirectiveValue(u32 line) {
-        const pl::core::Token &token = *m_token;
-        if (m_token->location.line != line || m_token >= m_result.unwrap().end())
+    std::optional<Token> Preprocessor::getDirectiveValue(u32 line) {
+        const Token &token = *m_token;
+        if (m_token->location.line != line || eof())
             return std::nullopt;
         m_token++;
         return token;
@@ -103,31 +103,19 @@ namespace pl::core {
         // find the next #endif
         const Location start = location();
         u32 depth = 1;
-        while (m_token != m_result.unwrap().end() && depth > 0) {
-            if (m_token->type == pl::core::Token::Type::Directive) {
-                Token::Directive directive = get<Token::Directive>(m_token->value);
-                if (directive == pl::core::Token::Directive::EndIf) {
-                    m_token++;
-                    depth--;
-                }
+        while(!eof() && depth > 0) {
+            if (Token::Directive *directive = std::get_if<Token::Directive>(&m_token->value); directive != nullptr && *directive == Token::Directive::EndIf) {
+                depth--;
+                m_token++;
+                continue;
             }
-            if(add) process();
-            else {
-                if (m_token->type == pl::core::Token::Type::Directive) {
-                    Token::Directive directive = get<Token::Directive>(m_token->value);
-                    if (directive == pl::core::Token::Directive::IfDef ||
-                        directive == pl::core::Token::Directive::IfNDef) {
-                        depth++;
-                        m_token++;
-                    } else if (directive == pl::core::Token::Directive::EndIf) {
-                        if (depth > 0) {
-                            m_token++;
-                            depth--;
-                        }
-                    }
-                } else {
-                    m_token++;
-                }
+            if(add) {
+                process();
+            } else {
+                if (Token::Directive *directive = std::get_if<Token::Directive>(&m_token->value);directive != nullptr &&
+                    (*directive == Token::Directive::IfDef || *directive == Token::Directive::IfNDef))
+                    depth++;
+                m_token++;
             }
         }
 
@@ -178,8 +166,8 @@ namespace pl::core {
         }
 
         if (m_defines.contains(name)) {
-            bool isValueNew = m_defines[name] == values;
-            if (isValueNew) {
+            bool isValueSame = m_defines[name] == values;
+            if (!isValueSame) {
                 errorAt(values[0].location, "Previous definition occurs at line '{}'.", m_defines[name][0].location.line);
                 errorAt(m_defines[name][0].location, "Macro '{}' is redefined in line '{}'.", name, values[0].location.line);
                 m_defines[name].clear();
@@ -244,7 +232,6 @@ namespace pl::core {
         }
 
         const std::string includePath = includeFile.substr(1, includeFile.length() - 2);
-
         // determine if we should include this file
         if (this->m_onceIncludedFiles.contains(includePath))
             return;
@@ -293,11 +280,11 @@ namespace pl::core {
 
             if (!content.empty())
                 for (auto entry : content) {
-                    if (entry.type == pl::core::Token::Type::Separator) {
-                        if (get<pl::core::Token::Separator>(entry.value) == pl::core::Token::Separator::EndOfProgram)
+                    if (entry.type == Token::Type::Separator) {
+                        if (get<Token::Separator>(entry.value) == Token::Separator::EndOfProgram)
                             continue;
                     }
-                    if (entry.type != pl::core::Token::Type::DocComment)
+                    if (entry.type != Token::Type::DocComment)
                         m_output.push_back(entry);
                 }
         }
@@ -306,13 +293,9 @@ namespace pl::core {
     void Preprocessor::process() {
         u32 line = m_token->location.line;
 
-        if (m_token->type == Token::Type::Directive) {
-            Token::Directive directive = get<Token::Directive>(m_token->value);
-            auto handler = m_directiveHandlers.find(directive);
-            if (directive == Token::Directive::EndIf) {
-                // Happens in nested #ifdefs
-                return;
-            } else if(handler == m_directiveHandlers.end()) {
+        if (Token::Directive *directive = std::get_if<Token::Directive>(&m_token->value); directive != nullptr ) {
+            auto handler = m_directiveHandlers.find(*directive);
+            if(handler == m_directiveHandlers.end()) {
                 error("Unknown directive '{}'", m_token->getFormattedValue());
                 m_token++;
                 return;
@@ -321,11 +304,11 @@ namespace pl::core {
                 handler->second(this, line);
             }
 
-        } else if (m_token->type == pl::core::Token::Type::Comment)
+        } else if (m_token->type == Token::Type::Comment)
             m_token++;
         else {
-            std::vector<pl::core::Token> values;
-            std::vector<pl::core::Token> resultValues;
+            std::vector<Token> values;
+            std::vector<Token> resultValues;
             values.push_back(*m_token);
             for (const auto &key: m_keys) {
                 for (const auto &value: values) {
@@ -358,11 +341,17 @@ namespace pl::core {
         }
     }
 
+    bool Preprocessor::eof() {
+        return m_token == m_result.end();
+    }
+
     hlp::CompileResult<std::vector<Token>> Preprocessor::preprocess(PatternLanguage* runtime, api::Source* source, bool initialRun) {
         m_source = source;
         m_source->content = wolv::util::replaceStrings(m_source->content, "\r\n", "\n");
         m_source->content = wolv::util::replaceStrings(m_source->content, "\r", "\n");
         m_source->content = wolv::util::replaceStrings(m_source->content, "\t", "    ");
+        while (m_source->content.ends_with('\n'))
+            m_source->content.pop_back();
 
         m_runtime = runtime;
         m_output.clear();
@@ -376,17 +365,26 @@ namespace pl::core {
             this->m_keys.clear();
             this->m_onlyIncludeOnce = false;
             this->m_pragmas.clear();
-
+            for (const auto& [name, value] : m_runtime->getDefines()) {
+                addDefine(name, value);
+            }
+            for (const auto& [name, handler]: m_runtime->getPragmas()) {
+                addPragmaHandler(name, handler);
+            }
         }
 
-        m_result = lexer->lex(m_source);
-        if (m_result.hasErrs())
-            return m_result;
-        m_token = m_result.unwrap().begin();
-        auto tokenEnd = m_result.unwrap().end();
+        auto [result,errors] = lexer->lex(m_source);
+        if (result.has_value())
+            m_result = std::move(result.value());
+        else
+            return { std::nullopt, errors };
+        if (!errors.empty())
+            m_errors = std::move(errors);
+        else
+            m_errors.clear();
+
         m_initialized = true;
-        while (m_token < tokenEnd)
-            process();
+        while (!eof())         process();
 
         // Handle pragmas
         for (const auto &[type, datas] : this->m_pragmas) {
