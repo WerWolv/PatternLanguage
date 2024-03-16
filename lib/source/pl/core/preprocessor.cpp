@@ -384,7 +384,10 @@ namespace pl::core {
             m_errors.clear();
 
         m_initialized = true;
-        while (!eof())         process();
+        m_token = m_result.begin();
+
+        while (!eof())
+            process();
 
         // Handle pragmas
         for (const auto &[type, datas] : this->m_pragmas) {
