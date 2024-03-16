@@ -1057,7 +1057,7 @@ namespace pl::core {
             return {};
         }
 
-        return {std::move(condition), isDefault};
+        return { std::move(condition), isDefault };
     }
 
     // match ((parseParameters)) { (parseParameters { (parseMember) })*, default { (parseMember) } }
@@ -1251,17 +1251,17 @@ namespace pl::core {
         } else if (sequence(tkn::ValueType::Any)) {    // Builtin type
             auto type = getValue<Token::ValueType>(-1);
             result = create<ast::ASTNodeTypeDecl>(Token::getTypeName(type), create<ast::ASTNodeBuiltinType>(type));
-        } else {
+        }
+
+        if (result == nullptr) {
             error("Invalid type. Expected built-in type or custom type name, got {}.", getFormattedToken(0));
             return nullptr;
         }
 
-        if (result == nullptr)
-            return nullptr;
-
         result->setReference(reference);
         if (endian.has_value())
             result->setEndian(endian.value());
+
         return result;
     }
 
@@ -1588,6 +1588,8 @@ namespace pl::core {
 
             if (!isFunction) {
                 auto type = parseType();
+                if (type == nullptr)
+                    return nullptr;
 
                 if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Separator::LeftBracket) && sequence<Not>(tkn::Separator::LeftBracket)))
                     member = parseMemberArrayVariable(std::move(type), false);
@@ -2359,6 +2361,7 @@ namespace pl::core {
             return { unwrapSafePointerVector(std::move(program)), this->collectErrors() };
         }
         catch (const std::out_of_range&) { }
+        catch (const std::runtime_error&) { }
         catch (const UnrecoverableParserException&) { }
 
         return { std::nullopt, this->collectErrors() };

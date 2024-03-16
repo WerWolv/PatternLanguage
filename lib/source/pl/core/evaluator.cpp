@@ -1066,6 +1066,9 @@ namespace pl::core {
     }
 
     Evaluator::UpdateHandler::~UpdateHandler() {
+        if (evaluator->m_evaluated)
+            return;
+
         // Don't pop scopes if an exception is currently being thrown so we can generate
         // a stack tace
         if (std::uncaught_exceptions() > 0)

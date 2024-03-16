@@ -42,12 +42,29 @@ namespace pl {
         this->m_internals           = std::move(other.m_internals);
         other.m_internals = { };
 
+        this->m_compileErrors       = std::move(other.m_compileErrors);
         this->m_currError           = std::move(other.m_currError);
 
+        this->m_defines              = std::move(other.m_defines);
+        this->m_pragmas             = std::move(other.m_pragmas);
+
+        this->m_resolvers           = std::move(other.m_resolvers);
+        this->m_fileResolver         = std::move(other.m_fileResolver);
+        this->m_parserManager       = std::move(other.m_parserManager);
+
         this->m_patterns            = std::move(other.m_patterns);
-        this->m_flattenedPatterns   = other.m_flattenedPatterns;
+        this->m_flattenedPatterns    = std::move(other.m_flattenedPatterns);
+        this->m_cleanupCallbacks    = std::move(other.m_cleanupCallbacks);
+        this->m_currAST             = std::move(other.m_currAST);
 
         this->m_running.exchange(other.m_running.load());
+        this->m_patternsValid.exchange(other.m_patternsValid.load());
+        this->m_aborted.exchange(other.m_aborted.load());
+        this->m_runId.exchange(other.m_runId.load());
+
+        m_startAddress  = std::move(other.m_startAddress);
+        m_defaultEndian = other.m_defaultEndian;
+        m_runningTime   = other.m_runningTime;
     }
 
     [[nodiscard]] std::optional<std::vector<pl::core::Token>> PatternLanguage::preprocessString(const std::string& code, const std::string& source) {
