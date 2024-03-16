@@ -68,12 +68,10 @@ namespace pl::core {
         auto name = getOptionalValue(token);
         if (name.empty())
             return false;
-        // replace with std::ranges::all_of when available
-        std::ranges::all_of(name, [](char c) {
+
+        return std::ranges::all_of(name, [](char c) {
             return std::isalnum(c) || c == '_';
         });
-
-        return true;
     }
 
     bool operator==(const std::vector<Token>& a, const std::vector<Token>& b) {
