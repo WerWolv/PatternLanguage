@@ -48,7 +48,7 @@ namespace pl::core {
 
     private:
         Preprocessor(const Preprocessor &);
-
+        bool eof();
         Location location() override;
 
         // directive handlers
@@ -79,7 +79,8 @@ namespace pl::core {
         std::vector<Token> m_keys;
         std::atomic<bool> m_initialized = false;
         std::vector<Token>::iterator m_token;
-        hlp::CompileResult<std::vector<Token>> m_result;
+        std::vector<err::CompileError> m_errors;
+        std::vector<Token> m_result;
         std::vector<Token> m_output;
 
         api::Source* m_source = nullptr;
