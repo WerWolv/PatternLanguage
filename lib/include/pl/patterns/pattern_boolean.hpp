@@ -32,7 +32,7 @@ namespace pl::ptrn {
         }
 
         std::string formatDisplayValue() override {
-            switch (this->getValue().toUnsigned()) {
+            switch ((u64)this->getValue().toUnsigned()) {
                 case 0: return "false";
                 case 1: return "true";
                 default: return "true*";

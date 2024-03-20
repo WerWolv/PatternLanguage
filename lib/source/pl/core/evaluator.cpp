@@ -80,8 +80,8 @@ namespace pl::core {
         else
             readOffsets = getBitwiseReadOffset();
 
-        this->m_currOffset += bitSize >> 3;
-        this->m_currBitOffset += bitSize & 0x7;
+        this->m_currOffset += (u64)(bitSize >> 3);
+        this->m_currBitOffset += (u64)(bitSize & 0x7);
 
         this->m_currOffset += this->m_currBitOffset >> 3;
         this->m_currBitOffset &= 0x7;
