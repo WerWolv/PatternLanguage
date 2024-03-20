@@ -130,20 +130,12 @@ namespace pl::core {
         std::string name;
         auto token = *m_token;
         if (m_token->location.line != line || tokenIdentifier == nullptr || !isValidIdentifier(token)) {
-            error("Expected identifier after #ifdef");
+            error("Expected identifier after #define");
             return;
         } else {
             name = tokenIdentifier->get();
         }
         m_token++;
-
-        auto *identifier = std::get_if<Token::Identifier>(&m_token->value);
-        if (identifier != nullptr)
-            name = identifier->get();
-        else {
-            error("Expected identifier after #define");
-            return;
-        }
 
         std::vector<Token> values;
         while (m_token->location.line == line) {
@@ -199,9 +191,8 @@ namespace pl::core {
         else {
             std::string value = tokenLiteral->toString(false);
             this->m_pragmas[key].emplace_back(value, line);
+            m_token++;
         }
-        m_token++;
-
     }
 
     void Preprocessor::handleInclude(u32 line) {
@@ -305,8 +296,8 @@ namespace pl::core {
                 for (const auto &value: values) {
                     const Token::Identifier *valueIdentifier = std::get_if<Token::Identifier>(&value.value);
                     if (valueIdentifier == nullptr)
-                        continue;
-                   if (valueIdentifier->get() == keyIdentifier->get() ) {
+                        resultValues.push_back(value);
+                   else if (valueIdentifier->get() == keyIdentifier->get() ) {
                         for (const auto &newToken: m_defines[keyIdentifier->get()])
                             resultValues.push_back(newToken);
                     } else
