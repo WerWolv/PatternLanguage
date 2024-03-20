@@ -55,7 +55,7 @@ namespace pl::core::ast {
             if (id == nullptr)
                 err::E0010.throwError("Cannot use void expression as section identifier.", {}, this);
 
-            evaluator->pushSectionId(id->getValue().toUnsigned());
+            evaluator->pushSectionId((u64)id->getValue().toUnsigned());
         } else {
             scopeGuard.release();
         }
@@ -69,7 +69,7 @@ namespace pl::core::ast {
             evaluator->setReadOffset(std::visit(wolv::util::overloaded {
                     [this](const std::string &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
                     [this](const std::shared_ptr<ptrn::Pattern>&) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
-                    [](auto &&offset) -> u64 { return offset; }
+                    [](auto &&offset) -> u64 { return (u64)offset; }
             }, offset->getValue()));
         }
 
@@ -125,7 +125,7 @@ namespace pl::core::ast {
         auto entryCount = std::visit(wolv::util::overloaded {
                 [this](const std::string &) -> i128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
                 [this](const std::shared_ptr<ptrn::Pattern> &pattern) -> i128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
-                [](auto &&size) -> i128 { return size; }
+                [](auto &&size) -> i128 { return (i128)size; }
         }, sizeLiteral->getValue());
 
         if (this->m_placementOffset != nullptr) {
@@ -142,13 +142,13 @@ namespace pl::core::ast {
                 if (sectionLiteral == nullptr)
                 err::E0002.throwError("Cannot use void expression as section identifier.", {}, this);
 
-                section = sectionLiteral->getValue().toUnsigned();
+                section = (u64)sectionLiteral->getValue().toUnsigned();
             }
 
-            evaluator->createArrayVariable(this->m_name, this->m_type.get(), entryCount, section, this->m_constant);
-            evaluator->setVariableAddress(this->getName(), offsetLiteral->getValue().toUnsigned(), section);
+            evaluator->createArrayVariable(this->m_name, this->m_type.get(), (u64)entryCount, section, this->m_constant);
+            evaluator->setVariableAddress(this->getName(), (u64)offsetLiteral->getValue().toUnsigned(), section);
         } else {
-            evaluator->createArrayVariable(this->m_name, this->m_type.get(), entryCount, ptrn::Pattern::HeapSectionId, this->m_constant);
+            evaluator->createArrayVariable(this->m_name, this->m_type.get(), (u64)entryCount, ptrn::Pattern::HeapSectionId, this->m_constant);
         }
 
         return std::nullopt;
@@ -178,7 +178,7 @@ namespace pl::core::ast {
                 entryCount = std::visit(wolv::util::overloaded {
                         [this](const std::string &) -> i128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
                         [this](const std::shared_ptr<ptrn::Pattern> &pattern) -> i128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
-                        [](auto &&size) -> i128 { return size; }
+                        [](auto &&size) -> i128 { return (i128)size; }
                 }, literal->getValue());
             } else if (auto whileStatement = dynamic_cast<ASTNodeWhileStatement *>(sizeNode.get())) {
                 while (whileStatement->evaluateCondition(evaluator)) {
@@ -228,7 +228,7 @@ namespace pl::core::ast {
             outputPattern = std::make_unique<ptrn::PatternWideString>(evaluator, startOffset, 0, getLocation().line);
         } else {
             auto arrayPattern = std::make_unique<ptrn::PatternArrayStatic>(evaluator, startOffset, 0, getLocation().line);
-            arrayPattern->setEntries(templatePattern->clone(), entryCount);
+            arrayPattern->setEntries(templatePattern->clone(), (size_t)entryCount);
             arrayPattern->setSection(templatePattern->getSection());
             outputPattern = std::move(arrayPattern);
         }
@@ -237,7 +237,7 @@ namespace pl::core::ast {
         if (templatePattern->hasOverriddenEndian())
             outputPattern->setEndian(templatePattern->getEndian());
         outputPattern->setTypeName(templatePattern->getTypeName());
-        outputPattern->setSize(templatePattern->getSize() * entryCount);
+        outputPattern->setSize((size_t)(templatePattern->getSize() * entryCount));
         if (evaluator->isReadOrderReversed())
             outputPattern->setAbsoluteOffset(evaluator->getReadOffset());
         outputPattern->setSection(templatePattern->getSection());
@@ -300,7 +300,7 @@ namespace pl::core::ast {
                 auto entryCount = std::visit(wolv::util::overloaded {
                         [this](const std::string &) -> u128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
                         [this](const std::shared_ptr<ptrn::Pattern> &pattern) -> u128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
-                        [](auto &&size) -> u128 { return size; }
+                        [](auto &&size) -> u128 { return (i128)size; }
                 }, literal->getValue());
 
                 auto limit = evaluator->getArrayLimit();

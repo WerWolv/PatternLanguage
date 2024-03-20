@@ -67,7 +67,7 @@ namespace pl::core::ast {
 
         auto addEntries = [&](std::vector<std::shared_ptr<ptrn::Pattern>> &&patterns) {
             for (auto &pattern : patterns) {
-                pattern->setVariableName(fmt::format("[{}]", entryIndex));
+                pattern->setVariableName(fmt::format("[{}]", hlp::to_string(entryIndex)));
                 pattern->setEndian(arrayPattern->getEndian());
                 if (pattern->getSection() == ptrn::Pattern::MainSectionId)
                     pattern->setSection(arrayPattern->getSection());
@@ -91,7 +91,7 @@ namespace pl::core::ast {
             boundsCondition = std::visit(wolv::util::overloaded {
                     [this](const std::string &) -> u128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
                     [this](const std::shared_ptr<ptrn::Pattern> &pattern) -> u128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
-                    [](auto &&size) -> u128 { return size; }
+                    [](auto &&size) -> u128 { return (u128)size; }
             }, literalNode->getValue());
         } else if (auto whileStatement = dynamic_cast<ASTNodeWhileStatement *>(sizeNode.get()); whileStatement != nullptr) {
             boundsCondition = whileStatement;
@@ -123,13 +123,13 @@ namespace pl::core::ast {
         while (checkCondition()) {
             evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
 
-            evaluator->setCurrentArrayIndex(entryIndex);
+            evaluator->setCurrentArrayIndex((u64)entryIndex);
 
             auto patterns = this->m_type->createPatterns(evaluator);
 
             if (arrayPattern->getSection() == ptrn::Pattern::MainSectionId)
                 if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
-                    err::E0004.throwError("Bitfield array expanded past end of the data.", fmt::format("Entry {} exceeded data by {} bytes.", dataIndex, evaluator->getReadOffset() - evaluator->getDataSize()), this);
+                    err::E0004.throwError("Bitfield array expanded past end of the data.", fmt::format("Entry {} exceeded data by {} bytes.", hlp::to_string(dataIndex), evaluator->getReadOffset() - evaluator->getDataSize()), this);
 
             auto ctrlFlow = evaluator->getCurrentControlFlowStatement();
             evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);

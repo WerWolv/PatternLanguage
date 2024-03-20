@@ -7,11 +7,19 @@
 namespace pl::hlp {
 
     std::string to_string(u128 value) {
-        return fmt::format("{}", value);
+        return math::wide_integer::to_string(value);
     }
 
     std::string to_string(i128 value) {
-        return fmt::format("{}", value);
+        return math::wide_integer::to_string(value);
+    }
+
+    [[nodiscard]] std::string to_hex_string(u128 value, int size) {
+        return "TODO";
+    }
+
+    [[nodiscard]] std::string to_hex_string(i128 value, int size) {
+        return "TODO";
     }
 
     std::string encodeByteString(const std::vector<u8> &bytes) {

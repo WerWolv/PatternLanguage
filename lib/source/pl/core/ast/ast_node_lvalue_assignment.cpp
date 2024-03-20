@@ -33,7 +33,7 @@ namespace pl::core::ast {
 
 
         if (this->getLValueName() == "$")
-            evaluator->setReadOffset(literal->getValue().toUnsigned());
+            evaluator->setReadOffset((u64)literal->getValue().toUnsigned());
         else {
             auto variable = evaluator->getVariableByName(this->getLValueName());
             applyVariableAttributes(evaluator, this, variable);

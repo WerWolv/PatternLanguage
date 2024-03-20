@@ -199,11 +199,11 @@ namespace pl {
             return false;
         }
 
-        auto returnCode = evaluator->getMainResult().value_or(0).toSigned();
-        evaluator->getConsole().log(core::LogConsole::Level::Info, fmt::format("Pattern exited with code: {}", returnCode));
+        auto returnCode = evaluator->getMainResult().value_or(i128(0)).toSigned();
+        evaluator->getConsole().log(core::LogConsole::Level::Info, fmt::format("Pattern exited with code: {}", hlp::to_string(returnCode)));
 
         if (checkResult && returnCode != 0) {
-            this->m_currError = core::err::PatternLanguageError(core::err::E0009.format(fmt::format("Pattern exited with non-zero result: {}", returnCode)), 0, 1);
+            this->m_currError = core::err::PatternLanguageError(core::err::E0009.format(fmt::format("Pattern exited with non-zero result: {}", hlp::to_string(returnCode))), 0, 1);
 
             return false;
         }

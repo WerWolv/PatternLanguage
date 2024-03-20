@@ -218,7 +218,7 @@ namespace pl::core::ast {
                 if (!result.has_value())
                     err::E0009.throwError(fmt::format("Pointer base function '{}' did not return a value.", functionName), "Try adding a 'return <value>;' statement in all code paths.", node);
 
-                pointerPattern->rebase(result.value().toSigned());
+                pointerPattern->rebase((u64)result.value().toSigned());
             } else {
                 err::E0009.throwError("The [[pointer_base]] attribute can only be applied to pointer types.", {}, node);
             }

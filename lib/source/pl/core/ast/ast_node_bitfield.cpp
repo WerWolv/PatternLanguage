@@ -56,13 +56,13 @@ namespace pl::core::ast {
             BitfieldOrder order = [&]() {
                 if (auto *literalNode = dynamic_cast<ASTNodeLiteral *>(directionNode.get()); literalNode != nullptr) {
                     auto value = literalNode->getValue().toUnsigned();
-                    switch (value) {
+                    switch ((u32)value) {
                         case u32(BitfieldOrder::MostToLeastSignificant):
                             return BitfieldOrder::MostToLeastSignificant;
                         case u32(BitfieldOrder::LeastToMostSignificant):
                             return BitfieldOrder::LeastToMostSignificant;
                         default:
-                            err::E0008.throwError(fmt::format("Invalid BitfieldOrder value {}.", value), {}, arguments[0].get());
+                            err::E0008.throwError(fmt::format("Invalid BitfieldOrder value {}.", hlp::to_string(value)), {}, arguments[0].get());
                     }
                 }
                 err::E0008.throwError("The 'direction' parameter for attribute 'bitfield_order' must not be void.", {}, arguments[0].get());
@@ -81,7 +81,7 @@ namespace pl::core::ast {
                                     || (order == BitfieldOrder::LeastToMostSignificant && bitfieldPattern->getEndian() == std::endian::big);
             if (prevReversed != shouldBeReversed) {
                 reversedChanged = true;
-                wolv::util::unused(evaluator->getBitwiseReadOffsetAndIncrement(size));
+                wolv::util::unused(evaluator->getBitwiseReadOffsetAndIncrement((i128)size));
                 evaluator->setReadOrderReversed(shouldBeReversed);
             }
 
@@ -105,7 +105,7 @@ namespace pl::core::ast {
             if (fixedSize > 0) {
                 if (totalBitSize > fixedSize)
                     err::E0005.throwError("Bitfield's fields exceeded the attribute-allotted size.", {}, node);
-                totalBitSize = fixedSize;
+                totalBitSize = (u64)fixedSize;
             }
             bitfieldPattern->setBitSize(totalBitSize);
         };
