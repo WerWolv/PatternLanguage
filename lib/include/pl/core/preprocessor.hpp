@@ -32,8 +32,6 @@ namespace pl::core {
         void removePragmaHandler(const std::string &pragmaType);
         void removeDirectiveHandler(const Token::Directive &directiveType);
 
-        std::optional<Token> getDirectiveValue(u32 line);
-
         [[nodiscard]] bool shouldOnlyIncludeOnce() const {
             return this->m_onlyIncludeOnce;
         }
@@ -50,7 +48,7 @@ namespace pl::core {
         Preprocessor(const Preprocessor &);
         bool eof();
         Location location() override;
-
+        void removeKey(const Token &token);
         // directive handlers
         void handleIfDef(u32 line);
         void handleIfNDef(u32 line);
