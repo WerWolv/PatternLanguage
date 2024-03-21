@@ -34,11 +34,8 @@ namespace pl::core {
         this->m_onlyIncludeOnce = false;
         this->m_pragmaHandlers = other.m_pragmaHandlers;
         this->m_directiveHandlers = other.m_directiveHandlers;
-        this->m_runtime = other.m_runtime;
         this->m_keys = other.m_keys;
         this->m_initialized = false;
-        this->m_source = other.m_source;
-        this->m_output.clear();
 
         // need to update, because old handler points to old `this`
         this->addPragmaHandler("once", [this](PatternLanguage&, const std::string &value) {
@@ -48,53 +45,33 @@ namespace pl::core {
         });
     }
 
-    std::string getTokenValue(const Token &token) {
-        auto identifier = token.getFormattedValue();
-        if (identifier.length() > 1 )
-            return identifier.substr(1, identifier.length() - 2);
-        else
-            return identifier;
-    }
-
-    std::string getOptionalValue(std::optional<Token> token) {
-        if (!token.has_value())
-            return "";
-        return getTokenValue(token.value());
-    }
-
-    static bool isNameValid(const std::optional<Token> &token) {
+    static bool isValidIdentifier(const std::optional<Token> &token) {
         if (!token.has_value())
             return false;
-        auto name = getOptionalValue(token);
+        const Token::Identifier *identifier = std::get_if<Token::Identifier>(&token->value);
+        auto name = identifier->get();
         if (name.empty())
             return false;
-
         return std::ranges::all_of(name, [](char c) {
             return std::isalnum(c) || c == '_';
         });
+
+        return true;
     }
 
     bool operator==(const std::vector<Token>& a, const std::vector<Token>& b) {
         if (a.size() != b.size())
             return false;
         for (u32 i = 0; i < a.size(); i++)
-            if (getTokenValue(a[i]) != getTokenValue(b[i]))
+            if (a[i].type != b[i].type || a[i].value != b[i].value || a[i].location.line != b[i].location.line || a[i].location.column != b[i].location.column || a[i].location.length != b[i].location.length || a[i].location.source != b[i].location.source)
                 return false;
         return true;
     }
 
-    void removeValue(std::vector<Token> &vec,const std::string &name) {
-        for (u32 i = 0; i < vec.size(); i++)
-            if (getTokenValue(vec[i]) == name)
-                vec.erase(vec.begin() + i);
-    }
-
-    std::optional<Token> Preprocessor::getDirectiveValue(u32 line) {
-        const Token &token = *m_token;
-        if (m_token->location.line != line || eof())
-            return std::nullopt;
-        m_token++;
-        return token;
+    void Preprocessor::removeKey(const Token &token) {
+        for (u32 i = 0; i < m_keys.size(); i++)
+            if (m_keys[i].value == token.value)
+                m_keys.erase(m_keys.begin() + i);
     }
 
     void Preprocessor::processIfDef(const bool add) {
@@ -102,7 +79,7 @@ namespace pl::core {
         const Location start = location();
         u32 depth = 1;
         while(!eof() && depth > 0) {
-            if (Token::Directive *directive = std::get_if<Token::Directive>(&m_token->value); directive != nullptr && *directive == Token::Directive::EndIf) {
+            if (auto *directive = std::get_if<Token::Directive>(&m_token->value); directive != nullptr && *directive == Token::Directive::EndIf) {
                 depth--;
                 m_token++;
                 continue;
@@ -110,7 +87,7 @@ namespace pl::core {
             if(add) {
                 process();
             } else {
-                if (Token::Directive *directive = std::get_if<Token::Directive>(&m_token->value);directive != nullptr &&
+                if (auto *directive = std::get_if<Token::Directive>(&m_token->value);directive != nullptr &&
                     (*directive == Token::Directive::IfDef || *directive == Token::Directive::IfNDef))
                     depth++;
                 m_token++;
@@ -124,100 +101,108 @@ namespace pl::core {
     }
 
     void Preprocessor::handleIfDef(u32 line) {
-        auto token = getDirectiveValue(line);
 
-        if (!isNameValid(token)) {
+        auto *identifier = std::get_if<Token::Identifier>(&m_token->value);
+        auto token = *m_token;
+        if (m_token->location.line != line || identifier == nullptr || !isValidIdentifier(token)) {
             error("Expected identifier after #ifdef");
             return;
         }
-
-        processIfDef(m_defines.contains( getOptionalValue(token)));
+        m_token++;
+        processIfDef(m_defines.contains(identifier->get()));
     }
 
     void Preprocessor::handleIfNDef(u32 line) {
-        auto token = getDirectiveValue(line);
 
-        if (!isNameValid(token)) {
-            error("Expected identifier after #ifndef");
+        auto *identifier = std::get_if<Token::Identifier>(&m_token->value);
+        auto token = *m_token;
+        if (m_token->location.line != line || identifier == nullptr || !isValidIdentifier(token)) {
+            error("Expected identifier after #ifdef");
             return;
         }
-
-        processIfDef(!m_defines.contains(getOptionalValue(token)));
+        m_token++;
+        processIfDef(!m_defines.contains(identifier->get()));
     }
 
     void Preprocessor::handleDefine(u32 line) {
-        auto token = getDirectiveValue(line);
 
-        if (!isNameValid(token)) {
+        auto *tokenIdentifier = std::get_if<Token::Identifier>(&m_token->value);
+        std::string name;
+        auto token = *m_token;
+        if (m_token->location.line != line || tokenIdentifier == nullptr || !isValidIdentifier(token)) {
             error("Expected identifier after #define");
             return;
+        } else {
+            name = tokenIdentifier->get();
         }
-
-        auto tokenValue = token.value();
-        auto name = getTokenValue(tokenValue);
+        m_token++;
 
         std::vector<Token> values;
-        auto replacement = getDirectiveValue(line);
-        while (replacement.has_value()) {
-            values.push_back(replacement.value());
-            replacement = getDirectiveValue(line);
+        while (m_token->location.line == line) {
+            values.push_back(*m_token);
+            m_token++;
         }
 
         if (m_defines.contains(name)) {
             bool isValueSame = m_defines[name] == values;
-            if (!isValueSame) {
+            if (isValueSame) {
                 errorAt(values[0].location, "Previous definition occurs at line '{}'.", m_defines[name][0].location.line);
                 errorAt(m_defines[name][0].location, "Macro '{}' is redefined in line '{}'.", name, values[0].location.line);
                 m_defines[name].clear();
                 m_defines[name] = values;
-                removeValue(m_keys, name);
-                m_keys.emplace_back(tokenValue);
+                removeKey(token);
+                m_keys.emplace_back(token);
             }
         } else {
             m_defines[name] = values;
-            m_keys.emplace_back(tokenValue);
+            m_keys.emplace_back(token);
         }
     }
 
     void Preprocessor::handleUnDefine(u32 line) {
-        auto token = getDirectiveValue(line);
 
-        if(!isNameValid(token)) {
-            error("Expected identifier after #undef");
+        auto *tokenIdentifier = std::get_if<Token::Identifier>(&m_token->value);
+        auto token = *m_token;
+        std::string name;
+        if (m_token->location.line != line || tokenIdentifier == nullptr || !isValidIdentifier(token)) {
+            error("Expected identifier after #ifdef");
             return;
+        } else {
+            name = tokenIdentifier->get();
         }
-
-        auto name = getOptionalValue(token);
+        m_token++;
         if (m_defines.contains(name)) {
             m_defines.erase(name);
-            removeValue(m_keys, name);
+            removeKey(token);
         }
     }
 
     void Preprocessor::handlePragma(u32 line) {
-        auto token = getDirectiveValue(line);
-
-        if (!token.has_value()) {
+        auto *tokenLiteral = std::get_if<Token::Literal>(&m_token->value);
+        if (tokenLiteral == nullptr) {
             errorDesc("No instruction given in #pragma directive.", "A #pragma directive expects a instruction followed by an optional value in the form of #pragma <instruction> <value>.");
             return;
         }
-
-        auto key = getOptionalValue(token);
-        token = getDirectiveValue(line);
-        if (!token.has_value())
+        m_token++;
+        auto key = tokenLiteral->toString(false);
+        tokenLiteral = std::get_if<Token::Literal>(&m_token->value);
+        if (m_token->location.line != line || tokenLiteral == nullptr)
             this->m_pragmas[key].emplace_back("", line);
-        else
-            this->m_pragmas[key].emplace_back(getOptionalValue(token), line);
+        else {
+            std::string value = tokenLiteral->toString(false);
+            this->m_pragmas[key].emplace_back(value, line);
+            m_token++;
+        }
     }
 
     void Preprocessor::handleInclude(u32 line) {
-        auto token = getDirectiveValue(line);
-        if (!token.has_value()) {
+        auto *tokenLiteral = std::get_if<Token::Literal>(&m_token->value);
+        if (tokenLiteral == nullptr || m_token->location.line != line) {
             errorDesc("No file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
             return;
         }
-
-        auto includeFile = getOptionalValue(token);
+        m_token++;
+        auto includeFile =  tokenLiteral->toString(false);
 
         if (includeFile.empty()){
             errorDesc("No file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
@@ -278,10 +263,8 @@ namespace pl::core {
 
             if (!content.empty())
                 for (auto entry : content) {
-                    if (entry.type == Token::Type::Separator) {
-                        if (get<Token::Separator>(entry.value) == Token::Separator::EndOfProgram)
-                            continue;
-                    }
+                    if (auto *separator = std::get_if<Token::Separator>(&entry.value); separator != nullptr && *separator == Token::Separator::EndOfProgram)
+                        continue;
                     if (entry.type != Token::Type::DocComment)
                         m_output.push_back(entry);
                 }
@@ -291,7 +274,7 @@ namespace pl::core {
     void Preprocessor::process() {
         u32 line = m_token->location.line;
 
-        if (Token::Directive *directive = std::get_if<Token::Directive>(&m_token->value); directive != nullptr ) {
+        if (auto *directive = std::get_if<Token::Directive>(&m_token->value); directive != nullptr ) {
             auto handler = m_directiveHandlers.find(*directive);
             if(handler == m_directiveHandlers.end()) {
                 error("Unknown directive '{}'", m_token->getFormattedValue());
@@ -309,10 +292,13 @@ namespace pl::core {
             std::vector<Token> resultValues;
             values.push_back(*m_token);
             for (const auto &key: m_keys) {
+                const Token::Identifier *keyIdentifier = std::get_if<Token::Identifier>(&key.value);
                 for (const auto &value: values) {
-
-                    if (getTokenValue(value) == getTokenValue(key)) {
-                        for (const auto &newToken: m_defines[getTokenValue(key)])
+                    const Token::Identifier *valueIdentifier = std::get_if<Token::Identifier>(&value.value);
+                    if (valueIdentifier == nullptr)
+                        resultValues.push_back(value);
+                   else if (valueIdentifier->get() == keyIdentifier->get() ) {
+                        for (const auto &newToken: m_defines[keyIdentifier->get()])
                             resultValues.push_back(newToken);
                     } else
                         resultValues.push_back(value);
@@ -320,19 +306,25 @@ namespace pl::core {
                 values = resultValues;
                 resultValues.clear();
             }
-
             for (const auto &value: values)
                 m_output.push_back(value);
             m_token++;
         }
-        return;
     }
 
     void Preprocessor::handleError(u32 line) {
-        auto token = getDirectiveValue(line);
+        auto *tokenLiteral = std::get_if<Token::Literal>(&m_token->value);
 
-        if (token.has_value()) {
-            auto message = token.value().getFormattedValue();
+        auto token =*m_token;
+
+        if(tokenLiteral != nullptr && m_token->location.line == line) {
+            auto message = tokenLiteral->toString(false);
+            m_token++;
+            tokenLiteral = std::get_if<Token::Literal>(&m_token->value);
+            if (tokenLiteral != nullptr && m_token->location.line == line) {
+                message += " " + tokenLiteral->toString(false);
+                m_token++;
+            }
             error(message);
         } else {
             error("No message given in #error directive.");
@@ -393,9 +385,9 @@ namespace pl::core {
                 const auto &[value, line] = data;
 
                 if (this->m_pragmaHandlers.contains(type)) {
-                    if (!this->m_pragmaHandlers[type](*runtime, value))
+                    if (!this->m_pragmaHandlers[type](*m_runtime, value))
                         errorAt(Location { m_source, line, 1, value.length() },
-                                 "Value '{}' cannot be used with the '{}' pragma directive.", value, type);
+                                "Value '{}' cannot be used with the '{}' pragma directive.", value, type);
                 }
             }
         }
@@ -406,14 +398,9 @@ namespace pl::core {
     }
 
     void Preprocessor::addDefine(const std::string &name, const std::string &value) {
-        m_defines[name] = { 
-            pl::core::Token { 
-                pl::core::Token::Type::Directive, 
-                name, 
-                location() 
-            }, 
-            pl::core::Token { 
-                pl::core::Token::Type::String, 
+        m_defines[name] = {
+            Token {
+                Token::Type::String,
                 value, 
                 location() 
             } 
