@@ -168,28 +168,57 @@ namespace pl::core {
         };
 
         struct Identifier {
-            explicit Identifier(std::string identifier) : m_identifier(std::move(identifier)) { }
+            enum class IdentifierType {
+                Unknown,
+                FunctionUnknown,
+                MemberUnknown,
+                UDT,
+                PatternVariable,
+                PatternLocalVariable,
+                PatternPlacedVariable,
+                FunctionVariable,
+                FunctionParameter,
+                PlacedVariable,
+                GlobalVariable,
+                Function,
+                Macro,
+                NameSpace,
+                Typedef,
+                Keyword,
+                BuiltInType,
+                Attribute,
+                Directive
+            };
+
+            explicit Identifier(std::string identifier="", IdentifierType identifierType = IdentifierType::Unknown) : m_identifier(std::move(identifier)), m_type(identifierType) { }
 
             [[nodiscard]] const std::string &get() const { return this->m_identifier; }
+            [[nodiscard]] IdentifierType getType() const { return this->m_type; }
+            void setType(IdentifierType idtype) { this->m_type = idtype; }
+
 
             bool operator==(const Identifier &) const  = default;
 
         private:
             std::string m_identifier;
+            IdentifierType m_type;
         };
 
         struct DocComment {
             bool global;
+            bool singleLine;
             std::string comment;
 
             constexpr bool operator==(const DocComment &) const = default;
         };
 
         struct Comment {
+            bool singleLine;
             std::string comment;
 
             constexpr bool operator==(const Comment &) const = default;
         };
+
 
         struct Literal : std::variant<char, bool, u128, i128, double, std::string, std::shared_ptr<ptrn::Pattern>> {
             using variant::variant;

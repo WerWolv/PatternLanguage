@@ -72,12 +72,12 @@ namespace pl::core::tkn {
             return makeToken(core::Token::Type::String, Token::Literal(value));
         }
 
-        inline Token makeDocComment(bool global, const std::string &value) {
-            return { core::Token::Type::DocComment, Token::DocComment { global, value }, Location::Empty() };
+        inline Token makeDocComment(bool global,bool singleLine, const std::string &value) {
+            return { Token::Type::DocComment, Token::DocComment { global, singleLine, value }, Location::Empty() };
         }
 
-        inline Token makeComment(const std::string &value) {
-            return { core::Token::Type::Comment, Token::Comment { value }, Location::Empty() };
+        inline Token makeComment(bool singleLine, const std::string &value) {
+            return { Token::Type::Comment, Token::Comment { singleLine,  value }, Location::Empty() };
         }
 
         const auto Identifier = makeToken(core::Token::Type::Identifier, { });

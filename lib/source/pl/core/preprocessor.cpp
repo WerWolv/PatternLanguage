@@ -63,7 +63,7 @@ namespace pl::core {
         if (a.size() != b.size())
             return false;
         for (u32 i = 0; i < a.size(); i++)
-            if (a[i].type != b[i].type || a[i].value != b[i].value || a[i].location.line != b[i].location.line || a[i].location.column != b[i].location.column || a[i].location.length != b[i].location.length || a[i].location.source != b[i].location.source)
+            if (a[i].type != b[i].type || a[i].value != b[i].value || a[i].location != b[i].location)
                 return false;
         return true;
     }
@@ -77,10 +77,20 @@ namespace pl::core {
     void Preprocessor::processIfDef(const bool add) {
         // find the next #endif
         const Location start = location();
+        if (!add) {
+            Location startExclude = start;
+            startExclude.column = 0;
+            m_excludedLocations.push_back({true, startExclude});
+        }
         u32 depth = 1;
         while(!eof() && depth > 0) {
             if (auto *directive = std::get_if<Token::Directive>(&m_token->value); directive != nullptr && *directive == Token::Directive::EndIf) {
                 depth--;
+                if (depth == 0 && !add) {
+                    auto location = m_token->location;
+                    location.column = 0;
+                    m_excludedLocations.push_back({false, location});
+                }
                 m_token++;
                 continue;
             }
@@ -107,7 +117,8 @@ namespace pl::core {
         if (m_token->location.line != line || identifier == nullptr || !isValidIdentifier(token)) {
             error("Expected identifier after #ifdef");
             return;
-        }
+        } else
+            identifier->setType(Token::Identifier::IdentifierType::Macro);
         m_token++;
         processIfDef(m_defines.contains(identifier->get()));
     }
@@ -119,7 +130,8 @@ namespace pl::core {
         if (m_token->location.line != line || identifier == nullptr || !isValidIdentifier(token)) {
             error("Expected identifier after #ifdef");
             return;
-        }
+        } else
+            identifier->setType(Token::Identifier::IdentifierType::Macro);
         m_token++;
         processIfDef(!m_defines.contains(identifier->get()));
     }
@@ -133,6 +145,7 @@ namespace pl::core {
             error("Expected identifier after #define");
             return;
         } else {
+            tokenIdentifier->setType(Token::Identifier::IdentifierType::Macro);
             name = tokenIdentifier->get();
         }
         m_token++;
@@ -145,7 +158,7 @@ namespace pl::core {
 
         if (m_defines.contains(name)) {
             bool isValueSame = m_defines[name] == values;
-            if (isValueSame) {
+            if (!isValueSame) {
                 errorAt(values[0].location, "Previous definition occurs at line '{}'.", m_defines[name][0].location.line);
                 errorAt(m_defines[name][0].location, "Macro '{}' is redefined in line '{}'.", name, values[0].location.line);
                 m_defines[name].clear();
@@ -168,6 +181,7 @@ namespace pl::core {
             error("Expected identifier after #ifdef");
             return;
         } else {
+            tokenIdentifier->setType(Token::Identifier::IdentifierType::Macro);
             name = tokenIdentifier->get();
         }
         m_token++;
@@ -201,20 +215,15 @@ namespace pl::core {
             errorDesc("No file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
             return;
         }
-        m_token++;
-        auto includeFile =  tokenLiteral->toString(false);
+        auto includeFile = tokenLiteral->toString(false);
 
-        if (includeFile.empty()){
-            errorDesc("No file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
-            return;
-        }
-
-        if (!((includeFile.starts_with('"') && includeFile.ends_with('"')) || (includeFile.starts_with('<') && includeFile.ends_with('>')))) {
+        if (!(includeFile.starts_with('"') && includeFile.ends_with('"')) && !(includeFile.starts_with('<') && includeFile.ends_with('>'))) {
             errorDesc("Invalid file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
             return;
         }
 
         const std::string includePath = includeFile.substr(1, includeFile.length() - 2);
+
         // determine if we should include this file
         if (this->m_onceIncludedFiles.contains(includePath))
             return;
@@ -232,7 +241,7 @@ namespace pl::core {
             }
             return;
         }
-
+        m_token++;
         Preprocessor preprocessor(*this);
         preprocessor.m_pragmas.clear();
 
@@ -298,6 +307,9 @@ namespace pl::core {
                     if (valueIdentifier == nullptr)
                         resultValues.push_back(value);
                    else if (valueIdentifier->get() == keyIdentifier->get() ) {
+                        Token::Identifier *tokenIdentifier = std::get_if<Token::Identifier>(&m_token->value);
+                        if (tokenIdentifier != nullptr)
+                            tokenIdentifier->setType(Token::Identifier::IdentifierType::Macro);
                         for (const auto &newToken: m_defines[keyIdentifier->get()])
                             resultValues.push_back(newToken);
                     } else
@@ -331,8 +343,35 @@ namespace pl::core {
         }
     }
 
-    bool Preprocessor::eof() {
-        return m_token == m_result.end();
+    void Preprocessor::appendExcludedLocation(const ExcludedLocation &location) {
+
+        auto it = std::find_if(m_excludedLocations.begin(), m_excludedLocations.end(), [&location](const ExcludedLocation& el) {
+            return el.isExcluded == location.isExcluded;
+        });
+
+        if (it == m_excludedLocations.end()) {
+            m_excludedLocations.push_back(location);
+        }
+    }
+
+    void Preprocessor::validateExcludedLocations() {
+        auto size = m_excludedLocations.size();
+        if (size == 0)
+            return;
+        auto excludedLocations = m_excludedLocations;
+        m_excludedLocations.clear();
+        for (auto &location : excludedLocations)
+            appendExcludedLocation(location);
+    }
+
+    void Preprocessor::validateOutput() {
+        std::vector<Token> output = m_output;
+        m_output.clear();
+        for (const auto &token : output) {
+            if (token.type == Token::Type::Comment || token.type == Token::Type::Directive)
+                continue;
+            m_output.push_back(token);
+        }
     }
 
     hlp::CompileResult<std::vector<Token>> Preprocessor::preprocess(PatternLanguage* runtime, api::Source* source, bool initialRun) {
@@ -346,10 +385,10 @@ namespace pl::core {
         m_runtime = runtime;
         m_output.clear();
 
-
         auto lexer = runtime->getInternals().lexer.get();
 
         if (initialRun) {
+            this->m_excludedLocations.clear();
             this->m_onceIncludedFiles.clear();
             this->m_defines.clear();
             this->m_keys.clear();
@@ -369,16 +408,15 @@ namespace pl::core {
         else
             return { std::nullopt, errors };
         if (!errors.empty())
-            m_errors = std::move(errors);
-        else
-            m_errors.clear();
+            for (auto &item: errors)
+                this->error(item);
 
-        m_initialized = true;
         m_token = m_result.begin();
-
+        m_initialized = true;
         while (!eof())
             process();
 
+        validateExcludedLocations();
         // Handle pragmas
         for (const auto &[type, datas] : this->m_pragmas) {
             for (const auto &data : datas) {
@@ -391,20 +429,16 @@ namespace pl::core {
                 }
             }
         }
-
-        this->m_defines.clear();
-
+        validateOutput();
         return { m_output, collectErrors() };
     }
 
+    bool Preprocessor::eof() {
+        return m_token == m_result.end();
+    }
+
     void Preprocessor::addDefine(const std::string &name, const std::string &value) {
-        m_defines[name] = {
-            Token {
-                Token::Type::String,
-                value, 
-                location() 
-            } 
-        };
+        m_defines[name] = {Token { Token::Type::String, value, {nullptr, 0, 0, 0 } } } ;
     }
 
     void Preprocessor::addPragmaHandler(const std::string &pragmaType, const api::PragmaHandler &handler) {
@@ -427,10 +461,10 @@ namespace pl::core {
         if (isInitialized())
             return m_token->location;
         else
-            return { nullptr, 0, 0, 0 };
+            return {nullptr, 0, 0, 0 };
     }
 
-    void Preprocessor::registerDirectiveHandler(const Token::Directive &name, auto memberFunction) {
+    void Preprocessor::registerDirectiveHandler(const Token::Directive& name, auto memberFunction) {
         this->m_directiveHandlers[name] = [memberFunction](Preprocessor* preprocessor, u32 line){
             (preprocessor->*memberFunction)(line);
         };

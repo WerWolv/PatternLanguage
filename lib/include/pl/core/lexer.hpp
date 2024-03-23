@@ -56,5 +56,6 @@ namespace pl::core {
         size_t m_cursor = 0;
         u32 m_line = 0;
         u32 m_lineBegin = 0;
+        u32 m_errorLength;
     };
 }
