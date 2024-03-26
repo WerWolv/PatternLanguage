@@ -275,8 +275,8 @@ namespace pl::core {
 
         void createParameterPack(const std::string &name, const std::vector<Token::Literal> &values);
 
-        void createArrayVariable(const std::string &name, ast::ASTNode *type, size_t entryCount, u64 section, bool constant = false);
-        std::shared_ptr<ptrn::Pattern> createVariable(const std::string &name, ast::ASTNodeTypeDecl *type, const std::optional<Token::Literal> &value = std::nullopt, bool outVariable = false, bool reference = false, bool templateVariable = false, bool constant = false);
+        void createArrayVariable(const std::string &name, const ast::ASTNode *type, size_t entryCount, u64 section, bool constant = false);
+        std::shared_ptr<ptrn::Pattern> createVariable(const std::string &name, const ast::ASTNodeTypeDecl *type, const std::optional<Token::Literal> &value = std::nullopt, bool outVariable = false, bool reference = false, bool templateVariable = false, bool constant = false);
         std::shared_ptr<ptrn::Pattern>& getVariableByName(const std::string &name);
         void setVariable(const std::string &name, const Token::Literal &value);
         void setVariable(std::shared_ptr<ptrn::Pattern> &pattern, const Token::Literal &value);
@@ -288,7 +288,7 @@ namespace pl::core {
             this->m_aborted = true;
         }
 
-        void handleAbort() {
+        void handleAbort() const {
             if (this->m_aborted)
                 err::E0007.throwError("Evaluation aborted by user.");
         }
@@ -381,8 +381,8 @@ namespace pl::core {
         }
 
     private:
-        void patternCreated(ptrn::Pattern *pattern);
-        void patternDestroyed(ptrn::Pattern *pattern);
+        void patternCreated(const ptrn::Pattern *pattern);
+        void patternDestroyed(const ptrn::Pattern *pattern);
 
     private:
         u64 m_currOffset = 0x00;
@@ -437,7 +437,7 @@ namespace pl::core {
         std::function<void(u64, u8*, size_t)> m_readerFunction = [](u64, u8*, size_t){
             err::E0011.throwError("No memory has been attached. Reading is disabled.");
         };
-        std::function<void(u64, u8*, size_t)> m_writerFunction = [](u64, u8*, size_t){
+        std::function<void(u64, const u8*, size_t)> m_writerFunction = [](u64, const u8*, size_t){
             err::E0011.throwError("No memory has been attached. Reading is disabled.");
         };
 

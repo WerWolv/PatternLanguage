@@ -23,6 +23,7 @@
 #include <pl/patterns/pattern_array_dynamic.hpp>
 #include <pl/patterns/pattern_padding.hpp>
 
+#include <exception>
 #include <utility>
 
 namespace pl::core {
@@ -48,7 +49,7 @@ namespace pl::core {
         };
 
         if (writerFunction.has_value()) {
-            this->m_writerFunction = [this, writerFunction = std::move(writerFunction.value())](u64 offset, u8* buffer, size_t size) {
+            this->m_writerFunction = [this, writerFunction = std::move(writerFunction.value())](u64 offset, const u8* buffer, size_t size) {
                 this->m_lastWriteAddress = offset;
 
                 writerFunction(offset, buffer, size);
@@ -173,7 +174,7 @@ namespace pl::core {
         };
     }
 
-    void Evaluator::createArrayVariable(const std::string &name, ast::ASTNode *type, size_t entryCount, u64 section, bool constant) {
+    void Evaluator::createArrayVariable(const std::string &name, const ast::ASTNode *type, size_t entryCount, u64 section, bool constant) {
         // A variable named _ gets treated as "don't care"
         if (name == "_")
             return;
@@ -228,7 +229,7 @@ namespace pl::core {
         variables.push_back(std::unique_ptr<ptrn::Pattern>(pattern));
     }
 
-    static std::optional<std::string> findTypeName(ast::ASTNodeTypeDecl *type) {
+    static std::optional<std::string> findTypeName(const ast::ASTNodeTypeDecl *type) {
 
         const ast::ASTNodeTypeDecl *typeDecl = type;
         while (true) {
@@ -241,7 +242,7 @@ namespace pl::core {
         }
     }
 
-    static ast::ASTNodeBuiltinType* getBuiltinType(ast::ASTNodeTypeDecl *type) {
+    static ast::ASTNodeBuiltinType* getBuiltinType(const ast::ASTNodeTypeDecl *type) {
         const ast::ASTNodeTypeDecl *typeDecl = type;
         while (true) {
             if (auto innerType = dynamic_cast<ast::ASTNodeTypeDecl*>(typeDecl->getType().get()); innerType != nullptr)
@@ -253,7 +254,7 @@ namespace pl::core {
         }
     }
 
-    std::shared_ptr<ptrn::Pattern> Evaluator::createVariable(const std::string &name, ast::ASTNodeTypeDecl *type, const std::optional<Token::Literal> &value, bool outVariable, bool reference, bool templateVariable, bool constant) {
+    std::shared_ptr<ptrn::Pattern> Evaluator::createVariable(const std::string &name, const ast::ASTNodeTypeDecl *type, const std::optional<Token::Literal> &value, bool outVariable, bool reference, bool templateVariable, bool constant) {
         auto startPos = this->getReadOffset();
         ON_SCOPE_EXIT { this->setReadOffset(startPos); };
 
@@ -472,7 +473,7 @@ namespace pl::core {
         err::E0003.throwError(fmt::format("Cannot find variable '{}' in this scope.", name));
     }
 
-    void Evaluator::setVariable(const std::string &name, const Token::Literal &value) {
+    void Evaluator::setVariable(const std::string &name, const Token::Literal &variableValue) {
         // A variable named _ gets treated as "don't care"
         if (name == "_")
             return;
@@ -511,7 +512,7 @@ namespace pl::core {
                             err::E0004.throwError(fmt::format("Cannot assign value of type 'string' to variable of type '{}'.", variablePattern->getTypeName()));
                     },
                     [](const auto &) {}
-                }, value);
+                }, variableValue);
             } else {
                 std::visit(wolv::util::overloaded {
                     [&](ptrn::Pattern * const value) {
@@ -523,13 +524,13 @@ namespace pl::core {
                             err::E0004.throwError(fmt::format("Cannot assign string of size {} to variable of size {}.", value.size(), variablePattern->getSize()));
                     },
                     [](const auto &) {}
-                }, value);
+                }, variableValue);
             }
 
             return variablePattern;
         }();
 
-        this->setVariable(pattern, value);
+        this->setVariable(pattern, variableValue);
     }
 
     void Evaluator::changePatternType(std::shared_ptr<ptrn::Pattern> &pattern, std::shared_ptr<ptrn::Pattern> &&newPattern) {
@@ -547,7 +548,7 @@ namespace pl::core {
         pattern->setVariableName(variableName);
     }
 
-    void Evaluator::setVariable(std::shared_ptr<ptrn::Pattern> &pattern, const Token::Literal &value) {
+    void Evaluator::setVariable(std::shared_ptr<ptrn::Pattern> &pattern, const Token::Literal &variableValue) {
         auto startPos = this->getReadOffset();
         ON_SCOPE_EXIT { this->setReadOffset(startPos); };
 
@@ -563,7 +564,7 @@ namespace pl::core {
                     pattern = patternValue;
                 },
                 [](const auto &) { }
-            }, value);
+            }, variableValue);
             return;
         }
 
@@ -571,7 +572,7 @@ namespace pl::core {
             err::E0003.throwError(fmt::format("Value is too large to place into local variable '{}'.", pattern->getVariableName()));
 
         // Cast values to type given by pattern
-        Token::Literal castedValue = castLiteral(pattern.get(), value);
+        Token::Literal castedValue = castLiteral(pattern.get(), variableValue);
 
         // Write value into variable storage
         {
@@ -1092,7 +1093,7 @@ namespace pl::core {
         return this->m_lastPauseLine;
     }
 
-    void Evaluator::patternCreated(ptrn::Pattern *pattern) {
+    void Evaluator::patternCreated(const ptrn::Pattern *pattern) {
         this->m_lastPatternAddress = pattern->getOffset();
 
         if (this->m_currPatternCount > this->m_patternLimit && !this->m_evaluated)
@@ -1114,7 +1115,7 @@ namespace pl::core {
         }
     }
 
-    void Evaluator::patternDestroyed(ptrn::Pattern *pattern) {
+    void Evaluator::patternDestroyed(const ptrn::Pattern *pattern) {
         this->m_currPatternCount--;
 
         // Make sure we don't throw an error if we're already in an error state
