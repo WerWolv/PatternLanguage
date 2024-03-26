@@ -29,13 +29,18 @@ namespace pl::core {
         std::optional<char> parseCharacter();
         std::optional<Token> parseOperator();
         std::optional<Token> parseSeparator();
+        std::optional<Token> parseOneLineComment();
         std::optional<Token> parseOneLineDocComment();
+        std::optional<Token> parseMultiLineComment();
         std::optional<Token> parseMultiLineDocComment();
         std::optional<Token> parseKeyword(const std::string_view &identifier);
         std::optional<Token> parseType(const std::string_view &identifier);
+        std::optional<Token> parseDirectiveName(const std::string_view &identifier);
         std::optional<Token> parseNamedOperator(const std::string_view &identifier);
         std::optional<Token> parseConstant(const std::string_view &identifier);
         std::optional<Token> parseStringLiteral();
+        std::optional<Token> parseDirectiveArgument();
+        std::optional<Token> parseDirectiveValue();
         std::optional<Token::Literal> parseIntegerLiteral(std::string_view literal);
 
         std::optional<double> parseFloatingPoint(std::string_view literal, char suffix);

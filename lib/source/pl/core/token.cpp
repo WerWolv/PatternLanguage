@@ -5,6 +5,7 @@
 
 #include <pl/helpers/utils.hpp>
 #include <pl/helpers/concepts.hpp>
+#include <variant>
 
 namespace pl::core {
 
@@ -166,7 +167,9 @@ namespace pl::core {
             case String: return "String";
             case Identifier: return "Identifier";
             case Separator: return "Separator";
+            case Comment: return "Comment";
             case DocComment: return "Doc Comment";
+            case Directive: return "Directive";
         }
 
         return "Unknown";
@@ -325,6 +328,22 @@ namespace pl::core {
 
                                   return "";
                               },
+                              [](const Directive directive) -> std::string  {
+                                  switch (directive) {
+                                      using enum Directive;
+
+                                      case Include: return "#include";
+                                      case Define: return "#define";
+                                      case IfDef: return "#ifdef";
+                                      case IfNDef: return "#ifndef";
+                                      case EndIf: return "#endif";
+                                      case Undef: return "#undef";
+                                      case Pragma: return "#pragma";
+                                      case Error: return "#error";
+                                  }
+
+                                  return "";
+                              },
                               [](const Identifier &identifier) -> std::string  {
                                   return fmt::format("'{}'", identifier.get());
                               },
@@ -334,7 +353,10 @@ namespace pl::core {
                               [](const ValueType valueType) -> std::string  {
                                   return getTypeName(valueType);
                               },
-                              [](const DocComment &docComment) -> std::string {
+                              [](const Comment &comment) -> std::string  {
+                                  return fmt::format("/* {} */", comment.comment);
+                              },
+                              [](const DocComment &docComment) -> std::string  {
                                   if (docComment.global)
                                       return fmt::format("/*! {} */", docComment.comment);
                                   else
@@ -344,7 +366,7 @@ namespace pl::core {
     }
 
     bool Token::operator==(const ValueTypes &other) const {
-        if (this->type == Type::Integer || this->type == Type::Identifier || this->type == Type::String || this->type == Type::DocComment)
+        if (this->type == Type::Integer || this->type == Type::Identifier || this->type == Type::String || this->type == Type::Comment || this->type == Type::DocComment || this->type == Type::Directive)
             return true;
         if (this->type == Type::ValueType) {
             const auto otherValueType = std::get_if<ValueType>(&other);
@@ -387,7 +409,7 @@ namespace pl::core {
         return s_keywords;
     }
 
-    std::map<char, Token>& Token::Seperators() {
+    std::map<char, Token>& Token::Separators() {
         static std::map<char, Token> s_separators;
 
         return s_separators;
@@ -397,6 +419,12 @@ namespace pl::core {
         static std::map<std::string_view, Token> s_types;
 
         return s_types;
+    }
+
+    std::map<std::string_view, Token>& Token::Directives() {
+        static std::map<std::string_view, Token> s_directives;
+
+        return s_directives;
     }
 
 }

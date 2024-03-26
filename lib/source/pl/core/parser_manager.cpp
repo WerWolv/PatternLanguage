@@ -36,24 +36,15 @@ pl::hlp::CompileResult<ParserManager::ParsedData> ParserManager::parse(api::Sour
         preprocessor.addPragmaHandler(name, handler);
     }
 
-    const auto& lexer = internals.lexer;
     const auto& validator = internals.validator;
 
-    auto [preprocessedCode, preprocessorErrors] = preprocessor.preprocess(this->m_patternLanguage, source);
+    auto [tokens, preprocessorErrors] = preprocessor.preprocess(this->m_patternLanguage, source, true);
     if (!preprocessorErrors.empty()) {
         return result_t::err(preprocessorErrors);
     }
 
-    source->content = preprocessedCode.value();
-
     if(preprocessor.shouldOnlyIncludeOnce())
         m_onceIncluded.insert( { source, namespacePrefix } );
-
-    auto [tokens, lexerErrors] = lexer->lex(source);
-
-    if (!lexerErrors.empty()) {
-        return result_t::err(lexerErrors);
-    }
 
     parser.m_parserManager = this;
     parser.m_aliasNamespace = namespaces;
@@ -64,7 +55,7 @@ pl::hlp::CompileResult<ParserManager::ParsedData> ParserManager::parse(api::Sour
         return result_t::err(result.errs);
 
     // if its ok validate before returning
-    auto [validated, validatorErrors] = validator->validate(*result.ok);
+    auto [validated, validatorErrors] = validator->validate(result.ok.value());
     if (validated && !validatorErrors.empty()) {
         return result_t::err(validatorErrors);
     }

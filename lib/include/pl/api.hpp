@@ -28,7 +28,7 @@ namespace pl::api {
      */
     using PragmaHandler = std::function<bool(PatternLanguage&, const std::string &)>;
 
-    using DirectiveHandler = std::function<void(core::Preprocessor*)>;
+    using DirectiveHandler = std::function<void(core::Preprocessor*, u32)>;
 
     using Resolver = std::function<hlp::Result<Source*, std::string>(const std::string&)>;
 
