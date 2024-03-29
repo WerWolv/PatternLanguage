@@ -19,7 +19,10 @@ namespace pl::core {
 
     class Preprocessor : public err::ErrorCollector {
     public:
-
+        struct ExcludedLocation {
+            bool isExcluded;
+            Location location;
+        };
         Preprocessor();
 
         ~Preprocessor() override = default;
@@ -31,6 +34,17 @@ namespace pl::core {
         void addDirectiveHandler(const Token::Directive &directiveType, const api::DirectiveHandler &handler);
         void removePragmaHandler(const std::string &pragmaType);
         void removeDirectiveHandler(const Token::Directive &directiveType);
+        void validateExcludedLocations();
+        void appendExcludedLocation(const ExcludedLocation &location);
+        void validateOutput();
+
+        [[nodiscard]] auto getExcludedLocations() const {
+            return m_excludedLocations;
+        }
+
+        [[nodiscard]] auto getResult() const {
+            return this->m_result;
+        }
 
         [[nodiscard]] bool shouldOnlyIncludeOnce() const {
             return this->m_onlyIncludeOnce;
@@ -68,6 +82,7 @@ namespace pl::core {
 
         std::unordered_map<std::string, std::vector<Token>> m_defines;
         std::unordered_map<std::string, std::vector<std::pair<std::string, u32>>> m_pragmas;
+        std::vector<ExcludedLocation> m_excludedLocations;
 
         std::set<std::string> m_onceIncludedFiles;
 

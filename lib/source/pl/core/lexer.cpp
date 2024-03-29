@@ -44,7 +44,7 @@ namespace pl::core {
     }
 
     static size_t getIntegerLiteralLength(const std::string_view& literal) {
-        const auto count = literal.find_first_not_of("0123456789ABCDEFabcdef'xXoOpP.uU");
+        const auto count = literal.find_first_not_of("0123456789ABCDEFabcdef'xXoOpP.uU+-");
         if (count == std::string_view::npos)
             return literal.size();
 
@@ -82,6 +82,7 @@ namespace pl::core {
                     try {
                         return static_cast<char>(std::stoul(hex, nullptr, 16));
                     } catch (const std::invalid_argument&) {
+                        m_errorLength = 2;
                         error("Invalid hex escape sequence: {}", hex);
                         return std::nullopt;
                     }
@@ -93,11 +94,13 @@ namespace pl::core {
                     try {
                         return static_cast<char>(std::stoul(hex, nullptr, 16));
                     } catch (const std::invalid_argument&) {
+                        m_errorLength = 4;
                         error("Invalid unicode escape sequence: {}", hex);
                         return std::nullopt;
                     }
                 }
                 default:
+                    m_errorLength = 1;
                     error("Unknown escape sequence: {}", m_sourceCode[m_cursor-1]);
                 return std::nullopt;
             }
@@ -110,6 +113,8 @@ namespace pl::core {
         if (const auto directiveToken = directives.find(identifier); directiveToken != directives.end()) {
             return makeToken(directiveToken->second, identifier.length());
         }
+        m_errorLength = identifier.length();
+        error("Unknown directive: {}", identifier);
         return std::nullopt;
     }
 
@@ -172,6 +177,7 @@ namespace pl::core {
         while (m_sourceCode[m_cursor] != '\"') {
             char c = peek();
             if (c == '\n' || c == '\0') {
+                m_errorLength = 1;
                 error(c == '\n' ? "Unexpected newline in string literal" : "Unexpected end of file in string literal");
                 return std::nullopt;
             }
@@ -224,6 +230,7 @@ namespace pl::core {
             if(c == integerSeparator) continue;
 
             if (!isIntegerCharacter(c, base)) {
+                m_errorLength = literal.size();
                 error("Invalid integer literal: {}", literal);
                 return std::nullopt;
             }
@@ -238,6 +245,7 @@ namespace pl::core {
         double val = std::strtod(literal.data(), &end);
 
         if(end != literal.data() + literal.size()) {
+            m_errorLength = literal.size();
             error("Invalid float literal: {}", literal);
             return std::nullopt;
         }
@@ -302,9 +310,10 @@ namespace pl::core {
 
         std::string result;
         while(m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\0') {
-            result += peek();
+            result += m_sourceCode[m_cursor];
             m_cursor++;
         }
+        auto len = m_cursor - begin;
 
         if (m_sourceCode[m_cursor] == '\n') {
             m_line++;
@@ -312,7 +321,7 @@ namespace pl::core {
             m_cursor++;
         }
 
-        return makeTokenAt(Literal::makeComment(result), location, m_cursor - begin);
+        return makeTokenAt(Literal::makeComment(true, result), location, len);
     }
 
     std::optional<Token> Lexer::parseOneLineDocComment() {
@@ -321,18 +330,19 @@ namespace pl::core {
         m_cursor += 3;
 
         std::string result;
-        while (m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\0') {
-            result += peek();
+        while(m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\0') {
+            result += m_sourceCode[m_cursor];
             m_cursor++;
-
         }
+        auto len = m_cursor - begin;
+
         if (m_sourceCode[m_cursor] == '\n') {
             m_line++;
             m_lineBegin = m_cursor;
             m_cursor++;
         }
 
-        return makeTokenAt(Literal::makeDocComment(false, result), location, m_cursor - begin);
+        return makeTokenAt(Literal::makeDocComment(false, true, result), location, len);
     }
 
     std::optional<Token> Lexer::parseMultiLineDocComment() {
@@ -349,11 +359,12 @@ namespace pl::core {
             }
 
             if(peek(1) == '\x00') {
+                m_errorLength = 1;
                 error("Unexpected end of file while parsing multi line doc comment");
                 return std::nullopt;
             }
 
-            if (peek(0) == '*' && peek(1) == '/') {
+            if(peek(0) == '*' && peek(1) == '/') {
                 m_cursor += 2;
                 break;
             }
@@ -361,7 +372,7 @@ namespace pl::core {
             result += m_sourceCode[m_cursor++];
         }
 
-        return makeTokenAt(Literal::makeDocComment(global, result), location, m_cursor - begin);
+        return makeTokenAt(Literal::makeDocComment(global, false, result), location, m_cursor - begin);
     }
 
     std::optional<Token> Lexer::parseMultiLineComment() {
@@ -377,6 +388,7 @@ namespace pl::core {
             }
 
             if(peek(1) == '\x00') {
+                m_errorLength = 2;
                 error("Unexpected end of file while parsing multi line doc comment");
                 return std::nullopt;
             }
@@ -389,7 +401,7 @@ namespace pl::core {
             result += m_sourceCode[m_cursor++];
         }
 
-        return makeTokenAt(Literal::makeComment(result), location, m_cursor - begin);
+        return makeTokenAt(Literal::makeComment(false, result), location, m_cursor - begin);
     }
 
     std::optional<Token> Lexer::parseOperator() {
@@ -550,7 +562,7 @@ namespace pl::core {
                     }
                     continue;
                 }
-                if (category == '*') {
+                if(category == '*') {
                     if (type != '!' && (type != '*' || peek(3) == '/' )) {
                         const auto token = parseMultiLineComment();
                         if(token.has_value())
@@ -558,7 +570,7 @@ namespace pl::core {
                         continue;
                     }
                     const auto token = parseMultiLineDocComment();
-                    if (token.has_value()) {
+                    if(token.has_value()) {
                         addToken(token.value());
                     }
                     continue;
@@ -595,9 +607,9 @@ namespace pl::core {
                         m_cursor++;
                         continue;
                     }
-                    auto string = parseDirectiveValue();
-                    if (string.has_value()) {
-                        addToken(string.value());
+                    auto directiveValue = parseDirectiveValue();
+                    if (directiveValue.has_value()) {
+                        addToken(directiveValue.value());
                         if (m_line != line || peek(0) == 0)
                             continue;
                         if (peek(0) == '\n') {
@@ -606,9 +618,9 @@ namespace pl::core {
                             m_cursor++;
                             continue;
                         }
-                        string = parseDirectiveArgument();
-                        if (string.has_value()) {
-                            addToken(string.value());
+                        directiveValue = parseDirectiveArgument();
+                        if (directiveValue.has_value()) {
+                            addToken(directiveValue.value());
                         }
                     }
                     continue;
@@ -631,6 +643,7 @@ namespace pl::core {
 
                 if (character.has_value()) {
                     if(m_sourceCode[m_cursor] != '\'') {
+                        m_errorLength = 1;
                         error("Expected closing '");
                         continue;
                     }
@@ -641,6 +654,7 @@ namespace pl::core {
                     continue;
                 }
             } else {
+                m_errorLength = 1;
                 error("Unexpected character: {}", c);
             }
 
@@ -672,6 +686,6 @@ namespace pl::core {
         if(m_line==1) {
             column += 1;
         }
-        return Location { m_source, m_line, column, 0 };
+        return Location { m_source, m_line, column, m_errorLength };
     }
 }
