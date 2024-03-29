@@ -373,8 +373,8 @@ namespace pl::core {
         else
             m_errors.clear();
 
-        m_initialized = true;
         m_token = m_result.begin();
+        m_initialized = true;
 
         while (!eof())
             process();
@@ -393,6 +393,8 @@ namespace pl::core {
         }
 
         this->m_defines.clear();
+
+        m_initialized = false;
 
         return { m_output, collectErrors() };
     }
