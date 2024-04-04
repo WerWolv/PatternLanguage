@@ -393,6 +393,12 @@ namespace pl::core {
         return false;
     }
 
+    void Token::Identifier::setType(Identifier::IdentifierType idtype, bool force) {
+        if (force || this->m_type == Identifier::IdentifierType::Unknown || this->m_type == Identifier::IdentifierType::MemberUnknown
+            || this->m_type == Identifier::IdentifierType::FunctionUnknown || this->m_type == Identifier::IdentifierType::ScopeResolutionUnknown)
+            this->m_type = idtype;
+    }
+	
     bool Token::operator!=(const ValueTypes &other) const {
         return !operator==(other);
     }

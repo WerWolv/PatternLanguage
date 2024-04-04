@@ -83,6 +83,8 @@ namespace pl::core::tkn {
         const auto Identifier = makeToken(core::Token::Type::Identifier, { });
         const auto Numeric    = makeToken(core::Token::Type::Integer, { });
         const auto String     = makeToken(core::Token::Type::String,  { });
+        const auto DocComment = makeToken(core::Token::Type::DocComment, { });
+        const auto Comment    = makeToken(core::Token::Type::Comment, { });
 
     }
 

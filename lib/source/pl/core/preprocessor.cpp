@@ -266,6 +266,7 @@ namespace pl::core {
         std::ranges::copy(preprocessor.m_defines.begin(), preprocessor.m_defines.end(), std::inserter(this->m_defines, this->m_defines.begin()));
         std::ranges::copy(preprocessor.m_pragmas.begin(), preprocessor.m_pragmas.end(), std::inserter(this->m_pragmas, this->m_pragmas.begin()));
         std::ranges::copy(preprocessor.m_keys.begin(), preprocessor.m_keys.end(), std::inserter(this->m_keys, this->m_keys.begin()));
+        std::ranges::copy(preprocessor.m_namespaces.begin(), preprocessor.m_namespaces.end(), std::inserter(this->m_namespaces, this->m_namespaces.begin()));
 
         if (shouldInclude) {
             auto content = result.unwrap();
@@ -297,6 +298,11 @@ namespace pl::core {
         } else if (m_token->type == Token::Type::Comment)
             m_token++;
         else {
+            if (auto *identifier = std::get_if<Token::Identifier>(&m_token->value);
+                identifier != nullptr && identifier->getType() == Token::Identifier::IdentifierType::NameSpace) {
+                if (std::ranges::find(m_namespaces, identifier->get()) == m_namespaces.end())
+                    m_namespaces.push_back(identifier->get());
+            }
             std::vector<Token> values;
             std::vector<Token> resultValues;
             values.push_back(*m_token);
@@ -374,6 +380,13 @@ namespace pl::core {
         }
     }
 
+    void Preprocessor::appendToNamespaces(std::vector<Token> namespaces) {
+        for (const auto &namespaceToken : namespaces) {
+            if (auto *identifier = std::get_if<Token::Identifier>(&namespaceToken.value); identifier != nullptr && identifier->getType() == Token::Identifier::IdentifierType::NameSpace)
+                if (std::ranges::find(m_namespaces, identifier->get()) == m_namespaces.end())
+                    m_namespaces.push_back(identifier->get());
+        }
+    }
     hlp::CompileResult<std::vector<Token>> Preprocessor::preprocess(PatternLanguage* runtime, api::Source* source, bool initialRun) {
         m_source = source;
         m_source->content = wolv::util::replaceStrings(m_source->content, "\r\n", "\n");
@@ -430,9 +443,7 @@ namespace pl::core {
             }
         }
         validateOutput();
-
         m_initialized = false;
-
         return { m_output, collectErrors() };
     }
 

@@ -172,10 +172,12 @@ namespace pl::core {
                 Unknown,
                 FunctionUnknown,
                 MemberUnknown,
+                ScopeResolutionUnknown,
                 UDT,
                 PatternVariable,
                 PatternLocalVariable,
                 PatternPlacedVariable,
+                TemplateArgument,
                 FunctionVariable,
                 FunctionParameter,
                 PlacedVariable,
@@ -194,7 +196,7 @@ namespace pl::core {
 
             [[nodiscard]] const std::string &get() const { return this->m_identifier; }
             [[nodiscard]] IdentifierType getType() const { return this->m_type; }
-            void setType(IdentifierType idtype) { this->m_type = idtype; }
+            void setType(IdentifierType idtype, bool force = false);
 
 
             bool operator==(const Identifier &) const  = default;

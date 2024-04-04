@@ -98,20 +98,24 @@ namespace pl {
 
         if (!ast.has_value() || ast->empty())
             return std::nullopt;
+        this->m_internals.preprocessor->setOutput(tokens.value());
 
         auto [validated, validatorErrors] = this->m_internals.validator->validate(ast.value());
         wolv::util::unused(validated);
         if (!validatorErrors.empty())
             this->m_compileErrors = std::move(validatorErrors);
 
+
+        this->m_internals.preprocessor->setErrors(this->m_compileErrors);
+
         if (ast->empty() || !ast.has_value())
             return std::nullopt;
-
-        return ast;
+        this->m_currAST = std::move(*ast);
+        return m_currAST;
     }
 
     bool PatternLanguage::executeString(std::string code, const std::string& source, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
-        const auto startTime = std::chrono::high_resolution_clock::now();
+	   	const auto startTime = std::chrono::high_resolution_clock::now();
         ON_SCOPE_EXIT {
             const auto endTime = std::chrono::high_resolution_clock::now();
             this->m_runningTime = std::chrono::duration_cast<std::chrono::duration<double>>(endTime - startTime).count();

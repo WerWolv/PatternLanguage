@@ -124,7 +124,7 @@ namespace pl::core {
         m_cursor++; // Skip space
         auto location = this->location();
 
-        while (!std::isblank(m_sourceCode[m_cursor]) && !std::isspace(m_sourceCode[m_cursor]) ) {
+        while (!std::isblank(m_sourceCode[m_cursor]) && !std::isspace(m_sourceCode[m_cursor]) && m_sourceCode[m_cursor] != '\0' ) {
 
             auto character = parseCharacter();
             if (!character.has_value()) {
