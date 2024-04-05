@@ -53,7 +53,7 @@ namespace pl::core::ast {
             const auto node = this->m_placementSection->evaluate(evaluator);
             const auto id = dynamic_cast<ASTNodeLiteral *>(node.get());
             if (id == nullptr)
-                err::E0010.throwError("Cannot use void expression as section identifier.", {}, this);
+                err::E0010.throwError("Cannot use void expression as section identifier.", {}, this->getLocation());
 
             evaluator->pushSectionId(id->getValue().toUnsigned());
         } else {
@@ -64,11 +64,11 @@ namespace pl::core::ast {
             auto evaluatedPlacement = this->m_placementOffset->evaluate(evaluator);
             auto offset             = dynamic_cast<ASTNodeLiteral *>(evaluatedPlacement.get());
             if (offset == nullptr)
-                err::E0010.throwError("Cannot use void expression as placement offset.", {}, this);
+                err::E0010.throwError("Cannot use void expression as placement offset.", {}, this->getLocation());
 
             evaluator->setReadOffset(std::visit(wolv::util::overloaded {
-                    [this](const std::string &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
-                    [this](const std::shared_ptr<ptrn::Pattern>&) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
+                    [this](const std::string &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this->getLocation()); },
+                    [this](const std::shared_ptr<ptrn::Pattern>&) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this->getLocation()); },
                     [](auto &&offset) -> u64 { return offset; }
             }, offset->getValue()));
         }
@@ -86,7 +86,7 @@ namespace pl::core::ast {
             else
                 pattern = createDynamicArray(evaluator);
         } else {
-            err::E0001.throwError("Invalid type used in array variable declaration.", { }, this);
+            err::E0001.throwError("Invalid type used in array variable declaration.", { }, this->getLocation());
         }
 
         pattern->setSection(evaluator->getSectionId());
@@ -115,16 +115,16 @@ namespace pl::core::ast {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         if (this->m_size == nullptr)
-            err::E0004.throwError("Function arrays cannot be unsized.", {}, this);
+            err::E0004.throwError("Function arrays cannot be unsized.", {}, this->getLocation());
 
         auto sizeNode = this->m_size->evaluate(evaluator);
         auto sizeLiteral = dynamic_cast<ASTNodeLiteral*>(sizeNode.get());
         if (sizeLiteral == nullptr)
-            err::E0004.throwError("Function arrays require a fixed size.", {}, this);
+            err::E0004.throwError("Function arrays require a fixed size.", {}, this->getLocation());
 
         auto entryCount = std::visit(wolv::util::overloaded {
-                [this](const std::string &) -> i128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
-                [this](const std::shared_ptr<ptrn::Pattern> &pattern) -> i128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
+                [this](const std::string &) -> i128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this->getLocation()); },
+                [this](const std::shared_ptr<ptrn::Pattern> &pattern) -> i128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this->getLocation()); },
                 [](auto &&size) -> i128 { return size; }
         }, sizeLiteral->getValue());
 
@@ -132,7 +132,7 @@ namespace pl::core::ast {
             const auto placementNode = this->m_placementOffset->evaluate(evaluator);
             const auto offsetLiteral = dynamic_cast<ASTNodeLiteral *>(placementNode.get());
             if (offsetLiteral == nullptr)
-                err::E0002.throwError("Void expression used in placement expression.", { }, this);
+                err::E0002.throwError("Void expression used in placement expression.", { }, this->getLocation());
 
 
             u64 section = 0;
@@ -140,7 +140,7 @@ namespace pl::core::ast {
                 const auto sectionNode = this->m_placementSection->evaluate(evaluator);
                 const auto sectionLiteral = dynamic_cast<ASTNodeLiteral *>(sectionNode.get());
                 if (sectionLiteral == nullptr)
-                err::E0002.throwError("Cannot use void expression as section identifier.", {}, this);
+                err::E0002.throwError("Cannot use void expression as section identifier.", {}, this->getLocation());
 
                 section = sectionLiteral->getValue().toUnsigned();
             }
@@ -161,7 +161,7 @@ namespace pl::core::ast {
 
         auto templatePatterns = this->m_type->createPatterns(evaluator);
         if (templatePatterns.empty())
-            err::E0005.throwError("'auto' can only be used with parameters.", { }, this);
+            err::E0005.throwError("'auto' can only be used with parameters.", { }, this->getLocation());
 
         auto &templatePattern = templatePatterns.front();
 
@@ -176,15 +176,15 @@ namespace pl::core::ast {
 
             if (auto literal = dynamic_cast<ASTNodeLiteral *>(sizeNode.get()); literal != nullptr) {
                 entryCount = std::visit(wolv::util::overloaded {
-                        [this](const std::string &) -> i128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
-                        [this](const std::shared_ptr<ptrn::Pattern> &pattern) -> i128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
+                        [this](const std::string &) -> i128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this->getLocation()); },
+                        [this](const std::shared_ptr<ptrn::Pattern> &pattern) -> i128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this->getLocation()); },
                         [](auto &&size) -> i128 { return size; }
                 }, literal->getValue());
             } else if (auto whileStatement = dynamic_cast<ASTNodeWhileStatement *>(sizeNode.get())) {
                 while (whileStatement->evaluateCondition(evaluator)) {
                     if (templatePattern->getSection() == ptrn::Pattern::MainSectionId)
                         if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
-                            err::E0004.throwError("Array expanded past end of the data before termination condition was met.", { }, this);
+                            err::E0004.throwError("Array expanded past end of the data before termination condition was met.", { }, this->getLocation());
 
                     evaluator->handleAbort();
                     entryCount++;
@@ -193,13 +193,13 @@ namespace pl::core::ast {
             }
 
             if (entryCount < 0)
-                err::E0004.throwError("Array size cannot be negative.", { }, this);
+                err::E0004.throwError("Array size cannot be negative.", { }, this->getLocation());
         } else {
             std::vector<u8> buffer(templatePattern->getSize());
             while (true) {
                 if (templatePattern->getSection() == ptrn::Pattern::MainSectionId)
                     if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
-                        err::E0004.throwError("Array expanded past end of the data before a null-entry was found.", "Try using a while-sized array instead to limit the size of the array.", this);
+                        err::E0004.throwError("Array expanded past end of the data before a null-entry was found.", "Try using a while-sized array instead to limit the size of the array.", this->getLocation());
 
                 evaluator->readData(evaluator->getReadOffset(), buffer.data(), buffer.size(), templatePattern->getSection());
                 evaluator->getReadOffsetAndIncrement(buffer.size());
@@ -246,7 +246,7 @@ namespace pl::core::ast {
 
         if (outputPattern->getSection() == ptrn::Pattern::MainSectionId)
             if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
-                err::E0004.throwError("Array expanded past end of the data.", { }, this);
+                err::E0004.throwError("Array expanded past end of the data.", { }, this->getLocation());
 
         return outputPattern;
     }
@@ -298,14 +298,14 @@ namespace pl::core::ast {
 
             if (auto literal = dynamic_cast<ASTNodeLiteral *>(sizeNode.get()); literal != nullptr) {
                 auto entryCount = std::visit(wolv::util::overloaded {
-                        [this](const std::string &) -> u128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
-                        [this](const std::shared_ptr<ptrn::Pattern> &pattern) -> u128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
+                        [this](const std::string &) -> u128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this->getLocation()); },
+                        [this](const std::shared_ptr<ptrn::Pattern> &pattern) -> u128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this->getLocation()); },
                         [](auto &&size) -> u128 { return size; }
                 }, literal->getValue());
 
                 auto limit = evaluator->getArrayLimit();
                 if (entryCount > limit)
-                    err::E0007.throwError(fmt::format("Array grew past set limit of {}", limit), "If this is intended, try increasing the limit using '#pragma array_limit <new_limit>'.", this);
+                    err::E0007.throwError(fmt::format("Array grew past set limit of {}", limit), "If this is intended, try increasing the limit using '#pragma array_limit <new_limit>'.", this->getLocation());
 
                 for (u64 i = 0; i < entryCount; i++) {
                     evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
@@ -317,7 +317,7 @@ namespace pl::core::ast {
 
                     if (arrayPattern->getSection() == ptrn::Pattern::MainSectionId)
                         if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
-                            err::E0004.throwError("Array expanded past end of the data.", fmt::format("Entry {} exceeded data by {} bytes.", i, evaluator->getReadOffset() - evaluator->getDataSize()), this);
+                            err::E0004.throwError("Array expanded past end of the data.", fmt::format("Entry {} exceeded data by {} bytes.", i, evaluator->getReadOffset() - evaluator->getDataSize()), this->getLocation());
 
                     if (!patterns.empty())
                         addEntries(std::move(patterns));
@@ -336,7 +336,7 @@ namespace pl::core::ast {
                 while (whileStatement->evaluateCondition(evaluator)) {
                     auto limit = evaluator->getArrayLimit();
                     if (entryIndex > limit)
-                        err::E0007.throwError(fmt::format("Array grew past set limit of {}", limit), "If this is intended, try increasing the limit using '#pragma array_limit <new_limit>'.", this);
+                        err::E0007.throwError(fmt::format("Array grew past set limit of {}", limit), "If this is intended, try increasing the limit using '#pragma array_limit <new_limit>'.", this->getLocation());
 
                     evaluator->setCurrentArrayIndex(entryIndex);
 
@@ -347,7 +347,7 @@ namespace pl::core::ast {
 
                     if (arrayPattern->getSection() == ptrn::Pattern::MainSectionId)
                         if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
-                            err::E0004.throwError("Array expanded past end of the data before termination condition was met.", { }, this);
+                            err::E0004.throwError("Array expanded past end of the data before termination condition was met.", { }, this->getLocation());
 
                     if (!patterns.empty())
                         addEntries(std::move(patterns));
@@ -368,7 +368,7 @@ namespace pl::core::ast {
                 bool reachedEnd = true;
                 auto limit      = evaluator->getArrayLimit();
                 if (entryIndex > limit)
-                    err::E0007.throwError(fmt::format("Array grew past set limit of {}", limit), "If this is intended, try increasing the limit using '#pragma array_limit <new_limit>'.", this);
+                    err::E0007.throwError(fmt::format("Array grew past set limit of {}", limit), "If this is intended, try increasing the limit using '#pragma array_limit <new_limit>'.", this->getLocation());
 
                 evaluator->setCurrentArrayIndex(entryIndex);
 
@@ -381,7 +381,7 @@ namespace pl::core::ast {
 
                     if (arrayPattern->getSection() == ptrn::Pattern::MainSectionId)
                         if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
-                            err::E0004.throwError("Array expanded past end of the data before a null-entry was found.", "Try using a while-sized array instead to limit the size of the array.", this);
+                            err::E0004.throwError("Array expanded past end of the data before a null-entry was found.", "Try using a while-sized array instead to limit the size of the array.", this->getLocation());
 
                     const auto patternSize = pattern->getSize();
                     evaluator->readData(evaluator->getReadOffset() - patternSize, buffer.data(), buffer.size(), pattern->getSection());

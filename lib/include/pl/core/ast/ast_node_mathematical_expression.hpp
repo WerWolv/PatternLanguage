@@ -12,7 +12,7 @@ namespace pl::core::ast {
         err::E0002.throwError(                                                          \
             "Invalid floating point operation.",                                        \
             "This operation doesn't make sense to be used with floating point values.", \
-            this);                                                                      \
+            this->getLocation());                                                       \
         return 0;                                                                       \
     }                                                                                   \
     auto name(auto left, pl::floating_point auto right) const {                         \
@@ -20,7 +20,7 @@ namespace pl::core::ast {
         err::E0002.throwError(                                                          \
             "Invalid floating point operation.",                                        \
             "This operation doesn't make sense to be used with floating point values.", \
-            this);                                                                      \
+            this->getLocation());                                                       \
         return 0;                                                                       \
     }                                                                                   \
     auto name(pl::floating_point auto left, pl::floating_point auto right) const {      \
@@ -28,7 +28,7 @@ namespace pl::core::ast {
         err::E0002.throwError(                                                          \
             "Invalid floating point operation.",                                        \
             "This operation doesn't make sense to be used with floating point values.", \
-            this);                                                                      \
+            this->getLocation());                                                       \
         return 0;                                                                       \
     }                                                                                   \
     auto name(pl::integral auto left, pl::integral auto right) const

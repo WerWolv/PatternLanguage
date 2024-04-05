@@ -29,12 +29,12 @@ namespace pl::core::ast {
         auto rhs = this->getRValue()->evaluate(evaluator);
 
         if (lhs.empty())
-            err::E0003.throwError("Cannot find variable in this scope.", {}, this);
+            err::E0003.throwError("Cannot find variable in this scope.", {}, this->getLocation());
 
         auto &pattern = lhs.front();
         const auto literal = dynamic_cast<ASTNodeLiteral *>(rhs.get());
         if (literal == nullptr)
-            err::E0010.throwError("Cannot assign void expression to variable.", {}, this);
+            err::E0010.throwError("Cannot assign void expression to variable.", {}, this->getLocation());
 
         evaluator->setVariable(pattern, literal->getValue());
 

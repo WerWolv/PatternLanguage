@@ -182,7 +182,7 @@ namespace pl::core {
         auto &variables = *this->getScope(0).scope;
         for (auto &variable : variables) {
             if (variable->getVariableName() == name) {
-                err::E0003.throwError(fmt::format("Variable with name '{}' already exists in this scope.", name), {}, type);
+                err::E0003.throwError(fmt::format("Variable with name '{}' already exists in this scope.", name), {}, type->getLocation());
             }
         }
 
@@ -270,7 +270,7 @@ namespace pl::core {
             auto &currScope = this->getScope(0);
             for (auto &variable : *currScope.scope) {
                 if (variable->getVariableName() == name) {
-                    err::E0003.throwError(fmt::format("Variable with name '{}' already exists in this scope.", name), {}, type);
+                    err::E0003.throwError(fmt::format("Variable with name '{}' already exists in this scope.", name), {}, type->getLocation());
                 }
             }
         }
@@ -287,7 +287,7 @@ namespace pl::core {
             } else if (sectionId == ptrn::Pattern::HeapSectionId) {
                 this->getHeap().emplace_back();
             } else {
-                err::E0001.throwError(fmt::format("Attempted to place a variable into section 0x{:X}.", sectionId), {}, type);
+                err::E0001.throwError(fmt::format("Attempted to place a variable into section 0x{:X}.", sectionId), {}, type->getLocation());
             }
         }
 
@@ -318,7 +318,7 @@ namespace pl::core {
                     pattern = (*patternValue)->clone();
             }
             else
-                err::E0003.throwError("Cannot determine type of 'auto' variable.", "Try initializing it directly with a literal.", type);
+                err::E0003.throwError("Cannot determine type of 'auto' variable.", "Try initializing it directly with a literal.", type->getLocation());
         } else {
             if (builtinType != nullptr)
                 pattern = builtinType->createPatterns(this).front();
@@ -328,7 +328,7 @@ namespace pl::core {
                 if (auto typeName = findTypeName(type); typeName.has_value())
                     pattern->setTypeName(typeName.value());
                 else
-                    err::E0003.throwError("Cannot determine type.", "", type);
+                    err::E0003.throwError("Cannot determine type.", "", type->getLocation());
             }
         }
 
@@ -353,7 +353,7 @@ namespace pl::core {
             if (this->isGlobalScope())
                 this->m_outVariables[name] = pattern->clone();
             else
-                err::E0003.throwError("Out variables can only be declared in the global scope.", {}, type);
+                err::E0003.throwError("Out variables can only be declared in the global scope.", {}, type->getLocation());
         }
 
         if (this->isDebugModeEnabled())
@@ -1025,9 +1025,8 @@ namespace pl::core {
             }
         } catch (err::EvaluatorError::Exception &e) {
 
-            auto node = e.getUserData();
+            auto location = e.getUserData();
 
-            const auto location = node == nullptr ? Location::Empty() : node->getLocation();
             this->getConsole().setHardError(err::PatternLanguageError(e.format(location),
                 location.line, location.column));
 
@@ -1063,7 +1062,7 @@ namespace pl::core {
             }
         }
 
-        evaluator->m_callStack.push_back(node);
+        evaluator->m_callStack.push_back(node->clone());
     }
 
     Evaluator::UpdateHandler::~UpdateHandler() {

@@ -41,14 +41,14 @@ namespace pl::core::ast {
                 return this->getAttributeByName("right_to_left");
             }();
             if (badAttribute != nullptr)
-                err::E0008.throwError(fmt::format("Attribute '{}' is no longer supported.", badAttribute->getAttribute()), {}, badAttribute);
+                err::E0008.throwError(fmt::format("Attribute '{}' is no longer supported.", badAttribute->getAttribute()), {}, badAttribute->getLocation());
         }
 
         auto *orderAttribute = this->getAttributeByName("bitfield_order");
         if (orderAttribute != nullptr) {
             auto &arguments = orderAttribute->getArguments();
             if (arguments.size() != 2)
-                err::E0008.throwError(fmt::format("Attribute 'bitfield_order' expected 2 parameters, received {}.", arguments.size()), {}, orderAttribute);
+                err::E0008.throwError(fmt::format("Attribute 'bitfield_order' expected 2 parameters, received {}.", arguments.size()), {}, orderAttribute->getLocation());
 
             auto directionNode = arguments[0]->evaluate(evaluator);
             auto sizeNode = arguments[1]->evaluate(evaluator);
@@ -62,19 +62,19 @@ namespace pl::core::ast {
                         case u32(BitfieldOrder::LeastToMostSignificant):
                             return BitfieldOrder::LeastToMostSignificant;
                         default:
-                            err::E0008.throwError(fmt::format("Invalid BitfieldOrder value {}.", value), {}, arguments[0].get());
+                            err::E0008.throwError(fmt::format("Invalid BitfieldOrder value {}.", value), {}, arguments[0]->getLocation());
                     }
                 }
-                err::E0008.throwError("The 'direction' parameter for attribute 'bitfield_order' must not be void.", {}, arguments[0].get());
+                err::E0008.throwError("The 'direction' parameter for attribute 'bitfield_order' must not be void.", {}, arguments[0]->getLocation());
             }();
             u128 size = [&]() {
                 if (auto *literalNode = dynamic_cast<ASTNodeLiteral *>(sizeNode.get()); literalNode != nullptr) {
                     auto value = literalNode->getValue().toUnsigned();
                     if (value == 0)
-                        err::E0008.throwError("Fixed size of a bitfield must be greater than zero.", {}, arguments[1].get());
+                        err::E0008.throwError("Fixed size of a bitfield must be greater than zero.", {}, arguments[1]->getLocation());
                     return value;
                 }
-                err::E0008.throwError("The 'size' parameter for attribute 'bitfield_order' must not be void.", {}, arguments[1].get());
+                err::E0008.throwError("The 'size' parameter for attribute 'bitfield_order' must not be void.", {}, arguments[1]->getLocation());
             }();
 
             bool shouldBeReversed = (order == BitfieldOrder::MostToLeastSignificant && bitfieldPattern->getEndian() == std::endian::little)
@@ -104,7 +104,7 @@ namespace pl::core::ast {
             auto totalBitSize = startOffset > endOffset ? startOffset - endOffset : endOffset - startOffset;
             if (fixedSize > 0) {
                 if (totalBitSize > fixedSize)
-                    err::E0005.throwError("Bitfield's fields exceeded the attribute-allotted size.", {}, node);
+                    err::E0005.throwError("Bitfield's fields exceeded the attribute-allotted size.", {}, node->getLocation());
                 totalBitSize = fixedSize;
             }
             bitfieldPattern->setBitSize(totalBitSize);

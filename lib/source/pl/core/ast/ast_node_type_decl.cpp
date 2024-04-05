@@ -40,7 +40,7 @@ namespace pl::core::ast {
 
     [[nodiscard]] const std::shared_ptr<ASTNode>& ASTNodeTypeDecl::getType() const {
         if (!this->isValid())
-            err::E0004.throwError(fmt::format("Cannot use incomplete type '{}' before it has been defined.", this->m_name), "Try defining this type further up in your code before trying to instantiate it.", this);
+            err::E0004.throwError(fmt::format("Cannot use incomplete type '{}' before it has been defined.", this->m_name), "Try defining this type further up in your code before trying to instantiate it.", this->getLocation());
 
         return this->m_type;
     }
@@ -73,14 +73,14 @@ namespace pl::core::ast {
             auto &templateParameter = this->m_templateParameters[i];
             if (auto lvalue = dynamic_cast<ASTNodeLValueAssignment *>(templateParameter.get())) {
                 if (!lvalue->getRValue())
-                    err::E0003.throwError(fmt::format("No value set for non-type template parameter {}. This is a bug.", lvalue->getLValueName()), {}, this);
+                    err::E0003.throwError(fmt::format("No value set for non-type template parameter {}. This is a bug.", lvalue->getLValueName()), {}, this->getLocation());
                 auto value = lvalue->getRValue()->evaluate(evaluator);
                 if (auto literal = dynamic_cast<ASTNodeLiteral*>(value.get()); literal != nullptr) {
                     templateParamLiterals[i] = std::unique_ptr<ASTNodeLiteral>(literal);
                     value.release();
                 }
                 else
-                    err::E0003.throwError(fmt::format("Template parameter {} is not a literal. This is a bug.", lvalue->getLValueName()), {}, this);
+                    err::E0003.throwError(fmt::format("Template parameter {} is not a literal. This is a bug.", lvalue->getLValueName()), {}, this->getLocation());
             }
         }
 

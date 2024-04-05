@@ -29,7 +29,7 @@ namespace pl::core::ast {
         const auto node    = this->getRValue()->evaluate(evaluator);
         const auto literal = dynamic_cast<ASTNodeLiteral *>(node.get());
         if (literal == nullptr)
-            err::E0010.throwError("Cannot assign void expression to variable.", {}, this);
+            err::E0010.throwError("Cannot assign void expression to variable.", {}, this->getLocation());
 
 
         if (this->getLValueName() == "$")

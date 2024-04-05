@@ -57,7 +57,7 @@ namespace pl::core::ast {
                 evaluator->getConsole().log(LogConsole::Level::Warning, "This function might be part of the standard library.\nYou can install the standard library though\nthe Content Store found under Extras -> Content Store and then\ninclude the correct file.");
             }
 
-            err::E0003.throwError(fmt::format("Cannot call unknown function '{}'.", functionName), fmt::format("Try defining it first using 'fn {}() {{ }}'", functionName), this);
+            err::E0003.throwError(fmt::format("Cannot call unknown function '{}'.", functionName), fmt::format("Try defining it first using 'fn {}() {{ }}'", functionName), this->getLocation());
         }
 
         const auto &[min, max] = function->parameterCount;
@@ -77,15 +77,15 @@ namespace pl::core::ast {
         }
 
         if (evaluatedParams.size() < min)
-            err::E0009.throwError(fmt::format("Too few parameters passed to function '{0}'. Expected at least {1} but got {2}.", functionName, min, evaluatedParams.size()), { }, this);
+            err::E0009.throwError(fmt::format("Too few parameters passed to function '{0}'. Expected at least {1} but got {2}.", functionName, min, evaluatedParams.size()), { }, this->getLocation());
         else if (evaluatedParams.size() > max)
-            err::E0009.throwError(fmt::format("Too many parameters passed to function '{0}'. Expected {1} but got {2}.", functionName, max, evaluatedParams.size()), { }, this);
+            err::E0009.throwError(fmt::format("Too many parameters passed to function '{0}'. Expected {1} but got {2}.", functionName, max, evaluatedParams.size()), { }, this->getLocation());
 
         if (function->dangerous && evaluator->getDangerousFunctionPermission() != DangerousFunctionPermission::Allow) {
             evaluator->dangerousFunctionCalled();
 
             if (evaluator->getDangerousFunctionPermission() == DangerousFunctionPermission::Deny) {
-                err::E0009.throwError(fmt::format("Call to dangerous function '{}' has been denied.", functionName), { }, this);
+                err::E0009.throwError(fmt::format("Call to dangerous function '{}' has been denied.", functionName), { }, this->getLocation());
             }
         }
 

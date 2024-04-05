@@ -50,7 +50,7 @@ namespace pl::core::ast {
             if (auto literal = dynamic_cast<ASTNodeLiteral *>(expression.get()); literal != nullptr) {
                 evaluatedDefaultParams.push_back(literal->getValue());
             } else {
-                err::E0009.throwError("Default value must be a literal.", {}, this);
+                err::E0009.throwError("Default value must be a literal.", {}, this->getLocation());
             }
         }
 
@@ -112,9 +112,9 @@ namespace pl::core::ast {
                 if (ctx->getCurrentControlFlowStatement() != ControlFlowStatement::None) {
                     switch (ctx->getCurrentControlFlowStatement()) {
                         case ControlFlowStatement::Break:
-                            err::E0010.throwError("Break statements can only be used within a loop.", {}, this);
+                            err::E0010.throwError("Break statements can only be used within a loop.", {}, this->getLocation());
                         case ControlFlowStatement::Continue:
-                            err::E0010.throwError("Continue statements can only be used within a loop.", {}, this);
+                            err::E0010.throwError("Continue statements can only be used within a loop.", {}, this->getLocation());
                         default:
                             break;
                     }

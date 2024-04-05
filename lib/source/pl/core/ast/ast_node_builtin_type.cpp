@@ -43,7 +43,7 @@ namespace pl::core::ast {
         else if (this->m_type == Token::ValueType::Auto)
             return { };
         else
-            err::E0001.throwError("Invalid builtin type.", {}, this);
+            err::E0001.throwError("Invalid builtin type.", {}, this->getLocation());
 
         pattern->setTypeName(Token::getTypeName(this->m_type));
 

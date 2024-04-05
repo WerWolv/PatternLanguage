@@ -38,7 +38,7 @@ namespace pl::core::ast {
             const auto node = this->m_placementSection->evaluate(evaluator);
             const auto id = dynamic_cast<ASTNodeLiteral *>(node.get());
             if (id == nullptr)
-                err::E0002.throwError("Cannot use void expression as section identifier.", {}, this);
+                err::E0002.throwError("Cannot use void expression as section identifier.", {}, this->getLocation());
 
             evaluator->pushSectionId(id->getValue().toUnsigned());
         } else {
@@ -49,16 +49,16 @@ namespace pl::core::ast {
             const auto node   = this->m_placementOffset->evaluate(evaluator);
             const auto offset = dynamic_cast<ASTNodeLiteral *>(node.get());
             if (offset == nullptr)
-                err::E0002.throwError("Void expression used in placement expression.", { }, this);
+                err::E0002.throwError("Void expression used in placement expression.", { }, this->getLocation());
 
             evaluator->setReadOffset(std::visit(wolv::util::overloaded {
-                                                        [this](const std::string &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
-                                                        [this](const std::shared_ptr<ptrn::Pattern> &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
+                                                        [this](const std::string &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this->getLocation()); },
+                                                        [this](const std::shared_ptr<ptrn::Pattern> &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this->getLocation()); },
                                                         [](auto &&offset) -> u64 { return offset; } },
                                                 offset->getValue()));
 
             if (evaluator->getReadOffset() < evaluator->getDataBaseAddress() || evaluator->getReadOffset() > evaluator->getDataBaseAddress() + evaluator->getDataSize())
-                err::E0005.throwError(fmt::format("Cannot place variable '{}' at out of bounds address 0x{:08X}", this->m_name, evaluator->getReadOffset()), { }, this);
+                err::E0005.throwError(fmt::format("Cannot place variable '{}' at out of bounds address 0x{:08X}", this->m_name, evaluator->getReadOffset()), { }, this->getLocation());
         }
 
         if (evaluator->getSectionId() == ptrn::Pattern::PatternLocalSectionId || evaluator->getSectionId() == ptrn::Pattern::HeapSectionId) {
@@ -68,11 +68,11 @@ namespace pl::core::ast {
         } else {
             auto patterns = this->m_type->createPatterns(evaluator);
             if (patterns.empty())
-                err::E0005.throwError("'auto' can only be used with parameters.", { }, this);
+                err::E0005.throwError("'auto' can only be used with parameters.", { }, this->getLocation());
 
             auto &pattern = patterns.front();
             if (this->m_placementOffset != nullptr && dynamic_cast<ptrn::PatternString*>(pattern.get()) != nullptr)
-                err::E0005.throwError(fmt::format("Variables of type 'str' cannot be placed in memory.", this->m_name), { }, this);
+                err::E0005.throwError(fmt::format("Variables of type 'str' cannot be placed in memory.", this->m_name), { }, this->getLocation());
 
             pattern->setVariableName(this->m_name);
 
@@ -98,7 +98,7 @@ namespace pl::core::ast {
         const auto placementNode = this->m_placementOffset->evaluate(evaluator);
         const auto offsetLiteral = dynamic_cast<ASTNodeLiteral *>(placementNode.get());
         if (offsetLiteral == nullptr)
-            err::E0002.throwError("Void expression used in placement expression.", { }, this);
+            err::E0002.throwError("Void expression used in placement expression.", { }, this->getLocation());
 
         return offsetLiteral->getValue().toUnsigned();
     }
@@ -109,7 +109,7 @@ namespace pl::core::ast {
             const auto sectionNode = this->m_placementSection->evaluate(evaluator);
             const auto sectionLiteral = dynamic_cast<ASTNodeLiteral *>(sectionNode.get());
             if (sectionLiteral == nullptr)
-                err::E0002.throwError("Cannot use void expression as section identifier.", {}, this);
+                err::E0002.throwError("Cannot use void expression as section identifier.", {}, this->getLocation());
 
             auto value = sectionLiteral->getValue();
             section = value.toUnsigned();

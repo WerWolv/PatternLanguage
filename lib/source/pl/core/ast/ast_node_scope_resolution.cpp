@@ -27,10 +27,10 @@ namespace pl::core::ast {
                     return values.first->evaluate(evaluator);
             }
         } else {
-            err::E0004.throwError("Invalid scope resolution. This cannot be accessed using the scope resolution operator.", {}, this);
+            err::E0004.throwError("Invalid scope resolution. This cannot be accessed using the scope resolution operator.", {}, this->getLocation());
         }
 
-        err::E0004.throwError(fmt::format("Cannot find constant '{}' in this type.", this->m_name), {}, this);
+        err::E0004.throwError(fmt::format("Cannot find constant '{}' in this type.", this->m_name), {}, this->getLocation());
     }
 
 }
