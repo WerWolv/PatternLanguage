@@ -21,18 +21,18 @@ namespace pl::core::ast {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         if (this->getFirstOperand() == nullptr || this->getSecondOperand() == nullptr || this->getThirdOperand() == nullptr)
-            err::E0002.throwError("Void expression used in ternary expression.", "If you used a function for one of the operands, make sure it returned a value.", this);
+            err::E0002.throwError("Void expression used in ternary expression.", "If you used a function for one of the operands, make sure it returned a value.", this->getLocation());
 
         auto conditionNode  = this->getFirstOperand()->evaluate(evaluator);
 
         auto *conditionValue  = dynamic_cast<ASTNodeLiteral *>(conditionNode.get());
 
         if (conditionValue == nullptr)
-            err::E0010.throwError("Cannot use void expression in ternary expression.", {}, this);
+            err::E0010.throwError("Cannot use void expression in ternary expression.", {}, this->getLocation());
 
         auto condition = std::visit(wolv::util::overloaded {
                 [](const std::string &value) -> bool { return !value.empty(); },
-                [this](const std::shared_ptr<ptrn::Pattern> &pattern) -> bool { err::E0002.throwError(fmt::format("Cannot cast {} to bool.", pattern->getTypeName()), {}, this); },
+                [this](const std::shared_ptr<ptrn::Pattern> &pattern) -> bool { err::E0002.throwError(fmt::format("Cannot cast {} to bool.", pattern->getTypeName()), {}, this->getLocation()); },
                 [](auto &&value) -> bool { return bool(value); }
         }, conditionValue->getValue());
 

@@ -140,7 +140,7 @@ namespace pl::core::ast {
             pattern->setVariableName(oldPatternName);
 
             if (!result.has_value())
-                err::E0009.throwError("Transform function did not return a value.", "Try adding a 'return <value>;' statement in all code paths.", this);
+                err::E0009.throwError("Transform function did not return a value.", "Try adding a 'return <value>;' statement in all code paths.", this->getLocation());
             literal = std::move(result.value());
         }
 
@@ -173,7 +173,7 @@ namespace pl::core::ast {
         for (const auto &part : this->getPath()) {
 
             if (!iterable)
-                err::E0001.throwError("Member access of a non-iterable type.", "Try using a struct-like object or an array instead.", this);
+                err::E0001.throwError("Member access of a non-iterable type.", "Try using a struct-like object or an array instead.", this->getLocation());
 
             if (part.index() == 0) {
                 // Variable access
@@ -184,7 +184,7 @@ namespace pl::core::ast {
                         scopeIndex--;
 
                         if (static_cast<size_t>(std::abs(scopeIndex)) >= evaluator->getScopeCount())
-                            err::E0003.throwError("Cannot access parent of global scope.", {}, this);
+                            err::E0003.throwError("Cannot access parent of global scope.", {}, this->getLocation());
                     } while (evaluator->getScope(scopeIndex).parent == nullptr);
 
                     searchScope     = *evaluator->getScope(scopeIndex).scope;
@@ -203,7 +203,7 @@ namespace pl::core::ast {
                     auto currParent = evaluator->getScope(0).parent;
 
                     if (currParent == nullptr)
-                        err::E0003.throwError("Cannot use 'this' outside of nested type.", "Try using it inside of a struct, union or bitfield.", this);
+                        err::E0003.throwError("Cannot use 'this' outside of nested type.", "Try using it inside of a struct, union or bitfield.", this->getLocation());
 
                     currPattern = currParent;
                     continue;
@@ -218,31 +218,31 @@ namespace pl::core::ast {
                     }
 
                     if (name == "$")
-                        err::E0003.throwError("Invalid use of '$' operator in rvalue.", {}, this);
+                        err::E0003.throwError("Invalid use of '$' operator in rvalue.", {}, this->getLocation());
                     else if (name == "null")
-                        err::E0003.throwError("Invalid use of 'null' keyword in rvalue.", {}, this);
+                        err::E0003.throwError("Invalid use of 'null' keyword in rvalue.", {}, this->getLocation());
 
                     if (!found)
-                        err::E0003.throwError(fmt::format("No variable named '{}' found.", name), {}, this);
+                        err::E0003.throwError(fmt::format("No variable named '{}' found.", name), {}, this->getLocation());
                 }
             } else {
                 // Array indexing
                 auto node  = std::get<std::unique_ptr<ASTNode>>(part)->evaluate(evaluator);
                 auto index = dynamic_cast<ASTNodeLiteral *>(node.get());
                 if (index == nullptr)
-                    err::E0010.throwError("Cannot use void expression as array index.", {}, this);
+                    err::E0010.throwError("Cannot use void expression as array index.", {}, this->getLocation());
 
                 std::visit(wolv::util::overloaded {
-                                   [this](const std::string &) { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
-                                   [this](const std::shared_ptr<ptrn::Pattern> &pattern) { err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
+                                   [this](const std::string &) { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this->getLocation()); },
+                                   [this](const std::shared_ptr<ptrn::Pattern> &pattern) { err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this->getLocation()); },
                                    [&, this](auto &&index) {
                                        auto pattern = currPattern.get();
                                        if (auto indexablePattern = dynamic_cast<ptrn::IIndexable *>(pattern); indexablePattern != nullptr) {
                                            if (size_t(index) >= indexablePattern->getEntryCount())
-                                               core::err::E0006.throwError("Index out of bounds.", fmt::format("Tried to access index {} in array of size {}.", index, indexablePattern->getEntryCount()), this);
+                                               core::err::E0006.throwError("Index out of bounds.", fmt::format("Tried to access index {} in array of size {}.", index, indexablePattern->getEntryCount()), this->getLocation());
                                            currPattern = indexablePattern->getEntry(index);
                                        } else {
-                                           err::E0006.throwError(fmt::format("Cannot access non-array type '{}'.", pattern->getTypeName()), {}, this);
+                                           err::E0006.throwError(fmt::format("Cannot access non-array type '{}'.", pattern->getTypeName()), {}, this->getLocation());
                                        }
                                    }
                            },
@@ -267,7 +267,7 @@ namespace pl::core::ast {
         }
 
         if (currPattern == nullptr)
-            err::E0003.throwError("Cannot reference global scope.", {}, this);
+            err::E0003.throwError("Cannot reference global scope.", {}, this->getLocation());
         else
             return hlp::moveToVector(std::move(currPattern));
     }

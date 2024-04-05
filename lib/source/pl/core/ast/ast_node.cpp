@@ -28,7 +28,7 @@ namespace pl::core::ast {
     ASTNode::FunctionResult ASTNode::execute(Evaluator *evaluator) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
-        err::E0001.throwError("Cannot execute non-functional statement.", "This is a evaluator bug!", this);
+        err::E0001.throwError("Cannot execute non-functional statement.", "This is a evaluator bug!", this->getLocation());
     }
 
     void ASTNode::setDocComment(const std::string &comment) {

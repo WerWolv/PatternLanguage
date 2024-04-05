@@ -37,7 +37,7 @@ namespace pl::core::ast {
             const auto node = this->m_placementSection->evaluate(evaluator);
             const auto id = dynamic_cast<ASTNodeLiteral *>(node.get());
             if (id == nullptr)
-                err::E0010.throwError("Cannot use void expression as section identifier.", {}, this);
+                err::E0010.throwError("Cannot use void expression as section identifier.", {}, this->getLocation());
 
             evaluator->pushSectionId(id->getValue().toUnsigned());
         } else {
@@ -48,11 +48,11 @@ namespace pl::core::ast {
             const auto node   = this->m_placementOffset->evaluate(evaluator);
             const auto offset = dynamic_cast<ASTNodeLiteral *>(node.get());
             if (offset == nullptr)
-                err::E0010.throwError("Cannot use void expression as placement offset.", {}, this);
+                err::E0010.throwError("Cannot use void expression as placement offset.", {}, this->getLocation());
 
             evaluator->setReadOffset(std::visit(wolv::util::overloaded {
-                    [this](const std::string &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
-                    [this](const std::shared_ptr<ptrn::Pattern> &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this); },
+                    [this](const std::string &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this->getLocation()); },
+                    [this](const std::shared_ptr<ptrn::Pattern> &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this->getLocation()); },
                     [](auto &&offset) -> u64 { return u64(offset); }
             }, offset->getValue()));
         }
@@ -61,7 +61,7 @@ namespace pl::core::ast {
 
         auto sizePatterns = this->m_sizeType->createPatterns(evaluator);
         if (sizePatterns.empty())
-            err::E0005.throwError("'auto' can only be used with parameters.", { }, this);
+            err::E0005.throwError("'auto' can only be used with parameters.", { }, this->getLocation());
 
         auto &sizePattern = sizePatterns.front();
 
@@ -83,7 +83,7 @@ namespace pl::core::ast {
 
             auto pointedAtPatterns = this->m_type->createPatterns(evaluator);
             if (pointedAtPatterns.empty())
-                err::E0005.throwError("'auto' can only be used with parameters.", { }, this);
+                err::E0005.throwError("'auto' can only be used with parameters.", { }, this->getLocation());
 
             auto &pointedAtPattern = pointedAtPatterns.front();
 

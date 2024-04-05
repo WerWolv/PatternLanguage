@@ -31,7 +31,7 @@ namespace pl::core::ast {
             || dynamic_cast<ASTNodeBitfieldField *>(type.get()) != nullptr) {
             pattern = createArray(evaluator);
         } else {
-            err::E0001.throwError("Bitfield arrays may only contain bitwise fields.", { }, this);
+            err::E0001.throwError("Bitfield arrays may only contain bitwise fields.", { }, this->getLocation());
         }
 
         applyVariableAttributes(evaluator, this, pattern);
@@ -82,27 +82,27 @@ namespace pl::core::ast {
         };
 
         if (this->m_size == nullptr)
-            err::E0001.throwError(fmt::format("Bitfield array was created with no size."), {}, this);
+            err::E0001.throwError(fmt::format("Bitfield array was created with no size."), {}, this->getLocation());
 
         auto sizeNode = this->m_size->evaluate(evaluator);
         std::variant<u128, ASTNodeWhileStatement *> boundsCondition;
 
         if (auto literalNode = dynamic_cast<ASTNodeLiteral *>(sizeNode.get()); literalNode != nullptr) {
             boundsCondition = std::visit(wolv::util::overloaded {
-                    [this](const std::string &) -> u128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this); },
-                    [this](const std::shared_ptr<ptrn::Pattern> &pattern) -> u128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this); },
+                    [this](const std::string &) -> u128 { err::E0006.throwError("Cannot use string to index array.", "Try using an integral type instead.", this->getLocation()); },
+                    [this](const std::shared_ptr<ptrn::Pattern> &pattern) -> u128 {err::E0006.throwError(fmt::format("Cannot use custom type '{}' to index array.", pattern->getTypeName()), "Try using an integral type instead.", this->getLocation()); },
                     [](auto &&size) -> u128 { return size; }
             }, literalNode->getValue());
         } else if (auto whileStatement = dynamic_cast<ASTNodeWhileStatement *>(sizeNode.get()); whileStatement != nullptr) {
             boundsCondition = whileStatement;
         } else {
-            err::E0001.throwError(fmt::format("Unexpected type of bitfield array size node."), {}, this);
+            err::E0001.throwError(fmt::format("Unexpected type of bitfield array size node."), {}, this->getLocation());
         }
 
         auto limit = evaluator->getArrayLimit();
         auto checkLimit = [&](auto count) {
             if (count > limit)
-                err::E0007.throwError(fmt::format("Bitfield array grew past set limit of {}", limit), "If this is intended, try increasing the limit using '#pragma array_limit <new_limit>'.", this);
+                err::E0007.throwError(fmt::format("Bitfield array grew past set limit of {}", limit), "If this is intended, try increasing the limit using '#pragma array_limit <new_limit>'.", this->getLocation());
         };
 
         if (std::holds_alternative<u128>(boundsCondition))
@@ -129,7 +129,7 @@ namespace pl::core::ast {
 
             if (arrayPattern->getSection() == ptrn::Pattern::MainSectionId)
                 if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
-                    err::E0004.throwError("Bitfield array expanded past end of the data.", fmt::format("Entry {} exceeded data by {} bytes.", dataIndex, evaluator->getReadOffset() - evaluator->getDataSize()), this);
+                    err::E0004.throwError("Bitfield array expanded past end of the data.", fmt::format("Entry {} exceeded data by {} bytes.", dataIndex, evaluator->getReadOffset() - evaluator->getDataSize()), this->getLocation());
 
             auto ctrlFlow = evaluator->getCurrentControlFlowStatement();
             evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);

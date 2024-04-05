@@ -14,7 +14,7 @@ namespace pl::lib::libstd::file {
         using namespace pl::core;
 
         const static auto throwInvalidFileError = []{
-            err::E0001.throwError("Failed to access invalid file.", {}, nullptr);
+            err::E0001.throwError("Failed to access invalid file.", {});
         };
 
         api::Namespace nsStdFile = { "builtin", "std", "file" };

@@ -40,14 +40,14 @@ namespace pl::core::ast {
             [&, this](const std::string &value) -> ASTNode * {
                 if (Token::isUnsigned(type)) {
                     if (value.size() > sizeof(u128))
-                        err::E0004.throwError(fmt::format("Cannot cast value of type 'str' of size {} to type '{}' of size {}.", value.size(), Token::getTypeName(type), Token::getTypeSize(type)), {}, this);
+                        err::E0004.throwError(fmt::format("Cannot cast value of type 'str' of size {} to type '{}' of size {}.", value.size(), Token::getTypeName(type), Token::getTypeSize(type)), {}, this->getLocation());
                     u128 result = 0;
                     std::memcpy(&result, value.data(), value.size());
 
                     auto endianAdjustedValue = changeEndianess(evaluator, result & hlp::bitmask(Token::getTypeSize(type) * 8), value.size(), typePattern->getEndian());
                     return new ASTNodeLiteral(endianAdjustedValue);
                 } else
-                    err::E0004.throwError(fmt::format("Cannot cast value of type 'str' to type '{}'.", Token::getTypeName(type)), {}, this);
+                    err::E0004.throwError(fmt::format("Cannot cast value of type 'str' to type '{}'.", Token::getTypeName(type)), {}, this->getLocation());
             },
             [&, this](auto &&value) -> ASTNode * {
                 switch (type) {
@@ -96,7 +96,7 @@ namespace pl::core::ast {
                         return new ASTNodeLiteral(string);
                     }
                     default:
-                        err::E0004.throwError(fmt::format("Cannot cast value of type '{}' to type '{}'.", typePattern->getTypeName(), Token::getTypeName(type)), {}, this);
+                        err::E0004.throwError(fmt::format("Cannot cast value of type '{}' to type '{}'.", typePattern->getTypeName(), Token::getTypeName(type)), {}, this->getLocation());
                 }
             },
         },
@@ -121,13 +121,13 @@ namespace pl::core::ast {
 
         auto literal = dynamic_cast<ASTNodeLiteral *>(evaluatedValue.get());
         if (literal == nullptr)
-            err::E0010.throwError("Cannot use void expression in a cast.", {}, this);
+            err::E0010.throwError("Cannot use void expression in a cast.", {}, this->getLocation());
 
         auto type = dynamic_cast<ASTNodeBuiltinType *>(evaluatedType.get())->getType();
 
         auto typePatterns = this->m_type->createPatterns(evaluator);
         if (typePatterns.empty())
-            err::E0005.throwError("'auto' can only be used with parameters.", { }, this);
+            err::E0005.throwError("'auto' can only be used with parameters.", { }, this->getLocation());
 
         auto &typePattern = typePatterns.front();
 

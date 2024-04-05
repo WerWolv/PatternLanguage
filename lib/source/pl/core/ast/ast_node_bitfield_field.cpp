@@ -34,11 +34,11 @@ namespace pl::core::ast {
         auto node = this->m_size->evaluate(evaluator);
         auto literal = dynamic_cast<ASTNodeLiteral *>(node.get());
         if (literal == nullptr)
-            err::E0010.throwError("Cannot use void expression as bitfield field size.", {}, this);
+            err::E0010.throwError("Cannot use void expression as bitfield field size.", {}, this->getLocation());
 
         u8 bitSize = std::visit(wolv::util::overloaded {
-                [this](const std::string &) -> u8 { err::E0005.throwError("Cannot use string as bitfield field size.", "Try using a integral value instead.", this->m_size.get()); },
-                [this](const std::shared_ptr<ptrn::Pattern>&) -> u8 { err::E0005.throwError("Cannot use string as bitfield field size.", "Try using a integral value instead.", this->m_size.get()); },
+                [this](const std::string &) -> u8 { err::E0005.throwError("Cannot use string as bitfield field size.", "Try using a integral value instead.", this->m_size->getLocation()); },
+                [this](const std::shared_ptr<ptrn::Pattern>&) -> u8 { err::E0005.throwError("Cannot use string as bitfield field size.", "Try using a integral value instead.", this->m_size->getLocation()); },
                 [](auto &&offset) -> u8 { return static_cast<u8>(offset); }
         }, literal->getValue());
 
@@ -85,7 +85,7 @@ namespace pl::core::ast {
     } else if (dynamic_cast<ptrn::PatternBoolean *>(pattern.get()) != nullptr) {
         result = std::make_shared<ptrn::PatternBitfieldFieldBoolean>(evaluator, byteOffset, bitOffset, bitSize, getLocation().line);
     } else {
-        err::E0004.throwError("Can only use enums or bools as sized bitfield fields.", {}, this);
+        err::E0004.throwError("Can only use enums or bools as sized bitfield fields.", {}, this->getLocation());
     }
 
     return result;

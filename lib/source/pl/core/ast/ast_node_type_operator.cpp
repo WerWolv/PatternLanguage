@@ -32,7 +32,7 @@ namespace pl::core::ast {
                     result = u128(evaluator->getDataSize());
                     break;
                 default:
-                    err::E0001.throwError("Invalid type operation.", {}, this);
+                    err::E0001.throwError("Invalid type operation.", {}, this->getLocation());
             }
         } else {
             auto offset = evaluator->getBitwiseReadOffset();
@@ -44,7 +44,7 @@ namespace pl::core::ast {
 
             auto patterns = this->m_expression->createPatterns(evaluator);
             if (patterns.empty())
-                err::E0005.throwError("'auto' can only be used with parameters.", { }, this);
+                err::E0005.throwError("'auto' can only be used with parameters.", { }, this->getLocation());
 
             auto &pattern = patterns.front();
 
@@ -74,7 +74,7 @@ namespace pl::core::ast {
                     break;
                 }
                 default:
-                    err::E0001.throwError("Invalid type operation.", {}, this);
+                    err::E0001.throwError("Invalid type operation.", {}, this->getLocation());
             }
         }
 

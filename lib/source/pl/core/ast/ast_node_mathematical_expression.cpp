@@ -23,10 +23,10 @@ namespace pl::core::ast {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         if (this->getLeftOperand() == nullptr || this->getRightOperand() == nullptr)
-            err::E0002.throwError("Void expression used in ternary expression.", "If you used a function for one of the operands, make sure it returned a value.", this);
+            err::E0002.throwError("Void expression used in ternary expression.", "If you used a function for one of the operands, make sure it returned a value.", this->getLocation());
 
         const auto throwInvalidOperandError = [this] [[noreturn]]{
-            err::E0002.throwError("Invalid operand used in mathematical expression.", { }, this);
+            err::E0002.throwError("Invalid operand used in mathematical expression.", { }, this->getLocation());
         };
 
         auto leftNode  = this->getLeftOperand()->evaluate(evaluator);
@@ -96,7 +96,7 @@ namespace pl::core::ast {
                    case Token::Operator::Star:
                    {
                        if (static_cast<i128>(right) < 0)
-                           err::E0002.throwError("Cannot repeat string a negative number of times.", { }, this);
+                           err::E0002.throwError("Cannot repeat string a negative number of times.", { }, this->getLocation());
 
                        std::string result;
                        for (u128 i = 0; i < static_cast<u128>(right); i++)
@@ -155,10 +155,10 @@ namespace pl::core::ast {
                    case Token::Operator::Star:
                        return new ASTNodeLiteral(left * right);
                    case Token::Operator::Slash:
-                       if (right == 0) err::E0002.throwError("Division by zero.", { }, this);
+                       if (right == 0) err::E0002.throwError("Division by zero.", { }, this->getLocation());
                        return new ASTNodeLiteral(left / right);
                    case Token::Operator::Percent:
-                       if (right == 0) err::E0002.throwError("Division by zero.", { }, this);
+                       if (right == 0) err::E0002.throwError("Division by zero.", { }, this->getLocation());
                        return new ASTNodeLiteral(modulus(left, right));
                    case Token::Operator::LeftShift:
                        return new ASTNodeLiteral(shiftLeft(left, right));

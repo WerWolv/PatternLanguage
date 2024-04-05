@@ -113,7 +113,7 @@ namespace pl::core {
             return this->m_scopes.size() == 1;
         }
 
-        [[nodiscard]] const std::vector<const ast::ASTNode *>& getCallStack() const {
+        [[nodiscard]] const std::vector<std::unique_ptr<ast::ASTNode>>& getCallStack() const {
             return this->m_callStack;
         }
 
@@ -428,7 +428,7 @@ namespace pl::core {
         std::function<void()> m_breakpointHitCallback = []{ };
         std::atomic<DangerousFunctionPermission> m_allowDangerousFunctions = DangerousFunctionPermission::Ask;
         ControlFlowStatement m_currControlFlowStatement = ControlFlowStatement::None;
-        std::vector<const ast::ASTNode*> m_callStack;
+        std::vector<std::unique_ptr<ast::ASTNode>> m_callStack;
 
         std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;
 

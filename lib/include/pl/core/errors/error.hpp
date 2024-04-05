@@ -87,11 +87,11 @@ namespace pl::core::err {
         }
 
         [[nodiscard]] std::string format(const std::string &description, const std::string &hint = { }, UserData<T> userData = { }) const {
-            return Exception(this->m_errorCode, this->m_title, description, hint, userData).what();
+            return Exception(this->m_errorCode, this->m_title, description, hint, std::move(userData)).what();
         }
 
         [[noreturn]] void throwError(const std::string &description, const std::string &hint = { }, UserData<T> userData = { }) const {
-            throw Exception(this->m_errorCode, this->m_title, description, hint, userData);
+            throw Exception(this->m_errorCode, this->m_title, description, hint, std::move(userData));
         }
 
     private:

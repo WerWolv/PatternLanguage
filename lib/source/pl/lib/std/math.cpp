@@ -172,7 +172,7 @@ namespace pl::lib::libstd::math {
                     endian = static_cast<types::Endian>(params[5].toUnsigned());
 
                 if (size > 16)
-                    err::E0003.throwError("Size cannot be bigger than sizeof(u128)", {}, 0);
+                    err::E0003.throwError("Size cannot be bigger than sizeof(u128)", {});
  
                 u128 result = 0;
                 u128 endAddr = end / size;

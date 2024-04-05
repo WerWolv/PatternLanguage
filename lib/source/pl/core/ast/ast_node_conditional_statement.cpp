@@ -83,11 +83,11 @@ namespace pl::core::ast {
         const auto node    = condition->evaluate(evaluator);
         const auto literal = dynamic_cast<ASTNodeLiteral *>(node.get());
         if (literal == nullptr)
-            err::E0010.throwError("Cannot use void expression as condition.", {}, this);
+            err::E0010.throwError("Cannot use void expression as condition.", {}, this->getLocation());
 
         return std::visit(wolv::util::overloaded {
                 [](const std::string &value) -> bool { return !value.empty(); },
-                [this](ptrn::Pattern *const &pattern) -> bool { err::E0004.throwError(fmt::format("Cannot cast value of type '{}' to type 'bool'.", pattern->getTypeName()), {}, this); },
+                [this](ptrn::Pattern *const &pattern) -> bool { err::E0004.throwError(fmt::format("Cannot cast value of type '{}' to type 'bool'.", pattern->getTypeName()), {}, this->getLocation()); },
                 [](auto &&value) -> bool { return value != 0; }
         }, literal->getValue());
     }

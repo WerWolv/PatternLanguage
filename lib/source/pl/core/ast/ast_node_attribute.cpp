@@ -55,9 +55,9 @@ namespace pl::core::ast {
         return std::any_of(this->m_attributes.begin(), this->m_attributes.end(), [&](const std::unique_ptr<ASTNodeAttribute> &attribute) {
             if (attribute->getAttribute() == key) {
                 if (needsParameter && attribute->getArguments().empty())
-                    err::E0008.throwError(fmt::format("Attribute '{}' expected a parameter.", key), fmt::format("Try [[{}(\"value\")]] instead.", key), attribute.get());
+                    err::E0008.throwError(fmt::format("Attribute '{}' expected a parameter.", key), fmt::format("Try [[{}(\"value\")]] instead.", key), attribute->getLocation());
                 else if (!needsParameter && !attribute->getArguments().empty())
-                    err::E0008.throwError(fmt::format("Attribute '{}' did not expect a parameter.", key), fmt::format("Try [[{}]] instead.", key), attribute.get());
+                    err::E0008.throwError(fmt::format("Attribute '{}' did not expect a parameter.", key), fmt::format("Try [[{}]] instead.", key), attribute->getLocation());
                 else
                     return true;
             }
@@ -99,13 +99,13 @@ namespace pl::core::ast {
     void applyTypeAttributes(Evaluator *evaluator, const ASTNode *node, const std::shared_ptr<ptrn::Pattern> &pattern) {
         auto attributable = dynamic_cast<const Attributable *>(node);
         if (attributable == nullptr)
-            err::E0008.throwError("Attributes cannot be applied to this statement.", {}, node);
+            err::E0008.throwError("Attributes cannot be applied to this statement.", {}, node->getLocation());
 
         if (attributable->hasAttribute("inline", false)) {
             auto inlinable = dynamic_cast<ptrn::IInlinable *>(pattern.get());
 
             if (inlinable == nullptr)
-                err::E0008.throwError("[[inline]] attribute can only be used with nested types.", "Try applying it to a struct, union, bitfield or array instead.", node);
+                err::E0008.throwError("[[inline]] attribute can only be used with nested types.", "Try applying it to a struct, union, bitfield or array instead.", node->getLocation());
             else
                 inlinable->setInlined(true);
         }
@@ -114,10 +114,10 @@ namespace pl::core::ast {
             auto functionName = getAttributeValueAsString(value, evaluator);
             auto function = evaluator->findFunction(functionName);
             if (!function.has_value())
-                err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", functionName), {}, node);
+                err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", functionName), {}, node->getLocation());
 
             if (function->parameterCount != api::FunctionParameterCount::exactly(1))
-                err::E0009.throwError(fmt::format("Formatter function '{}' needs to take exactly one parameter.", functionName), fmt::format("Try 'fn {}({} value)' instead", functionName, pattern->getTypeName()), node);
+                err::E0009.throwError(fmt::format("Formatter function '{}' needs to take exactly one parameter.", functionName), fmt::format("Try 'fn {}({} value)' instead", functionName, pattern->getTypeName()), node->getLocation());
 
             pattern->setReadFormatterFunction(functionName);
         }
@@ -126,10 +126,10 @@ namespace pl::core::ast {
             auto functionName = getAttributeValueAsString(arguments.front(), evaluator);
             auto function = evaluator->findFunction(functionName);
             if (!function.has_value())
-                err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", functionName), {}, node);
+                err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", functionName), {}, node->getLocation());
 
             if (function->parameterCount != api::FunctionParameterCount::exactly(1))
-                err::E0009.throwError(fmt::format("Formatter function '{}' needs to take exactly one parameter.", functionName), fmt::format("Try 'fn {}({} value)' instead", functionName, pattern->getTypeName()), node);
+                err::E0009.throwError(fmt::format("Formatter function '{}' needs to take exactly one parameter.", functionName), fmt::format("Try 'fn {}({} value)' instead", functionName, pattern->getTypeName()), node->getLocation());
 
             pattern->setWriteFormatterFunction(functionName);
         }
@@ -138,14 +138,14 @@ namespace pl::core::ast {
             auto functionName = getAttributeValueAsString(value, evaluator);
             auto function = evaluator->findFunction(functionName);
             if (!function.has_value())
-                err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", functionName), {}, node);
+                err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", functionName), {}, node->getLocation());
 
             if (function->parameterCount != api::FunctionParameterCount::exactly(1))
-                err::E0009.throwError(fmt::format("Formatter function '{}' needs to take exactly one parameter.", functionName), fmt::format("Try 'fn {}({} value)' instead", functionName, pattern->getTypeName()), node);
+                err::E0009.throwError(fmt::format("Formatter function '{}' needs to take exactly one parameter.", functionName), fmt::format("Try 'fn {}({} value)' instead", functionName, pattern->getTypeName()), node->getLocation());
 
             auto array = dynamic_cast<ptrn::PatternArrayDynamic *>(pattern.get());
             if (array == nullptr)
-                err::E0009.throwError("The [[format_entries_read]] attribute can only be applied to dynamic array types.", {}, node);
+                err::E0009.throwError("The [[format_entries_read]] attribute can only be applied to dynamic array types.", {}, node->getLocation());
 
             for (const auto &entry : array->getEntries()) {
                 entry->setReadFormatterFunction(functionName);
@@ -156,14 +156,14 @@ namespace pl::core::ast {
             auto functionName = getAttributeValueAsString(arguments.front(), evaluator);
             auto function = evaluator->findFunction(functionName);
             if (!function.has_value())
-                err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", functionName), {}, node);
+                err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", functionName), {}, node->getLocation());
 
             if (function->parameterCount != api::FunctionParameterCount::exactly(1))
-                err::E0009.throwError(fmt::format("Formatter function '{}' needs to take exactly one parameter.", functionName), fmt::format("Try 'fn {}({} value)' instead", functionName, pattern->getTypeName()), node);
+                err::E0009.throwError(fmt::format("Formatter function '{}' needs to take exactly one parameter.", functionName), fmt::format("Try 'fn {}({} value)' instead", functionName, pattern->getTypeName()), node->getLocation());
 
             auto array = dynamic_cast<ptrn::PatternArrayDynamic *>(pattern.get());
             if (array == nullptr)
-                err::E0009.throwError("The [[format_entries_write]] attribute can only be applied to dynamic array types.", {}, node);
+                err::E0009.throwError("The [[format_entries_write]] attribute can only be applied to dynamic array types.", {}, node->getLocation());
 
             for (const auto &entry : array->getEntries()) {
                 entry->setWriteFormatterFunction(functionName);
@@ -174,10 +174,10 @@ namespace pl::core::ast {
             auto functionName = getAttributeValueAsString(arguments.front(), evaluator);
             auto function = evaluator->findFunction(functionName);
             if (!function.has_value())
-                err::E0009.throwError(fmt::format("Transform function '{}' does not exist.", functionName), {}, node);
+                err::E0009.throwError(fmt::format("Transform function '{}' does not exist.", functionName), {}, node->getLocation());
 
             if (function->parameterCount != api::FunctionParameterCount::exactly(1))
-                err::E0009.throwError(fmt::format("Transform function '{}' needs to take exactly one parameter.", functionName), fmt::format("Try 'fn {}({} value)' instead", functionName, pattern->getTypeName()), node);
+                err::E0009.throwError(fmt::format("Transform function '{}' needs to take exactly one parameter.", functionName), fmt::format("Try 'fn {}({} value)' instead", functionName, pattern->getTypeName()), node->getLocation());
 
             pattern->setTransformFunction(functionName);
         }
@@ -186,14 +186,14 @@ namespace pl::core::ast {
             auto functionName = getAttributeValueAsString(arguments.front(), evaluator);
             auto function = evaluator->findFunction(functionName);
             if (!function.has_value())
-                err::E0009.throwError(fmt::format("Transform function '{}' does not exist.", functionName), {}, node);
+                err::E0009.throwError(fmt::format("Transform function '{}' does not exist.", functionName), {}, node->getLocation());
 
             if (function->parameterCount != api::FunctionParameterCount::exactly(1))
-                err::E0009.throwError(fmt::format("Transform function '{}' needs to take exactly one parameter.", functionName), fmt::format("Try 'fn {}({} value)' instead", functionName, pattern->getTypeName()), node);
+                err::E0009.throwError(fmt::format("Transform function '{}' needs to take exactly one parameter.", functionName), fmt::format("Try 'fn {}({} value)' instead", functionName, pattern->getTypeName()), node->getLocation());
 
             auto array = dynamic_cast<ptrn::PatternArrayDynamic *>(pattern.get());
             if (array == nullptr)
-                err::E0009.throwError("The [[transform_entries]] attribute can only be applied to dynamic array types.", {}, node);
+                err::E0009.throwError("The [[transform_entries]] attribute can only be applied to dynamic array types.", {}, node->getLocation());
 
             for (const auto &entry : array->getEntries()) {
                 entry->setTransformFunction(functionName);
@@ -204,23 +204,23 @@ namespace pl::core::ast {
             auto functionName = getAttributeValueAsString(arguments.front(), evaluator);
             auto function = evaluator->findFunction(functionName);
             if (!function.has_value())
-                err::E0009.throwError(fmt::format("Pointer base function '{}' does not exist.", functionName), {}, node);
+                err::E0009.throwError(fmt::format("Pointer base function '{}' does not exist.", functionName), {}, node->getLocation());
 
 
             if (auto pointerPattern = dynamic_cast<ptrn::PatternPointer *>(pattern.get())) {
                 i128 pointerValue = pointerPattern->getPointedAtAddress();
 
                 if (function->parameterCount != api::FunctionParameterCount::exactly(1))
-                    err::E0009.throwError(fmt::format("Transform function '{}' needs to take exactly one parameter.", functionName), fmt::format("Try 'fn {}({} value)' instead", functionName, pointerPattern->getPointerType()->getTypeName()), node);
+                    err::E0009.throwError(fmt::format("Transform function '{}' needs to take exactly one parameter.", functionName), fmt::format("Try 'fn {}({} value)' instead", functionName, pointerPattern->getPointerType()->getTypeName()), node->getLocation());
 
                 auto result = function->func(evaluator, { pointerValue });
 
                 if (!result.has_value())
-                    err::E0009.throwError(fmt::format("Pointer base function '{}' did not return a value.", functionName), "Try adding a 'return <value>;' statement in all code paths.", node);
+                    err::E0009.throwError(fmt::format("Pointer base function '{}' did not return a value.", functionName), "Try adding a 'return <value>;' statement in all code paths.", node->getLocation());
 
                 pointerPattern->rebase(result.value().toSigned());
             } else {
-                err::E0009.throwError("The [[pointer_base]] attribute can only be applied to pointer types.", {}, node);
+                err::E0009.throwError("The [[pointer_base]] attribute can only be applied to pointer types.", {}, node->getLocation());
             }
         }
 
@@ -266,7 +266,7 @@ namespace pl::core::ast {
 
         auto attributable = dynamic_cast<const Attributable *>(node);
         if (attributable == nullptr)
-            err::E0008.throwError("Attributes cannot be applied to this statement.", {}, node);
+            err::E0008.throwError("Attributes cannot be applied to this statement.", {}, node->getLocation());
 
         auto endOffset = evaluator->getBitwiseReadOffset();
         evaluator->setReadOffset(pattern->getOffset());

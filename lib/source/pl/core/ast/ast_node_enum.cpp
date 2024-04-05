@@ -25,7 +25,7 @@ namespace pl::core::ast {
 
         const auto nodes = this->m_underlyingType->createPatterns(evaluator);
         if (nodes.empty())
-            err::E0005.throwError("'auto' can only be used with parameters.", { }, this);
+            err::E0005.throwError("'auto' can only be used with parameters.", { }, this->getLocation());
         auto &underlying = nodes.front();
 
         auto pattern = std::make_shared<ptrn::PatternEnum>(evaluator, underlying->getOffset(), 0, getLocation().line);
@@ -43,7 +43,7 @@ namespace pl::core::ast {
             const auto maxLiteral = dynamic_cast<ASTNodeLiteral *>(maxNode.get());
 
             if (minLiteral == nullptr || maxLiteral == nullptr)
-                err::E0010.throwError("Cannot use void expression as enum value.", {}, this);
+                err::E0010.throwError("Cannot use void expression as enum value.", {}, this->getLocation());
 
             // Check that the enum values can be converted to integers
             (void)minLiteral->getValue().toUnsigned();
