@@ -64,6 +64,7 @@ namespace pl::core::ast {
             err::E0005.throwError("'auto' can only be used with parameters.", { }, this->getLocation());
 
         auto &sizePattern = sizePatterns.front();
+        sizePattern->setSection(evaluator->getSectionId());
 
         auto pattern = std::make_shared<ptrn::PatternPointer>(evaluator, pointerStartOffset, sizePattern->getSize(), getLocation().line);
         pattern->setVariableName(this->m_name);
