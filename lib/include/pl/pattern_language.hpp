@@ -328,6 +328,10 @@ namespace pl {
             return this->m_defines;
         }
 
+        [[nodiscard]] const std::vector<std::shared_ptr<core::ast::ASTNode>> getAST() const {
+            return this->m_currAST;
+        }
+
         [[nodiscard]] const std::map<std::string, api::PragmaHandler>& getPragmas() const {
             return this->m_pragmas;
         }

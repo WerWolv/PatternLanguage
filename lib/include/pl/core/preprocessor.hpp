@@ -46,6 +46,22 @@ namespace pl::core {
             return this->m_result;
         }
 
+        [[nodiscard]] auto getOutput() const {
+            return this->m_output;
+        }
+
+        void setOutput(std::vector<pl::core::Token> tokens) {
+            m_output = tokens;
+        }
+
+        [[nodiscard]] auto getErrors() const {
+            return this->m_errors;
+        }
+
+        void setErrors(std::vector<err::CompileError> errors) {
+            m_errors = errors;
+        }
+
         [[nodiscard]] bool shouldOnlyIncludeOnce() const {
             return this->m_onlyIncludeOnce;
         }
@@ -57,6 +73,12 @@ namespace pl::core {
         void setResolver(const api::Resolver& resolvers) {
             m_resolver = resolvers;
         }
+
+        auto getNamespaces() const {
+            return m_namespaces;
+        }
+
+        void appendToNamespaces(std::vector<Token> namespaces);
 
     private:
         Preprocessor(const Preprocessor &);
@@ -95,6 +117,7 @@ namespace pl::core {
         std::vector<err::CompileError> m_errors;
         std::vector<Token> m_result;
         std::vector<Token> m_output;
+        std::vector<std::string> m_namespaces;
 
         api::Source* m_source = nullptr;
 
