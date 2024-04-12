@@ -16,7 +16,8 @@ pl::hlp::CompileResult<ParserManager::ParsedData> ParserManager::parse(api::Sour
 
     if (m_onceIncluded.contains( key )) {
         const auto& types = m_parsedTypes[key];
-        return result_t::good({ {}, types });
+        if (!types.empty())
+            return result_t::good({ {}, types });
     }
 
     auto parser = Parser();

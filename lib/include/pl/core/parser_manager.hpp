@@ -36,6 +36,7 @@ namespace pl::core {
 
         void reset() {
             this->m_onceIncluded.clear();
+            this->m_parsedTypes.clear();
         }
 
     private:
