@@ -23,6 +23,7 @@
 #include "test_patterns/test_pattern_strings.hpp"
 #include "test_patterns/test_pattern_include.hpp"
 #include "test_patterns/test_pattern_import.hpp"
+#include "test_patterns/test_pattern_pragmas.hpp"
 
 std::array Tests = {
     TEST(Placement),
@@ -49,4 +50,5 @@ std::array Tests = {
     TEST(NestedStructs),
     TEST(Attributes),
     TEST(StructInheritance),
+    TEST(Pragmas),
 };

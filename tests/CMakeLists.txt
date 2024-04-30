@@ -28,6 +28,7 @@ set(AVAILABLE_TESTS
         Arrays
         NestedStructs
         Attributes
+        Pragmas
 )
 
 

@@ -23,6 +23,8 @@ namespace pl::test {
             TestPattern::s_tests.insert({ name, this });
         }
 
+        virtual void setupRuntime(pl::PatternLanguage &runtime) {};
+
         virtual ~TestPattern() = default;
 
         template<typename T>
