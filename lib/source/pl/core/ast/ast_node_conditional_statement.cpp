@@ -29,6 +29,7 @@ namespace pl::core::ast {
         for (auto &node : body) {
             auto newPatterns = node->createPatterns(evaluator);
             for (auto &pattern : newPatterns) {
+                pattern->setSection(evaluator->getSectionId());
                 scope.push_back(std::move(pattern));
             }
 
