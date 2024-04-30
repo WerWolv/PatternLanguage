@@ -154,6 +154,8 @@ namespace pl {
         auto ast = this->parseString(code, source);
         if (!ast.has_value())
             return false;
+        if (!this->m_compileErrors.empty())
+            return false;
 
         this->m_currAST = std::move(*ast);
 
