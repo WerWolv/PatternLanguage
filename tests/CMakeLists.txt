@@ -29,6 +29,7 @@ set(AVAILABLE_TESTS
         NestedStructs
         Attributes
         Pragmas
+        PragmasFail
 )
 
 
