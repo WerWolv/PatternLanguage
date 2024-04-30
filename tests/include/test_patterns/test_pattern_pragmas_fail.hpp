@@ -12,7 +12,6 @@ namespace pl::test {
         ~TestPatternPragmasFail() override = default;
 
         void setupRuntime(pl::PatternLanguage &runtime) {
-            // All pragmas should be processed the same way, but we test multiple ones to be sure
             runtime.addPragma("somePragma", [](PatternLanguage&, const std::string &value) {
                 return value == "invalidValue";
             });
