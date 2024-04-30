@@ -53,7 +53,7 @@ namespace pl::cli {
 
         // Parse command line input
         try {
-            std::reverse(args.begin(), args.end());
+            std::reverse(args.begin(), args.end()); // wanted by CLI11
             app.parse(args);
         } catch(const CLI::ParseError &e) {
             return app.exit(e, std::cout, std::cout);
