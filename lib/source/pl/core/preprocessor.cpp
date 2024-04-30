@@ -210,6 +210,7 @@ namespace pl::core {
     }
 
     void Preprocessor::handleInclude(u32 line) {
+        // get include name
         auto *tokenLiteral = std::get_if<Token::Literal>(&m_token->value);
         if (tokenLiteral == nullptr || m_token->location.line != line) {
             errorDesc("No file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
