@@ -216,6 +216,7 @@ namespace pl::core {
             return;
         }
         auto includeFile = tokenLiteral->toString(false);
+        m_token++;
 
         if (!(includeFile.starts_with('"') && includeFile.ends_with('"')) && !(includeFile.starts_with('<') && includeFile.ends_with('>'))) {
             errorDesc("Invalid file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
@@ -241,7 +242,7 @@ namespace pl::core {
             }
             return;
         }
-        m_token++;
+
         Preprocessor preprocessor(*this);
         preprocessor.m_pragmas.clear();
 
