@@ -25,6 +25,8 @@ namespace pl::api {
 
     /**
      * @brief A pragma handler is a function that is called when a pragma is encountered.
+     * @param string& Value that was set for the pragma
+     * @return true if the value parameter was a valid value for the pragma, else false
      */
     using PragmaHandler = std::function<bool(PatternLanguage&, const std::string &)>;
 
