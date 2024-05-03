@@ -30,6 +30,7 @@ namespace pl::core::ast {
             for (auto &node : this->m_tryBody) {
                 auto newPatterns = node->createPatterns(evaluator);
                 for (auto &pattern : newPatterns) {
+                    pattern->setSection(evaluator->getSectionId());
                     scope.scope->push_back(std::move(pattern));
                 }
 
@@ -45,6 +46,7 @@ namespace pl::core::ast {
             for (auto &node : this->m_catchBody) {
                 auto newPatterns = node->createPatterns(evaluator);
                 for (auto &pattern : newPatterns) {
+                    pattern->setSection(evaluator->getSectionId());
                     scope.scope->push_back(std::move(pattern));
                 }
 
