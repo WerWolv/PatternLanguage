@@ -46,6 +46,16 @@ namespace pl::hlp {
             return &(*m_start);
         }
 
+        Reference operator*() {
+            checkValid();
+            return *m_start;
+        }
+
+        Pointer operator->() {
+            checkValid();
+            return &(*m_start);
+        }
+
         SafeIterator& operator++() {
             checkRange(1);
             ++m_start;

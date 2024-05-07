@@ -3,71 +3,99 @@
 #include <memory>
 #include <stdexcept>
 
+#include <throwing/unique_ptr.hpp>
+#include <throwing/shared_ptr.hpp>
+
 namespace pl::hlp {
 
-    template<typename T>
-    concept SmartPointer = requires(T t) {
-            { t.get() } -> std::convertible_to<typename T::element_type*>;
-    };
+    template<template<typename ...> typename SmartPointer, typename T>
+    class SafePointer;
 
-    template<SmartPointer T>
-    class SafePointer : public T {
+    template<typename T>
+    class SafePointer<std::unique_ptr, T> : public throwing::unique_ptr<T> {
     public:
-        using T::T;
+        using throwing::unique_ptr<T>::unique_ptr;
 
-        SafePointer(T &&t) : T(std::move(t)) { }
-
-        using Contained = typename T::element_type;
-
-        Contained* operator->() const {
-            return this->get();
+        template<typename U>
+        operator std::unique_ptr<U>() && {
+            checkPointer();
+            return std::move(this->get_std_unique_ptr());
         }
 
-        Contained* operator->() {
-            return this->get();
+        template<typename U>
+        operator const std::unique_ptr<U>&() const {
+            checkPointer();
+            return this->get_std_unique_ptr();
         }
 
-        Contained& operator*() const {
-            return *this->get();
+        template<typename U>
+        operator std::shared_ptr<U>() && {
+            checkPointer();
+            return std::move(this->get_std_unique_ptr());
         }
 
-        Contained& operator*() {
-            return *this->get();
+        template<typename U>
+        operator SafePointer<std::shared_ptr, U>() && {
+            checkPointer();
+            return std::move(this->get_std_unique_ptr());
         }
 
-        Contained* get() const {
-            if (this->T::get() == nullptr)
-                throw std::runtime_error("Pointer is null!");
-
-            return this->T::get();
+        const auto& unwrap() const {
+            checkPointer();
+            return this->get_std_unique_ptr();
         }
 
-        operator T&() {
-            if (this->T::get() == nullptr)
-                throw std::runtime_error("Pointer is null!");
-
-            return *this;
+        auto& unwrapUnchecked() {
+            return this->get_std_unique_ptr();
         }
 
-        operator T&() const {
-            if (this->T::get() == nullptr)
-                throw std::runtime_error("Pointer is null!");
-
-            return *this;
+    private:
+        void checkPointer() const {
+            if (this->get() == nullptr)
+                throw throwing::null_ptr_exception<T>();
         }
-
-        operator T&&() && {
-            if (this->T::get() == nullptr)
-                throw std::runtime_error("Pointer is null!");
-
-            return *this;
-        }
-
     };
 
     template<typename T>
-    using safe_unique_ptr = SafePointer<std::unique_ptr<T>>;
+    class SafePointer<std::shared_ptr, T> : public throwing::shared_ptr<T> {
+    public:
+        using throwing::shared_ptr<T>::shared_ptr;
+
+        template<typename U>
+        operator const std::shared_ptr<U>&() const {
+            checkPointer();
+            return this->get_std_shared_ptr();
+        }
+
+        template<typename U>
+        operator std::shared_ptr<U>() && {
+            checkPointer();
+            return std::move(this->get_std_shared_ptr());
+        }
+
+        const auto& unwrap() const {
+            checkPointer();
+            return this->get_std_shared_ptr();
+        }
+
+        const auto& unwrapUnchecked() const {
+            return this->get_std_shared_ptr();
+        }
+
+        auto&& moveUnchecked() {
+            return this->get_std_shared_ptr();
+        }
+
+    private:
+        void checkPointer() const {
+            if (this->get() == nullptr)
+                throw throwing::null_ptr_exception<T>();
+        }
+    };
 
     template<typename T>
-    using safe_shared_ptr = SafePointer<std::shared_ptr<T>>;
+    using safe_unique_ptr = SafePointer<std::unique_ptr, T>;
+
+    template<typename T>
+    using safe_shared_ptr = SafePointer<std::shared_ptr, T>;
 }

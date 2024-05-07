@@ -96,7 +96,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(libpl PRIVATE -Wno-stringop-overread)
 endif ()
 
-target_include_directories(libpl PUBLIC include)
+target_include_directories(libpl PUBLIC include ../external/throwing_ptr/include)
 target_link_libraries(libpl PRIVATE ${FMT_LIBRARIES})
 target_link_libraries(libpl PUBLIC wolv::io wolv::utils wolv::hash wolv::containers)
 

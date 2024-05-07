@@ -173,7 +173,7 @@ namespace pl::core {
                 FunctionUnknown,
                 MemberUnknown,
                 ScopeResolutionUnknown,
-                UDT,
+                UndefinedType,
                 PatternVariable,
                 PatternLocalVariable,
                 PatternPlacedVariable,

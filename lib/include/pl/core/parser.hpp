@@ -31,12 +31,12 @@ namespace pl::core {
         class UnrecoverableParserException : public std::exception {};
 
     public:
-        using TokenIter = hlp::SafeIterator<std::vector<Token>::const_iterator>;
+        using TokenIter = hlp::SafeIterator<std::vector<Token>::iterator>;
 
         explicit Parser() = default;
         ~Parser() override = default;
 
-        hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> parse(const std::vector<Token> &tokens);
+        hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> parse(std::vector<Token> &tokens);
 
         const auto &getTypes() { return this->m_types; }
 

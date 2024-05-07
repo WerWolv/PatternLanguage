@@ -52,13 +52,14 @@
 // (parseXXXX)  : Parsing handled by other function
 namespace pl::core {
 
-    template<typename T>
-    std::vector<T> unwrapSafePointerVector(std::vector<hlp::SafePointer<T>> &&vec) {
-        std::vector<T> result;
+    template<template<typename ...> typename SmartPointer, typename T>
+    std::vector<SmartPointer<T>> unwrapSafePointerVector(std::vector<hlp::SafePointer<SmartPointer, T>> &&vec) {
+        std::vector<SmartPointer<T>> result;
         result.reserve(vec.size());
 
-        for (auto &ptr : vec)
-            result.push_back(std::move(ptr));
+        for (auto &ptr : vec) {
+            result.emplace_back(std::move(ptr));
+        }
 
         return result;
     }
@@ -93,7 +94,7 @@ namespace pl::core {
     // Identifier(<parseParameters>)
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseFunctionCall() {
         std::string functionName = parseNamespaceResolution();
-        Token::Identifier *functionIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+        auto *functionIdentifier = std::get_if<Token::Identifier>(&m_curr[-1].value);
         if (functionIdentifier != nullptr)
             functionIdentifier->setType(Token::Identifier::IdentifierType::Function);
 
@@ -116,7 +117,7 @@ namespace pl::core {
 
         while (true) {
             name += getValue<Token::Identifier>(-1).get();
-            Token::Identifier *namespaceIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+            auto namespaceIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
             if(m_autoNamespace == name) {
                 // replace auto namespace with alias namespace
                 name = m_aliasNamespaceString;
@@ -143,17 +144,17 @@ namespace pl::core {
 
             if (sequence(tkn::Operator::ScopeResolution, tkn::Literal::Identifier)) {
                 if (peek(tkn::Operator::ScopeResolution, 0) && peek(tkn::Literal::Identifier, 1)) {
-                    Token::Identifier *namespaceIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+                    auto namespaceIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
                     if (namespaceIdentifier != nullptr)
                         namespaceIdentifier->setType(Token::Identifier::IdentifierType::ScopeResolutionUnknown);
                     typeName += "::";
                     continue;
                 }
                 if (this->m_types.contains(typeName))
-                    return create<ast::ASTNodeScopeResolution>(this->m_types[typeName], getValue<Token::Identifier>(-1).get());
+                    return create<ast::ASTNodeScopeResolution>(this->m_types[typeName].unwrap(), getValue<Token::Identifier>(-1).get());
                 for (auto &potentialName : getNamespacePrefixedNames(typeName)) {
                     if (this->m_types.contains(potentialName)) {
-                        return create<ast::ASTNodeScopeResolution>(this->m_types[potentialName], getValue<Token::Identifier>(-1).get());
+                        return create<ast::ASTNodeScopeResolution>(this->m_types[potentialName].unwrap(), getValue<Token::Identifier>(-1).get());
                     }
                 }
 
@@ -178,7 +179,7 @@ namespace pl::core {
         if (peek(tkn::Literal::Identifier, -1)) {
             path.emplace_back(getValue<Token::Identifier>(-1).get());
 
-            Token::Identifier *identifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+            auto identifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
             if (m_currTemplateType.empty()) {
                 if (identifier != nullptr)
                     identifier->setType(Token::Identifier::IdentifierType::FunctionUnknown);
@@ -625,7 +626,7 @@ namespace pl::core {
                 return;
             }
 
-            Token::Identifier *attributeIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+            auto attributeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
             if (attributeIdentifier != nullptr)
                 attributeIdentifier->setType(Token::Identifier::IdentifierType::Attribute);
 
@@ -696,11 +697,11 @@ namespace pl::core {
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseFunctionDefinition() {
         const auto &functionName = getValue<Token::Identifier>(-1).get();
 
-        Token::Identifier *functionIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+        auto functionIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
         if (functionIdentifier != nullptr)
             functionIdentifier->setType(Token::Identifier::IdentifierType::Function);
 
-        std::vector<std::pair<std::string, std::unique_ptr<ast::ASTNode>>> params;
+        std::vector<std::pair<std::string, hlp::safe_unique_ptr<ast::ASTNode>>> params;
         std::optional<std::string> parameterPack;
 
         if (!sequence(tkn::Separator::LeftParenthesis)) {
@@ -728,7 +729,7 @@ namespace pl::core {
 
             if (sequence(tkn::Literal::Identifier)) {
                 params.emplace_back(getValue<Token::Identifier>(-1).get(), std::move(type));
-                Token::Identifier *argumentIdentifier = (Token::Identifier *) std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+                auto argumentIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
                 if (argumentIdentifier != nullptr)
                     argumentIdentifier->setType(Token::Identifier::IdentifierType::FunctionParameter);
             } else {
@@ -777,7 +778,12 @@ namespace pl::core {
             body.push_back(std::move(statement));
         }
 
-        return create<ast::ASTNodeFunctionDefinition>(getNamespacePrefixedNames(functionName).back(), std::move(params), unwrapSafePointerVector(std::move(body)), parameterPack, unwrapSafePointerVector(std::move(defaultParameters)));
+        std::vector<std::pair<std::string, std::unique_ptr<ast::ASTNode>>> unwrappedParams;
+        for (auto &[name, node] : params) {
+            unwrappedParams.emplace_back(std::move(name), std::move(node));
+        }
+
+        return create<ast::ASTNodeFunctionDefinition>(getNamespacePrefixedNames(functionName).back(), std::move(unwrappedParams), unwrapSafePointerVector(std::move(body)), parameterPack, unwrapSafePointerVector(std::move(defaultParameters)));
     }
 
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseFunctionVariableDecl(const bool constant) {
@@ -788,7 +794,7 @@ namespace pl::core {
 
         if (sequence(tkn::Literal::Identifier)) {
             auto identifier = getValue<Token::Identifier>(-1).get();
-            Token::Identifier *functionIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+            auto functionIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
             if (functionIdentifier != nullptr)
                 functionIdentifier->setType(Token::Identifier::IdentifierType::FunctionVariable);
             if (MATCHES(sequence(tkn::Separator::LeftBracket) && !peek(tkn::Separator::LeftBracket))) {
@@ -801,8 +807,8 @@ namespace pl::core {
 
                     std::vector<hlp::safe_unique_ptr<ast::ASTNode>> compoundStatement;
                     {
-                        compoundStatement.push_back(std::move(statement));
-                        compoundStatement.push_back(create<ast::ASTNodeLValueAssignment>(identifier, std::move(expression)));
+                        compoundStatement.emplace_back(std::move(statement));
+                        compoundStatement.emplace_back(create<ast::ASTNodeLValueAssignment>(identifier, std::move(expression)));
                     }
 
                     statement = create<ast::ASTNodeCompoundStatement>(unwrapSafePointerVector(std::move(compoundStatement)));
@@ -934,10 +940,16 @@ namespace pl::core {
 
         if (sequence(tkn::Separator::LeftBrace)) {
             while (!sequence(tkn::Separator::RightBrace)) {
-                body.push_back(memberParser());
+                auto member = memberParser();
+                if (member == nullptr)
+                    return {};
+                body.push_back(std::move(member));
             }
         } else {
-            body.push_back(memberParser());
+            auto member = memberParser();
+            if (member == nullptr)
+                return {};
+            body.push_back(std::move(member));
         }
 
         return body;
@@ -982,8 +994,8 @@ namespace pl::core {
 
         std::vector<hlp::safe_unique_ptr<ast::ASTNode>> compoundStatement;
         {
-            compoundStatement.push_back(std::move(preExpression));
-            compoundStatement.push_back(create<ast::ASTNodeWhileStatement>(std::move(condition), unwrapSafePointerVector(std::move(body)), std::move(postExpression)));
+            compoundStatement.emplace_back(std::move(preExpression));
+            compoundStatement.emplace_back(create<ast::ASTNodeWhileStatement>(std::move(condition), unwrapSafePointerVector(std::move(body)), std::move(postExpression)));
         }
 
         return create<ast::ASTNodeCompoundStatement>(unwrapSafePointerVector(std::move(compoundStatement)), true);
@@ -1074,13 +1086,13 @@ namespace pl::core {
             caseIndex++;
             if (sequence(tkn::Separator::Comma, tkn::Separator::RightParenthesis)) {
                 error("Expected ')' at end of parameter list, got {}.", getFormattedToken(0));
-                break;
+                return {};
             }
             if (sequence(tkn::Separator::RightParenthesis))
                 break;
             if (!sequence(tkn::Separator::Comma)) {
                 error("Expected ',' in-between parameters, got {}.", getFormattedToken(0));
-                break;
+                return {};
             }
         }
 
@@ -1116,6 +1128,8 @@ namespace pl::core {
             }
 
             auto [caseCondition, isDefault] = parseCaseParameters(condition);
+            if (caseCondition == nullptr)
+                return nullptr;
 
             if (!sequence(tkn::Operator::Colon)) {
                 error("Expected ':' after case condition, got {}.", getFormattedToken(0));
@@ -1194,7 +1208,7 @@ namespace pl::core {
             if (this->m_types.contains(typeName)) {
                 auto type = this->m_types[typeName];
 
-                return create<ast::ASTNodeTypeDecl>("", type);
+                return create<ast::ASTNodeTypeDecl>("", type.unwrapUnchecked());
             }
         }
 
@@ -1248,7 +1262,7 @@ namespace pl::core {
                     return;
                 }
 
-                type = hlp::safe_unique_ptr<ast::ASTNodeTypeDecl>(static_cast<ast::ASTNodeTypeDecl*>(type->clone().release()));
+                type = hlp::safe_unique_ptr<ast::ASTNodeTypeDecl>(dynamic_cast<ast::ASTNodeTypeDecl*>(type->clone().release()));
             }
     }
 
@@ -1279,9 +1293,9 @@ namespace pl::core {
 
         hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> result = nullptr;
         if (sequence(tkn::Literal::Identifier)) {    // Custom type
-            Token::Identifier *UDTIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-            if (UDTIdentifier != nullptr)
-                UDTIdentifier->setType(Token::Identifier::IdentifierType::UDT);
+            auto undefinedTypeIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+            if (undefinedTypeIdentifier != nullptr)
+                undefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UndefinedType);
             result = parseCustomType();
         } else if (sequence(tkn::ValueType::Any)) {    // Builtin type
             auto type = getValue<Token::ValueType>(-1);
@@ -1307,13 +1321,13 @@ namespace pl::core {
         if (sequence(tkn::Operator::BoolLessThan)) {
             do {
                 if (sequence(tkn::Literal::Identifier)) {
-                    result.push_back(createShared<ast::ASTNodeTypeDecl>(getValue<Token::Identifier>(-1).get()));
-                    Token::Identifier *templateIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+                    result.emplace_back(createShared<ast::ASTNodeTypeDecl>(getValue<Token::Identifier>(-1).get()));
+                    auto templateIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
                     if (templateIdentifier != nullptr)
                         templateIdentifier->setType(Token::Identifier::IdentifierType::TemplateArgument);
                 } else if (sequence(tkn::ValueType::Auto, tkn::Literal::Identifier)) {
-                    result.push_back(createShared<ast::ASTNodeLValueAssignment>(getValue<Token::Identifier>(-1).get(), nullptr));
-                    Token::Identifier *templateIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+                    result.emplace_back(createShared<ast::ASTNodeLValueAssignment>(getValue<Token::Identifier>(-1).get(), nullptr));
+                    auto templateIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
                     if (templateIdentifier != nullptr)
                         templateIdentifier->setType(Token::Identifier::IdentifierType::TemplateArgument);
                 }
@@ -1392,7 +1406,7 @@ namespace pl::core {
     // using Identifier = (parseType)
     hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseUsingDeclaration() {
         const auto name = getValue<Token::Identifier>(-1).get();
-        Token::Identifier *typedefIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+        auto typedefIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
         if (typedefIdentifier != nullptr)
             typedefIdentifier->setType(Token::Identifier::IdentifierType::Typedef);
 
@@ -1450,7 +1464,7 @@ namespace pl::core {
 
     // (parseType) Identifier
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMemberVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool constant, const std::string &identifier) {
-        Token::Identifier *memberIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+        auto memberIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
 
         if (peek(tkn::Separator::Comma)) {
 
@@ -1464,7 +1478,7 @@ namespace pl::core {
                     if (memberIdentifier != nullptr)
                         memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
                 }
-                variables.push_back(createShared<ast::ASTNodeVariableDecl>(variableName, type, nullptr, nullptr, false, false, constant));
+                variables.emplace_back(createShared<ast::ASTNodeVariableDecl>(variableName, type.unwrapUnchecked(), nullptr, nullptr, false, false, constant));
             } while (sequence(tkn::Separator::Comma));
 
             return create<ast::ASTNodeMultiVariableDecl>(unwrapSafePointerVector(std::move(variables)));
@@ -1477,7 +1491,7 @@ namespace pl::core {
 
             auto variableName = getValue<Token::Identifier>(-2).get();
 
-            Token::Identifier *placedIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+            auto placedIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
             if (placedIdentifier != nullptr)
                 placedIdentifier->setType(Token::Identifier::IdentifierType::PlacedVariable);
 
@@ -1492,16 +1506,16 @@ namespace pl::core {
             if (memberIdentifier != nullptr)
                 memberIdentifier->setType(Token::Identifier::IdentifierType::PatternPlacedVariable);
 
-            return create<ast::ASTNodeVariableDecl>(variableName, type, std::move(placementOffset), std::move(placementSection), false, false, constant);
+            return create<ast::ASTNodeVariableDecl>(variableName, type.unwrapUnchecked(), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()), false, false, constant);
         }
         if (sequence(tkn::Operator::Assign)) {
             std::vector<hlp::safe_unique_ptr<ast::ASTNode>> compounds;
-            compounds.push_back(create<ast::ASTNodeVariableDecl>(identifier, type, nullptr, create<ast::ASTNodeLiteral>(u128(ptrn::Pattern::PatternLocalSectionId)), false, false, constant));
+            compounds.emplace_back(create<ast::ASTNodeVariableDecl>(identifier, type.unwrapUnchecked(), nullptr, create<ast::ASTNodeLiteral>(u128(ptrn::Pattern::PatternLocalSectionId)), false, false, constant));
             auto expression = parseMathematicalExpression();
             if (expression == nullptr)
                 return nullptr;
 
-            compounds.push_back(create<ast::ASTNodeLValueAssignment>(identifier, std::move(expression)));
+            compounds.emplace_back(create<ast::ASTNodeLValueAssignment>(identifier, std::move(expression)));
 
             if (memberIdentifier != nullptr)
                 memberIdentifier->setType(Token::Identifier::IdentifierType::PatternLocalVariable);
@@ -1512,13 +1526,13 @@ namespace pl::core {
         if (memberIdentifier != nullptr)
             memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
 
-        return create<ast::ASTNodeVariableDecl>(identifier, type, nullptr, nullptr, false, false, constant);
+        return create<ast::ASTNodeVariableDecl>(identifier, type.unwrapUnchecked(), nullptr, nullptr, false, false, constant);
     }
 
     // (parseType) Identifier[(parseMathematicalExpression)]
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMemberArrayVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool constant) {
         auto name = getValue<Token::Identifier>(-2).get();
-        Token::Identifier *memberIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-2]).value));
+        auto memberIdentifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
 
         hlp::safe_unique_ptr<ast::ASTNode> size;
 
@@ -1541,7 +1555,7 @@ namespace pl::core {
             if (constant)
                 error("Cannot mark placed variable as 'const'.", "Variables placed in memory are always implicitly const.");
 
-            Token::Identifier *typedefIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+            auto typedefIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
             if (typedefIdentifier != nullptr)
                 typedefIdentifier->setType(Token::Identifier::IdentifierType::PlacedVariable);
 
@@ -1557,18 +1571,18 @@ namespace pl::core {
             if (memberIdentifier != nullptr)
                 memberIdentifier->setType(Token::Identifier::IdentifierType::PatternPlacedVariable);
 
-            return create<ast::ASTNodeArrayVariableDecl>(name, type, std::move(size), std::move(placementOffset), std::move(placementSection), constant);
+            return create<ast::ASTNodeArrayVariableDecl>(name, type.unwrapUnchecked(), std::move(size.unwrapUnchecked()), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()), constant);
         }
         if (memberIdentifier != nullptr)
             memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
 
-        return create<ast::ASTNodeArrayVariableDecl>(name, type, std::move(size), nullptr, nullptr, constant);
+        return create<ast::ASTNodeArrayVariableDecl>(name, type.unwrapUnchecked(), std::move(size.unwrapUnchecked()), nullptr, nullptr, constant);
     }
 
     // (parseType) *Identifier : (parseType)
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMemberPointerVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
-        Token::Identifier *memberIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-2]).value));
+        auto memberIdentifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
 
         auto sizeType = parseType();
 
@@ -1582,18 +1596,18 @@ namespace pl::core {
             if (memberIdentifier != nullptr)
                 memberIdentifier->setType(Token::Identifier::IdentifierType::PatternPlacedVariable);
 
-            return create<ast::ASTNodePointerVariableDecl>(name, type, std::move(sizeType), std::move(expression));
+            return create<ast::ASTNodePointerVariableDecl>(name, type.unwrapUnchecked(), std::move(sizeType), std::move(expression));
         }
         if (memberIdentifier != nullptr)
             memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
 
-        return create<ast::ASTNodePointerVariableDecl>(name, type, std::move(sizeType));
+        return create<ast::ASTNodePointerVariableDecl>(name, type.unwrapUnchecked(), std::move(sizeType));
     }
 
     // (parseType) *Identifier[[(parseMathematicalExpression)]]  : (parseType)
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMemberPointerArrayVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
-        Token::Identifier *memberIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-2]).value));
+        auto memberIdentifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
 
         hlp::safe_unique_ptr<ast::ASTNode> size;
 
@@ -1621,7 +1635,7 @@ namespace pl::core {
         if (sizeType == nullptr)
             return nullptr;
 
-        auto arrayType = createShared<ast::ASTNodeArrayVariableDecl>("", type, std::move(size));
+        auto arrayType = createShared<ast::ASTNodeArrayVariableDecl>("", type.unwrapUnchecked(), std::move(size.unwrapUnchecked()));
 
         if (sequence(tkn::Operator::At)) {
             auto expression = parseMathematicalExpression();
@@ -1723,15 +1737,17 @@ namespace pl::core {
     // struct Identifier { <(parseMember)...> }
     hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseStruct() {
         const auto &typeName = getValue<Token::Identifier>(-1).get();
-        Token::Identifier *UDTIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-        if (UDTIdentifier != nullptr)
-            UDTIdentifier->setType(Token::Identifier::IdentifierType::UDT);
+        auto undefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+        if (undefinedTypeIdentifier != nullptr)
+            undefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UndefinedType);
 
         auto typeDecl   = addType(typeName, create<ast::ASTNodeStruct>());
         if(typeDecl == nullptr)
             return nullptr;
 
-        const auto structNode = static_cast<ast::ASTNodeStruct *>(typeDecl->getType().get());
+        const auto structNode = dynamic_cast<ast::ASTNodeStruct *>(typeDecl->getType().get());
+        if (structNode == nullptr)
+            return nullptr;
 
         typeDecl->setTemplateParameters(unwrapSafePointerVector(this->parseTemplateList()));
 
@@ -1777,15 +1793,17 @@ namespace pl::core {
     // union Identifier { <(parseMember)...> }
     hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseUnion() {
         const auto &typeName = getValue<Token::Identifier>(-1).get();
-        Token::Identifier *UDTIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-        if (UDTIdentifier != nullptr)
-            UDTIdentifier->setType(Token::Identifier::IdentifierType::UDT);
+        auto undefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+        if (undefinedTypeIdentifier != nullptr)
+            undefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UndefinedType);
 
         auto typeDecl  = addType(typeName, create<ast::ASTNodeUnion>());
         if (typeDecl == nullptr)
             return nullptr;
 
-        const auto unionNode = static_cast<ast::ASTNodeUnion *>(typeDecl->getType().get());
+        const auto unionNode = dynamic_cast<ast::ASTNodeUnion *>(typeDecl->getType().get());
+        if (unionNode == nullptr)
+            return nullptr;
 
         typeDecl->setTemplateParameters(unwrapSafePointerVector(this->parseTemplateList()));
 
@@ -1810,9 +1828,9 @@ namespace pl::core {
     // enum Identifier : (parseType) { <<Identifier|Identifier = (parseMathematicalExpression)[,]>...> }
     hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseEnum() {
         const auto typeName = getValue<Token::Identifier>(-1).get();
-        Token::Identifier *UDTIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-        if (UDTIdentifier != nullptr)
-            UDTIdentifier->setType(Token::Identifier::IdentifierType::UDT);
+        auto undefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+        if (undefinedTypeIdentifier != nullptr)
+            undefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UndefinedType);
 
         if (!sequence(tkn::Operator::Colon)) {
             error("Expected ':' after enum declaration, got {}.", getFormattedToken(0));
@@ -1832,7 +1850,9 @@ namespace pl::core {
         if(typeDecl == nullptr)
             return nullptr;
 
-        const auto enumNode = static_cast<ast::ASTNodeEnum *>(typeDecl->getType().get());
+        const auto enumNode = dynamic_cast<ast::ASTNodeEnum *>(typeDecl->getType().get());
+        if (enumNode == nullptr)
+            return nullptr;
 
         if (!sequence(tkn::Separator::LeftBrace)) {
             error("Expected '{{' after enum declaration, got {}.", getFormattedToken(0));
@@ -1846,7 +1866,7 @@ namespace pl::core {
 
             if (sequence(tkn::Literal::Identifier, tkn::Operator::Assign)) {
                 name  = getValue<Token::Identifier>(-2).get();
-                Token::Identifier *identifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-2]).value));
+                auto identifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
                 if (identifier != nullptr)
                     identifier->setType(Token::Identifier::IdentifierType::PatternLocalVariable);
                 enumValue = parseMathematicalExpression();
@@ -1857,7 +1877,7 @@ namespace pl::core {
                 lastEntry = enumValue->clone();
             } else if (sequence(tkn::Literal::Identifier)) {
                 name = getValue<Token::Identifier>(-1).get();
-                Token::Identifier *identifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+                auto identifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
                 if (identifier != nullptr)
                     identifier->setType(Token::Identifier::IdentifierType::PatternVariable);
                 if (enumNode->getEntries().empty())
@@ -1898,7 +1918,7 @@ namespace pl::core {
 
         if (sequence(tkn::Literal::Identifier, tkn::Operator::Assign)) {
             const auto variableName = getValue<Token::Identifier>(-2).get();
-            Token::Identifier *identifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-2]).value));
+            auto identifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
             if (identifier != nullptr)
                 identifier->setType(Token::Identifier::IdentifierType::PatternLocalVariable);
             member = parseFunctionVariableAssignment(variableName);
@@ -1906,13 +1926,13 @@ namespace pl::core {
             member = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(*identifierOffset).get());
         else if (MATCHES(optional(tkn::Keyword::Unsigned) && sequence(tkn::Literal::Identifier, tkn::Operator::Colon))) {
             auto fieldName = getValue<Token::Identifier>(-2).get();
-            Token::Identifier *identifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-2]).value));
+            auto identifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
             if (identifier != nullptr)
                 identifier->setType(Token::Identifier::IdentifierType::PatternVariable);
             member = create<ast::ASTNodeBitfieldField>(fieldName, parseMathematicalExpression());
         } else if (sequence(tkn::Keyword::Signed, tkn::Literal::Identifier, tkn::Operator::Colon)) {
             auto fieldName = getValue<Token::Identifier>(-2).get();
-            Token::Identifier *identifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-2]).value));
+            auto identifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
             if (identifier != nullptr)
                 identifier->setType(Token::Identifier::IdentifierType::PatternVariable);
             member = create<ast::ASTNodeBitfieldFieldSigned>(fieldName, parseMathematicalExpression());
@@ -1924,9 +1944,9 @@ namespace pl::core {
             if (sequence(tkn::ValueType::Any)) {
                 const auto typeToken = getValue<Token::ValueType>(-1);
                 if (typeToken == Token::ValueType::CustomType) {
-                   Token::Identifier *identifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-                    if (identifier != nullptr)
-                        identifier->setType(Token::Identifier::IdentifierType::UDT);
+                    auto undefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+                    if (undefinedTypeIdentifier != nullptr)
+                        undefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UndefinedType);
                 }
                 type = create<ast::ASTNodeTypeDecl>(Token::getTypeName(typeToken), create<ast::ASTNodeBuiltinType>(typeToken));
             } else if (sequence(tkn::Literal::Identifier)) {
@@ -1939,9 +1959,9 @@ namespace pl::core {
                 } else {
                     type = getCustomType(name);
 
-                    Token::Identifier *identifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-                    if (identifier != nullptr)
-                        identifier->setType(Token::Identifier::IdentifierType::UDT);
+                    auto undefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+                    if (undefinedTypeIdentifier != nullptr)
+                        undefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UndefinedType);
                     if (type == nullptr) {
                         error("Expected a variable name followed by ':', a function call or a bitfield type name, got '{}'.", name);
                         return nullptr;
@@ -1977,7 +1997,7 @@ namespace pl::core {
 
                 auto variableName = getValue<Token::Identifier>(-1).get();
 
-                Token::Identifier *identifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+                auto identifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
                 if (identifier != nullptr)
                     identifier->setType(Token::Identifier::IdentifierType::PatternVariable);
                 if (sequence(tkn::Operator::Colon))
@@ -2022,15 +2042,17 @@ namespace pl::core {
     hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseBitfield() {
         const std::string typeName = getValue<Token::Identifier>(-1).get();
 
-        Token::Identifier *identifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-        if (identifier != nullptr)
-            identifier->setType(Token::Identifier::IdentifierType::UDT);
+        auto undefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+        if (undefinedTypeIdentifier != nullptr)
+            undefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UndefinedType);
         auto typeDecl = addType(typeName, create<ast::ASTNodeBitfield>());
         if (typeDecl == nullptr)
             return nullptr;
 
         typeDecl->setTemplateParameters(unwrapSafePointerVector(this->parseTemplateList()));
-        const auto bitfieldNode = static_cast<ast::ASTNodeBitfield *>(typeDecl->getType().get());
+        const auto bitfieldNode = dynamic_cast<ast::ASTNodeBitfield *>(typeDecl->getType().get());
+        if (bitfieldNode == nullptr)
+            return nullptr;
 
         if (!sequence(tkn::Separator::LeftBrace)) {
             errorDesc("Expected '{{' after bitfield declaration, got {}.", getFormattedToken(0));
@@ -2056,9 +2078,9 @@ namespace pl::core {
     void Parser::parseForwardDeclaration() {
         std::string typeName = getNamespacePrefixedNames(getValue<Token::Identifier>(-1).get()).back();
 
-        Token::Identifier *identifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-        if (identifier != nullptr)
-            identifier->setType(Token::Identifier::IdentifierType::UDT);
+        auto undefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+        if (undefinedTypeIdentifier != nullptr)
+            undefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UndefinedType);
         if (this->m_types.contains(typeName))
             return;
 
@@ -2071,7 +2093,7 @@ namespace pl::core {
         bool outVariable = false;
 
         auto name = getValue<Token::Identifier>(-1).get();
-        Token::Identifier *identifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+        auto identifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
 
 
         hlp::safe_unique_ptr<ast::ASTNode> placementOffset, placementSection;
@@ -2094,12 +2116,12 @@ namespace pl::core {
         } else if (sequence(tkn::Operator::Assign)) {
             std::vector<hlp::safe_unique_ptr<ast::ASTNode>> compounds;
 
-            compounds.push_back(create<ast::ASTNodeVariableDecl>(name, type, std::move(placementOffset), nullptr, inVariable, outVariable));
+            compounds.emplace_back(create<ast::ASTNodeVariableDecl>(name, type.unwrapUnchecked(), std::move(placementOffset.unwrapUnchecked()), nullptr, inVariable, outVariable));
             auto expression = parseMathematicalExpression();
             if (expression == nullptr)
                 return nullptr;
 
-            compounds.push_back(create<ast::ASTNodeLValueAssignment>(name, std::move(expression)));
+            compounds.emplace_back(create<ast::ASTNodeLValueAssignment>(name, std::move(expression)));
             if (identifier != nullptr)
                 identifier->setType(Token::Identifier::IdentifierType::GlobalVariable);
             return create<ast::ASTNodeCompoundStatement>(unwrapSafePointerVector(std::move(compounds)));
@@ -2125,13 +2147,13 @@ namespace pl::core {
         }
         if (identifier != nullptr)
             identifier->setType(Token::Identifier::IdentifierType::GlobalVariable);
-        return create<ast::ASTNodeVariableDecl>(name, type, std::move(placementOffset), std::move(placementSection), inVariable, outVariable);
+        return create<ast::ASTNodeVariableDecl>(name, type.unwrapUnchecked(), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()), inVariable, outVariable);
     }
 
     // (parseType) Identifier[[(parseMathematicalExpression)]] @ Integer
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseArrayVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
-        Token::Identifier *placedIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-2]).value));
+        auto placedIdentifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
         if (placedIdentifier != nullptr)
             placedIdentifier->setType(Token::Identifier::IdentifierType::PlacedVariable);
 
@@ -2156,7 +2178,7 @@ namespace pl::core {
         if (sequence(tkn::Operator::At)) {
             placementOffset = parseMathematicalExpression();
 
-            Token::Identifier *typedefIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+            auto typedefIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
             if (typedefIdentifier != nullptr)
                 typedefIdentifier->setType(Token::Identifier::IdentifierType::PlacedVariable);
 
@@ -2170,13 +2192,13 @@ namespace pl::core {
             }
         }
 
-        return create<ast::ASTNodeArrayVariableDecl>(name, type, std::move(size), std::move(placementOffset), std::move(placementSection));
+        return create<ast::ASTNodeArrayVariableDecl>(name, type.unwrapUnchecked(), std::move(size.unwrapUnchecked()), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()));
     }
 
     // (parseType) *Identifier : (parseType) @ Integer
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parsePointerVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
-        Token::Identifier *placedIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-2]).value));
+        auto placedIdentifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
         if (placedIdentifier != nullptr)
             placedIdentifier->setType(Token::Identifier::IdentifierType::PlacedVariable);
 
@@ -2189,7 +2211,7 @@ namespace pl::core {
             return nullptr;
         }
 
-        Token::Identifier *typedefIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+        auto typedefIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
         if (typedefIdentifier != nullptr)
             typedefIdentifier->setType(Token::Identifier::IdentifierType::PlacedVariable);
 
@@ -2204,13 +2226,13 @@ namespace pl::core {
                 return nullptr;
         }
 
-        return create<ast::ASTNodePointerVariableDecl>(name, type, std::move(sizeType), std::move(placementOffset), std::move(placementSection));
+        return create<ast::ASTNodePointerVariableDecl>(name, type.unwrapUnchecked(), std::move(sizeType), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()));
     }
 
     // (parseType) *Identifier[[(parseMathematicalExpression)]] : (parseType) @ Integer
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parsePointerArrayVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
-        Token::Identifier *placedIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-2]).value));
+        auto placedIdentifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
         if (placedIdentifier != nullptr)
             placedIdentifier->setType(Token::Identifier::IdentifierType::PlacedVariable);
 
@@ -2251,7 +2273,7 @@ namespace pl::core {
         if (sequence(tkn::Keyword::In))
             placementSection = parseMathematicalExpression();
 
-        return create<ast::ASTNodePointerVariableDecl>(name, createShared<ast::ASTNodeArrayVariableDecl>("", type, std::move(size)), std::move(sizeType), std::move(placementOffset), std::move(placementSection));
+        return create<ast::ASTNodePointerVariableDecl>(name, createShared<ast::ASTNodeArrayVariableDecl>("", type.unwrapUnchecked(), std::move(size.unwrapUnchecked())), std::move(sizeType), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()));
     }
 
     std::vector<hlp::safe_shared_ptr<ast::ASTNode>> Parser::parseNamespace() {
@@ -2274,7 +2296,7 @@ namespace pl::core {
             this->m_currNamespace.back().push_back(getValue<Token::Identifier>(-1).get());
             name += getValue<Token::Identifier>(-1).get();
 
-            Token::Identifier *identifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+            auto identifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
             if (identifier != nullptr)
                 identifier->setType(Token::Identifier::IdentifierType::NameSpace);
             if (sequence(tkn::Operator::ScopeResolution, tkn::Literal::Identifier)) {
@@ -2378,7 +2400,7 @@ namespace pl::core {
             requiresSemicolon = false;
         }
 
-        if (statement && sequence(tkn::Separator::LeftBracket, tkn::Separator::LeftBracket))
+        if (statement != nullptr && sequence(tkn::Separator::LeftBracket, tkn::Separator::LeftBracket))
             parseAttribute(dynamic_cast<ast::Attributable *>(statement.get()));
 
         if (requiresSemicolon && !sequence(tkn::Separator::Semicolon)) {
@@ -2428,7 +2450,7 @@ namespace pl::core {
         }
 
         if (!this->m_types.contains(typeName)) {
-            auto typeDecl = createShared<ast::ASTNodeTypeDecl>(typeName, std::move(node), endian);
+            auto typeDecl = createShared<ast::ASTNodeTypeDecl>(typeName, std::move(std::move(node).unwrapUnchecked()), endian);
             this->m_types.insert({typeName, typeDecl});
 
             return typeDecl;
@@ -2489,7 +2511,7 @@ namespace pl::core {
     }
 
     // <(parseNamespace)...> EndOfProgram
-    hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> Parser::parse(const std::vector<Token> &tokens) {
+    hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> Parser::parse(std::vector<Token> &tokens) {
 
         this->m_curr = this->m_startToken = this->m_originalPosition = this->m_partOriginalPosition
             = TokenIter(tokens.begin(), tokens.end());
@@ -2511,9 +2533,15 @@ namespace pl::core {
 
             return { unwrapSafePointerVector(std::move(program)), this->collectErrors() };
         }
-        catch (const std::out_of_range&) { }
-        catch (const std::runtime_error&) { }
-        catch (const UnrecoverableParserException&) { }
+        catch (const std::out_of_range&) {
+            error("Iterator out of Range. This is a parser bug!");
+        }
+        catch (const std::logic_error&) {
+            error("Runtime Error. This is a parser bug!");
+        }
+        catch (const UnrecoverableParserException&) {
+            error("This is a parser bug!");
+        }
 
         return { std::nullopt, this->collectErrors() };
     }
@@ -2530,8 +2558,5 @@ namespace pl::core {
     void Parser::errorDescHere(const std::string &message, const std::string &description) {
         errorAtDesc(peek(tkn::Separator::EndOfProgram) ? m_curr[-1].location : m_curr->location, message, description);
     }
-
-
-
 
 }
