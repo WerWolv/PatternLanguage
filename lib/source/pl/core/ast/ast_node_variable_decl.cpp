@@ -121,7 +121,7 @@ namespace pl::core::ast {
     ASTNode::FunctionResult ASTNodeVariableDecl::execute(Evaluator *evaluator) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
-        auto startOffset = evaluator->getReadOffset();
+        auto startOffset = evaluator->getBitwiseReadOffset();
 
         evaluator->createVariable(this->getName(), this->getType().get(), { }, this->m_outVariable, false, false, this->m_constant);
         auto &variable = evaluator->getScope(0).scope->back();
@@ -134,8 +134,8 @@ namespace pl::core::ast {
         } else {
             evaluator->pushSectionId(this->m_placementSection == nullptr ? ptrn::Pattern::MainSectionId : evaluator->getSectionId());
 
-            auto currOffset = evaluator->getReadOffset();
-            ON_SCOPE_EXIT { evaluator->setReadOffset(currOffset); };
+            auto currOffset = evaluator->getBitwiseReadOffset();
+            ON_SCOPE_EXIT { evaluator->setBitwiseReadOffset(currOffset); };
 
             evaluator->setReadOffset(this->evaluatePlacementOffset(evaluator));
             initValues = this->getType()->createPatterns(evaluator);
@@ -161,7 +161,7 @@ namespace pl::core::ast {
             variable->setInitialized(false);
         }
 
-        evaluator->setReadOffset(startOffset);
+        evaluator->setBitwiseReadOffset(startOffset);
 
         if (this->m_placementOffset != nullptr) {
             auto section = this->evaluatePlacementSection(evaluator);

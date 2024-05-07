@@ -52,7 +52,7 @@ namespace pl::ptrn {
     class PatternBitfieldField : public PatternBitfieldMember {
     public:
         PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, PatternBitfieldMember *parentBitfield = nullptr)
-                : PatternBitfieldMember(evaluator, offset, (bitOffset + bitSize + 7) / 8, line), m_parentBitfield(parentBitfield), m_bitOffset(bitOffset), m_bitSize(bitSize) { }
+                : PatternBitfieldMember(evaluator, offset, (bitOffset + bitSize + 7) / 8, line), m_parentBitfield(parentBitfield), m_bitOffset(bitOffset % 8), m_bitSize(bitSize) { }
 
         PatternBitfieldField(const PatternBitfieldField &other) : PatternBitfieldMember(other) {
             this->m_padding = other.m_padding;
