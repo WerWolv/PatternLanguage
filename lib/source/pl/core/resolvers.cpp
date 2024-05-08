@@ -31,14 +31,14 @@ namespace pl::core::resolvers {
             if(!exists)
                 continue;
 
-            const auto utf8 = wolv::util::toUTF8String(fullPath);
-            auto file = wolv::io::File(utf8, wolv::io::File::Mode::Read);
+            auto file = wolv::io::File(fullPath, wolv::io::File::Mode::Read);
 
-            if(!file.isValid()) {
+            const auto utf8 = wolv::util::toUTF8String(fullPath);
+            if (!file.isValid()) {
                 return Result::err("Could not open file " + utf8);
             }
 
-            if(!std::fs::is_regular_file(fullPath)) {
+            if (!std::fs::is_regular_file(fullPath)) {
                 return Result::err("Path " + utf8 + " is not a regular file");
             }
 
