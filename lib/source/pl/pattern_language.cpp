@@ -96,8 +96,11 @@ namespace pl {
         if (!parserErrors.empty())
             this->m_compileErrors = std::move(parserErrors);
 
-        if (!ast.has_value() || ast->empty())
+        if (!ast.has_value())
             return std::nullopt;
+        if (ast->empty())
+            return ast;
+
         this->m_internals.preprocessor->setOutput(tokens.value());
 
         auto [validated, validatorErrors] = this->m_internals.validator->validate(ast.value());
