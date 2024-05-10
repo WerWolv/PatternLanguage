@@ -34,12 +34,15 @@ def failure_run(args: list) -> tuple[int, str, str]:
     
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
-    
     if process.returncode == 0:
         print(f"Command {cmd} succeded although it should have failed")
         print(f"Stdout: {stdout}")
         print(f"Stderr: {stderr}")
         exit(1)
+    elif process.returncode < 0: # Check for signal termination: not the way we want our process to fail
+        print(f"Command {cmd} failed with signal termination exit code {process.returncode}")
+        print(f"Stdout: {stdout}")
+        print(f"Stderr: {stderr}")
 
 with tempfile.TemporaryDirectory() as tmpdir:
     stdout = success_run(["format", "--input", "tests/integration/3ds.hexpat.3ds", "--pattern", "tests/integration/3ds.hexpat", "--output", os.path.join(tmpdir, "out.json")])
