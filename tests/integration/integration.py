@@ -46,7 +46,7 @@ with tempfile.TemporaryDirectory() as tmpdir:
     with open(os.path.join(tmpdir, "out.json"), "r") as f, open("tests/integration/3ds.hexpat.json", "r") as f2:
         assert f.read() == f2.read(), "3DS pattern output does not match expected output"
 
-failure_run(["format", "--input", "tests/integration/3ds.hexpat.3ds", "--pattern", "invalid.hexpat"])
-failure_run(["format", "--input", "tests/integration/3ds.hexpat.3ds", "--pattern", "non_existing.hexpat"])
+failure_run(["format", "--input", "tests/integration/3ds.hexpat.3ds", "--pattern", "tests/integration/invalid.hexpat"])
+failure_run(["format", "--input", "tests/integration/3ds.hexpat.3ds", "--pattern", "tests/integration/non_existing.hexpat"])
 
 print("Tests successful")
