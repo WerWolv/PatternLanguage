@@ -419,7 +419,7 @@ namespace pl::core {
                     err::E0004.throwError(fmt::format("Cannot cast from type 'string' to type '{}'.", pattern->getTypeName()));
             },
             [&](const std::shared_ptr<ptrn::Pattern>& value) -> Token::Literal {
-                if (value->getTypeName() == pattern->getTypeName())
+                if (value->getTypeName() == pattern->getTypeName() || value->getTypeName().empty())
                     return value;
                 else
                     err::E0004.throwError(fmt::format("Cannot cast from type '{}' to type '{}'.", value->getTypeName(), pattern->getTypeName()));
@@ -485,6 +485,9 @@ namespace pl::core {
                 // If the variable is being set to a pattern, adjust its layout to the real layout as it potentially contains dynamically sized members
                 std::visit(wolv::util::overloaded {
                     [&](ptrn::Pattern * const value) {
+                        if (value->getTypeName().empty())
+                            return;
+
                         if (value->getTypeName() != variablePattern->getTypeName() && !variablePattern->getTypeName().empty())
                             err::E0004.throwError(fmt::format("Cannot cast from type '{}' to type '{}'.", value->getTypeName(), variablePattern->getTypeName()));
 
@@ -516,6 +519,9 @@ namespace pl::core {
             } else {
                 std::visit(wolv::util::overloaded {
                     [&](ptrn::Pattern * const value) {
+                        if (value->getTypeName().empty())
+                            return;
+
                         if (value->getTypeName() != variablePattern->getTypeName() && !variablePattern->getTypeName().empty())
                             err::E0004.throwError(fmt::format("Cannot cast from type '{}' to type '{}'.", value->getTypeName(), variablePattern->getTypeName()));
                     },
