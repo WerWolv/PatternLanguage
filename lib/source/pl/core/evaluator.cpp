@@ -29,13 +29,7 @@
 namespace pl::core {
 
     std::map<std::string, Token::Literal> Evaluator::getOutVariables() const {
-        std::map<std::string, Token::Literal> result;
-
-        for (const auto &[name, pattern] : this->m_outVariables) {
-            result.insert({ name, pattern->getValue() });
-        }
-
-        return result;
+        return m_outVariableValues;
     }
 
     void Evaluator::setDataSource(u64 baseAddress, size_t dataSize, std::function<void(u64, u8*, size_t)> readerFunction, std::optional<std::function<void(u64, const u8*, size_t)>> writerFunction) {
@@ -351,7 +345,7 @@ namespace pl::core {
 
         if (outVariable) {
             if (this->isGlobalScope())
-                this->m_outVariables[name] = pattern->clone();
+                this->m_outVariables[name] = pattern;
             else
                 err::E0003.throwError("Out variables can only be declared in the global scope.", {}, type->getLocation());
         }
@@ -888,6 +882,7 @@ namespace pl::core {
         this->m_sectionIdStack.clear();
         this->m_sectionId = 1;
         this->m_outVariables.clear();
+        this->m_outVariableValues.clear();
 
         this->m_customFunctions.clear();
         this->m_patterns.clear();
@@ -910,6 +905,10 @@ namespace pl::core {
             this->m_envVariables.clear();
             this->m_evaluated = true;
             this->m_mainSectionEditsAllowed = false;
+
+            for (const auto &[name, pattern] : this->m_outVariables) {
+                this->m_outVariableValues.insert({ name, pattern->getValue() });
+            }
         };
 
         this->m_currPatternCount = 0;

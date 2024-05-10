@@ -418,7 +418,8 @@ namespace pl::core {
 
         std::map<std::string, Token::Literal> m_envVariables;
         std::map<std::string, Token::Literal> m_inVariables;
-        std::map<std::string, std::unique_ptr<ptrn::Pattern>> m_outVariables;
+        std::map<std::string, std::shared_ptr<ptrn::Pattern>> m_outVariables;
+        std::map<std::string, Token::Literal> m_outVariableValues;
         std::vector<std::vector<std::shared_ptr<ptrn::Pattern>>> m_templateParameters;
 
         std::vector<std::vector<u8>> m_heap;
