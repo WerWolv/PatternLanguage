@@ -48,6 +48,7 @@ jobs:
           -DLIBPL_ENABLE_TESTS=ON                                                                                      \
           ..
         make -j4 pattern_language_tests
+        make -j4 plcli
 
     - name: 🧪 Perform plcli Integration Tests
       run: |
