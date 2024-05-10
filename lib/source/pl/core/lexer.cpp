@@ -46,7 +46,7 @@ namespace pl::core {
     static size_t getIntegerLiteralLength(const std::string_view& literal) {
         const auto count = literal.find_first_not_of("0123456789ABCDEFabcdef'xXoOpP.uU+-");
         const std::string_view intLiteral = count == std::string_view::npos ? literal : literal.substr(0, count);
-        if (const auto signPos = intLiteral.find_first_of("+-"); signPos != std::string_view::npos && literal.at(signPos-1) != 'e' && literal.at(signPos-1) != 'E')
+        if (const auto signPos = intLiteral.find_first_of("+-"); signPos != std::string_view::npos && ((literal.at(signPos-1) != 'e' && literal.at(signPos-1) != 'E')  || literal.starts_with("0x")))
             return signPos;
         return intLiteral.size();
     }
