@@ -45,11 +45,11 @@ def failure_run(args: list) -> tuple[int, str, str]:
         print(f"Stderr: {stderr}")
 
 with tempfile.TemporaryDirectory() as tmpdir:
-    stdout = success_run(["format", "--input", "tests/integration/3ds.hexpat.3ds", "--pattern", "tests/integration/3ds.hexpat", "--output", os.path.join(tmpdir, "out.json")])
-    with open(os.path.join(tmpdir, "out.json"), "r") as f, open("tests/integration/3ds.hexpat.json", "r") as f2:
-        assert f.read() == f2.read(), "3DS pattern output does not match expected output"
+    stdout = success_run(["format", "--input", "tests/integration/nbt.hexpat.nbt", "--pattern", "tests/integration/nbt.hexpat", "--output", os.path.join(tmpdir, "out.json")])
+    with open(os.path.join(tmpdir, "out.json"), "r") as f, open("tests/integration/nbt.hexpat.json", "r") as f2:
+        assert f.read() == f2.read(), "Pattern output does not match expected output"
 
-failure_run(["format", "--input", "tests/integration/3ds.hexpat.3ds", "--pattern", "tests/integration/invalid.hexpat"])
-failure_run(["format", "--input", "tests/integration/3ds.hexpat.3ds", "--pattern", "tests/integration/non_existing.hexpat"])
+failure_run(["format", "--input", "tests/integration/nbt.hexpat.nbt", "--pattern", "tests/integration/invalid.hexpat"])
+failure_run(["format", "--input", "tests/integration/nbt.hexpat.nbt", "--pattern", "tests/integration/non_existing.hexpat"])
 
 print("Tests successful")
