@@ -51,7 +51,7 @@ jobs:
 
     - name: 🧪 Perform plcli Integration Tests
       run: |
-        python tests/integration/integration.py
+        python tests/integration/integration.py build/cli/plcli
 
     - name: 🧪 Perform Unit Tests
       run: |
