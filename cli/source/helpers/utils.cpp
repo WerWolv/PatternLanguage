@@ -34,8 +34,16 @@ namespace pl::cli {
 
         // Execute pattern file
         if (!runtime.executeString(patternFile.readString(), wolv::util::toUTF8String(patternFile.getPath()))) {
-            auto error = runtime.getError().value();
-            fmt::print("Pattern Error: {}:{} -> {}\n", error.line, error.column, error.message);
+            auto compileErrors = runtime.getCompileErrors();
+            if (compileErrors.size()>0) {
+                fmt::println("Compilation failed");
+                for (const auto &error : compileErrors) {
+                    fmt::println("{}", error.format());
+                }
+            } else {
+                auto error = runtime.getError().value();
+                fmt::print("Pattern Error: {}:{} -> {}\n", error.line, error.column, error.message);
+            }
             std::exit(EXIT_FAILURE);
         }
     }

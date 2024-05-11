@@ -19,6 +19,8 @@ namespace pl::cli {
 
     }
 
+    // Run the pattern language CLI
+    // first argument (args[0]) is the subcommand, not the executable name
     int executeCommandLineInterface(std::vector<std::string> args) {
         CLI::App app("Pattern Language CLI");
         app.require_subcommand();
@@ -30,11 +32,11 @@ namespace pl::cli {
         sub::addInfoSubcommand(&app);
 
         // Print help message if not enough arguments were provided
-        if (args.size() == 1) {
+        if (args.size() == 0) {
             fmt::print("{}", app.help());
             return EXIT_FAILURE;
-        } else if (args.size() == 2) {
-            std::string subcommand = args[1];
+        } else if (args.size() == 1) {
+            std::string subcommand = args[0];
             if (subcommand == "-h" || subcommand == "--help") {
                 fmt::print("{}", app.help());
                 return EXIT_FAILURE;
@@ -51,7 +53,7 @@ namespace pl::cli {
 
         // Parse command line input
         try {
-            std::reverse(args.begin(), args.end());
+            std::reverse(args.begin(), args.end()); // wanted by CLI11
             app.parse(args);
         } catch(const CLI::ParseError &e) {
             return app.exit(e, std::cout, std::cout);

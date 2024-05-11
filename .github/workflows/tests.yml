@@ -45,10 +45,14 @@ jobs:
           -DCMAKE_BUILD_TYPE=Debug                                                                                    \
           -DCMAKE_C_FLAGS="-O0 -fuse-ld=lld --coverage -fsanitize=address,leak,undefined -fno-sanitize-recover=all"   \
           -DCMAKE_CXX_FLAGS="-O0 -fuse-ld=lld --coverage -fsanitize=address,leak,undefined -fno-sanitize-recover=all" \
-          -DLIBPL_ENABLE_TESTS=ON                                                                                     \
-          -DLIBPL_ENABLE_CLI=OFF                                                                                      \
+          -DLIBPL_ENABLE_TESTS=ON                                                                                      \
           ..
         make -j4 pattern_language_tests
+        make -j4 plcli
+
+    - name: 🧪 Perform plcli Integration Tests
+      run: |
+        python tests/integration/integration.py build/cli/plcli
 
     - name: 🧪 Perform Unit Tests
       run: |
