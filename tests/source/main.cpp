@@ -38,7 +38,7 @@ int runTests(int argc, char **argv) {
     bool failing         = currTest->getMode() == Mode::Failing;
 
     wolv::io::File testData("test_data", wolv::io::File::Mode::Read);
-    pl::PatternLanguage runtime;
+    static pl::PatternLanguage runtime;
     runtime.setDataSource(0x00, testData.getSize(), [&testData](u64 offset, u8 *buffer, u64 size) {
         testData.seek(offset);
         testData.readBuffer(buffer, size);
@@ -159,7 +159,7 @@ int runTests(int argc, char **argv) {
 int main(int argc, char **argv) {
     int result = EXIT_SUCCESS;
 
-    for (u32 i = 0; i < 16; i++) {
+    for (u32 i = 0; i < 16; i++) { // Test several times with the same PatternLanguage runtime instance (see static declaration in runTests()) to check if the runtime resets properly
         result = runTests(argc, argv);
         if (result != EXIT_SUCCESS)
             break;
