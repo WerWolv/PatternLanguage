@@ -45,18 +45,18 @@ def failure_run(args: list) -> tuple[int, str, str]:
         print(f"Stderr: {stderr}")
 
 with tempfile.TemporaryDirectory() as tmpdir:
-    stdout = success_run(["format", "--input", "tests/integration/nbt.hexpat.nbt", "--pattern", "tests/integration/nbt.hexpat", "--output", os.path.join(tmpdir, "out.json")])
-    with open(os.path.join(tmpdir, "out.json"), "r") as f, open("tests/integration/nbt.hexpat.json", "r") as f2:
+    stdout = success_run(["format", "--input", "tests/integration/test_data", "--pattern", "tests/integration/test.hexpat", "--output", os.path.join(tmpdir, "out.json")])
+    with open(os.path.join(tmpdir, "out.json"), "r") as f, open("tests/integration/test.hexpat.json", "r") as f2:
         assert f.read() == f2.read(), "Pattern output does not match expected output"
     
     should_not_exist_file = os.path.join(tmpdir, "should_not_exist.json")
 
-    cmd = ["format", "--input", "tests/integration/nbt.hexpat.nbt", "--pattern", "tests/integration/invalid.hexpat", "--output", should_not_exist_file]
+    cmd = ["format", "--input", "tests/integration/test_data", "--pattern", "tests/integration/invalid.hexpat", "--output", should_not_exist_file]
     failure_run(cmd)
     if os.path.exists(should_not_exist_file):
         raise Exception(f"Command {cmd} should not have created a file")
-    
-    cmd = ["format", "--input", "tests/integration/nbt.hexpat.nbt", "--pattern", "tests/integration/non_existing.hexpat", "--output", should_not_exist_file]
+
+    cmd = ["format", "--input", "tests/integration/test_data", "--pattern", "tests/integration/non_existing.hexpat", "--output", should_not_exist_file]
     failure_run(cmd)
     if os.path.exists(should_not_exist_file):
         raise Exception(f"Command {cmd} should not have created a file")
