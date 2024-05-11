@@ -43,6 +43,7 @@ def failure_run(args: list) -> tuple[int, str, str]:
         print(f"Command {cmd} failed with signal termination exit code {process.returncode}")
         print(f"Stdout: {stdout}")
         print(f"Stderr: {stderr}")
+        exit(1)
 
 with tempfile.TemporaryDirectory() as tmpdir:
     stdout = success_run(["format", "--input", "tests/integration/test_data", "--pattern", "tests/integration/test.hexpat", "--output", os.path.join(tmpdir, "out.json")])
