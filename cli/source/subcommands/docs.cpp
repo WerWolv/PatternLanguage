@@ -150,9 +150,9 @@ namespace pl::cli::sub {
             if (!ast.has_value()) {
                 auto compileErrors = runtime.getCompileErrors();
                 if (compileErrors.size()>0) {
-                    fmt::println("Compilation failed");
+                    fmt::print("Compilation failed\n");
                     for (const auto &error : compileErrors) {
-                        fmt::println("{}", error.format());
+                        fmt::print("{}\n", error.format());
                     }
                 } else {
                     auto error = runtime.getError().value();
