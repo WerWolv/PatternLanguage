@@ -61,7 +61,7 @@ int main() {
     // Check if execution completed successfully
     if (!result) {
         // If not, print the error string
-        auto error = patternLanguage.getError();
+        auto error = patternLanguage.getRuntimeError();
         printf("Error: %d:%d %s\n", error->line, error->column, error->message.c_str());
     }
 

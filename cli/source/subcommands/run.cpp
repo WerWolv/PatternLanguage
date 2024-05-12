@@ -84,7 +84,7 @@ namespace pl::cli::sub {
                         fmt::print("{}\n", error.format());
                     }
                 } else {
-                    auto error = runtime.getError().value();
+                    auto error = runtime.getRuntimeError().value();
                     fmt::print("Pattern Error: {}:{} -> {}\n", error.line, error.column, error.message);
                 }
                 std::exit(EXIT_FAILURE);

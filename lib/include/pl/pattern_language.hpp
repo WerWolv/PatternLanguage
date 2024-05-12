@@ -217,7 +217,7 @@ namespace pl {
          * @brief Gets the error that occurred during the last execution
          * @return Error
          */
-        [[nodiscard]] const std::optional<core::err::PatternLanguageError> &getError() const;
+        [[nodiscard]] const std::optional<core::err::PatternLanguageError> &getRuntimeError() const;
 
         [[nodiscard]] const std::vector<core::err::CompileError>& getCompileErrors() const;
 
