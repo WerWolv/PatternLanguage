@@ -540,9 +540,6 @@ namespace pl::ptrn {
                                 string = result->toString(true);
                             }
 
-
-                            this->m_cachedDisplayValue = std::make_unique<std::string>(string);
-
                             return string;
                         } else {
                             return "";
