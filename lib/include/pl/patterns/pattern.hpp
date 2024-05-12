@@ -516,7 +516,10 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] virtual std::string formatDisplayValue() = 0;
-
+        
+        /**
+         * @brief Calls an user-defined PL function to format the given literal (pattern), if existing. Else, returns defaultValue
+        */
         [[nodiscard]] std::string callUserFormatFunc(const std::string &defaultValue, const core::Token::Literal &literal, bool fromCast = false) const {
             const auto &formatterFunctionName = this->getReadFormatterFunction();
             if (formatterFunctionName.empty())
