@@ -518,9 +518,6 @@ namespace pl::ptrn {
         [[nodiscard]] virtual std::string formatDisplayValue() = 0;
 
         [[nodiscard]] std::string formatDisplayValue(const std::string &defaultValue, const core::Token::Literal &literal, bool fromCast = false) const {
-            if (this->m_cachedDisplayValue != nullptr)
-                return *this->m_cachedDisplayValue;
-
             const auto &formatterFunctionName = this->getReadFormatterFunction();
             if (formatterFunctionName.empty())
                 return defaultValue;
