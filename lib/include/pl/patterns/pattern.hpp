@@ -517,13 +517,13 @@ namespace pl::ptrn {
 
         [[nodiscard]] virtual std::string formatDisplayValue() = 0;
 
-        [[nodiscard]] std::string formatDisplayValue(const std::string &value, const core::Token::Literal &literal, bool fromCast = false) const {
+        [[nodiscard]] std::string formatDisplayValue(const std::string &defaultValue, const core::Token::Literal &literal, bool fromCast = false) const {
             if (this->m_cachedDisplayValue != nullptr)
                 return *this->m_cachedDisplayValue;
 
             const auto &formatterFunctionName = this->getReadFormatterFunction();
             if (formatterFunctionName.empty())
-                return value;
+                return defaultValue;
             else {
                 try {
                     const auto function = this->m_evaluator->findFunction(formatterFunctionName);
@@ -535,7 +535,7 @@ namespace pl::ptrn {
                         if (result.has_value()) {
                             std::string string;
                             if (fromCast && result->isPattern() && result->toPattern()->getTypeName() == this->getTypeName()) {
-                                string = value;
+                                string = defaultValue;
                             } else {
                                 string = result->toString(true);
                             }
