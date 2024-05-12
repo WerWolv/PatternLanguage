@@ -38,7 +38,7 @@ namespace pl::ptrn {
                    return fmt::format("padding[{}]", this->getSize());
             }();
 
-            return Pattern::callUserFormatFunc(result, this->getValue(), true);
+            return Pattern::callUserFormatFunc(this->getValue(), true).value_or(result);
         }
 
         std::vector<u8> getRawBytes() override {

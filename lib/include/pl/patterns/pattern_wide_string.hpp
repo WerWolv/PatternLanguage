@@ -52,7 +52,7 @@ namespace pl::ptrn {
 
             auto result = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>("???").to_bytes(buffer);
 
-            return Pattern::callUserFormatFunc(result, this->getValue(), true);
+            return Pattern::callUserFormatFunc(this->getValue(), true).value_or(result);
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override { return compareCommonProperties<decltype(*this)>(other); }
@@ -69,7 +69,7 @@ namespace pl::ptrn {
 
             std::string utf8String = this->getValue(size);
 
-            return Pattern::callUserFormatFunc(fmt::format("\"{0}\" {1}", utf8String, size > this->getSize() ? "(truncated)" : ""), utf8String);
+            return Pattern::callUserFormatFunc(utf8String).value_or(fmt::format("\"{0}\" {1}", utf8String, size > this->getSize() ? "(truncated)" : ""));
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getEntries() override {

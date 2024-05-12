@@ -238,7 +238,7 @@ namespace pl::ptrn {
         [[nodiscard]] virtual std::string toString() const {
             auto result = fmt::format("{} {} @ 0x{:X}", this->getTypeName(), this->getVariableName(), this->getOffset());
 
-            return this->callUserFormatFunc(result, this->getValue(), true);
+            return this->callUserFormatFunc(this->getValue(), true).value_or(result);
         }
 
         [[nodiscard]] virtual core::Token::Literal getValue() const {
@@ -520,10 +520,10 @@ namespace pl::ptrn {
         /**
          * @brief Calls an user-defined PL function to format the given literal (pattern), if existing. Else, returns defaultValue
         */
-        [[nodiscard]] std::string callUserFormatFunc(const std::string &defaultValue, const core::Token::Literal &literal, bool fromCast = false) const {
+        [[nodiscard]] std::optional<std::string> callUserFormatFunc(const core::Token::Literal &literal, bool fromCast = false) const {
             const auto &formatterFunctionName = this->getReadFormatterFunction();
             if (formatterFunctionName.empty())
-                return defaultValue;
+                return {};
             else {
                 try {
                     const auto function = this->m_evaluator->findFunction(formatterFunctionName);
@@ -535,17 +535,17 @@ namespace pl::ptrn {
                         if (result.has_value()) {
                             std::string string;
                             if (fromCast && result->isPattern() && result->toPattern()->getTypeName() == this->getTypeName()) {
-                                string = defaultValue;
+                                return {};
                             } else {
-                                string = result->toString(true);
+                                return result->toString(true);
                             }
 
-                            return string;
+                            return {};
                         } else {
-                            return "";
+                            return {};
                         }
                     } else {
-                        return "";
+                        return {};
                     }
 
                 } catch (core::err::EvaluatorError::Exception &error) {

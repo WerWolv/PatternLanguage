@@ -49,7 +49,7 @@ namespace pl::ptrn {
             auto value = this->getValue();
             auto result = fmt::format("{}", value.toBoolean() ? "true" : "false");
 
-            return Pattern::callUserFormatFunc(result, value, true);
+            return Pattern::callUserFormatFunc(value, true).value_or(result);
         }
 
         std::vector<u8> getRawBytes() override {

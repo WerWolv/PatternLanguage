@@ -156,7 +156,7 @@ namespace pl::ptrn {
 
             result += " }";
 
-            return Pattern::callUserFormatFunc(result, this->clone(), true);
+            return Pattern::callUserFormatFunc(this->clone(), true).value_or(result);
         }
 
         void sort(const std::function<bool (const Pattern *, const Pattern *)> &comparator) override {
@@ -202,7 +202,7 @@ namespace pl::ptrn {
         }
 
         std::string formatDisplayValue() override {
-            return Pattern::callUserFormatFunc("{ ... }", this->clone());
+            return Pattern::callUserFormatFunc(this->clone()).value_or("{ ... }");
         }
 
         std::vector<u8> getRawBytes() override {
