@@ -93,7 +93,7 @@ namespace pl {
          * @param envVars List of environment variables to set
          * @param inVariables List of input variables
          * @param checkResult Whether to check the result of the execution
-         * @return True if the execution was successful, false otherwise. Call PatternLanguage#getRuntimeError() to get the error if false is returned
+         * @return True if the execution was successful, false otherwise. Call PatternLanguage#getCompileErrors() AND PatternLanguage#getRuntimeError() to get the compilation or runtime errors if false is returned
          */
         [[nodiscard]] bool executeString(std::string code, const std::string& source, const std::map<std::string, core::Token::Literal> &envVars = {}, const std::map<std::string, core::Token::Literal> &inVariables = {}, bool checkResult = true);
 
