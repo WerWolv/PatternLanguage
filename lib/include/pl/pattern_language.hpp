@@ -80,6 +80,7 @@ namespace pl {
 
         /**
          * @brief Parses a pattern language code string and returns the generated AST
+         *   To get parsing errors, check PatternLanguage#getCompileErrors() after calling this method
          * @param code Code to parse
          * @param source Source of the code
          * @return Generated AST
@@ -92,7 +93,7 @@ namespace pl {
          * @param envVars List of environment variables to set
          * @param inVariables List of input variables
          * @param checkResult Whether to check the result of the execution
-         * @return True if the execution was successful, false otherwise
+         * @return True if the execution was successful, false otherwise. Call PatternLanguage#getRuntimeError() to get the error if false is returned
          */
         [[nodiscard]] bool executeString(std::string code, const std::string& source, const std::map<std::string, core::Token::Literal> &envVars = {}, const std::map<std::string, core::Token::Literal> &inVariables = {}, bool checkResult = true);
 
@@ -215,10 +216,14 @@ namespace pl {
 
         /**
          * @brief Gets the error that occurred during the last execution
-         * @return Error
+         * @return Error if one happened
          */
         [[nodiscard]] const std::optional<core::err::PatternLanguageError> &getRuntimeError() const;
 
+        /**
+         * @brief Gets the errors that occurred during the last compilation (e.g. parseString())
+         * @return A vector of errors (can be empty if no errors occurred)
+         */
         [[nodiscard]] const std::vector<core::err::CompileError>& getCompileErrors() const;
 
         /**
