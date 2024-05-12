@@ -155,7 +155,7 @@ namespace pl::cli::sub {
                         fmt::print("{}\n", error.format());
                     }
                 } else {
-                    auto error = runtime.getRuntimeError().value();
+                    auto error = runtime.getEvalError().value();
                     fmt::print("Pattern Error: {}:{} -> {}\n", error.line, error.column, error.message);
                 }
                 std::exit(EXIT_FAILURE);

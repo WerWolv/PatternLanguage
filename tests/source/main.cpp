@@ -113,7 +113,7 @@ int runTests(int argc, char **argv) {
     if (!result) {
         fmt::print("Error during test!\n");
 
-        if (auto error = runtime.getRuntimeError(); error.has_value())
+        if (auto error = runtime.getEvalError(); error.has_value())
             fmt::print("Error: {}:{} : {}\n", error->line, error->column, error->message);
 
         for (const auto& error : runtime.getCompileErrors()) {

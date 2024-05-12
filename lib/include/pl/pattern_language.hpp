@@ -93,7 +93,7 @@ namespace pl {
          * @param envVars List of environment variables to set
          * @param inVariables List of input variables
          * @param checkResult Whether to check the result of the execution
-         * @return True if the execution was successful, false otherwise. Call PatternLanguage#getCompileErrors() AND PatternLanguage#getRuntimeError() to get the compilation or runtime errors if false is returned
+         * @return True if the execution was successful, false otherwise. Call PatternLanguage#getCompileErrors() AND PatternLanguage#getEvalError() to get the compilation or runtime errors if false is returned
          */
         [[nodiscard]] bool executeString(std::string code, const std::string& source, const std::map<std::string, core::Token::Literal> &envVars = {}, const std::map<std::string, core::Token::Literal> &inVariables = {}, bool checkResult = true);
 
@@ -215,10 +215,10 @@ namespace pl {
         void setLogCallback(const core::LogConsole::Callback &callback) const;
 
         /**
-         * @brief Gets the error that occurred during the last execution
+         * @brief Gets the potential error that occurred during the last evaluation of the compiled AST. This does NOT include compilation errors.
          * @return Error if one happened
          */
-        [[nodiscard]] const std::optional<core::err::PatternLanguageError> &getRuntimeError() const;
+        [[nodiscard]] const std::optional<core::err::PatternLanguageError> &getEvalError() const;
 
         /**
          * @brief Gets the errors that occurred during the last compilation (e.g. parseString())
