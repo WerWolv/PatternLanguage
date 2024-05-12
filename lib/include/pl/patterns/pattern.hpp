@@ -238,7 +238,7 @@ namespace pl::ptrn {
         [[nodiscard]] virtual std::string toString() const {
             auto result = fmt::format("{} {} @ 0x{:X}", this->getTypeName(), this->getVariableName(), this->getOffset());
 
-            return this->formatDisplayValue(result, this->getValue(), true);
+            return this->callUserFormatFunc(result, this->getValue(), true);
         }
 
         [[nodiscard]] virtual core::Token::Literal getValue() const {
@@ -517,7 +517,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] virtual std::string formatDisplayValue() = 0;
 
-        [[nodiscard]] std::string formatDisplayValue(const std::string &defaultValue, const core::Token::Literal &literal, bool fromCast = false) const {
+        [[nodiscard]] std::string callUserFormatFunc(const std::string &defaultValue, const core::Token::Literal &literal, bool fromCast = false) const {
             const auto &formatterFunctionName = this->getReadFormatterFunction();
             if (formatterFunctionName.empty())
                 return defaultValue;

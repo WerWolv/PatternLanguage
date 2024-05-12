@@ -149,13 +149,13 @@ namespace pl::ptrn {
 
         std::string formatDisplayValue() override {
             auto data = this->getValue().toSigned();
-            return Pattern::formatDisplayValue(fmt::format("*(0x{0:X})", data), this->getValue());
+            return Pattern::callUserFormatFunc(fmt::format("*(0x{0:X})", data), this->getValue());
         }
 
         [[nodiscard]] std::string toString() const override {
             auto result = this->m_pointedAt->toString();
 
-            return Pattern::formatDisplayValue(result, this->clone(), true);
+            return Pattern::callUserFormatFunc(result, this->clone(), true);
         }
 
         std::vector<u8> getRawBytes() override {

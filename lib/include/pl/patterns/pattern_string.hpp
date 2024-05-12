@@ -53,7 +53,7 @@ namespace pl::ptrn {
             auto value = this->getValue();
             auto result = value.toString(false);
 
-            return Pattern::formatDisplayValue(result, value, true);
+            return Pattern::callUserFormatFunc(result, value, true);
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override { return compareCommonProperties<decltype(*this)>(other); }
@@ -72,7 +72,7 @@ namespace pl::ptrn {
             this->getEvaluator()->readData(this->getOffset(), buffer.data(), size, this->getSection());
             auto displayString = hlp::encodeByteString({ buffer.begin(), buffer.end() });
 
-            return Pattern::formatDisplayValue(fmt::format("\"{0}\" {1}", displayString, size > this->getSize() ? "(truncated)" : ""), buffer);
+            return Pattern::callUserFormatFunc(fmt::format("\"{0}\" {1}", displayString, size > this->getSize() ? "(truncated)" : ""), buffer);
         }
 
         std::shared_ptr<Pattern> getEntry(size_t index) const override {

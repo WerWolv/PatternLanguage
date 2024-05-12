@@ -31,14 +31,14 @@ namespace pl::ptrn {
 
         std::string formatDisplayValue() override {
             auto data = this->getValue().toUnsigned();
-            return Pattern::formatDisplayValue(fmt::format("{:d} (0x{:0{}X})", data, data, this->getSize() * 2), this->getValue());
+            return Pattern::callUserFormatFunc(fmt::format("{:d} (0x{:0{}X})", data, data, this->getSize() * 2), this->getValue());
         }
 
         [[nodiscard]] std::string toString() const override {
             auto value = this->getValue();
             auto result = fmt::format("{:d}", value.toUnsigned());
 
-            return Pattern::formatDisplayValue(result, value, true);
+            return Pattern::callUserFormatFunc(result, value, true);
         }
 
         std::vector<u8> getRawBytes() override {

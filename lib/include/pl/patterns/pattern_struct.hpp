@@ -143,7 +143,7 @@ namespace pl::ptrn {
 
             result += " }";
 
-            return Pattern::formatDisplayValue(result, this->clone(), true);
+            return Pattern::callUserFormatFunc(result, this->clone(), true);
         }
 
         void setMembers(std::vector<std::shared_ptr<Pattern>> members) {
@@ -203,7 +203,7 @@ namespace pl::ptrn {
         }
 
         std::string formatDisplayValue() override {
-            return Pattern::formatDisplayValue("{ ... }", this->clone());
+            return Pattern::callUserFormatFunc("{ ... }", this->clone());
         }
 
         std::vector<u8> getRawBytes() override {
