@@ -105,7 +105,8 @@ int runTests(int argc, char **argv) {
     )", "IC");
 
     auto &test = testPatterns[testName];
-    test->setupRuntime(runtime);
+    test->m_runtime = &runtime;
+    test->setup();
     auto result = runtime.executeString(test->getSourceCode(), "<test: " + testName + ">");
 
     // Check if compilation succeeded
