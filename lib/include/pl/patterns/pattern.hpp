@@ -533,20 +533,14 @@ namespace pl::ptrn {
 
                         auto result = function->func(this->m_evaluator, { literal });
                         if (result.has_value()) {
-                            std::string string;
                             if (fromCast && result->isPattern() && result->toPattern()->getTypeName() == this->getTypeName()) {
                                 return {};
                             } else {
                                 return result->toString(true);
                             }
-
-                            return {};
-                        } else {
-                            return {};
                         }
-                    } else {
-                        return {};
                     }
+                    return {};
 
                 } catch (core::err::EvaluatorError::Exception &error) {
                     return error.what();
