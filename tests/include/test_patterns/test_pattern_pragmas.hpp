@@ -11,7 +11,7 @@ namespace pl::test {
         }
         ~TestPatternPragmas() override = default;
 
-        void setup() {
+        void setup() override {
             // All pragmas should be processed the same way, but we test multiple ones to be sure
             m_runtime->addPragma("author", [](PatternLanguage&, const std::string &value) {
                 return value == "authorValue";

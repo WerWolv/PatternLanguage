@@ -11,7 +11,7 @@ namespace pl::test {
         }
         ~TestPatternPragmasFail() override = default;
 
-        void setup() {
+        void setup() override {
             m_runtime->addPragma("somePragma", [](PatternLanguage&, const std::string &value) {
                 return value == "invalidValue";
             });
