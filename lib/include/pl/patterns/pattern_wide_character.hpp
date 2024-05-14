@@ -33,7 +33,7 @@ namespace pl::ptrn {
 
             auto result = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>("???").to_bytes(character);
 
-            return Pattern::formatDisplayValue(result, value, true);
+            return Pattern::callUserFormatFunc(value, true).value_or(result);
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override { return compareCommonProperties<decltype(*this)>(other); }
@@ -43,7 +43,7 @@ namespace pl::ptrn {
         }
 
         std::string formatDisplayValue() override {
-            return Pattern::formatDisplayValue(fmt::format("'{0}'", this->toString()), this->getValue());
+            return Pattern::callUserFormatFunc(this->getValue()).value_or(fmt::format("'{0}'", this->toString()));
         }
 
         std::vector<u8> getRawBytes() override {

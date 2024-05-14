@@ -11,19 +11,19 @@ namespace pl::test {
         }
         ~TestPatternPragmas() override = default;
 
-        void setupRuntime(pl::PatternLanguage &runtime) {
+        void setup() override {
             // All pragmas should be processed the same way, but we test multiple ones to be sure
-            runtime.addPragma("author", [](PatternLanguage&, const std::string &value) {
+            m_runtime->addPragma("author", [](PatternLanguage&, const std::string &value) {
                 return value == "authorValue";
             });
-            runtime.addPragma("description", [](PatternLanguage&, const std::string &value) {
+            m_runtime->addPragma("description", [](PatternLanguage&, const std::string &value) {
                 return value == "descValue";
             });
-            runtime.addPragma("somePragma", [](PatternLanguage&, const std::string &value) {
+            m_runtime->addPragma("somePragma", [](PatternLanguage&, const std::string &value) {
                 return value == "someValue";
             });
             // Also test a pragma which isn't defined in the code, ans whose callback should not be called
-            runtime.addPragma("unknownPragma", [](PatternLanguage&, const std::string &value) {
+            m_runtime->addPragma("unknownPragma", [](PatternLanguage&, const std::string &value) {
                 return false;
             });
         };

@@ -112,12 +112,12 @@ namespace pl::ptrn {
         std::string formatDisplayValue() override {
             auto literal = this->getValue();
             auto value = literal.toUnsigned();
-            return Pattern::formatDisplayValue(fmt::format("{} (0x{:X})", value, value), literal);
+            return Pattern::callUserFormatFunc(literal).value_or(fmt::format("{} (0x{:X})", value, value));
         }
 
         [[nodiscard]] std::string toString() const override {
             auto value = this->readValue();
-            return Pattern::formatDisplayValue(fmt::format("{}", value), value, true);
+            return Pattern::callUserFormatFunc(value, true).value_or(fmt::format("{}", value));
         }
 
         [[nodiscard]] bool isPadding() const override { return this->m_padding; }
@@ -179,12 +179,12 @@ namespace pl::ptrn {
         std::string formatDisplayValue() override {
             auto rawValue = this->readValue();
             auto value = hlp::signExtend(this->getBitSize(), rawValue);
-            return Pattern::formatDisplayValue(fmt::format("{} (0x{:X})", value, rawValue), value);
+            return Pattern::callUserFormatFunc(value).value_or(fmt::format("{} (0x{:X})", value, rawValue));
         }
 
         [[nodiscard]] std::string toString() const override {
             auto result = fmt::format("{}", this->getValue().toSigned());
-            return Pattern::formatDisplayValue(result, this->getValue(), true);
+            return Pattern::callUserFormatFunc(this->getValue(), true).value_or(result);
         }
     };
 
@@ -214,7 +214,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string toString() const override {
             auto value = this->getValue();
-            return Pattern::formatDisplayValue(fmt::format("{}", value.toBoolean() ? "true" : "false"), value, true);
+            return Pattern::callUserFormatFunc(value, true).value_or(fmt::format("{}", value.toBoolean() ? "true" : "false"));
         }
     };
 
@@ -253,12 +253,12 @@ namespace pl::ptrn {
         std::string formatDisplayValue() override {
             auto value = this->readValue();
             auto enumName = PatternEnum::getEnumName(this->getTypeName(), value, this->getEnumValues());
-            return Pattern::formatDisplayValue(fmt::format("{} (0x{:X})", enumName, value), value);
+            return Pattern::callUserFormatFunc(value).value_or(fmt::format("{} (0x{:X})", enumName, value));
         }
 
         [[nodiscard]] std::string toString() const override {
             auto enumName = PatternEnum::getEnumName(this->getTypeName(), this->readValue(), this->getEnumValues());
-            return Pattern::formatDisplayValue(enumName, this->getValue(), true);
+            return Pattern::callUserFormatFunc(this->getValue(), true).value_or(enumName);
         }
 
     private:
@@ -465,7 +465,7 @@ namespace pl::ptrn {
 
             result += " ]";
 
-            return Pattern::formatDisplayValue(result, this->clone(), true);
+            return Pattern::callUserFormatFunc(this->clone(), true).value_or(result);
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override {
@@ -505,7 +505,7 @@ namespace pl::ptrn {
         }
 
         std::string formatDisplayValue() override {
-            return PatternBitfieldMember::formatDisplayValue("[ ... ]", this->clone());
+            return Pattern::callUserFormatFunc(this->clone()).value_or("[ ... ]");
         }
 
         void sort(const std::function<bool (const Pattern *, const Pattern *)> &comparator) override {
@@ -709,7 +709,7 @@ namespace pl::ptrn {
 
             result += " }";
 
-            return Pattern::formatDisplayValue(result, this->clone(), true);
+            return Pattern::callUserFormatFunc(this->clone(), true).value_or(result);
         }
 
         std::string formatDisplayValue() override {
@@ -744,7 +744,7 @@ namespace pl::ptrn {
                 valueString.pop_back();
             }
 
-            return Pattern::formatDisplayValue(fmt::format("{{ {} }}", valueString), this->clone());
+            return Pattern::callUserFormatFunc(this->clone()).value_or(fmt::format("{{ {} }}", valueString));
         }
 
         void setEndian(std::endian endian) override {

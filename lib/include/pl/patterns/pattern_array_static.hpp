@@ -193,7 +193,7 @@ namespace pl::ptrn {
         }
 
         std::string formatDisplayValue() override {
-            return Pattern::formatDisplayValue("[ ... ]", this->clone());
+            return Pattern::callUserFormatFunc(this->clone()).value_or("[ ... ]");
         }
 
         [[nodiscard]] std::string toString() const override {
@@ -222,7 +222,7 @@ namespace pl::ptrn {
 
             result += " ]";
 
-            return Pattern::formatDisplayValue(result, this->clone(), true);
+            return Pattern::callUserFormatFunc(this->clone(), true).value_or(result);
         }
 
         std::vector<u8> getRawBytes() override {

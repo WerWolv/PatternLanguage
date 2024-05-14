@@ -90,7 +90,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string toString() const override {
             u128 value = this->getValue().toUnsigned();
-            return Pattern::formatDisplayValue(getEnumName(this->getTypeName(), value, this->m_enumValues), this->clone(), true);
+            return Pattern::callUserFormatFunc(this->clone(), true).value_or(getEnumName(this->getTypeName(), value, this->m_enumValues));
         }
 
         std::vector<u8> getRawBytes() override {

@@ -33,7 +33,7 @@ namespace pl::ptrn {
 
         std::string formatDisplayValue() override {
             const u8 character = this->getValue().toCharacter();
-            return Pattern::formatDisplayValue(fmt::format("'{0}'", hlp::encodeByteString({ character })), this->getValue());
+            return Pattern::callUserFormatFunc(this->getValue()).value_or(fmt::format("'{0}'", hlp::encodeByteString({ character })));
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override { return compareCommonProperties<decltype(*this)>(other); }
@@ -46,7 +46,7 @@ namespace pl::ptrn {
             auto value = this->getValue();
             auto result = fmt::format("{}", hlp::encodeByteString({ u8(value.toCharacter()) }));
 
-            return Pattern::formatDisplayValue(result, value, true);
+            return Pattern::callUserFormatFunc(value, true).value_or(result);
         }
 
         std::vector<u8> getRawBytes() override {
