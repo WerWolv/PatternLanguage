@@ -31,7 +31,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] u128 getBitOffsetForDisplay() const {
-            return this->getTotalBitOffset() - getTopmostBitfield().getTotalBitOffset();
+            return (this->getTotalBitOffset() - getTopmostBitfield().getTotalBitOffset()) % 8;
         }
 
         [[nodiscard]] virtual bool isPadding() const { return false; }
