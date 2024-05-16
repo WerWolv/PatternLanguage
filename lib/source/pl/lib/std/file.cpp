@@ -172,7 +172,17 @@ namespace pl::lib::libstd::file {
 
                 return std::nullopt;
             });
-        }
+
+            /* create_directories(path) */
+            runtime.addDangerousFunction(nsStdFile, "create_directories", FunctionParameterCount::exactly(1), [](Evaluator*, auto params) -> std::optional<Token::Literal> {
+                const auto path = params[0].toString(false);
+
+                if (!wolv::io::fs::createDirectories(path))
+                    err::E0012.throwError(fmt::format("Failed to create directories '{}'.", path));
+
+                return std::nullopt;
+            });
+    }
     }
 
 }
