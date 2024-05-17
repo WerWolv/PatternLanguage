@@ -311,7 +311,7 @@ namespace pl {
         this->m_internals.evaluator->getConsole().setLogCallback(callback);
     }
 
-    const std::optional<core::err::PatternLanguageError> &PatternLanguage::getError() const {
+    const std::optional<core::err::PatternLanguageError> &PatternLanguage::getEvalError() const {
         return this->m_currError;
     }
 
