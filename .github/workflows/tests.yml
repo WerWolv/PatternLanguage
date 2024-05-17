@@ -35,7 +35,8 @@ jobs:
             ${PKGCONF:-}          \
             cmake                 \
             make                  \
-            lcov
+            lcov                  \
+            gcovr
 
     - name: 🛠️ Build
       run: |
@@ -68,15 +69,14 @@ jobs:
         owner: WerWolv
         event_type: run_tests
 
-    #- name: ⚗️ Generate Coverage Report
-    #  if: ${{ env.DISPATCH_TOKEN != '' }}
-    #  run: |
-    #    cd build
-    #    lcov -d ./lib --gcov-tool /usr/bin/gcov-12 -c -o coverage.info
+     # Generate report from all gcov .gcda files
+    - name: 🧪 Generate coverage report
+      run: |
+        gcovr --gcov-executable /usr/bin/gcov-12 -e lib/ -r . build --xml coverage_report.xml --verbose
 
-    #- name: ⬆️ Upload Coverage Report
-    #  if: ${{ env.DISPATCH_TOKEN != '' }}
-    #  uses: coverallsapp/github-action@master
-    #  with:
-    #    github-token: ${{ secrets.GITHUB_TOKEN }}
-    #    path-to-lcov: build/coverage.info
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v4.0.1
+      with:
+        fail_ci_if_error: true
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: coverage_report.xml
