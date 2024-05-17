@@ -48,8 +48,7 @@ jobs:
           -DCMAKE_CXX_FLAGS="-O0 -fuse-ld=lld --coverage -fsanitize=address,leak,undefined -fno-sanitize-recover=all" \
           -DLIBPL_ENABLE_TESTS=ON                                                                                      \
           ..
-        make -j4 pattern_language_tests
-        make -j4 plcli
+        make -j4 pattern_language_tests plcli
 
     - name: 🧪 Perform plcli Integration Tests
       run: |
