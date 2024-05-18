@@ -1,3 +1,4 @@
 ignore:
   - "external" # Third party libraries should be ignored, and our own libraries should be checked in their own repositories
   - "fuzz"
+  - "tests" # https://about.codecov.io/blog/should-i-include-test-files-in-code-coverage-calculations/
