@@ -29,6 +29,14 @@ jobs:
             lld:p
             cmake:p
             make:p
+            ccache:p
+
+      - name: 📜 Setup ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ runner.os }}-build-${{ github.run_id }}
+          restore-keys: ${{ runner.os }}-build
+          max-size: 1G
 
       - name: 🛠️ Build
         run: |
@@ -41,6 +49,8 @@ jobs:
             -DCMAKE_CXX_FLAGS="-fuse-ld=lld"        \
             -DLIBPL_ENABLE_TESTS=OFF                \
             -DLIBPL_ENABLE_CLI=ON                   \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache      \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache    \
             ..
           mingw32-make -j4 install DESTDIR=install
 
@@ -67,7 +77,14 @@ jobs:
 
       - name: ⬇️ Install dependencies
         run: |
-          brew install llvm
+          brew install llvm ccache
+
+      - name: 📜 Setup ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ runner.os }}-build-${{ github.run_id }}
+          restore-keys: ${{ runner.os }}-build
+          max-size: 1G
 
       - name: 🛠️ Build
         run: |
@@ -82,6 +99,8 @@ jobs:
             -DCMAKE_INSTALL_PREFIX="$PWD/install"   \
             -DLIBPL_ENABLE_TESTS=OFF                \
             -DLIBPL_ENABLE_CLI=ON                   \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache      \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache    \
             ..
           make -j4 install DESTDIR=install
 
@@ -112,6 +131,14 @@ jobs:
             lld                   \
             cmake                 \
             make                  \
+            ccache
+
+    - name: 📜 Setup ccache
+      uses: hendrikmuhs/ccache-action@v1
+      with:
+        key: ${{ runner.os }}-build-${{ github.run_id }}
+        restore-keys: ${{ runner.os }}-build
+        max-size: 1G
 
     - name: 🛠️ Build
       run: |
@@ -124,6 +151,8 @@ jobs:
           -DCMAKE_CXX_FLAGS="-fuse-ld=lld"        \
           -DLIBPL_ENABLE_TESTS=OFF                \
           -DLIBPL_ENABLE_CLI=ON                   \
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache      \
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache    \
           ..
         make -j4 install DESTDIR=install
 

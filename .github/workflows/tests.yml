@@ -29,6 +29,7 @@ jobs:
         sudo apt update
         sudo apt install -y       \
             build-essential       \
+            ccache                \
             gcc-12                \
             g++-12                \
             lld                   \
@@ -38,6 +39,13 @@ jobs:
             lcov                  \
             gcovr
 
+    - name: 📜 Setup ccache
+      uses: hendrikmuhs/ccache-action@v1
+      with:
+        key: ${{ runner.os }}-tests-${{ github.run_id }}
+        restore-keys: ${{ runner.os }}-tests
+        max-size: 1G
+
     - name: 🛠️ Build
       run: |
         mkdir -p build
@@ -46,7 +54,9 @@ jobs:
           -DCMAKE_BUILD_TYPE=Debug                                                                                    \
           -DCMAKE_C_FLAGS="-O0 -fuse-ld=lld --coverage -fsanitize=address,leak,undefined -fno-sanitize-recover=all"   \
           -DCMAKE_CXX_FLAGS="-O0 -fuse-ld=lld --coverage -fsanitize=address,leak,undefined -fno-sanitize-recover=all" \
-          -DLIBPL_ENABLE_TESTS=ON                                                                                      \
+          -DLIBPL_ENABLE_TESTS=ON                                                                                     \
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache                                                                          \
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache                                                                        \
           ..
         make -j4 pattern_language_tests plcli
 
