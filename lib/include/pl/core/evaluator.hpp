@@ -72,6 +72,13 @@ namespace pl::core {
             std::vector<std::shared_ptr<ptrn::Pattern>> *scope;
             std::optional<ParameterPack> parameterPack;
             size_t heapStartSize;
+            
+            Scope(decltype(parent) parent, decltype(scope) scope, decltype(parameterPack) parameterPack, decltype(heapStartSize) heapStartSize)
+            : parent(std::move(parent))
+            , scope(std::move(scope))
+            , parameterPack(std::move(parameterPack))
+            , heapStartSize(std::move(heapStartSize))
+            {}
         };
 
         struct PatternLocalData {
