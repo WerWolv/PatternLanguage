@@ -28,7 +28,7 @@ pl::hlp::CompileResult<ParserManager::ParsedData> ParserManager::parse(api::Sour
     }
 
     const auto& internals = m_patternLanguage->getInternals();
-    auto oldPreprpocessor = internals.preprocessor.get();
+    auto oldPreprocessor = internals.preprocessor.get();
 
     auto preprocessor = Preprocessor();
     for (const auto& [name, value] : m_patternLanguage->getDefines()) {
@@ -53,7 +53,8 @@ pl::hlp::CompileResult<ParserManager::ParsedData> ParserManager::parse(api::Sour
     parser.m_aliasNamespaceString = namespacePrefix;
 
     auto result = parser.parse(tokens.value());
-    oldPreprpocessor->appendToNamespaces(tokens.value());
+    oldPreprocessor->appendToNamespaces(tokens.value());
+
     if (result.hasErrs())
         return result_t::err(result.errs);
 

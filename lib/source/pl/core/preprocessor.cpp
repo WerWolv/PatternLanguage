@@ -382,9 +382,9 @@ namespace pl::core {
         }
     }
 
-    void Preprocessor::appendToNamespaces(std::vector<Token> namespaces) {
-        for (const auto &namespaceToken : namespaces) {
-            if (auto *identifier = std::get_if<Token::Identifier>(&namespaceToken.value); identifier != nullptr && identifier->getType() == Token::Identifier::IdentifierType::NameSpace)
+    void Preprocessor::appendToNamespaces(std::vector<Token> tokens) {
+        for (const auto &token : tokens) {
+            if (auto *identifier = std::get_if<Token::Identifier>(&token.value); identifier != nullptr && identifier->getType() == Token::Identifier::IdentifierType::NameSpace)
                 if (std::ranges::find(m_namespaces, identifier->get()) == m_namespaces.end())
                     m_namespaces.push_back(identifier->get());
         }
@@ -431,7 +431,6 @@ namespace pl::core {
         while (!eof())
             process();
 
-        validateExcludedLocations();
         // Handle pragmas
         for (const auto &[type, datas] : this->m_pragmas) {
             for (const auto &data : datas) {

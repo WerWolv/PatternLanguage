@@ -78,7 +78,7 @@ namespace pl::core {
             return m_namespaces;
         }
 
-        void appendToNamespaces(std::vector<Token> namespaces);
+        void appendToNamespaces(std::vector<Token> tokens);
 
     private:
         Preprocessor(const Preprocessor &);
