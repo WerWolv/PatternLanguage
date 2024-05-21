@@ -8,11 +8,11 @@
 
 namespace pl::test {
 
-    class TestPatternExportJson : public TestPattern {
+    class TestPatternFormat : public TestPattern {
     public:
-        TestPatternExportJson() : TestPattern("ExportJson", Mode::Succeeding) {
+        TestPatternFormat() : TestPattern("Format", Mode::Succeeding) {
         }
-        ~TestPatternExportJson() override = default;
+        ~TestPatternFormat() override = default;
 
         [[nodiscard]] std::string getSourceCode() const override {
             return R"test(

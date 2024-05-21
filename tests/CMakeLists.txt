@@ -30,7 +30,7 @@ set(AVAILABLE_TESTS
         Attributes
         Pragmas
         PragmasFail
-        ExportJson
+        Format
 )
 
 
