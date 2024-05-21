@@ -44,8 +44,7 @@ namespace pl::test {
 
             for(auto &formatter : formatters) {
                 if (formatter->getName() == "html") {
-                    fmt::println("TODO make HTML formatter test");
-                    continue;
+                    continue; // disable test for html formatter because there is a lot of metadata information, which may often change without indicating a problem
                 }
 
                 auto actualResultBytes = formatter->format(*this->m_runtime);
