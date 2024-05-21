@@ -4,7 +4,6 @@
 #include <pl/pattern_language.hpp>
 #include <pl/formatters.hpp>
 #include <wolv/io/file.hpp>
-#include <iostream>
 
 namespace pl::test {
 
