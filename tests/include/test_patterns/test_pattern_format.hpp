@@ -38,6 +38,8 @@ namespace pl::test {
 
         [[nodiscard]] bool runChecks(const std::vector<std::shared_ptr<ptrn::Pattern>> &patterns) const override {
             auto formatters = pl::gen::fmt::createFormatters();
+
+            // do this to ensure new formatters will be tested (or are least considered)
             if (formatters.size() != 3) {
                 throw std::runtime_error(fmt::format("Expected 3 formatters: JSON, Yaml, HTML. Got {}. If you are adding a new formatter, please add a test for it", formatters.size()));
             }
