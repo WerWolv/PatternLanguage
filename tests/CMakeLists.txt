@@ -30,6 +30,7 @@ set(AVAILABLE_TESTS
         Attributes
         Pragmas
         PragmasFail
+        ExportJson
 )
 
 
@@ -43,7 +44,7 @@ add_executable(pattern_language_tests
 # ---- No need to change anything from here downwards unless you know what you're doing ---- #
 
 target_include_directories(pattern_language_tests PRIVATE include)
-target_link_libraries(pattern_language_tests PRIVATE libpl fmt::fmt-header-only)
+target_link_libraries(pattern_language_tests PRIVATE libpl libpl-gen fmt::fmt-header-only)
 
 set_target_properties(pattern_language_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
