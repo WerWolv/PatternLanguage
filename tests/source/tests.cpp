@@ -25,6 +25,7 @@
 #include "test_patterns/test_pattern_import.hpp"
 #include "test_patterns/test_pattern_pragmas.hpp"
 #include "test_patterns/test_pattern_pragmas_fail.hpp"
+#include "test_patterns/test_pattern_format.hpp"
 
 std::array Tests = {
     TEST(Placement),
@@ -53,4 +54,5 @@ std::array Tests = {
     TEST(StructInheritance),
     TEST(Pragmas),
     TEST(PragmasFail),
+    TEST(Format),
 };
