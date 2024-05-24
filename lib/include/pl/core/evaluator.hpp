@@ -174,6 +174,7 @@ namespace pl::core {
         }
 
         void accessData(u64 address, void *buffer, size_t size, u64 sectionId, bool write);
+        
         void readData(u64 address, void *buffer, size_t size, u64 sectionId) {
             this->accessData(address, buffer, size, sectionId, false);
         }
@@ -181,6 +182,8 @@ namespace pl::core {
             this->accessData(address, buffer, size, sectionId, true);
         }
 
+        void copyData(u64 fromAddress, size_t size, u64 fromSectionId, u64 toAddress, u64 toSectionId, bool expand);
+        
         void setDefaultEndian(std::endian endian) {
             this->m_defaultEndian = endian;
         }

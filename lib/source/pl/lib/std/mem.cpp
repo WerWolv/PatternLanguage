@@ -184,18 +184,12 @@ namespace pl::lib::libstd::mem {
                 auto toAddr     = params[3].toUnsigned();
                 auto size       = params[4].toUnsigned();
 
-                std::vector<u8> data(size, 0x00);
-                ctx->readData(fromAddr, data.data(), size, fromId);
                 if (toId == ptrn::Pattern::MainSectionId)
                     err::E0012.throwError("Cannot write to main section.", "The main section represents the currently loaded data and is immutable.");
                 else if (toId == ptrn::Pattern::HeapSectionId)
                     err::E0012.throwError("Invalid section id.");
 
-                auto& section = ctx->getSection(toId);
-                if (section.size() < toAddr + size)
-                    section.resize(toAddr + size);
-                std::memcpy(section.data() + toAddr, data.data(), size);
-
+                ctx->copyData(fromAddr, size, fromId, toAddr, toId, true);
                 return std::nullopt;
             });
 
@@ -209,33 +203,25 @@ namespace pl::lib::libstd::mem {
                 else if (toId == ptrn::Pattern::HeapSectionId)
                     err::E0012.throwError("Invalid section id.");
 
-                auto& section = ctx->getSection(toId);
-
                 switch (params[0].getType()) {
                     using enum Token::ValueType;
                     case String: {
                         auto string = params[0].toString(false);
 
-                        if (section.size() < toAddr + string.size())
-                            section.resize(toAddr + string.size());
-
-                        std::copy(string.begin(), string.end(), section.begin() + toAddr);
+                        ctx->writeData(toAddr, string.data(), string.size(), toId);
                         break;
                     }
                     case CustomType: {
                         auto pattern = params[0].toPattern();
 
-                        if (section.size() < toAddr + pattern->getSize())
-                            section.resize(toAddr + pattern->getSize());
-
                         if (auto iterable = dynamic_cast<ptrn::IIterable*>(pattern.get())) {
                             iterable->forEachEntry(0, iterable->getEntryCount(), [&](u64, ptrn::Pattern *entry) {
                                 auto entrySize = entry->getSize();
-                                ctx->readData(entry->getOffset(), section.data() + toAddr, entrySize, entry->getSection());
+                                ctx->copyData(entry->getOffset(), entrySize, entry->getSection(), toAddr, toId, true);
                                 toAddr += entrySize;
                             });
                         } else {
-                            ctx->readData(pattern->getOffset(), section.data() + toAddr, pattern->getSize(), pattern->getSection());
+                            ctx->copyData(pattern->getOffset(), pattern->getSize(), pattern->getSection(), toAddr, toId, true);
                         }
                         break;
                     }
