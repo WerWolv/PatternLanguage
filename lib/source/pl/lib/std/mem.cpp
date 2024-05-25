@@ -149,6 +149,43 @@ namespace pl::lib::libstd::mem {
 
                 return u128(ctx->createSection(name));
             });
+            
+            /* create_view_section(name) -> id */
+            runtime.addFunction(nsStdMem, "create_view_section", FunctionParameterCount::exactly(1), [](Evaluator* ctx, auto params) -> std::optional<Token::Literal> {
+                auto name = params[0].toString(false);
+                
+                return u128(ctx->createSection(name, std::make_unique<core::ViewSection>(*ctx)));
+            });
+
+            /* append_view_section_span(to_id, from_id, [from], [size], [at_view_offset]) */
+            runtime.addFunction(nsStdMem, "append_view_section_span", FunctionParameterCount::between(2, 5), [](Evaluator* ctx, auto params) -> std::optional<Token::Literal> {
+                u64 toId    = params[0].toUnsigned();
+                u64 fromId  = params[1].toUnsigned();
+                
+                auto* viewSection = dynamic_cast<core::ViewSection*>(&ctx->getSection(toId));
+                if (!viewSection) {
+                    err::E0012.throwError("to_id must be a view section.");
+                }
+                
+                auto& fromSection = ctx->getSection(fromId);
+                
+                u64 from = 0;
+                size_t size = fromSection.size();
+                std::optional<u64> atViewOffset = std::nullopt;
+                
+                if (params.size() > 2) {
+                    from = params[2].toUnsigned();
+                }
+                if (params.size() > 3) {
+                    size = params[3].toUnsigned();
+                }
+                if (params.size() > 4) {
+                    atViewOffset = params[4].toUnsigned();
+                }
+                
+                viewSection->addSectionSpan(fromId, from, size, atViewOffset);
+                return std::nullopt;
+            });
 
             /* delete_section(id) */
             runtime.addFunction(nsStdMem, "delete_section", FunctionParameterCount::exactly(1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
