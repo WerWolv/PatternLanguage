@@ -179,7 +179,7 @@ namespace pl::core {
         // This handler is called for mapped ranges overlapping the query
         const auto mappedHandler = [this, &reader, &remapper](u64 address, size_t chunkSize, u64 sectionId, u64 chunkOffset) -> bool {
             try {
-                return m_evaluator.getSection(sectionId).readChunkAttributes(chunkOffset, chunkSize, remapper);
+                return m_evaluator.getSection(sectionId).ref.readChunkAttributes(chunkOffset, chunkSize, remapper);
             } catch (...) {
                 ChunkAttributes attribs {
                     .type = ChunkAttributes::Type::Unmapped,
@@ -298,10 +298,10 @@ namespace pl::core {
         // This handler is called for mapped ranges overlapping the query
         const auto mappedHandler = [this, &fail, &result, &readerOrWriter](u64 address, size_t chunkSize, u64 sectionId, u64 chunkOffset) -> bool {
             try {
-                auto& section = m_evaluator.getSection(sectionId);
+                auto section = m_evaluator.getSection(sectionId);
                 
                 if constexpr (IsRead) {
-                    auto error = section.read(chunkOffset, chunkSize, readerOrWriter);
+                    auto error = section.ref.read(chunkOffset, chunkSize, readerOrWriter);
                     if (!error) {
                         return false; // Continue
                     }
@@ -309,7 +309,7 @@ namespace pl::core {
                     result = fmt::format("Error writing underlying section {}: {}", sectionId, *error);
                     return true; // Stop
                 } else {
-                    auto error = section.write(false, chunkOffset, chunkSize, readerOrWriter);
+                    auto error = section.ref.write(false, chunkOffset, chunkSize, readerOrWriter);
                     if (!error) {
                         return false; // Continue;
                     }

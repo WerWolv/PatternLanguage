@@ -834,16 +834,16 @@ namespace pl::core {
         } else if (sectionId == ptrn::Pattern::InstantiationSectionId) {
             err::E0012.throwError("Cannot access data of type that hasn't been placed in memory.");
         } else {
-            api::Section& section = getSection(sectionId);
+            auto section = getSection(sectionId);
             
             std::span<u8> span(reinterpret_cast<u8*>(buffer), size);
             
             if (write) {
-                if (auto error = section.write(true, address, span)) {
+                if (auto error = section.ref.write(true, address, span)) {
                     err::E0011.throwError(fmt::format("Write error in section {}: {}", sectionId, *error));
                 }
             } else {
-                if (auto error = section.read(address, span)) {
+                if (auto error = section.ref.read(address, span)) {
                     err::E0011.throwError(fmt::format("Read error in section {}: {}", sectionId, *error));
                 }
             }
@@ -878,7 +878,7 @@ namespace pl::core {
     }
 
     u64 Evaluator::createSection(const std::string &name) {
-        return createSection(name, std::make_unique<InMemorySection>());
+        return createSection(name, InMemorySection<>::AllocVector(std::numeric_limits<size_t>::max(), 0));
     }
 
     u64 Evaluator::createSection(const std::string& name, std::unique_ptr<api::Section> section) {
@@ -896,11 +896,11 @@ namespace pl::core {
         this->m_sections.erase(id);
     }
 
-    api::Section& Evaluator::getSection(u64 id) {
+    auto Evaluator::getSection(u64 id) -> MaybeOwnedSection {
         if (id == ptrn::Pattern::MainSectionId)
             return *m_mainSection;
         else if (id == ptrn::Pattern::HeapSectionId)
-            std::terminate(); // TODO: BAD!
+            return MaybeOwnedSection(InMemorySection<>::WrapVector(0xFFFF'FFFF, m_heap.back()));
         else if (id == ptrn::Pattern::InstantiationSectionId)
             err::E0012.throwError("Cannot access data of type that hasn't been placed in memory.");
         else if (id == ptrn::Pattern::DataSourceSectionId)

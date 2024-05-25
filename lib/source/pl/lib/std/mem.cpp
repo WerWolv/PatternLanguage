@@ -162,15 +162,17 @@ namespace pl::lib::libstd::mem {
                 u64 toId    = params[0].toUnsigned();
                 u64 fromId  = params[1].toUnsigned();
                 
-                auto* viewSection = dynamic_cast<core::ViewSection*>(&ctx->getSection(toId));
+                auto section = ctx->getSection(toId);
+                
+                auto* viewSection = dynamic_cast<core::ViewSection*>(&section.ref);
                 if (!viewSection) {
                     err::E0012.throwError("to_id must be a view section.");
                 }
                 
-                auto& fromSection = ctx->getSection(fromId);
+                auto fromSection = ctx->getSection(fromId);
                 
                 u64 from = 0;
-                size_t size = fromSection.size();
+                size_t size = fromSection.ref.size();
                 std::optional<u64> atViewOffset = std::nullopt;
                 
                 if (params.size() > 2) {
@@ -200,7 +202,7 @@ namespace pl::lib::libstd::mem {
             runtime.addFunction(nsStdMem, "get_section_size", FunctionParameterCount::exactly(1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 auto id = params[0].toUnsigned();
 
-                return u128(ctx->getSection(id).size());
+                return u128(ctx->getSection(id).ref.size());
             });
 
             /* set_section_size(id, size) */
@@ -208,7 +210,7 @@ namespace pl::lib::libstd::mem {
                 auto id   = params[0].toUnsigned();
                 auto size = params[1].toUnsigned();
 
-                ctx->getSection(id).resize(size);
+                ctx->getSection(id).ref.resize(size);
 
                 return std::nullopt;
             });

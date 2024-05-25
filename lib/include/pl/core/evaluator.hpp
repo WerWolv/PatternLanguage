@@ -148,7 +148,21 @@ namespace pl::core {
         [[nodiscard]] u64 createSection(const std::string& name, std::unique_ptr<api::Section> section);
         void removeSection(u64 id);
         
-        [[nodiscard]] api::Section& getSection(u64 id);
+        struct MaybeOwnedSection {
+            std::unique_ptr<api::Section> owned;
+            api::Section& ref;
+            
+            MaybeOwnedSection(std::unique_ptr<api::Section> owned)
+            : owned(std::move(owned))
+            , ref(*this->owned)
+            {}
+            
+            MaybeOwnedSection(api::Section& ref)
+            : owned(nullptr)
+            , ref(ref)
+            {}
+        };
+        [[nodiscard]] MaybeOwnedSection getSection(u64 id);
         
         [[nodiscard]] const std::map<u64, api::CustomSection>& getSections() const {
             return m_sections;

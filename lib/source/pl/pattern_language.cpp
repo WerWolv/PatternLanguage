@@ -330,10 +330,15 @@ namespace pl {
 
     const api::Section& PatternLanguage::getSection(u64 id) const {
         static core::EmptySection empty;
-        if (id > this->m_internals.evaluator->getSectionCount() || id == ptrn::Pattern::MainSectionId || id == ptrn::Pattern::HeapSectionId)
+        if (id > m_internals.evaluator->getSectionCount() || id == ptrn::Pattern::MainSectionId || id == ptrn::Pattern::HeapSectionId) {
             return empty;
-        else
-            return this->m_internals.evaluator->getSection(id);
+        }
+        
+        auto section = m_internals.evaluator->getSection(id);
+        if (!section.owned) {
+            return empty;
+        }
+        return section.ref;
     }
 
     [[nodiscard]] const std::map<u64, api::CustomSection>& PatternLanguage::getSections() const {
