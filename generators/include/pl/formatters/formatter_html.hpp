@@ -26,7 +26,16 @@ namespace pl::gen::fmt {
             for (const auto *pattern : patterns) {
                 if (pattern->getVisibility() == ptrn::Visibility::Hidden) continue;
 
-                content += ::fmt::format(R"html({} {} | {}<br>)html", pattern->getFormattedName(), pattern->getVariableName(), pattern->toString());
+                // TODO do that in pattern->toString() directly ?
+                std::string result;
+                for (char c : pattern->toString()) {
+                    if (std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~')
+                        result += c;
+                    else
+                        result += ::fmt::format("%{:02X}", c);
+                }
+
+                content += ::fmt::format(R"html({} {} | {}<br>)html", pattern->getFormattedName(), pattern->getVariableName(), result);
             }
 
             if (!content.empty())
