@@ -33,22 +33,32 @@ namespace pl::core {
     }
 
     void Evaluator::setDataSource(u64 baseAddress, size_t dataSize, std::function<void(u64, u8*, size_t)> readerFunction, std::optional<std::function<void(u64, const u8*, size_t)>> writerFunction) {
-        this->m_dataBaseAddress = baseAddress;
-        this->m_dataSize = dataSize;
+        m_dataBaseAddress = baseAddress;
+        m_dataSize = dataSize;
 
-        this->m_readerFunction = [this, readerFunction = std::move(readerFunction)](u64 offset, u8* buffer, size_t size) {
-            this->m_lastReadAddress = offset;
+        m_dataSourceSection = std::make_unique<DataSourceSection>(4096, 4096);
+        
+        m_dataSourceSection->setDataSize(m_dataSize);
+        m_dataSourceSection->setReader([this, readerFunction = std::move(readerFunction)](u64 offset, u8* buffer, size_t size) {
+            m_lastReadAddress = offset;
 
             readerFunction(offset, buffer, size);
-        };
-
+        });
+    
         if (writerFunction.has_value()) {
-            this->m_writerFunction = [this, writerFunction = std::move(writerFunction.value())](u64 offset, const u8* buffer, size_t size) {
-                this->m_lastWriteAddress = offset;
+            m_dataSourceSection->setWriter([this, writerFunction = std::move(writerFunction.value())](u64 offset, const u8* buffer, size_t size) {
+                m_lastWriteAddress = offset;
 
                 writerFunction(offset, buffer, size);
-            };
+            });
         }
+        
+        setupMainSection();
+    }
+
+    void Evaluator::setupMainSection() {
+        m_mainSection = std::make_unique<ViewSection>(*this);
+        m_mainSection->addSectionSpan(ptrn::Pattern::DataSourceSectionId, 0, m_dataSize, m_dataBaseAddress);
     }
 
     void Evaluator::alignToByte() {
@@ -868,8 +878,7 @@ namespace pl::core {
     }
 
     u64 Evaluator::createSection(const std::string &name) {
-        (void) name;
-        std::terminate(); // TODO: BAD!
+        return createSection(name, std::make_unique<InMemorySection>());
     }
 
     u64 Evaluator::createSection(const std::string& name, std::unique_ptr<api::Section> section) {
@@ -889,16 +898,18 @@ namespace pl::core {
 
     api::Section& Evaluator::getSection(u64 id) {
         if (id == ptrn::Pattern::MainSectionId)
-            std::terminate(); // TODO: BAD!
+            return *m_mainSection;
         else if (id == ptrn::Pattern::HeapSectionId)
             std::terminate(); // TODO: BAD!
         else if (id == ptrn::Pattern::InstantiationSectionId)
             err::E0012.throwError("Cannot access data of type that hasn't been placed in memory.");
+        else if (id == ptrn::Pattern::DataSourceSectionId)
+            return *m_dataSourceSection;
         
         if (auto it = m_sections.find(id); it != m_sections.end()) {
             return *it->second.section;
         }
-        
+
         err::E0011.throwError(fmt::format("Tried accessing a non-existing section with id {}.", id));
     }
 

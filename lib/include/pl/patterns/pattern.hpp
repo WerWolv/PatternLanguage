@@ -60,7 +60,8 @@ namespace pl::ptrn {
         constexpr static u64 HeapSectionId          = 0xFFFF'FFFF'FFFF'FFFF;
         constexpr static u64 PatternLocalSectionId  = 0xFFFF'FFFF'FFFF'FFFE;
         constexpr static u64 InstantiationSectionId = 0xFFFF'FFFF'FFFF'FFFD;
-
+        constexpr static u64 DataSourceSectionId    = 0xFFFF'FFFF'FFFF'FFFC;
+        
         Pattern(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : m_evaluator(evaluator), m_line(line), m_offset(offset), m_size(size) {
 

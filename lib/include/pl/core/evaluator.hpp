@@ -11,6 +11,7 @@
 
 #include <pl/core/log_console.hpp>
 #include <pl/core/token.hpp>
+#include <pl/core/sections.hpp>
 #include <pl/api.hpp>
 
 #include <pl/core/errors/runtime_errors.hpp>
@@ -166,10 +167,12 @@ namespace pl::core {
 
         void setDataBaseAddress(u64 baseAddress) {
             this->m_dataBaseAddress = baseAddress;
+            setupMainSection();
         }
 
         void setDataSize(u64 dataSize) {
             this->m_dataSize = dataSize;
+            setupMainSection();
         }
 
         [[nodiscard]] u64 getDataBaseAddress() const {
@@ -401,6 +404,8 @@ namespace pl::core {
         void patternCreated(const ptrn::Pattern *pattern);
         void patternDestroyed(const ptrn::Pattern *pattern);
 
+        void setupMainSection();
+        
     private:
         u64 m_currOffset = 0x00;
         i8 m_currBitOffset = 0;
@@ -450,15 +455,15 @@ namespace pl::core {
 
         std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;
 
+        /// Adapter section for reader/writer functions
+        std::unique_ptr<DataSourceSection> m_dataSourceSection = std::make_unique<DataSourceSection>(0, 0);
+        
+        /// A view over `m_rawDataSection` which implements various relocations, such as the base address, and data size limit
+        std::unique_ptr<ViewSection> m_mainSection = std::make_unique<ViewSection>(*this);
+        
         u64 m_dataBaseAddress = 0x00;
         u64 m_dataSize = 0x00;
-        std::function<void(u64, u8*, size_t)> m_readerFunction = [](u64, u8*, size_t){
-            err::E0011.throwError("No memory has been attached. Reading is disabled.");
-        };
-        std::function<void(u64, const u8*, size_t)> m_writerFunction = [](u64, const u8*, size_t){
-            err::E0011.throwError("No memory has been attached. Reading is disabled.");
-        };
-
+        
         bool m_mainSectionEditsAllowed = false;
 
         std::optional<u64> m_currArrayIndex;

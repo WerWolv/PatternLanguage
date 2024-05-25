@@ -329,8 +329,11 @@ namespace pl {
     }
 
     const api::Section& PatternLanguage::getSection(u64 id) const {
-        (void)id;
-        std::terminate(); // TODO: BAD!
+        static core::EmptySection empty;
+        if (id > this->m_internals.evaluator->getSectionCount() || id == ptrn::Pattern::MainSectionId || id == ptrn::Pattern::HeapSectionId)
+            return empty;
+        else
+            return this->m_internals.evaluator->getSection(id);
     }
 
     [[nodiscard]] const std::map<u64, api::CustomSection>& PatternLanguage::getSections() const {
