@@ -1467,15 +1467,23 @@ namespace pl::core {
         if (peek(tkn::Separator::Comma)) {
 
             std::vector<hlp::safe_shared_ptr<ast::ASTNode>> variables;
-            if (memberIdentifier != nullptr)
-                memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
+            if (memberIdentifier != nullptr) {
+                if (m_currTemplateType.empty())
+                    memberIdentifier->setType(Token::Identifier::IdentifierType::FunctionVariable);
+                else
+                    memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
+            }
             std::string variableName = identifier;
             do {
                 if (sequence(tkn::Literal::Identifier)) {
                     variableName = getValue<Token::Identifier>(-1).get();
                     memberIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-                    if (memberIdentifier != nullptr)
-                        memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
+                    if (memberIdentifier != nullptr) {
+                        if (m_currTemplateType.empty())
+                            memberIdentifier->setType(Token::Identifier::IdentifierType::FunctionVariable);
+                        else
+                            memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
+                    }
                 }
                 variables.emplace_back(createShared<ast::ASTNodeVariableDecl>(variableName, type.unwrapUnchecked(), nullptr, nullptr, false, false, constant));
             } while (sequence(tkn::Separator::Comma));
