@@ -328,15 +328,12 @@ namespace pl {
         return this->m_internals.evaluator->getPatternLimit();
     }
 
-    const std::vector<u8>& PatternLanguage::getSection(u64 id) const {
-        static std::vector<u8> empty;
-        if (id > this->m_internals.evaluator->getSectionCount() || id == ptrn::Pattern::MainSectionId || id == ptrn::Pattern::HeapSectionId)
-            return empty;
-        else
-            return this->m_internals.evaluator->getSection(id);
+    const api::Section& PatternLanguage::getSection(u64 id) const {
+        (void)id;
+        std::terminate(); // TODO: BAD!
     }
 
-    [[nodiscard]] const std::map<u64, api::Section>& PatternLanguage::getSections() const {
+    [[nodiscard]] const std::map<u64, api::CustomSection>& PatternLanguage::getSections() const {
         return this->m_internals.evaluator->getSections();
     }
 

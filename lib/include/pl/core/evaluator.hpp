@@ -142,12 +142,19 @@ namespace pl::core {
         void pushSectionId(u64 id);
         void popSectionId();
         [[nodiscard]] u64 getSectionId() const;
-        [[nodiscard]] u64 createSection(const std::string &name);
+        
+        [[nodiscard]] u64 createSection(const std::string& name);
+        [[nodiscard]] u64 createSection(const std::string& name, std::unique_ptr<api::Section> section);
         void removeSection(u64 id);
-        [[nodiscard]] std::vector<u8>& getSection(u64 id);
-        [[nodiscard]] const std::map<u64, api::Section>& getSections() const;
-
-        [[nodiscard]] u64 getSectionCount() const;
+        
+        [[nodiscard]] api::Section& getSection(u64 id);
+        
+        [[nodiscard]] const std::map<u64, api::CustomSection>& getSections() const {
+            return m_sections;
+        }
+        [[nodiscard]] u64 getSectionCount() const {
+            return m_sections.size();
+        }
 
         void setInVariables(const std::map<std::string, Token::Literal> &inVariables) {
             this->m_inVariables = inVariables;
@@ -416,7 +423,7 @@ namespace pl::core {
         std::atomic<bool> m_aborted;
 
         std::vector<u64> m_sectionIdStack;
-        std::map<u64, api::Section> m_sections;
+        std::map<u64, api::CustomSection> m_sections;
         u64 m_sectionId = 0;
 
         std::vector<std::unique_ptr<Scope>> m_scopes;
