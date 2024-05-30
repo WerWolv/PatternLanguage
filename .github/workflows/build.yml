@@ -63,7 +63,7 @@ jobs:
 
   macos:
     name: 🍎 macOS
-    runs-on: macos-11
+    runs-on: macos-13
     permissions:
       actions: read
       contents: read
