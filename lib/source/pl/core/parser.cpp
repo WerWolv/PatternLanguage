@@ -2534,10 +2534,10 @@ namespace pl::core {
             return { unwrapSafePointerVector(std::move(program)), this->collectErrors() };
         }
         catch (const std::out_of_range&) {
-            error("Iterator out of Range. This is a parser bug!");
+            error("Unexpected end of input");
         }
         catch (const std::logic_error&) {
-            error("Runtime Error. This is a parser bug!");
+            error("Tried to dereference a nullptr. This is a parser bug!");
         }
         catch (const UnrecoverableParserException&) {
             error("This is a parser bug!");

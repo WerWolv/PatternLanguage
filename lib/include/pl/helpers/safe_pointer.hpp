@@ -36,7 +36,6 @@ namespace pl::hlp {
 
         template<typename U>
         operator SafePointer<std::shared_ptr, U>() && {
-            checkPointer();
             return std::move(this->get_std_unique_ptr());
         }
 
