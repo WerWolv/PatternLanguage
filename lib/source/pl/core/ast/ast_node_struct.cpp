@@ -68,7 +68,7 @@ namespace pl::core::ast {
             if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
                 break;
 
-            if (!evaluator->getCurrentArrayIndex().has_value()) {
+            if (evaluator->getCurrentArrayIndex().has_value()) {
                 if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Break) {
                     evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
                     break;
