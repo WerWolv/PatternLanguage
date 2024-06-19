@@ -31,6 +31,7 @@ pl::hlp::CompileResult<ParserManager::ParsedData> ParserManager::parse(api::Sour
     auto oldPreprpocessor = internals.preprocessor.get();
 
     auto preprocessor = Preprocessor();
+    preprocessor.setResolver(m_resolver);
     for (const auto& [name, value] : m_patternLanguage->getDefines()) {
         preprocessor.addDefine(name, value);
     }
