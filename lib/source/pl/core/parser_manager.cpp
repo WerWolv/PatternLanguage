@@ -9,29 +9,29 @@
 
 using namespace pl::core;
 
-pl::hlp::CompileResult<ParserManager::ParsedData> ParserManager::parse(api::Source *source, const std::string &namespacePrefix) {
-    using result_t = hlp::CompileResult<ParsedData>;
-
+using Result = pl::hlp::CompileResult<ParserManager::ParsedData>;
+Result ParserManager::parse(api::Source *source, const std::string &namespacePrefix) {
     OnceIncludePair key = { source, namespacePrefix };
 
     if (m_onceIncluded.contains( key )) {
         const auto& types = m_parsedTypes[key];
         if (!types.empty())
-            return result_t::good({ {}, types });
+            return Result::good({ {}, types });
     }
 
-    auto parser = Parser();
+    Parser parser;
 
     std::vector<std::string> namespaces;
     if (!namespacePrefix.empty()) {
         namespaces = wolv::util::splitString(namespacePrefix, "::");
     }
 
-    const auto& internals = m_patternLanguage->getInternals();
-    auto oldPreprpocessor = internals.preprocessor.get();
+    const auto &internals = m_patternLanguage->getInternals();
+    auto oldPreprocessor = internals.preprocessor.get();
 
-    auto preprocessor = Preprocessor();
+    Preprocessor preprocessor;
     preprocessor.setResolver(m_resolver);
+
     for (const auto& [name, value] : m_patternLanguage->getDefines()) {
         preprocessor.addDefine(name, value);
     }
@@ -39,14 +39,14 @@ pl::hlp::CompileResult<ParserManager::ParsedData> ParserManager::parse(api::Sour
         preprocessor.addPragmaHandler(name, handler);
     }
 
-    const auto& validator = internals.validator;
+    const auto &validator = internals.validator;
 
     auto [tokens, preprocessorErrors] = preprocessor.preprocess(this->m_patternLanguage, source, true);
     if (!preprocessorErrors.empty()) {
-        return result_t::err(preprocessorErrors);
+        return Result::err(preprocessorErrors);
     }
 
-    if(preprocessor.shouldOnlyIncludeOnce())
+    if (preprocessor.shouldOnlyIncludeOnce())
         m_onceIncluded.insert( { source, namespacePrefix } );
 
     parser.m_parserManager = this;
@@ -54,22 +54,22 @@ pl::hlp::CompileResult<ParserManager::ParsedData> ParserManager::parse(api::Sour
     parser.m_aliasNamespaceString = namespacePrefix;
 
     auto result = parser.parse(tokens.value());
-    oldPreprpocessor->appendToNamespaces(tokens.value());
+    oldPreprocessor->appendToNamespaces(tokens.value());
     if (result.hasErrs())
-        return result_t::err(result.errs);
+        return Result::err(result.errs);
 
-    // if its ok validate before returning
     auto [validated, validatorErrors] = validator->validate(result.ok.value());
     if (validated && !validatorErrors.empty()) {
-        return result_t::err(validatorErrors);
+        return Result::err(validatorErrors);
     }
 
-    const auto& types = parser.m_types;
-    for (auto& type : types) {
-        type.second->setCompleted(false); // de-complete the types
+    // 'Uncomplete' all types
+    const auto &types = parser.m_types;
+    for (auto &[name, type] : types) {
+        type->setCompleted(false);
     }
 
     m_parsedTypes[key] = types;
 
-    return result_t::good({ result.unwrap(), types });
+    return Result::good({ result.unwrap(), types });
 }
