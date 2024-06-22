@@ -198,7 +198,7 @@ namespace pl::core {
             path.emplace_back("null");
 
         if (MATCHES(sequence(tkn::Separator::LeftBracket) && !peek(tkn::Separator::LeftBracket))) {
-            path.emplace_back(parseMathematicalExpression());
+            path.emplace_back(std::move(parseMathematicalExpression().unwrap()));
             if (!sequence(tkn::Separator::RightBracket)) {
                 error("Expected ']' at end of array indexing, got {}.", getFormattedToken(0));
                 return nullptr;
@@ -780,7 +780,7 @@ namespace pl::core {
 
         std::vector<std::pair<std::string, std::unique_ptr<ast::ASTNode>>> unwrappedParams;
         for (auto &[name, node] : params) {
-            unwrappedParams.emplace_back(std::move(name), std::move(node));
+            unwrappedParams.emplace_back(std::move(name), std::move(node.unwrap()));
         }
 
         return create<ast::ASTNodeFunctionDefinition>(getNamespacePrefixedNames(functionName).back(), std::move(unwrappedParams), unwrapSafePointerVector(std::move(body)), parameterPack, unwrapSafePointerVector(std::move(defaultParameters)));
@@ -1197,16 +1197,20 @@ namespace pl::core {
     /* Type declarations */
 
     hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> Parser::getCustomType(const std::string &baseTypeName) {
-        if (!this->m_currTemplateType.empty())
+        if (!this->m_currTemplateType.empty()) {
             for (const auto &templateParameter : this->m_currTemplateType.front()->getTemplateParameters()) {
                 if (const auto templateType = dynamic_cast<ast::ASTNodeTypeDecl*>(templateParameter.get()); templateType != nullptr)
                     if (templateType->getName() == baseTypeName)
                         return create<ast::ASTNodeTypeDecl>("", templateParameter);
             }
+        }
 
         for (const auto &typeName : getNamespacePrefixedNames(baseTypeName)) {
             if (this->m_types.contains(typeName)) {
                 auto type = this->m_types[typeName];
+
+                if (type == nullptr || type->getType() == nullptr)
+                    return nullptr;
 
                 return create<ast::ASTNodeTypeDecl>("", type.unwrapUnchecked());
             }

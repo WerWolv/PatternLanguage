@@ -44,6 +44,11 @@ namespace pl::hlp {
             return this->get_std_unique_ptr();
         }
 
+        auto& unwrap() {
+            checkPointer();
+            return this->get_std_unique_ptr();
+        }
+
         auto& unwrapUnchecked() {
             return this->get_std_unique_ptr();
         }
