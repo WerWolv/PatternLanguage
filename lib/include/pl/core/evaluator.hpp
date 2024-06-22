@@ -11,6 +11,7 @@
 
 #include <pl/core/log_console.hpp>
 #include <pl/core/token.hpp>
+#include <pl/core/sections.hpp>
 #include <pl/api.hpp>
 
 #include <pl/core/errors/runtime_errors.hpp>
@@ -72,6 +73,13 @@ namespace pl::core {
             std::vector<std::shared_ptr<ptrn::Pattern>> *scope;
             std::optional<ParameterPack> parameterPack;
             size_t heapStartSize;
+            
+            Scope(decltype(parent) parent, decltype(scope) scope, decltype(parameterPack) parameterPack, decltype(heapStartSize) heapStartSize)
+            : parent(std::move(parent))
+            , scope(std::move(scope))
+            , parameterPack(std::move(parameterPack))
+            , heapStartSize(std::move(heapStartSize))
+            {}
         };
 
         struct PatternLocalData {
@@ -135,12 +143,33 @@ namespace pl::core {
         void pushSectionId(u64 id);
         void popSectionId();
         [[nodiscard]] u64 getSectionId() const;
-        [[nodiscard]] u64 createSection(const std::string &name);
+        
+        [[nodiscard]] u64 createSection(const std::string& name);
+        [[nodiscard]] u64 createSection(const std::string& name, std::unique_ptr<api::Section> section);
         void removeSection(u64 id);
-        [[nodiscard]] std::vector<u8>& getSection(u64 id);
-        [[nodiscard]] const std::map<u64, api::Section>& getSections() const;
-
-        [[nodiscard]] u64 getSectionCount() const;
+        
+        struct MaybeOwnedSection {
+            std::unique_ptr<api::Section> owned;
+            api::Section& ref;
+            
+            MaybeOwnedSection(std::unique_ptr<api::Section> owned)
+            : owned(std::move(owned))
+            , ref(*this->owned)
+            {}
+            
+            MaybeOwnedSection(api::Section& ref)
+            : owned(nullptr)
+            , ref(ref)
+            {}
+        };
+        [[nodiscard]] MaybeOwnedSection getSection(u64 id);
+        
+        [[nodiscard]] const std::map<u64, api::CustomSection>& getSections() const {
+            return m_sections;
+        }
+        [[nodiscard]] u64 getSectionCount() const {
+            return m_sections.size();
+        }
 
         void setInVariables(const std::map<std::string, Token::Literal> &inVariables) {
             this->m_inVariables = inVariables;
@@ -152,10 +181,12 @@ namespace pl::core {
 
         void setDataBaseAddress(u64 baseAddress) {
             this->m_dataBaseAddress = baseAddress;
+            setupMainSection();
         }
 
         void setDataSize(u64 dataSize) {
             this->m_dataSize = dataSize;
+            setupMainSection();
         }
 
         [[nodiscard]] u64 getDataBaseAddress() const {
@@ -167,6 +198,7 @@ namespace pl::core {
         }
 
         void accessData(u64 address, void *buffer, size_t size, u64 sectionId, bool write);
+        
         void readData(u64 address, void *buffer, size_t size, u64 sectionId) {
             this->accessData(address, buffer, size, sectionId, false);
         }
@@ -174,6 +206,8 @@ namespace pl::core {
             this->accessData(address, buffer, size, sectionId, true);
         }
 
+        void copyData(u64 fromAddress, size_t size, u64 fromSectionId, u64 toAddress, u64 toSectionId, bool expand);
+        
         void setDefaultEndian(std::endian endian) {
             this->m_defaultEndian = endian;
         }
@@ -384,6 +418,8 @@ namespace pl::core {
         void patternCreated(const ptrn::Pattern *pattern);
         void patternDestroyed(const ptrn::Pattern *pattern);
 
+        void setupMainSection();
+        
     private:
         u64 m_currOffset = 0x00;
         i8 m_currBitOffset = 0;
@@ -406,7 +442,7 @@ namespace pl::core {
         std::atomic<bool> m_aborted;
 
         std::vector<u64> m_sectionIdStack;
-        std::map<u64, api::Section> m_sections;
+        std::map<u64, api::CustomSection> m_sections;
         u64 m_sectionId = 0;
 
         std::vector<std::unique_ptr<Scope>> m_scopes;
@@ -433,15 +469,15 @@ namespace pl::core {
 
         std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;
 
+        /// Adapter section for reader/writer functions
+        std::unique_ptr<DataSourceSection> m_dataSourceSection = std::make_unique<DataSourceSection>(0, 0);
+        
+        /// A view over `m_rawDataSection` which implements various relocations, such as the base address, and data size limit
+        std::unique_ptr<ViewSection> m_mainSection = std::make_unique<ViewSection>(*this);
+        
         u64 m_dataBaseAddress = 0x00;
         u64 m_dataSize = 0x00;
-        std::function<void(u64, u8*, size_t)> m_readerFunction = [](u64, u8*, size_t){
-            err::E0011.throwError("No memory has been attached. Reading is disabled.");
-        };
-        std::function<void(u64, const u8*, size_t)> m_writerFunction = [](u64, const u8*, size_t){
-            err::E0011.throwError("No memory has been attached. Reading is disabled.");
-        };
-
+        
         bool m_mainSectionEditsAllowed = false;
 
         std::optional<u64> m_currArrayIndex;

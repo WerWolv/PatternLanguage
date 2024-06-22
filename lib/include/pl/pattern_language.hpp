@@ -245,17 +245,17 @@ namespace pl {
         [[nodiscard]] u64 getMaximumPatternCount() const;
 
         /**
-         * @brief Gets the memory of a custom section that was created
+         * @brief Gets the underlying section of a custom section that was created
          * @param id ID of the section
-         * @return Memory of the section
+         * @return Section of the custom section
          */
-        [[nodiscard]] const std::vector<u8>& getSection(u64 id) const;
+        [[nodiscard]] const api::Section& getSection(u64 id) const;
 
         /**
          * @brief Gets all custom sections that were created
          * @return Custom sections
          */
-        [[nodiscard]] const std::map<u64, api::Section>& getSections() const;
+        [[nodiscard]] const std::map<u64, api::CustomSection>& getSections() const;
 
         /**
          * @brief Gets all patterns that were created in the given section

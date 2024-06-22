@@ -149,6 +149,45 @@ namespace pl::lib::libstd::mem {
 
                 return u128(ctx->createSection(name));
             });
+            
+            /* create_view_section(name) -> id */
+            runtime.addFunction(nsStdMem, "create_view_section", FunctionParameterCount::exactly(1), [](Evaluator* ctx, auto params) -> std::optional<Token::Literal> {
+                auto name = params[0].toString(false);
+                
+                return u128(ctx->createSection(name, std::make_unique<core::ViewSection>(*ctx)));
+            });
+
+            /* append_view_section_span(to_id, from_id, [from], [size], [at_view_offset]) */
+            runtime.addFunction(nsStdMem, "append_view_section_span", FunctionParameterCount::between(2, 5), [](Evaluator* ctx, auto params) -> std::optional<Token::Literal> {
+                u64 toId    = params[0].toUnsigned();
+                u64 fromId  = params[1].toUnsigned();
+                
+                auto section = ctx->getSection(toId);
+                
+                auto* viewSection = dynamic_cast<core::ViewSection*>(&section.ref);
+                if (!viewSection) {
+                    err::E0012.throwError("to_id must be a view section.");
+                }
+                
+                auto fromSection = ctx->getSection(fromId);
+                
+                u64 from = 0;
+                size_t size = fromSection.ref.size();
+                std::optional<u64> atViewOffset = std::nullopt;
+                
+                if (params.size() > 2) {
+                    from = params[2].toUnsigned();
+                }
+                if (params.size() > 3) {
+                    size = params[3].toUnsigned();
+                }
+                if (params.size() > 4) {
+                    atViewOffset = params[4].toUnsigned();
+                }
+                
+                viewSection->addSectionSpan(fromId, from, size, atViewOffset);
+                return std::nullopt;
+            });
 
             /* delete_section(id) */
             runtime.addFunction(nsStdMem, "delete_section", FunctionParameterCount::exactly(1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
@@ -163,7 +202,7 @@ namespace pl::lib::libstd::mem {
             runtime.addFunction(nsStdMem, "get_section_size", FunctionParameterCount::exactly(1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 auto id = params[0].toUnsigned();
 
-                return u128(ctx->getSection(id).size());
+                return u128(ctx->getSection(id).ref.size());
             });
 
             /* set_section_size(id, size) */
@@ -171,7 +210,7 @@ namespace pl::lib::libstd::mem {
                 auto id   = params[0].toUnsigned();
                 auto size = params[1].toUnsigned();
 
-                ctx->getSection(id).resize(size);
+                ctx->getSection(id).ref.resize(size);
 
                 return std::nullopt;
             });
@@ -184,18 +223,12 @@ namespace pl::lib::libstd::mem {
                 auto toAddr     = params[3].toUnsigned();
                 auto size       = params[4].toUnsigned();
 
-                std::vector<u8> data(size, 0x00);
-                ctx->readData(fromAddr, data.data(), size, fromId);
                 if (toId == ptrn::Pattern::MainSectionId)
                     err::E0012.throwError("Cannot write to main section.", "The main section represents the currently loaded data and is immutable.");
                 else if (toId == ptrn::Pattern::HeapSectionId)
                     err::E0012.throwError("Invalid section id.");
 
-                auto& section = ctx->getSection(toId);
-                if (section.size() < toAddr + size)
-                    section.resize(toAddr + size);
-                std::memcpy(section.data() + toAddr, data.data(), size);
-
+                ctx->copyData(fromAddr, size, fromId, toAddr, toId, true);
                 return std::nullopt;
             });
 
@@ -209,33 +242,25 @@ namespace pl::lib::libstd::mem {
                 else if (toId == ptrn::Pattern::HeapSectionId)
                     err::E0012.throwError("Invalid section id.");
 
-                auto& section = ctx->getSection(toId);
-
                 switch (params[0].getType()) {
                     using enum Token::ValueType;
                     case String: {
                         auto string = params[0].toString(false);
 
-                        if (section.size() < toAddr + string.size())
-                            section.resize(toAddr + string.size());
-
-                        std::copy(string.begin(), string.end(), section.begin() + toAddr);
+                        ctx->writeData(toAddr, string.data(), string.size(), toId);
                         break;
                     }
                     case CustomType: {
                         auto pattern = params[0].toPattern();
 
-                        if (section.size() < toAddr + pattern->getSize())
-                            section.resize(toAddr + pattern->getSize());
-
                         if (auto iterable = dynamic_cast<ptrn::IIterable*>(pattern.get())) {
                             iterable->forEachEntry(0, iterable->getEntryCount(), [&](u64, ptrn::Pattern *entry) {
                                 auto entrySize = entry->getSize();
-                                ctx->readData(entry->getOffset(), section.data() + toAddr, entrySize, entry->getSection());
+                                ctx->copyData(entry->getOffset(), entrySize, entry->getSection(), toAddr, toId, true);
                                 toAddr += entrySize;
                             });
                         } else {
-                            ctx->readData(pattern->getOffset(), section.data() + toAddr, pattern->getSize(), pattern->getSection());
+                            ctx->copyData(pattern->getOffset(), pattern->getSize(), pattern->getSection(), toAddr, toId, true);
                         }
                         break;
                     }

@@ -33,22 +33,32 @@ namespace pl::core {
     }
 
     void Evaluator::setDataSource(u64 baseAddress, size_t dataSize, std::function<void(u64, u8*, size_t)> readerFunction, std::optional<std::function<void(u64, const u8*, size_t)>> writerFunction) {
-        this->m_dataBaseAddress = baseAddress;
-        this->m_dataSize = dataSize;
+        m_dataBaseAddress = baseAddress;
+        m_dataSize = dataSize;
 
-        this->m_readerFunction = [this, readerFunction = std::move(readerFunction)](u64 offset, u8* buffer, size_t size) {
-            this->m_lastReadAddress = offset;
+        m_dataSourceSection = std::make_unique<DataSourceSection>(4096, 4096);
+        
+        m_dataSourceSection->setDataSize(m_dataSize);
+        m_dataSourceSection->setReader([this, readerFunction = std::move(readerFunction)](u64 offset, u8* buffer, size_t size) {
+            m_lastReadAddress = offset;
 
             readerFunction(offset, buffer, size);
-        };
-
+        });
+    
         if (writerFunction.has_value()) {
-            this->m_writerFunction = [this, writerFunction = std::move(writerFunction.value())](u64 offset, const u8* buffer, size_t size) {
-                this->m_lastWriteAddress = offset;
+            m_dataSourceSection->setWriter([this, writerFunction = std::move(writerFunction.value())](u64 offset, const u8* buffer, size_t size) {
+                m_lastWriteAddress = offset;
 
                 writerFunction(offset, buffer, size);
-            };
+            });
         }
+        
+        setupMainSection();
+    }
+
+    void Evaluator::setupMainSection() {
+        m_mainSection = std::make_unique<ViewSection>(*this);
+        m_mainSection->addSectionSpan(ptrn::Pattern::DataSourceSectionId, 0, m_dataSize, m_dataBaseAddress);
     }
 
     void Evaluator::alignToByte() {
@@ -576,40 +586,47 @@ namespace pl::core {
 
         // Write value into variable storage
         {
-            bool heapSection = pattern->getSection() == ptrn::Pattern::HeapSectionId;
-            bool mainSection = pattern->getSection() == ptrn::Pattern::MainSectionId;
-            bool patternLocalSection = pattern->getSection() == ptrn::Pattern::PatternLocalSectionId;
+            const bool heapSection = pattern->getSection() == ptrn::Pattern::HeapSectionId;
+            const bool mainSection = pattern->getSection() == ptrn::Pattern::MainSectionId;
+            const bool patternLocalSection = pattern->getSection() == ptrn::Pattern::PatternLocalSectionId;
 
             auto getStorage = [&, this]() -> auto& {
                 if (heapSection) {
-                    if (auto &heap = this->getHeap(); heap.size() > pattern->getHeapAddress())
-                        return heap[pattern->getHeapAddress()];
-                    else
+                    if (m_heap.size() <= pattern->getHeapAddress()) {
                         err::E0011.throwError(fmt::format("Tried accessing out of bounds heap cell {}. This is a bug.", pattern->getHeapAddress()));
+                    }
+                    
+                    return m_heap[pattern->getHeapAddress()];
                 } else if (patternLocalSection) {
-                    if (this->m_patternLocalStorage.contains(pattern->getHeapAddress()))
-                        return this->m_patternLocalStorage[pattern->getHeapAddress()].data;
-                    else
+                    auto it = m_patternLocalStorage.find(pattern->getHeapAddress());
+                    if (it == m_patternLocalStorage.end()) {
                         err::E0011.throwError(fmt::format("Tried accessing out of bounds pattern local cell {}. This is a bug.", pattern->getHeapAddress()));
-                } else {
-                    return this->getSection(pattern->getSection());
+                    }
+                    
+                    return it->second.data;
                 }
+                
+                err::E0001.throwError("Tried to access contiguous storage for section backed pattern. This is a bug.");
             };
 
             auto copyToStorage = [&, this](auto &value) {
-                u64 offset = (pattern->isPatternLocal() || heapSection) ? pattern->getOffset() & 0xFFFF'FFFF : pattern->getOffset();
+                if (heapSection || patternLocalSection) {
+                    auto& storage = getStorage();
 
-                if (mainSection) {
-                    if (!this->m_mainSectionEditsAllowed)
-                        err::E0007.throwError("Modifying the main memory directly is only allowed with `#pragma allow_edits` set.");
-
-                    this->accessData(offset, &value, pattern->getSize(), pattern->getSection(), true);
+                    auto offsetInCell = pattern->getOffset() & 0xFFFF'FFFF;
+                    
+                    // Ensure storage will fit data
+                    if (storage.size() < offsetInCell + pattern->getSize()) {
+                        storage.resize(offsetInCell + pattern->getSize());
+                    }
+                    
+                    std::memmove(storage.data() + offsetInCell, &value, pattern->getSize());
                 } else {
-                    auto &storage = getStorage();
-
-                    if (storage.size() < offset + pattern->getSize())
-                        storage.resize(offset + pattern->getSize());
-                    std::memmove(storage.data() + offset, &value, pattern->getSize());
+                    if (mainSection && !this->m_mainSectionEditsAllowed) {
+                        err::E0007.throwError("Modifying the main memory directly is only allowed with `#pragma allow_edits` set.");
+                    }
+                    
+                    writeData(pattern->getOffset(), &value, pattern->getSize(), pattern->getSection());
                 }
 
                 if (this->isDebugModeEnabled())
@@ -669,28 +686,46 @@ namespace pl::core {
                     copyToStorage(copy[0]);
                 },
                 [&, this](const std::shared_ptr<ptrn::Pattern>& value) {
-                    if (!pattern->isReference()) {
-                        changePatternType(pattern, value->clone());
-                    } else {
+                    if (pattern->isReference()) {
                         pattern = value;
+                    } else {
+                        changePatternType(pattern, value->clone());
                     }
 
-                    auto &storage = getStorage();
-                    if (value->getSection() != ptrn::Pattern::InstantiationSectionId) {
-                        if (heapSection || patternLocalSection) {
-                            storage.resize((value->getOffset() & 0xFFFF'FFFF) + value->getSize());
-                            this->readData(value->getOffset(), storage.data(), value->getSize(), value->getSection());
-                        } else if (storage.size() < pattern->getOffset() + pattern->getSize()) {
-                            storage.resize(pattern->getOffset() + pattern->getSize());
-                            this->readData(value->getOffset(), storage.data() + pattern->getOffset(), value->getSize(), value->getSection());
-                        }
-                    } else {
+                    if (value->getSection() == ptrn::Pattern::InstantiationSectionId) {
+                        auto& storage = getStorage();
+                        
                         storage.resize(value->getSize());
                         std::fill(storage.begin(), storage.end(), 0x00);
+                        
+                        if (isDebugModeEnabled()) {
+                            getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {:02X}.", pattern->getVariableName(), fmt::join(storage, " ")));
+                        }
+                    } else if (heapSection || patternLocalSection) {
+                        auto& storage = getStorage();
+                        
+                        auto offsetInCell = value->getOffset() & 0xFFFF'FFFF;
+                        
+                        storage.resize(offsetInCell + pattern->getSize());
+                        readData(value->getOffset(), storage.data(), value->getSize(), value->getSection());
+                        
+                        if (isDebugModeEnabled()) {
+                            getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {:02X}.", pattern->getVariableName(), fmt::join(storage, " ")));
+                        }
+                    } else {
+                        if (mainSection && !this->m_mainSectionEditsAllowed) {
+                            err::E0007.throwError("Modifying the main memory directly is only allowed with `#pragma allow_edits` set.");
+                        }
+                        
+                        copyData(value->getOffset(), value->getSize(), value->getSection(), pattern->getOffset(), pattern->getSection(), true);
+                        
+                        if (isDebugModeEnabled()) {
+                            std::vector<u8> storage(pattern->getSize());
+                            readData(pattern->getOffset(), storage.data(), pattern->getSize(), pattern->getSection());
+                            
+                            getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {:02X}.", pattern->getVariableName(), fmt::join(storage, " ")));
+                        }
                     }
-
-                    if (this->isDebugModeEnabled())
-                        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {:02X}.", pattern->getVariableName(), fmt::join(storage, " ")));
                 }
             }, castedValue);
         }
@@ -758,14 +793,7 @@ namespace pl::core {
         if (size == 0 || buffer == nullptr)
             return;
 
-        if (sectionId == ptrn::Pattern::MainSectionId) [[likely]] {
-            if (!write) [[likely]] {
-                this->m_readerFunction(address, reinterpret_cast<u8*>(buffer), size);
-            } else {
-                if (address < this->m_dataBaseAddress + this->m_dataSize)
-                    this->m_writerFunction(address, reinterpret_cast<u8*>(buffer), size);
-            }
-        } else if (sectionId == ptrn::Pattern::HeapSectionId) {
+        if (sectionId == ptrn::Pattern::HeapSectionId) {
             auto &heap = this->getHeap();
 
             auto heapAddress = (address >> 32);
@@ -806,24 +834,32 @@ namespace pl::core {
         } else if (sectionId == ptrn::Pattern::InstantiationSectionId) {
             err::E0012.throwError("Cannot access data of type that hasn't been placed in memory.");
         } else {
-            if (this->m_sections.contains(sectionId)) {
-                auto &section = this->m_sections[sectionId];
-
-                if (!write) {
-                    if ((address + size) <= section.data.size())
-                        std::memmove(buffer, section.data.data() + address, size);
-                    else
-                        std::memset(buffer, 0x00, size);
-                } else {
-                    if ((address + size) <= section.data.size())
-                        std::memmove(section.data.data() + address, buffer, size);
+            auto section = getSection(sectionId);
+            
+            std::span<u8> span(reinterpret_cast<u8*>(buffer), size);
+            
+            if (write) {
+                if (auto error = section.ref.write(true, address, span)) {
+                    err::E0011.throwError(fmt::format("Write error in section {}: {}", sectionId, *error));
                 }
-            } else
-                err::E0012.throwError(fmt::format("Tried accessing a non-existing section with id {}.", sectionId));
+            } else {
+                if (auto error = section.ref.read(address, span)) {
+                    err::E0011.throwError(fmt::format("Read error in section {}: {}", sectionId, *error));
+                }
+            }
         }
 
         if (this->isDebugModeEnabled())
             this->m_console.log(LogConsole::Level::Debug, fmt::format("{} {} bytes from address 0x{:02X} in section {:02X}", write ? "Writing" : "Reading", size, address, sectionId));
+    }
+
+    void Evaluator::copyData(u64 fromAddress, size_t size, u64 fromSectionId, u64 toAddress, u64 toSectionId, bool expand) {
+        auto fromSection = getSection(fromSectionId);
+        auto toSection = getSection(toSectionId);
+        
+        if (auto error = toSection.ref.write(expand, toAddress, size, fromAddress, fromSection.ref)) {
+            err::E0011.throwError(fmt::format("Error while copying from section {} to {}: {}", fromSectionId, toSectionId, *error));
+        }
     }
 
     void Evaluator::pushSectionId(u64 id) {
@@ -842,10 +878,17 @@ namespace pl::core {
     }
 
     u64 Evaluator::createSection(const std::string &name) {
+        return createSection(name, InMemorySection<>::AllocVector(std::numeric_limits<size_t>::max(), 0));
+    }
+
+    u64 Evaluator::createSection(const std::string& name, std::unique_ptr<api::Section> section) {
         auto id = this->m_sectionId;
         this->m_sectionId++;
 
-        this->m_sections.insert({ id, { name, { } } });
+        this->m_sections.emplace(id, api::CustomSection{
+            .name = name,
+            .section = std::move(section)
+        });
         return id;
     }
 
@@ -853,25 +896,21 @@ namespace pl::core {
         this->m_sections.erase(id);
     }
 
-    std::vector<u8>& Evaluator::getSection(u64 id) {
+    auto Evaluator::getSection(u64 id) -> MaybeOwnedSection {
         if (id == ptrn::Pattern::MainSectionId)
-            err::E0011.throwError("Cannot access main section.");
+            return *m_mainSection;
         else if (id == ptrn::Pattern::HeapSectionId)
-            return this->m_heap.back();
-        else if (this->m_sections.contains(id))
-            return this->m_sections[id].data;
+            return MaybeOwnedSection(InMemorySection<>::WrapVector(0xFFFF'FFFF, m_heap.back()));
         else if (id == ptrn::Pattern::InstantiationSectionId)
             err::E0012.throwError("Cannot access data of type that hasn't been placed in memory.");
-        else
-            err::E0011.throwError(fmt::format("Tried accessing a non-existing section with id {}.", id));
-    }
+        else if (id == ptrn::Pattern::DataSourceSectionId)
+            return *m_dataSourceSection;
+        
+        if (auto it = m_sections.find(id); it != m_sections.end()) {
+            return *it->second.section;
+        }
 
-    const std::map<u64, api::Section> &Evaluator::getSections() const {
-        return this->m_sections;
-    }
-
-    u64 Evaluator::getSectionCount() const {
-        return this->m_sections.size();
+        err::E0011.throwError(fmt::format("Tried accessing a non-existing section with id {}.", id));
     }
 
     bool Evaluator::evaluate(const std::vector<std::shared_ptr<ast::ASTNode>> &ast) {
