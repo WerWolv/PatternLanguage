@@ -68,16 +68,12 @@ namespace pl::core::ast {
             if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
                 break;
 
-            if (evaluator->getCurrentArrayIndex().has_value()) {
-                if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Break) {
-                    evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
-                    break;
-                } else if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Continue) {
-                    evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
-                    memberPatterns.clear();
-                    evaluator->setReadOffset(startOffset);
-                    break;
-                }
+            if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Break) {
+                break;
+            } else if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Continue) {
+                memberPatterns.clear();
+                evaluator->setReadOffset(startOffset);
+                break;
             }
         }
 
