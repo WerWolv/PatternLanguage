@@ -662,8 +662,10 @@ namespace pl::ptrn {
             if (!this->m_fields.empty())
                 this->setBaseColor(this->m_fields.front()->getColor());
 
-            for (const auto &field : this->m_fields)
+            for (const auto &field : this->m_fields) {
+                field->setParent(this);
                 this->m_sortedFields.push_back(field.get());
+            }
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override {
