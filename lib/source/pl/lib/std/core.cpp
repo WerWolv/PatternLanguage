@@ -163,6 +163,22 @@ namespace pl::lib::libstd::core {
 
                 return false;
             });
+
+            /* execute_function(function_name, args...) -> bool */
+            runtime.addDangerousFunction(nsStdCore, "execute_function", FunctionParameterCount::atLeast(1), [](Evaluator *evaluator, auto params) -> std::optional<Token::Literal> {
+                auto functionName = params[0].toString();
+
+                auto function = evaluator->findFunction(functionName);
+                if (!function.has_value()) {
+                    err::E0009.throwError(fmt::format("Function '{}' does not exist.", functionName), {});
+                }
+
+                std::vector<pl::core::Token::Literal> functionParams;
+                for (size_t i = 1; i < params.size(); i += 1)
+                    functionParams.emplace_back(std::move(params[i]));
+
+                return function.value().func(evaluator, functionParams);
+            });
         }
     }
 
