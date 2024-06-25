@@ -133,17 +133,37 @@ namespace pl::core {
         this->writeData(byteOffset, &oldValue, writeSize, section);
     }
 
+
+
     bool Evaluator::addBuiltinFunction(const std::string &name, api::FunctionParameterCount numParams, std::vector<Token::Literal> defaultParameters, const api::FunctionCallback &function, bool dangerous) {
         const auto [iter, inserted] = this->m_builtinFunctions.insert({
-            name, {numParams, std::move(defaultParameters), function, dangerous}
+            name, {
+                numParams,
+                std::move(defaultParameters),
+                dangerous ? handleDangerousFunctionCall(name, function) : function
+            }
         });
 
         return inserted;
     }
 
+    api::FunctionCallback Evaluator::handleDangerousFunctionCall(const std::string &functionName, const api::FunctionCallback &function) {
+        return [this, function, functionName](core::Evaluator *, const std::vector<core::Token::Literal> &params) -> std::optional<core::Token::Literal> {
+            if (getDangerousFunctionPermission() != DangerousFunctionPermission::Allow) {
+                dangerousFunctionCalled();
+
+                if (getDangerousFunctionPermission() == DangerousFunctionPermission::Deny) {
+                    err::E0009.throwError(fmt::format("Call to dangerous function '{}' has been denied.", functionName), { });
+                }
+            }
+
+            return function(this, params);
+        };
+    }
+
     bool Evaluator::addCustomFunction(const std::string &name, api::FunctionParameterCount numParams, std::vector<Token::Literal> defaultParameters, const api::FunctionCallback &function) {
         const auto [iter, inserted] = this->m_customFunctions.insert({
-            name, {numParams, std::move(defaultParameters), function, false}
+            name, {numParams, std::move(defaultParameters), function}
         });
 
         return inserted;
@@ -184,15 +204,35 @@ namespace pl::core {
         auto typePatterns = type->createPatterns(this);
         auto typePattern = std::move(typePatterns.front());
 
+        typePattern->setConstant(constant);
+
         this->setBitwiseReadOffset(startOffset);
 
         auto pattern = new ptrn::PatternArrayDynamic(this, 0, typePattern->getSize() * entryCount, 0);
 
-        if (section == ptrn::Pattern::HeapSectionId) {
+        if (section == ptrn::Pattern::PatternLocalSectionId) {
+            typePattern->setSection(section);
+            std::vector<std::shared_ptr<ptrn::Pattern>> entries;
+            for (size_t i = 0; i < entryCount; i++) {
+                auto entryPattern = typePattern->clone();
+                entryPattern->setSection(section);
+
+                auto patternLocalAddress = this->m_patternLocalStorage.empty() ? 0 : this->m_patternLocalStorage.rbegin()->first + 1;
+                entryPattern->setOffset(u64(patternLocalAddress) << 32);
+                this->m_patternLocalStorage.insert({ patternLocalAddress, { } });
+                this->m_patternLocalStorage[patternLocalAddress].data.resize(entryPattern->getSize());
+
+                entries.push_back(std::move(entryPattern));
+            }
+            pattern->setEntries(std::move(entries));
+            pattern->setSection(section);
+
+        } else if (section == ptrn::Pattern::HeapSectionId) {
             typePattern->setLocal(true);
             std::vector<std::shared_ptr<ptrn::Pattern>> entries;
             for (size_t i = 0; i < entryCount; i++) {
                 auto entryPattern = typePattern->clone();
+                entryPattern->setLocal(true);
 
                 auto &heap = this->getHeap();
                 entryPattern->setOffset(u64(heap.size()) << 32);

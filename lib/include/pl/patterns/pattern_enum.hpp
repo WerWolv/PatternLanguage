@@ -66,9 +66,7 @@ namespace pl::ptrn {
         }
 
         std::string formatDisplayValue() override {
-            auto value = this->getValue().toUnsigned();
-
-            return fmt::format("{} (0x{:0{}X})", this->toString(), value, this->getSize() * 2);
+            return fmt::format("{}", this->toString());
         }
 
         static std::string getEnumName(const std::string &typeName, u128 value, const std::vector<EnumValue> &enumValues) {

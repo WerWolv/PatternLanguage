@@ -52,10 +52,10 @@ namespace pl::core::ast {
                 err::E0002.throwError("Void expression used in placement expression.", { }, this->getLocation());
 
             evaluator->setReadOffset(std::visit(wolv::util::overloaded {
-                                                        [this](const std::string &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this->getLocation()); },
-                                                        [this](const std::shared_ptr<ptrn::Pattern> &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this->getLocation()); },
-                                                        [](auto &&offset) -> u64 { return offset; } },
-                                                offset->getValue()));
+                [this](const std::string &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this->getLocation()); },
+                [this](const std::shared_ptr<ptrn::Pattern> &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this->getLocation()); },
+                [](auto &&offset) -> u64 { return offset; } },
+            offset->getValue()));
 
             if (evaluator->getReadOffset() < evaluator->getDataBaseAddress() || evaluator->getReadOffset() > evaluator->getDataBaseAddress() + evaluator->getDataSize())
                 err::E0005.throwError(fmt::format("Cannot place variable '{}' at out of bounds address 0x{:08X}", this->m_name, evaluator->getReadOffset()), { }, this->getLocation());

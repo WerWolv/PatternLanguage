@@ -384,6 +384,8 @@ namespace pl::core {
         void patternCreated(const ptrn::Pattern *pattern);
         void patternDestroyed(const ptrn::Pattern *pattern);
 
+        api::FunctionCallback handleDangerousFunctionCall(const std::string &functionName, const api::FunctionCallback &function);
+
     private:
         u64 m_currOffset = 0x00;
         i8 m_currBitOffset = 0;

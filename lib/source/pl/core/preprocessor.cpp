@@ -342,7 +342,7 @@ namespace pl::core {
             m_token++;
             tokenLiteral = std::get_if<Token::Literal>(&m_token->value);
             if (tokenLiteral != nullptr && m_token->location.line == line) {
-                message += " " + tokenLiteral->toString(false);
+                message += std::string(" ") + tokenLiteral->toString(false);
                 m_token++;
             }
             error(message);

@@ -118,15 +118,11 @@ namespace pl::core::ast {
             if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
                 break;
 
-            if (!evaluator->getCurrentArrayIndex().has_value()) {
-                if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Break) {
-                    evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
-                    break;
-                } else if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Continue) {
-                    evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
-                    potentialPatterns.clear();
-                    break;
-                }
+            if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Break) {
+                break;
+            } else if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Continue) {
+                potentialPatterns.clear();
+                break;
             }
         }
 

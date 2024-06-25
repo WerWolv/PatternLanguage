@@ -198,7 +198,7 @@ namespace pl::core {
             path.emplace_back("null");
 
         if (MATCHES(sequence(tkn::Separator::LeftBracket) && !peek(tkn::Separator::LeftBracket))) {
-            path.emplace_back(parseMathematicalExpression());
+            path.emplace_back(std::move(parseMathematicalExpression().unwrap()));
             if (!sequence(tkn::Separator::RightBracket)) {
                 error("Expected ']' at end of array indexing, got {}.", getFormattedToken(0));
                 return nullptr;
@@ -780,10 +780,52 @@ namespace pl::core {
 
         std::vector<std::pair<std::string, std::unique_ptr<ast::ASTNode>>> unwrappedParams;
         for (auto &[name, node] : params) {
-            unwrappedParams.emplace_back(std::move(name), std::move(node));
+            unwrappedParams.emplace_back(std::move(name), std::move(node.unwrap()));
         }
 
         return create<ast::ASTNodeFunctionDefinition>(getNamespacePrefixedNames(functionName).back(), std::move(unwrappedParams), unwrapSafePointerVector(std::move(body)), parameterPack, unwrapSafePointerVector(std::move(defaultParameters)));
+    }
+
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseArrayInitExpression(std::string identifier) {
+        if (!sequence(tkn::Separator::LeftBrace)) {
+            error("Expected '{{' after array assignment, got {}.", getFormattedToken(0));
+            return nullptr;
+        }
+
+        std::vector<hlp::safe_unique_ptr<ast::ASTNode>> values;
+        while (true) {
+            auto expression = parseMathematicalExpression();
+            if (expression == nullptr)
+                continue;
+
+            values.push_back(std::move(expression));
+
+            if (sequence(tkn::Separator::Comma)) {
+                if (sequence(tkn::Separator::RightBrace)) {
+                    error("Expected value after ',' in array assignment, got {}.", getFormattedToken(0));
+                    return nullptr;
+                }
+            } else if (sequence(tkn::Separator::RightBrace)) {
+                break;
+            } else {
+                error("Expected ',' or '}}' in array assignment, got {}.", getFormattedToken(0));
+                return nullptr;
+            }
+        }
+
+        std::vector<hlp::safe_unique_ptr<ast::ASTNode>> result;
+        for (u64 i = 0; i < values.size(); i += 1) {
+            ast::ASTNodeRValue::Path path;
+            path.emplace_back(identifier);
+            path.emplace_back(std::unique_ptr<ast::ASTNode>(new ast::ASTNodeLiteral(u128(i))));
+
+            auto lvalue = create<ast::ASTNodeRValue>(std::move(path));
+            auto &rvalue = values[i];
+
+            result.push_back(create<ast::ASTNodeRValueAssignment>(std::move(lvalue), std::move(rvalue)));
+        }
+
+        return create<ast::ASTNodeCompoundStatement>(unwrapSafePointerVector(std::move(result)));
     }
 
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseFunctionVariableDecl(const bool constant) {
@@ -799,6 +841,21 @@ namespace pl::core {
                 functionIdentifier->setType(Token::Identifier::IdentifierType::FunctionVariable);
             if (MATCHES(sequence(tkn::Separator::LeftBracket) && !peek(tkn::Separator::LeftBracket))) {
                 statement = parseMemberArrayVariable(std::move(type), constant);
+
+                if (sequence(tkn::Operator::Assign)) {
+                    std::vector<hlp::safe_unique_ptr<ast::ASTNode>> compoundStatement;
+                    {
+                        compoundStatement.emplace_back(std::move(statement));
+
+                        auto initStatement = parseArrayInitExpression(identifier);
+                        if (initStatement == nullptr)
+                            return nullptr;
+
+                        compoundStatement.emplace_back(std::move(initStatement));
+                    }
+
+                    statement = create<ast::ASTNodeCompoundStatement>(unwrapSafePointerVector(std::move(compoundStatement)));
+                }
             } else {
                 statement = parseMemberVariable(std::move(type), constant, identifier);
 
@@ -1197,16 +1254,24 @@ namespace pl::core {
     /* Type declarations */
 
     hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> Parser::getCustomType(const std::string &baseTypeName) {
-        if (!this->m_currTemplateType.empty())
+        if (!this->m_currTemplateType.empty()) {
             for (const auto &templateParameter : this->m_currTemplateType.front()->getTemplateParameters()) {
                 if (const auto templateType = dynamic_cast<ast::ASTNodeTypeDecl*>(templateParameter.get()); templateType != nullptr)
                     if (templateType->getName() == baseTypeName)
                         return create<ast::ASTNodeTypeDecl>("", templateParameter);
             }
+        }
 
         for (const auto &typeName : getNamespacePrefixedNames(baseTypeName)) {
             if (this->m_types.contains(typeName)) {
                 auto type = this->m_types[typeName];
+
+                if (type == nullptr)
+                    return nullptr;
+
+                if (type->isValid() && type->getType() == nullptr) {
+                    return nullptr;
+                }
 
                 return create<ast::ASTNodeTypeDecl>("", type.unwrapUnchecked());
             }
@@ -1477,7 +1542,7 @@ namespace pl::core {
             do {
                 if (sequence(tkn::Literal::Identifier)) {
                     variableName = getValue<Token::Identifier>(-1).get();
-                    memberIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+                    memberIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
                     if (memberIdentifier != nullptr) {
                         if (m_currTemplateType.empty())
                             memberIdentifier->setType(Token::Identifier::IdentifierType::FunctionVariable);
@@ -1490,10 +1555,10 @@ namespace pl::core {
 
             return create<ast::ASTNodeMultiVariableDecl>(unwrapSafePointerVector(std::move(variables)));
         }
+
         if (sequence(tkn::Operator::At)) {
             if (constant) {
                 errorDesc("Cannot mark placed variable as 'const'.", "Variables placed in memory are always implicitly const.");
-                return nullptr;
             }
 
             auto variableName = getValue<Token::Identifier>(-2).get();
@@ -1512,6 +1577,7 @@ namespace pl::core {
 
             return create<ast::ASTNodeVariableDecl>(variableName, type.unwrapUnchecked(), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()), false, false, constant);
         }
+
         if (sequence(tkn::Operator::Assign)) {
             std::vector<hlp::safe_unique_ptr<ast::ASTNode>> compounds;
             compounds.emplace_back(create<ast::ASTNodeVariableDecl>(identifier, type.unwrapUnchecked(), nullptr, create<ast::ASTNodeLiteral>(u128(ptrn::Pattern::PatternLocalSectionId)), false, false, constant));
@@ -1525,6 +1591,10 @@ namespace pl::core {
                 memberIdentifier->setType(Token::Identifier::IdentifierType::PatternLocalVariable);
 
             return create<ast::ASTNodeCompoundStatement>(unwrapSafePointerVector(std::move(compounds)));
+        } else {
+            if (constant) {
+                errorDesc("Cannot mark placed variable as 'const'.", "Variables placed in memory are always implicitly const.");
+            }
         }
 
         if (memberIdentifier != nullptr)
@@ -1556,8 +1626,9 @@ namespace pl::core {
         }
 
         if (sequence(tkn::Operator::At)) {
-            if (constant)
-                error("Cannot mark placed variable as 'const'.", "Variables placed in memory are always implicitly const.");
+            if (constant) {
+                errorDesc("Cannot mark placed variable as 'const'.", "Variables placed in memory are always implicitly const.");
+            }
 
             if (memberIdentifier != nullptr)
                 memberIdentifier->setType(Token::Identifier::IdentifierType::PatternPlacedVariable);
@@ -1574,6 +1645,30 @@ namespace pl::core {
 
             return create<ast::ASTNodeArrayVariableDecl>(name, type.unwrapUnchecked(), std::move(size.unwrapUnchecked()), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()), constant);
         }
+
+        if (sequence(tkn::Operator::Assign)) {
+            auto statement = create<ast::ASTNodeArrayVariableDecl>(name, type.unwrapUnchecked(), std::move(size.unwrapUnchecked()), nullptr, create<ast::ASTNodeLiteral>(u128(ptrn::Pattern::PatternLocalSectionId)), constant);
+            std::vector<hlp::safe_unique_ptr<ast::ASTNode>> compoundStatement;
+            {
+                compoundStatement.emplace_back(std::move(statement));
+
+                auto initStatement = parseArrayInitExpression(name);
+                if (initStatement == nullptr)
+                    return nullptr;
+
+                compoundStatement.emplace_back(std::move(initStatement));
+            }
+
+            if (memberIdentifier != nullptr)
+                memberIdentifier->setType(Token::Identifier::IdentifierType::PatternLocalVariable);
+
+            return create<ast::ASTNodeCompoundStatement>(unwrapSafePointerVector(std::move(compoundStatement)));
+        } else {
+            if (constant) {
+                errorDesc("Cannot mark placed variable as 'const'.", "Variables placed in memory are always implicitly const.");
+            }
+        }
+
         if (memberIdentifier != nullptr)
             memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
 
@@ -1665,7 +1760,7 @@ namespace pl::core {
             member = parseFunctionVariableAssignment(getValue<Token::Identifier>(-2).get());
         } else if (const auto identifierOffset = parseCompoundAssignment(tkn::Literal::Identifier); identifierOffset.has_value())
             member = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(*identifierOffset).get());
-        else if (peek(tkn::Keyword::BigEndian) || peek(tkn::Keyword::LittleEndian) || peek(tkn::ValueType::Any) || peek(tkn::Literal::Identifier)) {
+        else if (peek(tkn::Keyword::Const) || peek(tkn::Keyword::BigEndian) || peek(tkn::Keyword::LittleEndian) || peek(tkn::ValueType::Any) || peek(tkn::Literal::Identifier)) {
             // Some kind of variable definition
 
             bool isFunction = false;
@@ -1685,21 +1780,22 @@ namespace pl::core {
 
 
             if (!isFunction) {
+                bool constant = sequence(tkn::Keyword::Const);
                 auto type = parseType();
                 if (type == nullptr)
                     return nullptr;
 
                 if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Separator::LeftBracket) && sequence<Not>(tkn::Separator::LeftBracket)))
-                    member = parseMemberArrayVariable(std::move(type), false);
+                    member = parseMemberArrayVariable(std::move(type), constant);
                 else if (sequence(tkn::Operator::Star, tkn::Literal::Identifier, tkn::Operator::Colon))
                     member = parseMemberPointerVariable(std::move(type));
                 else if (sequence(tkn::Operator::Star, tkn::Literal::Identifier, tkn::Separator::LeftBracket))
                     member = parseMemberPointerArrayVariable(std::move(type));
                 else if (sequence(tkn::Literal::Identifier)) {
                     auto identifier = getValue<Token::Identifier>(-1).get();
-                    member = parseMemberVariable(std::move(type), false, identifier);
+                    member = parseMemberVariable(std::move(type), constant, identifier);
                 } else
-                    member = parseMemberVariable(std::move(type), false, "");
+                    member = parseMemberVariable(std::move(type), constant, "");
             }
         } else if (sequence(tkn::ValueType::Padding, tkn::Separator::LeftBracket))
             member = parsePadding();
@@ -1781,7 +1877,9 @@ namespace pl::core {
 
         while (!sequence(tkn::Separator::RightBrace)) {
             auto member = parseMember();
-            if(member == nullptr)
+            if (hasErrors())
+                break;
+            else if (member == nullptr)
                 continue;
 
             structNode->addMember(std::move(member));
@@ -2188,6 +2286,22 @@ namespace pl::core {
                 if (placementSection == nullptr)
                     return nullptr;
             }
+
+            return create<ast::ASTNodeArrayVariableDecl>(name, type.unwrapUnchecked(), std::move(size.unwrapUnchecked()), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()));
+        } else if (sequence(tkn::Operator::Assign)) {
+            auto statement = create<ast::ASTNodeArrayVariableDecl>(name, type.unwrapUnchecked(), std::move(size.unwrapUnchecked()), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()));
+            std::vector<hlp::safe_unique_ptr<ast::ASTNode>> compoundStatement;
+            {
+                compoundStatement.emplace_back(std::move(statement));
+
+                auto initStatement = parseArrayInitExpression(name);
+                if (initStatement == nullptr)
+                    return nullptr;
+
+                compoundStatement.emplace_back(std::move(initStatement));
+            }
+
+            return create<ast::ASTNodeCompoundStatement>(unwrapSafePointerVector(std::move(compoundStatement)));
         }
         if (typedefIdentifier != nullptr)
             typedefIdentifier->setType(Token::Identifier::IdentifierType::GlobalVariable);
@@ -2530,10 +2644,10 @@ namespace pl::core {
             return { unwrapSafePointerVector(std::move(program)), this->collectErrors() };
         }
         catch (const std::out_of_range&) {
-            error("Iterator out of Range. This is a parser bug!");
+            error("Unexpected end of input");
         }
         catch (const std::logic_error&) {
-            error("Runtime Error. This is a parser bug!");
+            error("Tried to dereference a nullptr. This is a parser bug!");
         }
         catch (const UnrecoverableParserException&) {
             error("This is a parser bug!");

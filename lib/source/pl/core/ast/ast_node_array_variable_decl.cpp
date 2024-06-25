@@ -73,35 +73,35 @@ namespace pl::core::ast {
             }, offset->getValue()));
         }
 
-        auto type = this->m_type->evaluate(evaluator);
-
-        std::shared_ptr<ptrn::Pattern> pattern;
-        if (dynamic_cast<ASTNodeBuiltinType *>(type.get()) != nullptr)
-            pattern = createStaticArray(evaluator);
-        else if (auto attributable = dynamic_cast<Attributable *>(type.get())) {
-            bool isStaticType = attributable->hasAttribute("static", false);
-
-            if (isStaticType)
-                pattern = createStaticArray(evaluator);
-            else
-                pattern = createDynamicArray(evaluator);
-        } else {
-            err::E0001.throwError("Invalid type used in array variable declaration.", { }, this->getLocation());
-        }
-
-        pattern->setSection(evaluator->getSectionId());
-
-        applyVariableAttributes(evaluator, this, pattern);
-
-        if (this->m_placementOffset != nullptr && !evaluator->isGlobalScope()) {
-            evaluator->setBitwiseReadOffset(startOffset);
-        }
-
-        if (evaluator->getSectionId() == ptrn::Pattern::PatternLocalSectionId) {
+        if (evaluator->getSectionId() == ptrn::Pattern::PatternLocalSectionId || evaluator->getSectionId() == ptrn::Pattern::HeapSectionId) {
             evaluator->setBitwiseReadOffset(startOffset);
             this->execute(evaluator);
             return { };
         } else {
+            auto type = this->m_type->evaluate(evaluator);
+
+            std::shared_ptr<ptrn::Pattern> pattern;
+            if (dynamic_cast<ASTNodeBuiltinType *>(type.get()) != nullptr)
+                pattern = createStaticArray(evaluator);
+            else if (auto attributable = dynamic_cast<Attributable *>(type.get())) {
+                bool isStaticType = attributable->hasAttribute("static", false);
+
+                if (isStaticType)
+                    pattern = createStaticArray(evaluator);
+                else
+                    pattern = createDynamicArray(evaluator);
+            } else {
+                err::E0001.throwError("Invalid type used in array variable declaration.", { }, this->getLocation());
+            }
+
+            pattern->setSection(evaluator->getSectionId());
+
+            applyVariableAttributes(evaluator, this, pattern);
+
+            if (this->m_placementOffset != nullptr && !evaluator->isGlobalScope()) {
+                evaluator->setBitwiseReadOffset(startOffset);
+            }
+
             if (this->m_placementSection != nullptr && !evaluator->isGlobalScope()) {
                 evaluator->addPattern(std::move(pattern));
                 return {};
@@ -128,27 +128,27 @@ namespace pl::core::ast {
                 [](auto &&size) -> i128 { return size; }
         }, sizeLiteral->getValue());
 
+        u64 section = 0;
+        if (this->m_placementSection != nullptr) {
+            const auto sectionNode = this->m_placementSection->evaluate(evaluator);
+            const auto sectionLiteral = dynamic_cast<ASTNodeLiteral *>(sectionNode.get());
+            if (sectionLiteral == nullptr)
+                err::E0002.throwError("Cannot use void expression as section identifier.", {}, this->getLocation());
+
+            section = sectionLiteral->getValue().toUnsigned();
+        } else {
+            section = evaluator->getSectionId();
+        }
+
+        evaluator->createArrayVariable(this->m_name, this->m_type.get(), entryCount, section, this->m_constant);
+
         if (this->m_placementOffset != nullptr) {
             const auto placementNode = this->m_placementOffset->evaluate(evaluator);
             const auto offsetLiteral = dynamic_cast<ASTNodeLiteral *>(placementNode.get());
             if (offsetLiteral == nullptr)
                 err::E0002.throwError("Void expression used in placement expression.", { }, this->getLocation());
 
-
-            u64 section = 0;
-            if (this->m_placementSection != nullptr) {
-                const auto sectionNode = this->m_placementSection->evaluate(evaluator);
-                const auto sectionLiteral = dynamic_cast<ASTNodeLiteral *>(sectionNode.get());
-                if (sectionLiteral == nullptr)
-                err::E0002.throwError("Cannot use void expression as section identifier.", {}, this->getLocation());
-
-                section = sectionLiteral->getValue().toUnsigned();
-            }
-
-            evaluator->createArrayVariable(this->m_name, this->m_type.get(), entryCount, section, this->m_constant);
             evaluator->setVariableAddress(this->getName(), offsetLiteral->getValue().toUnsigned(), section);
-        } else {
-            evaluator->createArrayVariable(this->m_name, this->m_type.get(), entryCount, ptrn::Pattern::HeapSectionId, this->m_constant);
         }
 
         return std::nullopt;
