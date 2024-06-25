@@ -159,6 +159,8 @@ namespace pl::core {
         hlp::safe_unique_ptr<ast::ASTNode> parseEqualityExpression(bool inTemplate, bool inMatchRange);
         hlp::safe_unique_ptr<ast::ASTNode> parseTernaryConditional(bool inTemplate, bool inMatchRange);
         hlp::safe_unique_ptr<ast::ASTNode> parseMathematicalExpression(bool inTemplate = false, bool inMatchRange = false);
+        hlp::safe_unique_ptr<ast::ASTNode> parseArrayInitExpression(std::string identifier);
+
 
         hlp::safe_unique_ptr<ast::ASTNode> parseFunctionDefinition();
         hlp::safe_unique_ptr<ast::ASTNode> parseFunctionVariableDecl(bool constant = false);

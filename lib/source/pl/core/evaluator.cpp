@@ -188,11 +188,29 @@ namespace pl::core {
 
         auto pattern = new ptrn::PatternArrayDynamic(this, 0, typePattern->getSize() * entryCount, 0);
 
-        if (section == ptrn::Pattern::HeapSectionId) {
+        if (section == ptrn::Pattern::PatternLocalSectionId) {
+            typePattern->setSection(section);
+            std::vector<std::shared_ptr<ptrn::Pattern>> entries;
+            for (size_t i = 0; i < entryCount; i++) {
+                auto entryPattern = typePattern->clone();
+                entryPattern->setSection(section);
+
+                auto patternLocalAddress = this->m_patternLocalStorage.empty() ? 0 : this->m_patternLocalStorage.rbegin()->first + 1;
+                entryPattern->setOffset(u64(patternLocalAddress) << 32);
+                this->m_patternLocalStorage.insert({ patternLocalAddress, { } });
+                this->m_patternLocalStorage[patternLocalAddress].data.resize(entryPattern->getSize());
+
+                entries.push_back(std::move(entryPattern));
+            }
+            pattern->setEntries(std::move(entries));
+            pattern->setSection(section);
+
+        } else if (section == ptrn::Pattern::HeapSectionId) {
             typePattern->setLocal(true);
             std::vector<std::shared_ptr<ptrn::Pattern>> entries;
             for (size_t i = 0; i < entryCount; i++) {
                 auto entryPattern = typePattern->clone();
+                entryPattern->setLocal(true);
 
                 auto &heap = this->getHeap();
                 entryPattern->setOffset(u64(heap.size()) << 32);

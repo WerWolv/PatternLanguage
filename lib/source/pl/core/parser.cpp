@@ -786,6 +786,48 @@ namespace pl::core {
         return create<ast::ASTNodeFunctionDefinition>(getNamespacePrefixedNames(functionName).back(), std::move(unwrappedParams), unwrapSafePointerVector(std::move(body)), parameterPack, unwrapSafePointerVector(std::move(defaultParameters)));
     }
 
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseArrayInitExpression(std::string identifier) {
+        if (!sequence(tkn::Separator::LeftBrace)) {
+            error("Expected '{{' after array assignment, got {}.", getFormattedToken(0));
+            return nullptr;
+        }
+
+        std::vector<hlp::safe_unique_ptr<ast::ASTNode>> values;
+        while (true) {
+            auto expression = parseMathematicalExpression();
+            if (expression == nullptr)
+                continue;
+
+            values.push_back(std::move(expression));
+
+            if (sequence(tkn::Separator::Comma)) {
+                if (sequence(tkn::Separator::RightBrace)) {
+                    error("Expected value after ',' in array assignment, got {}.", getFormattedToken(0));
+                    return nullptr;
+                }
+            } else if (sequence(tkn::Separator::RightBrace)) {
+                break;
+            } else {
+                error("Expected ',' or '}}' in array assignment, got {}.", getFormattedToken(0));
+                return nullptr;
+            }
+        }
+
+        std::vector<hlp::safe_unique_ptr<ast::ASTNode>> result;
+        for (u64 i = 0; i < values.size(); i += 1) {
+            ast::ASTNodeRValue::Path path;
+            path.emplace_back(identifier);
+            path.emplace_back(std::unique_ptr<ast::ASTNode>(new ast::ASTNodeLiteral(u128(i))));
+
+            auto lvalue = create<ast::ASTNodeRValue>(std::move(path));
+            auto &rvalue = values[i];
+
+            result.push_back(create<ast::ASTNodeRValueAssignment>(std::move(lvalue), std::move(rvalue)));
+        }
+
+        return create<ast::ASTNodeCompoundStatement>(unwrapSafePointerVector(std::move(result)));
+    }
+
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseFunctionVariableDecl(const bool constant) {
         hlp::safe_unique_ptr<ast::ASTNode> statement;
         auto type = parseType();
@@ -799,6 +841,21 @@ namespace pl::core {
                 functionIdentifier->setType(Token::Identifier::IdentifierType::FunctionVariable);
             if (MATCHES(sequence(tkn::Separator::LeftBracket) && !peek(tkn::Separator::LeftBracket))) {
                 statement = parseMemberArrayVariable(std::move(type), constant);
+
+                if (sequence(tkn::Operator::Assign)) {
+                    std::vector<hlp::safe_unique_ptr<ast::ASTNode>> compoundStatement;
+                    {
+                        compoundStatement.emplace_back(std::move(statement));
+
+                        auto initStatement = parseArrayInitExpression(identifier);
+                        if (initStatement == nullptr)
+                            return nullptr;
+
+                        compoundStatement.emplace_back(std::move(initStatement));
+                    }
+
+                    statement = create<ast::ASTNodeCompoundStatement>(unwrapSafePointerVector(std::move(compoundStatement)));
+                }
             } else {
                 statement = parseMemberVariable(std::move(type), constant, identifier);
 
@@ -1478,7 +1535,7 @@ namespace pl::core {
             do {
                 if (sequence(tkn::Literal::Identifier)) {
                     variableName = getValue<Token::Identifier>(-1).get();
-                    memberIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+                    memberIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
                     if (memberIdentifier != nullptr)
                         memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
                 }
@@ -1487,6 +1544,7 @@ namespace pl::core {
 
             return create<ast::ASTNodeMultiVariableDecl>(unwrapSafePointerVector(std::move(variables)));
         }
+
         if (sequence(tkn::Operator::At)) {
             if (constant) {
                 errorDesc("Cannot mark placed variable as 'const'.", "Variables placed in memory are always implicitly const.");
@@ -1512,6 +1570,7 @@ namespace pl::core {
 
             return create<ast::ASTNodeVariableDecl>(variableName, type.unwrapUnchecked(), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()), false, false, constant);
         }
+
         if (sequence(tkn::Operator::Assign)) {
             std::vector<hlp::safe_unique_ptr<ast::ASTNode>> compounds;
             compounds.emplace_back(create<ast::ASTNodeVariableDecl>(identifier, type.unwrapUnchecked(), nullptr, create<ast::ASTNodeLiteral>(u128(ptrn::Pattern::PatternLocalSectionId)), false, false, constant));
@@ -1577,6 +1636,26 @@ namespace pl::core {
 
             return create<ast::ASTNodeArrayVariableDecl>(name, type.unwrapUnchecked(), std::move(size.unwrapUnchecked()), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()), constant);
         }
+
+        if (sequence(tkn::Operator::Assign)) {
+            auto statement = create<ast::ASTNodeArrayVariableDecl>(name, type.unwrapUnchecked(), std::move(size.unwrapUnchecked()), nullptr, create<ast::ASTNodeLiteral>(u128(ptrn::Pattern::PatternLocalSectionId)), constant);
+            std::vector<hlp::safe_unique_ptr<ast::ASTNode>> compoundStatement;
+            {
+                compoundStatement.emplace_back(std::move(statement));
+
+                auto initStatement = parseArrayInitExpression(name);
+                if (initStatement == nullptr)
+                    return nullptr;
+
+                compoundStatement.emplace_back(std::move(initStatement));
+            }
+
+            if (memberIdentifier != nullptr)
+                memberIdentifier->setType(Token::Identifier::IdentifierType::PatternLocalVariable);
+
+            return create<ast::ASTNodeCompoundStatement>(unwrapSafePointerVector(std::move(compoundStatement)));
+        }
+
         if (memberIdentifier != nullptr)
             memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
 
@@ -2194,9 +2273,25 @@ namespace pl::core {
                 if (placementSection == nullptr)
                     return nullptr;
             }
+
+            return create<ast::ASTNodeArrayVariableDecl>(name, type.unwrapUnchecked(), std::move(size.unwrapUnchecked()), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()));
+        } else if (sequence(tkn::Operator::Assign)) {
+            auto statement = create<ast::ASTNodeArrayVariableDecl>(name, type.unwrapUnchecked(), std::move(size.unwrapUnchecked()), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()));
+            std::vector<hlp::safe_unique_ptr<ast::ASTNode>> compoundStatement;
+            {
+                compoundStatement.emplace_back(std::move(statement));
+
+                auto initStatement = parseArrayInitExpression(name);
+                if (initStatement == nullptr)
+                    return nullptr;
+
+                compoundStatement.emplace_back(std::move(initStatement));
+            }
+
+            return create<ast::ASTNodeCompoundStatement>(unwrapSafePointerVector(std::move(compoundStatement)));
         }
 
-        return create<ast::ASTNodeArrayVariableDecl>(name, type.unwrapUnchecked(), std::move(size.unwrapUnchecked()), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()));
+        return nullptr;
     }
 
     // (parseType) *Identifier : (parseType) @ Integer
