@@ -31,7 +31,7 @@ namespace pl::ptrn {
 
         std::string formatDisplayValue() override {
             auto data = this->getValue().toUnsigned();
-            return Pattern::callUserFormatFunc(this->getValue()).value_or(fmt::format("{:d} (0x{:0{}X})", data, data, this->getSize() * 2));
+            return Pattern::callUserFormatFunc(this->getValue()).value_or(fmt::format("{:d}", data));
         }
 
         [[nodiscard]] std::string toString() const override {

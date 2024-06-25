@@ -70,12 +70,12 @@ namespace pl::ptrn {
                 auto f32 = static_cast<float>(value);
                 u32 integerResult = 0;
                 std::memcpy(&integerResult, &f32, sizeof(float));
-                return Pattern::callUserFormatFunc(f32).value_or(fmt::format("{:g} (0x{:0{}X})", f32, integerResult, this->getSize() * 2));
+                return Pattern::callUserFormatFunc(f32).value_or(fmt::format("{:g}", f32));
             } else if (this->getSize() == 8) {
                 auto f64 = static_cast<double>(value);
                 u64 integerResult = 0;
                 std::memcpy(&integerResult, &f64, sizeof(double));
-                return Pattern::callUserFormatFunc(f64).value_or(fmt::format("{:g} (0x{:0{}X})", f64, integerResult, this->getSize() * 2));
+                return Pattern::callUserFormatFunc(f64).value_or(fmt::format("{:g}", f64));
             } else {
                 return "Floating Point Data";
             }
