@@ -136,6 +136,8 @@ namespace pl::core::ast {
                 err::E0002.throwError("Cannot use void expression as section identifier.", {}, this->getLocation());
 
             section = sectionLiteral->getValue().toUnsigned();
+        } else {
+            section = evaluator->getSectionId();
         }
 
         evaluator->createArrayVariable(this->m_name, this->m_type.get(), entryCount, section, this->m_constant);

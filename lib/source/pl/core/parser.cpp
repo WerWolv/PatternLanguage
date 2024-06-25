@@ -2306,7 +2306,7 @@ namespace pl::core {
             return create<ast::ASTNodeCompoundStatement>(unwrapSafePointerVector(std::move(compoundStatement)));
         }
 
-        return nullptr;
+        return create<ast::ASTNodeArrayVariableDecl>(name, type.unwrapUnchecked(), std::move(size.unwrapUnchecked()), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()));
     }
 
     // (parseType) *Identifier : (parseType) @ Integer
