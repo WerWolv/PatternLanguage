@@ -72,7 +72,6 @@ namespace pl::core::ast {
                 break;
             } else if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Continue) {
                 memberPatterns.clear();
-                evaluator->setReadOffset(startOffset);
                 break;
             }
         }
