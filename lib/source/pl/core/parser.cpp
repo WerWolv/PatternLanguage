@@ -1548,7 +1548,6 @@ namespace pl::core {
         if (sequence(tkn::Operator::At)) {
             if (constant) {
                 errorDesc("Cannot mark placed variable as 'const'.", "Variables placed in memory are always implicitly const.");
-                return nullptr;
             }
 
             auto variableName = getValue<Token::Identifier>(-2).get();
@@ -1584,6 +1583,10 @@ namespace pl::core {
                 memberIdentifier->setType(Token::Identifier::IdentifierType::PatternLocalVariable);
 
             return create<ast::ASTNodeCompoundStatement>(unwrapSafePointerVector(std::move(compounds)));
+        } else {
+            if (constant) {
+                errorDesc("Cannot mark placed variable as 'const'.", "Variables placed in memory are always implicitly const.");
+            }
         }
 
         if (memberIdentifier != nullptr)
@@ -1615,8 +1618,9 @@ namespace pl::core {
         }
 
         if (sequence(tkn::Operator::At)) {
-            if (constant)
-                error("Cannot mark placed variable as 'const'.", "Variables placed in memory are always implicitly const.");
+            if (constant) {
+                errorDesc("Cannot mark placed variable as 'const'.", "Variables placed in memory are always implicitly const.");
+            }
 
             auto typedefIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
             if (typedefIdentifier != nullptr)
@@ -1654,6 +1658,10 @@ namespace pl::core {
                 memberIdentifier->setType(Token::Identifier::IdentifierType::PatternLocalVariable);
 
             return create<ast::ASTNodeCompoundStatement>(unwrapSafePointerVector(std::move(compoundStatement)));
+        } else {
+            if (constant) {
+                errorDesc("Cannot mark placed variable as 'const'.", "Variables placed in memory are always implicitly const.");
+            }
         }
 
         if (memberIdentifier != nullptr)
@@ -1747,7 +1755,7 @@ namespace pl::core {
             member = parseFunctionVariableAssignment(getValue<Token::Identifier>(-2).get());
         } else if (const auto identifierOffset = parseCompoundAssignment(tkn::Literal::Identifier); identifierOffset.has_value())
             member = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(*identifierOffset).get());
-        else if (peek(tkn::Keyword::BigEndian) || peek(tkn::Keyword::LittleEndian) || peek(tkn::ValueType::Any) || peek(tkn::Literal::Identifier)) {
+        else if (peek(tkn::Keyword::Const) || peek(tkn::Keyword::BigEndian) || peek(tkn::Keyword::LittleEndian) || peek(tkn::ValueType::Any) || peek(tkn::Literal::Identifier)) {
             // Some kind of variable definition
 
             bool isFunction = false;
@@ -1767,21 +1775,22 @@ namespace pl::core {
 
 
             if (!isFunction) {
+                bool constant = sequence(tkn::Keyword::Const);
                 auto type = parseType();
                 if (type == nullptr)
                     return nullptr;
 
                 if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Separator::LeftBracket) && sequence<Not>(tkn::Separator::LeftBracket)))
-                    member = parseMemberArrayVariable(std::move(type), false);
+                    member = parseMemberArrayVariable(std::move(type), constant);
                 else if (sequence(tkn::Operator::Star, tkn::Literal::Identifier, tkn::Operator::Colon))
                     member = parseMemberPointerVariable(std::move(type));
                 else if (sequence(tkn::Operator::Star, tkn::Literal::Identifier, tkn::Separator::LeftBracket))
                     member = parseMemberPointerArrayVariable(std::move(type));
                 else if (sequence(tkn::Literal::Identifier)) {
                     auto identifier = getValue<Token::Identifier>(-1).get();
-                    member = parseMemberVariable(std::move(type), false, identifier);
+                    member = parseMemberVariable(std::move(type), constant, identifier);
                 } else
-                    member = parseMemberVariable(std::move(type), false, "");
+                    member = parseMemberVariable(std::move(type), constant, "");
             }
         } else if (sequence(tkn::ValueType::Padding, tkn::Separator::LeftBracket))
             member = parsePadding();
@@ -1863,7 +1872,9 @@ namespace pl::core {
 
         while (!sequence(tkn::Separator::RightBrace)) {
             auto member = parseMember();
-            if(member == nullptr)
+            if (hasErrors())
+                break;
+            else if (member == nullptr)
                 continue;
 
             structNode->addMember(std::move(member));

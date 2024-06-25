@@ -184,6 +184,8 @@ namespace pl::core {
         auto typePatterns = type->createPatterns(this);
         auto typePattern = std::move(typePatterns.front());
 
+        typePattern->setConstant(constant);
+
         this->setBitwiseReadOffset(startOffset);
 
         auto pattern = new ptrn::PatternArrayDynamic(this, 0, typePattern->getSize() * entryCount, 0);
