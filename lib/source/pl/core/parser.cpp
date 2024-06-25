@@ -1266,8 +1266,12 @@ namespace pl::core {
             if (this->m_types.contains(typeName)) {
                 auto type = this->m_types[typeName];
 
-                if (type == nullptr || type->getType() == nullptr)
+                if (type == nullptr)
                     return nullptr;
+
+                if (type->isValid() && type->getType() == nullptr) {
+                    return nullptr;
+                }
 
                 return create<ast::ASTNodeTypeDecl>("", type.unwrapUnchecked());
             }
