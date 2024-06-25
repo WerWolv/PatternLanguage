@@ -126,7 +126,6 @@ namespace pl::api {
         FunctionParameterCount parameterCount;
         std::vector<core::Token::Literal> defaultParameters;
         FunctionCallback func;
-        bool dangerous;
     };
 
 }

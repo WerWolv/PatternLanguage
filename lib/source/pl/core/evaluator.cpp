@@ -133,17 +133,37 @@ namespace pl::core {
         this->writeData(byteOffset, &oldValue, writeSize, section);
     }
 
+
+
     bool Evaluator::addBuiltinFunction(const std::string &name, api::FunctionParameterCount numParams, std::vector<Token::Literal> defaultParameters, const api::FunctionCallback &function, bool dangerous) {
         const auto [iter, inserted] = this->m_builtinFunctions.insert({
-            name, {numParams, std::move(defaultParameters), function, dangerous}
+            name, {
+                numParams,
+                std::move(defaultParameters),
+                dangerous ? handleDangerousFunctionCall(name, function) : function
+            }
         });
 
         return inserted;
     }
 
+    api::FunctionCallback Evaluator::handleDangerousFunctionCall(const std::string &functionName, const api::FunctionCallback &function) {
+        return [this, function, functionName](core::Evaluator *, const std::vector<core::Token::Literal> &params) -> std::optional<core::Token::Literal> {
+            if (getDangerousFunctionPermission() != DangerousFunctionPermission::Allow) {
+                dangerousFunctionCalled();
+
+                if (getDangerousFunctionPermission() == DangerousFunctionPermission::Deny) {
+                    err::E0009.throwError(fmt::format("Call to dangerous function '{}' has been denied.", functionName), { });
+                }
+            }
+
+            return function(this, params);
+        };
+    }
+
     bool Evaluator::addCustomFunction(const std::string &name, api::FunctionParameterCount numParams, std::vector<Token::Literal> defaultParameters, const api::FunctionCallback &function) {
         const auto [iter, inserted] = this->m_customFunctions.insert({
-            name, {numParams, std::move(defaultParameters), function, false}
+            name, {numParams, std::move(defaultParameters), function}
         });
 
         return inserted;

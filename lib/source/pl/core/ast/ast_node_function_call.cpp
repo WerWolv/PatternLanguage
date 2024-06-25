@@ -81,14 +81,6 @@ namespace pl::core::ast {
         else if (evaluatedParams.size() > max)
             err::E0009.throwError(fmt::format("Too many parameters passed to function '{0}'. Expected {1} but got {2}.", functionName, max, evaluatedParams.size()), { }, this->getLocation());
 
-        if (function->dangerous && evaluator->getDangerousFunctionPermission() != DangerousFunctionPermission::Allow) {
-            evaluator->dangerousFunctionCalled();
-
-            if (evaluator->getDangerousFunctionPermission() == DangerousFunctionPermission::Deny) {
-                err::E0009.throwError(fmt::format("Call to dangerous function '{}' has been denied.", functionName), { }, this->getLocation());
-            }
-        }
-
         if (evaluator->isDebugModeEnabled())
             evaluator->getConsole().log(LogConsole::Level::Debug, fmt::format("Calling function {}({}).", functionName, [&]{
                 std::string parameters;

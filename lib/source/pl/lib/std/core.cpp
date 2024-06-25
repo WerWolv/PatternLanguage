@@ -165,7 +165,7 @@ namespace pl::lib::libstd::core {
             });
 
             /* execute_function(function_name, args...) -> bool */
-            runtime.addDangerousFunction(nsStdCore, "execute_function", FunctionParameterCount::atLeast(1), [](Evaluator *evaluator, auto params) -> std::optional<Token::Literal> {
+            runtime.addFunction(nsStdCore, "execute_function", FunctionParameterCount::atLeast(1), [](Evaluator *evaluator, auto params) -> std::optional<Token::Literal> {
                 auto functionName = params[0].toString();
 
                 auto function = evaluator->findFunction(functionName);
