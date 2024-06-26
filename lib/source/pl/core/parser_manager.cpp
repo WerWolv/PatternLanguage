@@ -55,6 +55,7 @@ Result ParserManager::parse(api::Source *source, const std::string &namespacePre
 
     auto result = parser.parse(tokens.value());
     oldPreprocessor->appendToNamespaces(tokens.value());
+
     if (result.hasErrs())
         return Result::err(result.errs);
 

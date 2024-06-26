@@ -173,23 +173,20 @@ namespace pl::core {
                 FunctionUnknown,
                 MemberUnknown,
                 ScopeResolutionUnknown,
-                UndefinedType,
-                PatternVariable,
+                Macro,
+                NameSpace,
+                Attribute,
+                Typedef,
+                Function,
+                UDT,
+                FunctionVariable,
+                FunctionParameter,
                 PatternLocalVariable,
                 PatternPlacedVariable,
                 TemplateArgument,
-                FunctionVariable,
-                FunctionParameter,
-                PlacedVariable,
+                PatternVariable,
                 GlobalVariable,
-                Function,
-                Macro,
-                NameSpace,
-                Typedef,
-                Keyword,
-                BuiltInType,
-                Attribute,
-                Directive
+                PlacedVariable
             };
 
             explicit Identifier(std::string identifier="", IdentifierType identifierType = IdentifierType::Unknown) : m_identifier(std::move(identifier)), m_type(identifierType) { }

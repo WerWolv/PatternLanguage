@@ -79,6 +79,8 @@ namespace pl {
         // add pragmas to preprocessor
         for (const auto &[name, callback] : this->m_pragmas)
             this->m_internals.preprocessor->addPragmaHandler(name, callback);
+        this->m_compileErrors.clear();
+
         auto [tokens, preprocessorErrors] = this->m_internals.preprocessor->preprocess(this, internalSource, true);
         if (!preprocessorErrors.empty()) 
             this->m_compileErrors = std::move(preprocessorErrors);
@@ -93,20 +95,25 @@ namespace pl {
             return std::nullopt;
 
         auto [ast, parserErrors] = this->m_internals.parser->parse(tokens.value());
-        if (!parserErrors.empty())
-            this->m_compileErrors = std::move(parserErrors);
+        if (!parserErrors.empty()) {
+            this->m_compileErrors.insert(m_compileErrors.end(), parserErrors.begin(), parserErrors.end());
+            parserErrors.clear();
+        }
+
+        this->m_internals.preprocessor->setOutput(tokens.value());
 
         if (!ast.has_value())
             return std::nullopt;
         if (ast->empty())
             return ast;
 
-        this->m_internals.preprocessor->setOutput(tokens.value());
 
         auto [validated, validatorErrors] = this->m_internals.validator->validate(ast.value());
         wolv::util::unused(validated);
-        if (!validatorErrors.empty())
-            this->m_compileErrors = std::move(validatorErrors);
+        if (!validatorErrors.empty()) {
+            this->m_compileErrors.insert(m_compileErrors.end(), validatorErrors.begin(), validatorErrors.end());
+            validatorErrors.clear();
+        }
 
 
         this->m_internals.preprocessor->setErrors(this->m_compileErrors);

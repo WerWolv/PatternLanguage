@@ -1094,8 +1094,8 @@ namespace pl::core {
             return;
 
         evaluator->handleAbort();
-
-        const auto line = node->getLocation().line;
+        auto temp = node->getLocation().line;
+        const auto line = temp + (temp == 0);
         if (evaluator->m_shouldPauseNextLine && evaluator->m_lastPauseLine != line) {
             evaluator->m_shouldPauseNextLine = false;
             evaluator->m_lastPauseLine = line;

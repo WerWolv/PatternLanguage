@@ -1358,9 +1358,7 @@ namespace pl::core {
 
         hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> result = nullptr;
         if (sequence(tkn::Literal::Identifier)) {    // Custom type
-            auto undefinedTypeIdentifier = (Token::Identifier *)std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-            if (undefinedTypeIdentifier != nullptr)
-                undefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UndefinedType);
+
             result = parseCustomType();
         } else if (sequence(tkn::ValueType::Any)) {    // Builtin type
             auto type = getValue<Token::ValueType>(-1);
@@ -1534,14 +1532,23 @@ namespace pl::core {
         if (peek(tkn::Separator::Comma)) {
 
             std::vector<hlp::safe_shared_ptr<ast::ASTNode>> variables;
-
+            if (memberIdentifier != nullptr) {
+                if (m_currTemplateType.empty())
+                    memberIdentifier->setType(Token::Identifier::IdentifierType::FunctionVariable);
+                else
+                    memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
+            }
             std::string variableName = identifier;
             do {
                 if (sequence(tkn::Literal::Identifier)) {
                     variableName = getValue<Token::Identifier>(-1).get();
                     memberIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-                    if (memberIdentifier != nullptr)
-                        memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
+                    if (memberIdentifier != nullptr) {
+                        if (m_currTemplateType.empty())
+                            memberIdentifier->setType(Token::Identifier::IdentifierType::FunctionVariable);
+                        else
+                            memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
+                    }
                 }
                 variables.emplace_back(createShared<ast::ASTNodeVariableDecl>(variableName, type.unwrapUnchecked(), nullptr, nullptr, false, false, constant));
             } while (sequence(tkn::Separator::Comma));
@@ -1556,9 +1563,8 @@ namespace pl::core {
 
             auto variableName = getValue<Token::Identifier>(-2).get();
 
-            auto placedIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-            if (placedIdentifier != nullptr)
-                placedIdentifier->setType(Token::Identifier::IdentifierType::PlacedVariable);
+            if (memberIdentifier != nullptr)
+                memberIdentifier->setType(Token::Identifier::IdentifierType::PatternPlacedVariable);
 
             hlp::safe_unique_ptr<ast::ASTNode> placementSection;
             hlp::safe_unique_ptr<ast::ASTNode> placementOffset = parseMathematicalExpression();
@@ -1568,8 +1574,6 @@ namespace pl::core {
                 if (placementSection == nullptr)
                     return nullptr;
             }
-            if (memberIdentifier != nullptr)
-                memberIdentifier->setType(Token::Identifier::IdentifierType::PatternPlacedVariable);
 
             return create<ast::ASTNodeVariableDecl>(variableName, type.unwrapUnchecked(), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()), false, false, constant);
         }
@@ -1626,9 +1630,8 @@ namespace pl::core {
                 errorDesc("Cannot mark placed variable as 'const'.", "Variables placed in memory are always implicitly const.");
             }
 
-            auto typedefIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-            if (typedefIdentifier != nullptr)
-                typedefIdentifier->setType(Token::Identifier::IdentifierType::PlacedVariable);
+            if (memberIdentifier != nullptr)
+                memberIdentifier->setType(Token::Identifier::IdentifierType::PatternPlacedVariable);
 
             hlp::safe_unique_ptr<ast::ASTNode> placementSection;
             hlp::safe_unique_ptr<ast::ASTNode> placementOffset = parseMathematicalExpression();
@@ -1639,8 +1642,6 @@ namespace pl::core {
                 if (placementSection == nullptr)
                     return nullptr;
             }
-            if (memberIdentifier != nullptr)
-                memberIdentifier->setType(Token::Identifier::IdentifierType::PatternPlacedVariable);
 
             return create<ast::ASTNodeArrayVariableDecl>(name, type.unwrapUnchecked(), std::move(size.unwrapUnchecked()), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()), constant);
         }
@@ -1833,9 +1834,9 @@ namespace pl::core {
     // struct Identifier { <(parseMember)...> }
     hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseStruct() {
         const auto &typeName = getValue<Token::Identifier>(-1).get();
-        auto undefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-        if (undefinedTypeIdentifier != nullptr)
-            undefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UndefinedType);
+        auto userDefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+        if (userDefinedTypeIdentifier != nullptr)
+            userDefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UDT);
 
         auto typeDecl   = addType(typeName, create<ast::ASTNodeStruct>());
         if(typeDecl == nullptr)
@@ -1891,9 +1892,9 @@ namespace pl::core {
     // union Identifier { <(parseMember)...> }
     hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseUnion() {
         const auto &typeName = getValue<Token::Identifier>(-1).get();
-        auto undefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-        if (undefinedTypeIdentifier != nullptr)
-            undefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UndefinedType);
+        auto userDefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+        if (userDefinedTypeIdentifier != nullptr)
+            userDefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UDT);
 
         auto typeDecl  = addType(typeName, create<ast::ASTNodeUnion>());
         if (typeDecl == nullptr)
@@ -1926,9 +1927,9 @@ namespace pl::core {
     // enum Identifier : (parseType) { <<Identifier|Identifier = (parseMathematicalExpression)[,]>...> }
     hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseEnum() {
         const auto typeName = getValue<Token::Identifier>(-1).get();
-        auto undefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-        if (undefinedTypeIdentifier != nullptr)
-            undefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UndefinedType);
+        auto userDefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+        if (userDefinedTypeIdentifier != nullptr)
+            userDefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UDT);
 
         if (!sequence(tkn::Operator::Colon)) {
             error("Expected ':' after enum declaration, got {}.", getFormattedToken(0));
@@ -2042,9 +2043,9 @@ namespace pl::core {
             if (sequence(tkn::ValueType::Any)) {
                 const auto typeToken = getValue<Token::ValueType>(-1);
                 if (typeToken == Token::ValueType::CustomType) {
-                    auto undefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-                    if (undefinedTypeIdentifier != nullptr)
-                        undefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UndefinedType);
+                    auto userDefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+                    if (userDefinedTypeIdentifier != nullptr)
+                        userDefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UDT);
                 }
                 type = create<ast::ASTNodeTypeDecl>(Token::getTypeName(typeToken), create<ast::ASTNodeBuiltinType>(typeToken));
             } else if (sequence(tkn::Literal::Identifier)) {
@@ -2057,9 +2058,9 @@ namespace pl::core {
                 } else {
                     type = getCustomType(name);
 
-                    auto undefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-                    if (undefinedTypeIdentifier != nullptr)
-                        undefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UndefinedType);
+                    auto userDefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+                    if (userDefinedTypeIdentifier != nullptr)
+                        userDefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UDT);
                     if (type == nullptr) {
                         error("Expected a variable name followed by ':', a function call or a bitfield type name, got '{}'.", name);
                         return nullptr;
@@ -2140,9 +2141,9 @@ namespace pl::core {
     hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseBitfield() {
         const std::string typeName = getValue<Token::Identifier>(-1).get();
 
-        auto undefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-        if (undefinedTypeIdentifier != nullptr)
-            undefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UndefinedType);
+        auto userDefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+        if (userDefinedTypeIdentifier != nullptr)
+            userDefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UDT);
         auto typeDecl = addType(typeName, create<ast::ASTNodeBitfield>());
         if (typeDecl == nullptr)
             return nullptr;
@@ -2176,9 +2177,9 @@ namespace pl::core {
     void Parser::parseForwardDeclaration() {
         std::string typeName = getNamespacePrefixedNames(getValue<Token::Identifier>(-1).get()).back();
 
-        auto undefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-        if (undefinedTypeIdentifier != nullptr)
-            undefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UndefinedType);
+        auto userDefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+        if (userDefinedTypeIdentifier != nullptr)
+            userDefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UDT);
         if (this->m_types.contains(typeName))
             return;
 
@@ -2251,9 +2252,7 @@ namespace pl::core {
     // (parseType) Identifier[[(parseMathematicalExpression)]] @ Integer
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseArrayVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
-        auto placedIdentifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
-        if (placedIdentifier != nullptr)
-            placedIdentifier->setType(Token::Identifier::IdentifierType::PlacedVariable);
+        auto typedefIdentifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
 
         hlp::safe_unique_ptr<ast::ASTNode> size;
 
@@ -2276,7 +2275,6 @@ namespace pl::core {
         if (sequence(tkn::Operator::At)) {
             placementOffset = parseMathematicalExpression();
 
-            auto typedefIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
             if (typedefIdentifier != nullptr)
                 typedefIdentifier->setType(Token::Identifier::IdentifierType::PlacedVariable);
 
@@ -2305,6 +2303,8 @@ namespace pl::core {
 
             return create<ast::ASTNodeCompoundStatement>(unwrapSafePointerVector(std::move(compoundStatement)));
         }
+        if (typedefIdentifier != nullptr)
+            typedefIdentifier->setType(Token::Identifier::IdentifierType::GlobalVariable);
 
         return create<ast::ASTNodeArrayVariableDecl>(name, type.unwrapUnchecked(), std::move(size.unwrapUnchecked()), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()));
     }
@@ -2312,9 +2312,7 @@ namespace pl::core {
     // (parseType) *Identifier : (parseType) @ Integer
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parsePointerVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
-        auto placedIdentifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
-        if (placedIdentifier != nullptr)
-            placedIdentifier->setType(Token::Identifier::IdentifierType::PlacedVariable);
+        auto typedefIdentifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
 
         auto sizeType = parseType();
         if (sizeType == nullptr)
@@ -2325,7 +2323,6 @@ namespace pl::core {
             return nullptr;
         }
 
-        auto typedefIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
         if (typedefIdentifier != nullptr)
             typedefIdentifier->setType(Token::Identifier::IdentifierType::PlacedVariable);
 
@@ -2347,8 +2344,6 @@ namespace pl::core {
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parsePointerArrayVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
         auto placedIdentifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
-        if (placedIdentifier != nullptr)
-            placedIdentifier->setType(Token::Identifier::IdentifierType::PlacedVariable);
 
         hlp::safe_unique_ptr<ast::ASTNode> size;
 
@@ -2380,7 +2375,8 @@ namespace pl::core {
             error("Expected '@' after pointer placement, got {}.", getFormattedToken(0));
             return nullptr;
         }
-
+        if (placedIdentifier != nullptr)
+            placedIdentifier->setType(Token::Identifier::IdentifierType::PlacedVariable);
         auto placementOffset = parseMathematicalExpression();
 
         hlp::safe_unique_ptr<ast::ASTNode> placementSection;
