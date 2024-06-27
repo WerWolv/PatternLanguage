@@ -794,6 +794,10 @@ namespace pl::core {
 
         std::vector<hlp::safe_unique_ptr<ast::ASTNode>> values;
         while (true) {
+            if (sequence(tkn::Separator::RightBrace)) {
+                break;
+            }
+
             auto expression = parseMathematicalExpression();
             if (expression == nullptr)
                 continue;
