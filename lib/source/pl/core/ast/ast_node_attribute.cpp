@@ -7,6 +7,7 @@
 
 #include <pl/patterns/pattern_pointer.hpp>
 #include <pl/patterns/pattern_array_dynamic.hpp>
+#include <pl/patterns/pattern_bitfield.hpp>
 
 #include <bit>
 
@@ -271,8 +272,16 @@ namespace pl::core::ast {
         auto endOffset = evaluator->getBitwiseReadOffset();
         evaluator->setReadOffset(pattern->getOffset());
         ON_SCOPE_EXIT {
-            if (!attributable->hasAttribute("no_unique_address", false))
+            if (attributable->hasAttribute("no_unique_address", false)) {
+                if (auto bitfieldPattern = dynamic_cast<const ptrn::PatternBitfieldField*>(pattern.get()); bitfieldPattern != nullptr) {
+                    evaluator->setBitwiseReadOffset(ByteAndBitOffset {
+                        .byteOffset = bitfieldPattern->getOffset(),
+                        .bitOffset = bitfieldPattern->getBitOffset()
+                    });
+                }
+            } else {
                 evaluator->setBitwiseReadOffset(endOffset);
+            }
         };
 
         auto thisScope = evaluator->getScope(0).scope;
