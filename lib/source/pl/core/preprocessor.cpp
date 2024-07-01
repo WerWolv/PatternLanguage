@@ -7,6 +7,8 @@
 #include <pl/core/tokens.hpp>
 #include <pl/core/parser.hpp>
 
+#include <iterator>
+
 namespace pl::core {
 
     Preprocessor::Preprocessor() : ErrorCollector() {
