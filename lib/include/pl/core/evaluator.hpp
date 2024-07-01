@@ -16,6 +16,7 @@
 #include <pl/core/errors/runtime_errors.hpp>
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 namespace pl::ptrn {
 

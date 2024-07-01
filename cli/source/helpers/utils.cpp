@@ -3,6 +3,7 @@
 #include <wolv/io/file.hpp>
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 #include <pl/helpers/utils.hpp>
 #include <wolv/utils/string.hpp>
 
