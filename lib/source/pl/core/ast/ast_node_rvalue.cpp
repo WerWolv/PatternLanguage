@@ -128,6 +128,8 @@ namespace pl::core::ast {
             literal = bool(bitfieldFieldPatternBoolean->readValue());
         } else if (auto bitfieldFieldPatternSigned = dynamic_cast<ptrn::PatternBitfieldFieldSigned *>(pattern.get()); bitfieldFieldPatternSigned != nullptr) {
             literal = hlp::signExtend(bitfieldFieldPatternSigned->getBitSize(), i128(bitfieldFieldPatternSigned->readValue()));
+        } else if (auto bitfieldFieldPatternEnum = dynamic_cast<ptrn::PatternBitfieldFieldEnum *>(pattern.get()); bitfieldFieldPatternEnum != nullptr) {
+            literal = pattern;
         } else if (auto bitfieldFieldPattern = dynamic_cast<ptrn::PatternBitfieldField *>(pattern.get()); bitfieldFieldPattern != nullptr) {
             literal = bitfieldFieldPattern->readValue();
         } else {
