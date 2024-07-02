@@ -179,6 +179,11 @@ namespace pl::lib::libstd::core {
 
                 return function.value().func(evaluator, functionParams);
             });
+
+            /* current_bit_offset() -> u128 */
+            runtime.addFunction(nsStdCore, "current_bit_offset", FunctionParameterCount::none(), [](Evaluator *evaluator, auto) -> std::optional<Token::Literal> {
+                return u128(evaluator->getBitwiseReadOffset().bitOffset);
+            });
         }
     }
 
