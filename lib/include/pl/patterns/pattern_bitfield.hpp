@@ -222,6 +222,14 @@ namespace pl::ptrn {
     public:
         using PatternBitfieldField::PatternBitfieldField;
 
+        [[nodiscard]] std::string getFormattedName() const override {
+            return "enum " + Pattern::getTypeName();
+        }
+
+        [[nodiscard]] std::string getTypeName() const override {
+            return Pattern::getTypeName();
+        }
+
         void setEnumValues(const std::vector<PatternEnum::EnumValue> &enumValues) {
             this->m_enumValues = enumValues;
         }
