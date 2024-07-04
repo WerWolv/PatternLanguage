@@ -290,7 +290,7 @@ namespace pl::core {
         }
 
         void handleAbort() const {
-            if (this->m_aborted)
+            if (this->m_aborted) [[unlikely]]
                 err::E0007.throwError("Evaluation aborted by user.");
         }
 
@@ -359,7 +359,7 @@ namespace pl::core {
             this->m_mainSectionEditsAllowed = true;
         }
 
-        [[nodiscard]] std::unique_ptr<Evaluator::UpdateHandler> updateRuntime(const ast::ASTNode *node);
+        [[nodiscard]] Evaluator::UpdateHandler updateRuntime(const ast::ASTNode *node);
 
         void addBreakpoint(u64 line);
         void removeBreakpoint(u64 line);

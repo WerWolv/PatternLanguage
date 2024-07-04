@@ -13,20 +13,33 @@
 namespace pl::lib::libstd::mem {
 
     static std::optional<u128> findSequence(::pl::core::Evaluator *ctx, u64 occurrenceIndex, u64 offsetFrom, u64 offsetTo, const std::vector<u8> &sequence) {
-        std::vector<u8> bytes(sequence.size(), 0x00);
-        u32 occurrences      = 0;
+        u32 occurrences = 0;
         const u64 bufferSize = ctx->getDataSize();
         const u64 endOffset  = offsetTo <= offsetFrom ? bufferSize : std::min(bufferSize, u64(offsetTo));
-        for (u64 offset = offsetFrom; offset < endOffset - sequence.size(); offset++) {
-            ctx->readData(offset, bytes.data(), bytes.size(), ptrn::Pattern::MainSectionId);
 
-            if (bytes == sequence) {
-                if (occurrences < occurrenceIndex) {
-                    occurrences++;
-                    continue;
+        std::vector<u8> bytes(std::max(sequence.size(), size_t(4 * 1024)), 0x00);
+        for (u64 offset = offsetFrom; offset < endOffset; offset += bytes.size()) {
+            const auto bytesToRead = std::min(bytes.size(), endOffset - offset);
+            ctx->readData(offset, bytes.data(), bytesToRead, ptrn::Pattern::MainSectionId);
+            ctx->handleAbort();
+
+            for (u64 i = 0; i < bytes.size(); i += 1) {
+                if (bytes[i] == sequence[0]) [[unlikely]] {
+                    bool found = true;
+                    for (u64 j = 1; j < sequence.size(); j++) {
+                        if (bytes[i + j] != sequence[j]) {
+                            found = false;
+                            break;
+                        }
+                    }
+
+                    if (found) [[unlikely]] {
+                        if (occurrences >= occurrenceIndex)
+                            return offset + i;
+
+                        occurrences++;
+                    }
                 }
-
-                return u128(offset);
             }
         }
 
