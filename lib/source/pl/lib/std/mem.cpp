@@ -19,7 +19,7 @@ namespace pl::lib::libstd::mem {
 
         std::vector<u8> bytes(std::max(sequence.size(), size_t(4 * 1024)), 0x00);
         for (u64 offset = offsetFrom; offset < endOffset; offset += bytes.size()) {
-            const auto bytesToRead = std::min(bytes.size(), endOffset - offset);
+            const auto bytesToRead = std::min<std::size_t>(bytes.size(), endOffset - offset);
             ctx->readData(offset, bytes.data(), bytesToRead, ptrn::Pattern::MainSectionId);
             ctx->handleAbort();
 
