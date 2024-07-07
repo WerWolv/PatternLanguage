@@ -10,7 +10,7 @@
 namespace pl::lib::libstd::hash {
 
     template<size_t Size>
-    static u128 crc(pl::core::Evaluator *ctx, const auto &params) {
+    static u128 crc(const auto &params) {
         if (!params[0].isPattern() && !params[0].isString())
             core::err::E0012.throwError("Only patterns and strings are supported for CRC hash functions.");
 
