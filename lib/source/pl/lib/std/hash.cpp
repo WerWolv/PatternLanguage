@@ -10,8 +10,11 @@
 namespace pl::lib::libstd::hash {
 
     template<size_t Size>
-    static u128 crc(const auto &params) {
-        auto pattern = params[0].toPattern();
+    static u128 crc(pl::core::Evaluator *ctx, const auto &params) {
+        if (!params[0].isPattern() && !params[0].isString())
+            core::err::E0012.throwError("Only patterns and strings are supported for CRC hash functions.");
+
+        auto bytes   = params[0].toBytes();
         auto init    = params[1].toUnsigned();
         auto poly    = params[2].toUnsigned();
         auto xorout  = params[3].toUnsigned();
@@ -19,7 +22,7 @@ namespace pl::lib::libstd::hash {
         auto reflectOut = params[5].toUnsigned();
 
         wolv::hash::Crc<Size> crc(poly, init, xorout, reflectIn, reflectOut);
-        crc.process(pattern->getBytes());
+        crc.process(bytes);
 
         return u128(crc.getResult());
     }
