@@ -297,6 +297,18 @@ namespace pl::core::ast {
             pattern->setSealed(true);
         }
 
+        if (const auto &arguments = attributable->getAttributeArguments("fixed_size"); arguments.size() == 1) {
+            auto requestedSize = getAttributeValueAsInteger(arguments.front(), evaluator);
+            auto actualSize = pattern->getSize();
+            if (actualSize < requestedSize) {
+                pattern->setSize(requestedSize);
+                evaluator->setReadOffset(evaluator->getReadOffset() + (requestedSize - actualSize));
+            }
+            else if (actualSize > requestedSize)
+                err::E0004.throwError("Type size larger than expected", fmt::format("Pattern of type {} is larger than expected. Expected size {}, got {}", pattern->getTypeName(), requestedSize, actualSize), node->getLocation());
+
+        }
+
         if (!pattern->hasOverriddenColor()) {
             if (const auto &arguments = attributable->getAttributeArguments("color"); arguments.size() == 1) {
                 auto colorString = getAttributeValueAsString(arguments.front(), evaluator);
