@@ -13,9 +13,12 @@ namespace pl::core::ast {
 
     ASTNodeEnum::ASTNodeEnum(const ASTNodeEnum &other) : ASTNode(other), Attributable(other) {
         for (const auto &[name, expr] : other.getEntries()) {
-            this->m_entries[name] = { expr.first->clone(), expr.second->clone() };
+            auto &[min, max] = expr;
+            this->m_entries[name] = { min->clone(), max == nullptr ? nullptr : max->clone() };
         }
         this->m_underlyingType = other.m_underlyingType->clone();
+
+        this->m_cachedEnumValues = other.m_cachedEnumValues;
     }
 
     [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeEnum::createPatterns(Evaluator *evaluator) const {
@@ -32,31 +35,32 @@ namespace pl::core::ast {
 
         pattern->setSection(evaluator->getSectionId());
 
-        std::vector<ptrn::PatternEnum::EnumValue> enumEntries;
-        for (const auto &[name, expr] : this->m_entries) {
-            auto &[min, max] = expr;
+        if (m_cachedEnumValues.empty()) {
+            for (const auto &[name, expr] : this->m_entries) {
+                auto &[min, max] = expr;
 
-            const auto minNode = min->evaluate(evaluator);
-            const auto maxNode = max->evaluate(evaluator);
+                const auto minNode = min->evaluate(evaluator);
+                const auto maxNode = max == nullptr ? minNode->clone() : max->evaluate(evaluator);
 
-            const auto minLiteral = dynamic_cast<ASTNodeLiteral *>(minNode.get());
-            const auto maxLiteral = dynamic_cast<ASTNodeLiteral *>(maxNode.get());
+                const auto minLiteral = dynamic_cast<ASTNodeLiteral *>(minNode.get());
+                const auto maxLiteral = dynamic_cast<ASTNodeLiteral *>(maxNode.get());
 
-            if (minLiteral == nullptr || maxLiteral == nullptr)
-                err::E0010.throwError("Cannot use void expression as enum value.", {}, this->getLocation());
+                if (minLiteral == nullptr || maxLiteral == nullptr)
+                    err::E0010.throwError("Cannot use void expression as enum value.", {}, this->getLocation());
 
-            // Check that the enum values can be converted to integers
-            (void)minLiteral->getValue().toUnsigned();
-            (void)maxLiteral->getValue().toUnsigned();
+                // Check that the enum values can be converted to integers
+                (void)minLiteral->getValue().toUnsigned();
+                (void)maxLiteral->getValue().toUnsigned();
 
-            enumEntries.push_back(ptrn::PatternEnum::EnumValue{
-                    minLiteral->getValue(),
-                    maxLiteral->getValue(),
-                    name
-            });
+                m_cachedEnumValues.push_back(ptrn::PatternEnum::EnumValue{
+                        minLiteral->getValue(),
+                        maxLiteral->getValue(),
+                        name
+                });
+            }
         }
 
-        pattern->setEnumValues(enumEntries);
+        pattern->setEnumValues(m_cachedEnumValues);
 
         pattern->setSize(underlying->getSize());
         pattern->setEndian(underlying->getEndian());

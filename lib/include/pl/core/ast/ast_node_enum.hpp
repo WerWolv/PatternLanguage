@@ -3,6 +3,8 @@
 #include <pl/core/ast/ast_node.hpp>
 #include <pl/core/ast/ast_node_attribute.hpp>
 
+#include <pl/patterns/pattern_enum.hpp>
+
 #include <map>
 
 namespace pl::core::ast {
@@ -29,6 +31,8 @@ namespace pl::core::ast {
     private:
         std::map<std::string, std::pair<std::unique_ptr<ASTNode>, std::unique_ptr<ASTNode>>> m_entries;
         std::unique_ptr<ASTNode> m_underlyingType;
+
+        mutable std::vector<ptrn::PatternEnum::EnumValue> m_cachedEnumValues;
     };
 
 }

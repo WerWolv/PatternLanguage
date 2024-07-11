@@ -1992,8 +1992,7 @@ namespace pl::core {
 
                 enumNode->addEntry(name, std::move(enumValue), std::move(endExpr));
             } else {
-                auto clonedExpr = enumValue->clone();
-                enumNode->addEntry(name, std::move(enumValue), std::move(clonedExpr));
+                enumNode->addEntry(name, std::move(enumValue), nullptr);
             }
 
             if (!sequence(tkn::Separator::Comma)) {
