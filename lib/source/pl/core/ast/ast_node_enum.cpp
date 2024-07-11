@@ -21,20 +21,7 @@ namespace pl::core::ast {
         this->m_cachedEnumValues = other.m_cachedEnumValues;
     }
 
-    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeEnum::createPatterns(Evaluator *evaluator) const {
-        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
-
-        evaluator->alignToByte();
-
-        const auto nodes = this->m_underlyingType->createPatterns(evaluator);
-        if (nodes.empty())
-            err::E0005.throwError("'auto' can only be used with parameters.", { }, this->getLocation());
-        auto &underlying = nodes.front();
-
-        auto pattern = std::make_shared<ptrn::PatternEnum>(evaluator, underlying->getOffset(), 0, getLocation().line);
-
-        pattern->setSection(evaluator->getSectionId());
-
+    const std::vector<ptrn::PatternEnum::EnumValue>& ASTNodeEnum::getEnumValues(Evaluator *evaluator) const {
         if (m_cachedEnumValues.empty()) {
             for (const auto &[name, expr] : this->m_entries) {
                 auto &[min, max] = expr;
@@ -60,7 +47,25 @@ namespace pl::core::ast {
             }
         }
 
-        pattern->setEnumValues(m_cachedEnumValues);
+        return m_cachedEnumValues;
+    }
+
+
+    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeEnum::createPatterns(Evaluator *evaluator) const {
+        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
+
+        evaluator->alignToByte();
+
+        const auto nodes = this->m_underlyingType->createPatterns(evaluator);
+        if (nodes.empty())
+            err::E0005.throwError("'auto' can only be used with parameters.", { }, this->getLocation());
+        auto &underlying = nodes.front();
+
+        auto pattern = std::make_shared<ptrn::PatternEnum>(evaluator, underlying->getOffset(), 0, getLocation().line);
+
+        pattern->setSection(evaluator->getSectionId());
+
+        pattern->setEnumValues(getEnumValues(evaluator));
 
         pattern->setSize(underlying->getSize());
         pattern->setEndian(underlying->getEndian());
@@ -69,5 +74,12 @@ namespace pl::core::ast {
 
         return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
     }
+
+    std::unique_ptr<ASTNode> ASTNodeEnum::evaluate(Evaluator *evaluator) const {
+        wolv::util::unused(this->getEnumValues(evaluator));
+
+        return this->clone();
+    }
+
 
 }
