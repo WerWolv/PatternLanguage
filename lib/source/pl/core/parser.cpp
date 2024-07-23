@@ -53,7 +53,7 @@
 namespace pl::core {
 
     template<template<typename ...> typename SmartPointer, typename T>
-    std::vector<SmartPointer<T>> unwrapSafePointerVector(std::vector<hlp::SafePointer<SmartPointer, T>> &&vec) {
+    static std::vector<SmartPointer<T>> unwrapSafePointerVector(std::vector<hlp::SafePointer<SmartPointer, T>> &&vec) {
         std::vector<SmartPointer<T>> result;
         result.reserve(vec.size());
 
@@ -215,10 +215,36 @@ namespace pl::core {
         return create<ast::ASTNodeRValue>(std::move(path));
     }
 
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseUserDefinedLiteral(hlp::safe_unique_ptr<ast::ASTNode> &&literal) {
+        std::vector<std::unique_ptr<ast::ASTNode>> params;
+        params.emplace_back(std::move(literal.unwrap()));
+
+        auto udlFunctionName = parseNamespaceResolution();
+        if (!udlFunctionName.starts_with('_')) {
+            errorDesc("Invalid use of user defined literal. User defined literals need to start with a underscore character (_).", {});
+            return nullptr;
+        }
+
+        if (sequence(tkn::Separator::LeftParenthesis)) {
+            auto extraParams = parseParameters();
+            for (auto &param : extraParams) {
+                params.emplace_back(std::move(param.unwrap()));
+            }
+        }
+
+        return create<ast::ASTNodeFunctionCall>(udlFunctionName, std::move(params));
+    }
+
     // <Integer|((parseMathematicalExpression))>
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseFactor() {
-        if (sequence(tkn::Literal::Numeric))
-            return create<ast::ASTNodeLiteral>(getValue<Token::Literal>(-1));
+        if (sequence(tkn::Literal::Numeric)) {
+            auto valueNode = create<ast::ASTNodeLiteral>(getValue<Token::Literal>(-1));
+            if (sequence(tkn::Literal::Identifier)) {
+                return parseUserDefinedLiteral(std::move(valueNode));
+            } else {
+                return valueNode;
+            }
+        }
         if (oneOf(tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::BoolNot, tkn::Operator::BitNot))
             return this->parseMathematicalExpression();
         if (sequence(tkn::Separator::LeftParenthesis)) {
@@ -349,7 +375,12 @@ namespace pl::core {
         }
 
         if (sequence(tkn::Literal::String)) {
-            return this->parseStringLiteral();
+            auto literal = this->parseStringLiteral();
+            if (sequence(tkn::Literal::Identifier)) {
+                return parseUserDefinedLiteral(std::move(literal));
+            } else {
+                return literal;
+            }
         }
 
         return this->parseCastExpression();
