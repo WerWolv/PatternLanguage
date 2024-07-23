@@ -23,8 +23,8 @@ namespace pl::core::ast {
             this->m_body.push_back(statement->clone());
         }
 
-        for (auto &statement : other.m_defaultParameters) {
-            this->m_body.push_back(statement->clone());
+        for (auto &param : other.m_defaultParameters) {
+            this->m_defaultParameters.push_back(param->clone());
         }
     }
 
