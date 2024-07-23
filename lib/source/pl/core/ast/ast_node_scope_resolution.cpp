@@ -23,15 +23,11 @@ namespace pl::core::ast {
         auto type = this->m_type->evaluate(evaluator);
 
         if (auto enumType = dynamic_cast<ASTNodeEnum *>(type.get())) {
-            for (auto &[min, max, name] : enumType->getEnumValues(evaluator)) {
-                if (name == this->m_name)
-                    return std::make_unique<ASTNodeLiteral>(min);
-            }
+            const auto &[min, max] = enumType->getEnumValue(evaluator, m_name);
+            return std::make_unique<ASTNodeLiteral>(min);
         } else {
             err::E0004.throwError("Invalid scope resolution. This cannot be accessed using the scope resolution operator.", {}, this->getLocation());
         }
-
-        err::E0004.throwError(fmt::format("Cannot find constant '{}' in this type.", this->m_name), {}, this->getLocation());
     }
 
 }

@@ -9,7 +9,7 @@
 
 namespace pl::core::ast {
 
-    ASTNodeEnum::ASTNodeEnum(std::unique_ptr<ASTNode> &&underlyingType) : ASTNode(), m_underlyingType(std::move(underlyingType)) { }
+    ASTNodeEnum::ASTNodeEnum(std::unique_ptr<ASTNode> &&underlyingType) : m_underlyingType(std::move(underlyingType)) { }
 
     ASTNodeEnum::ASTNodeEnum(const ASTNodeEnum &other) : ASTNode(other), Attributable(other) {
         for (const auto &[name, expr] : other.getEntries()) {
@@ -21,29 +21,40 @@ namespace pl::core::ast {
         this->m_cachedEnumValues = other.m_cachedEnumValues;
     }
 
-    const std::vector<ptrn::PatternEnum::EnumValue>& ASTNodeEnum::getEnumValues(Evaluator *evaluator) const {
-        if (m_cachedEnumValues.empty()) {
-            for (const auto &[name, expr] : this->m_entries) {
-                auto &[min, max] = expr;
+    [[nodiscard]] const ptrn::PatternEnum::EnumValue& ASTNodeEnum::getEnumValue(Evaluator *evaluator, const std::string &name) const {
+        if (!m_cachedEnumValues.contains(name)) {
+            auto it = this->m_entries.find(name);
+            if (it == this->m_entries.end())
+                err::E0010.throwError(fmt::format("Cannot find enum value with name '{}'.", name), {}, this->getLocation());
 
-                const auto minNode = min->evaluate(evaluator);
-                const auto maxNode = max == nullptr ? minNode->clone() : max->evaluate(evaluator);
+            auto &[min, max] = it->second;
 
-                const auto minLiteral = dynamic_cast<ASTNodeLiteral *>(minNode.get());
-                const auto maxLiteral = dynamic_cast<ASTNodeLiteral *>(maxNode.get());
+            const auto minNode = min->evaluate(evaluator);
+            const auto maxNode = max == nullptr ? minNode->clone() : max->evaluate(evaluator);
 
-                if (minLiteral == nullptr || maxLiteral == nullptr)
-                    err::E0010.throwError("Cannot use void expression as enum value.", {}, this->getLocation());
+            const auto minLiteral = dynamic_cast<ASTNodeLiteral *>(minNode.get());
+            const auto maxLiteral = dynamic_cast<ASTNodeLiteral *>(maxNode.get());
 
-                // Check that the enum values can be converted to integers
-                (void)minLiteral->getValue().toUnsigned();
-                (void)maxLiteral->getValue().toUnsigned();
+            if (minLiteral == nullptr || maxLiteral == nullptr)
+                err::E0010.throwError("Cannot use void expression as enum value.", {}, this->getLocation());
 
-                m_cachedEnumValues.push_back(ptrn::PatternEnum::EnumValue{
-                        minLiteral->getValue(),
-                        maxLiteral->getValue(),
-                        name
-                });
+            // Check that the enum values can be converted to integers
+            (void)minLiteral->getValue().toUnsigned();
+            (void)maxLiteral->getValue().toUnsigned();
+
+            m_cachedEnumValues[name] = ptrn::PatternEnum::EnumValue {
+                .min = minLiteral->getValue(),
+                .max = maxLiteral->getValue()
+            };
+        }
+
+        return m_cachedEnumValues[name];
+    }
+
+    [[nodiscard]] const std::map<std::string, ptrn::PatternEnum::EnumValue>& ASTNodeEnum::getEnumValues(Evaluator *evaluator) const {
+        if (m_cachedEnumValues.size() != m_entries.size()) {
+            for (const auto &[name, values] : m_entries) {
+                (void)getEnumValue(evaluator, name);
             }
         }
 
@@ -75,9 +86,7 @@ namespace pl::core::ast {
         return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
     }
 
-    std::unique_ptr<ASTNode> ASTNodeEnum::evaluate(Evaluator *evaluator) const {
-        wolv::util::unused(this->getEnumValues(evaluator));
-
+    std::unique_ptr<ASTNode> ASTNodeEnum::evaluate(Evaluator *) const {
         return this->clone();
     }
 

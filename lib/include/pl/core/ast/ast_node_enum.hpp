@@ -23,9 +23,11 @@ namespace pl::core::ast {
         std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override;
 
         [[nodiscard]] const std::map<std::string, std::pair<std::unique_ptr<ASTNode>, std::unique_ptr<ASTNode>>> &getEntries() const { return this->m_entries; }
-        [[nodiscard]] const std::vector<ptrn::PatternEnum::EnumValue>& getEnumValues(Evaluator *evaluator) const;
+        [[nodiscard]] const ptrn::PatternEnum::EnumValue& getEnumValue(Evaluator *evaluator, const std::string &name) const;
+        [[nodiscard]] const std::map<std::string, ptrn::PatternEnum::EnumValue>& getEnumValues(Evaluator *evaluator) const;
         void addEntry(const std::string &name, std::unique_ptr<ASTNode> &&minExpr, std::unique_ptr<ASTNode> &&maxExpr) {
             this->m_entries[name] = { std::move(minExpr), std::move(maxExpr) };
+
             this->m_cachedEnumValues.clear();
         }
 
@@ -35,7 +37,7 @@ namespace pl::core::ast {
         std::map<std::string, std::pair<std::unique_ptr<ASTNode>, std::unique_ptr<ASTNode>>> m_entries;
         std::unique_ptr<ASTNode> m_underlyingType;
 
-        mutable std::vector<ptrn::PatternEnum::EnumValue> m_cachedEnumValues;
+        mutable std::map<std::string, ptrn::PatternEnum::EnumValue> m_cachedEnumValues;
     };
 
 }
