@@ -476,11 +476,12 @@ namespace pl::core {
 
     Location Preprocessor::location() {
         if (isInitialized()) {
+            if (m_result.empty())
+                return { nullptr, 0, 0, 0 };
+
             auto token = m_token;
             if (token == m_result.end()) {
                 token = std::prev(token);
-                if (token == m_result.begin())
-                    return { nullptr, 0, 0, 0 };
             }
 
             return token->location;
