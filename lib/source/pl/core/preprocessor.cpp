@@ -475,10 +475,17 @@ namespace pl::core {
     }
 
     Location Preprocessor::location() {
-        if (isInitialized())
-            return m_token->location;
-        else
-            return {nullptr, 0, 0, 0 };
+        if (isInitialized()) {
+            auto token = m_token;
+            if (token == m_result.end()) {
+                token = std::prev(token);
+                if (token == m_result.begin())
+                    return { nullptr, 0, 0, 0 };
+            }
+
+            return token->location;
+        } else
+            return { nullptr, 0, 0, 0 };
     }
 
     void Preprocessor::registerDirectiveHandler(const Token::Directive& name, auto memberFunction) {
