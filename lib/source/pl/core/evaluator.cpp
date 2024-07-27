@@ -932,6 +932,7 @@ namespace pl::core {
         this->m_heap.clear();
         this->m_patternLocalStorage.clear();
         this->m_templateParameters.clear();
+        this->m_stringPool.clear();
 
         this->m_mainResult.reset();
         this->m_colorIndex = 0;

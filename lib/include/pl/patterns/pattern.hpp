@@ -69,6 +69,9 @@ namespace pl::ptrn {
                 this->m_manualColor = false;
                 evaluator->patternCreated(this);
             }
+
+            m_variableName = m_evaluator->getStringPool().end();
+            m_typeName = m_evaluator->getStringPool().end();
         }
 
         Pattern(const Pattern &other) {
@@ -126,14 +129,19 @@ namespace pl::ptrn {
         void setSize(size_t size) { this->m_size = size; }
 
         [[nodiscard]] std::string getVariableName() const {
-            if (this->m_variableName.empty())
-                return fmt::format("{} @ 0x{:02X}", this->getTypeName(), this->getOffset());
-            else
-                return this->m_variableName;
+            if (!getEvaluator()->isStringPoolEntryValid(this->m_variableName)) {
+                if (this->m_arrayIndex.has_value())
+                    return fmt::format("[{}]", m_arrayIndex.value());
+                else
+                    return fmt::format("{} @ 0x{:02X}", this->getTypeName(), this->getOffset());
+            } else
+                return *this->m_variableName;
         }
         void setVariableName(const std::string &name) {
-            if (!name.empty())
-                this->m_variableName = name;
+            if (!name.empty()) {
+                auto [it, inserted] = m_evaluator->getStringPool().emplace(name);
+                this->m_variableName = it;
+            }
         }
 
         [[nodiscard]] std::string getComment() const {
@@ -149,12 +157,17 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] virtual std::string getTypeName() const {
-            return this->m_typeName;
+            if (!getEvaluator()->isStringPoolEntryValid(this->m_typeName))
+                return "< ??? >";
+            else
+                return *this->m_typeName;
         }
 
         void setTypeName(const std::string &name) {
-            if (!name.empty())
-                this->m_typeName = name;
+            if (!name.empty()) {
+                auto [it, inserted] = m_evaluator->getStringPool().emplace(name);
+                this->m_typeName = it;
+            }
         }
 
         [[nodiscard]] u32 getColor() const { return this->m_color; }
@@ -498,6 +511,10 @@ namespace pl::ptrn {
 
         [[nodiscard]] u32 getLine() const { return m_line; }
 
+        void setArrayIndex(u64 index) {
+            m_arrayIndex = index;
+        }
+
     protected:
         std::optional<std::endian> m_endian;
 
@@ -573,8 +590,9 @@ namespace pl::ptrn {
         const Pattern *m_parent = nullptr;
         u32 m_line = 0;
 
-        std::string m_variableName;
-        std::string m_typeName;
+        std::set<std::string>::const_iterator m_variableName;
+        std::set<std::string>::const_iterator m_typeName;
+        std::optional<u64> m_arrayIndex;
 
         u64 m_offset  = 0x00;
         size_t m_size = 0x00;

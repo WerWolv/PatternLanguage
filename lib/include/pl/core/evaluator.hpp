@@ -6,6 +6,7 @@
 #include <optional>
 #include <vector>
 #include <memory>
+#include <set>
 #include <unordered_set>
 #include <unordered_map>
 
@@ -381,6 +382,18 @@ namespace pl::core {
             return this->m_lastPatternAddress;
         }
 
+        std::set<std::string>& getStringPool() {
+            return this->m_stringPool;
+        }
+
+        const std::set<std::string>& getStringPool() const {
+            return this->m_stringPool;
+        }
+
+        bool isStringPoolEntryValid(const std::set<std::string>::const_iterator &it) const {
+            return it != this->m_stringPool.end();
+        }
+
     private:
         void patternCreated(const ptrn::Pattern *pattern);
         void patternDestroyed(const ptrn::Pattern *pattern);
@@ -435,6 +448,8 @@ namespace pl::core {
         std::vector<std::unique_ptr<ast::ASTNode>> m_callStack;
 
         std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;
+
+        std::set<std::string> m_stringPool;
 
         u64 m_dataBaseAddress = 0x00;
         u64 m_dataSize = 0x00;
