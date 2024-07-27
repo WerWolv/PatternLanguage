@@ -11,11 +11,11 @@ namespace pl::test {
         TestPatternEnums() : TestPattern("Enums") {
             auto testEnum = create<PatternEnum>("TestEnum", "testEnum", 0x08, sizeof(u32), 0);
             testEnum->setEnumValues({
-                { u128(0x00), u128(0x00), "A" },
-                { i128(0x0C), i128(0x0C), "B" },
-                { u128(0x0D), u128(0x0D), "C" },
-                { u128(0x0E), u128(0x0E), "D" },
-                { i128(0xAA), i128(0xBB), "E" },
+                { "A", { u128(0x00), u128(0x00) } },
+                { "B", { i128(0x0C), i128(0x0C) } },
+                { "C", { u128(0x0D), u128(0x0D) } },
+                { "D", { u128(0x0E), u128(0x0E) } },
+                { "E", { i128(0xAA), i128(0xBB) } },
             });
             testEnum->setEndian(std::endian::big);
 
