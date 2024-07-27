@@ -3,9 +3,7 @@
 #include "test_pattern.hpp"
 
 #include <pl/patterns/pattern_unsigned.hpp>
-#include <pl/patterns/pattern_signed.hpp>
 #include <pl/patterns/pattern_struct.hpp>
-#include <pl/patterns/pattern_array_static.hpp>
 
 namespace pl::test {
 

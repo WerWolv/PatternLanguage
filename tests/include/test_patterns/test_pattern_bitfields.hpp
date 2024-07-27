@@ -115,9 +115,9 @@ namespace pl::test {
                 bitfieldFields.push_back(create<PatternBitfieldField>("", "flag5", 0x03, 2, 1, 0, testBitfield.get()));
 
                 auto enumField = create<PatternBitfieldFieldEnum>("Enum", "enumerated", 0x02, 4, 6, 0, testBitfield.get());
-                std::vector<PatternEnum::EnumValue> values;
+                std::map<std::string, PatternEnum::EnumValue> values;
                 {
-                    values.push_back({ 0x39, 0x39, "A" });
+                    values.insert({ "A", { 0x39, 0x39 } });
                 }
                 enumField->setEnumValues(std::move(values));
                 bitfieldFields.push_back(std::move(enumField));
