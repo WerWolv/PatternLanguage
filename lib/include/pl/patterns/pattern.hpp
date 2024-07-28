@@ -88,6 +88,7 @@ namespace pl::ptrn {
             this->m_typeName = other.m_typeName;
             this->m_reference = other.m_reference;
             this->m_parent = other.m_parent;
+            this->m_arrayIndex = other.m_arrayIndex;
             this->m_line = other.m_line;
 
             if (other.m_cachedDisplayValue != nullptr)
