@@ -6,6 +6,7 @@
 #include <optional>
 #include <vector>
 #include <memory>
+#include <set>
 #include <unordered_set>
 #include <unordered_map>
 
@@ -16,6 +17,7 @@
 #include <pl/core/errors/runtime_errors.hpp>
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 namespace pl::ptrn {
 
@@ -289,7 +291,7 @@ namespace pl::core {
         }
 
         void handleAbort() const {
-            if (this->m_aborted)
+            if (this->m_aborted) [[unlikely]]
                 err::E0007.throwError("Evaluation aborted by user.");
         }
 
@@ -358,7 +360,7 @@ namespace pl::core {
             this->m_mainSectionEditsAllowed = true;
         }
 
-        [[nodiscard]] std::unique_ptr<Evaluator::UpdateHandler> updateRuntime(const ast::ASTNode *node);
+        [[nodiscard]] Evaluator::UpdateHandler updateRuntime(const ast::ASTNode *node);
 
         void addBreakpoint(u64 line);
         void removeBreakpoint(u64 line);
@@ -378,6 +380,18 @@ namespace pl::core {
 
         const std::atomic<u64>& getLastPatternPlaceAddress() const {
             return this->m_lastPatternAddress;
+        }
+
+        std::set<std::string>& getStringPool() {
+            return this->m_stringPool;
+        }
+
+        const std::set<std::string>& getStringPool() const {
+            return this->m_stringPool;
+        }
+
+        bool isStringPoolEntryValid(const std::set<std::string>::const_iterator &it) const {
+            return it != this->m_stringPool.end();
         }
 
     private:
@@ -434,6 +448,8 @@ namespace pl::core {
         std::vector<std::unique_ptr<ast::ASTNode>> m_callStack;
 
         std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;
+
+        std::set<std::string> m_stringPool;
 
         u64 m_dataBaseAddress = 0x00;
         u64 m_dataSize = 0x00;

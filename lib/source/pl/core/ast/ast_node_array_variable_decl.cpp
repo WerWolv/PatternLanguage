@@ -272,7 +272,7 @@ namespace pl::core::ast {
 
         auto addEntries = [&](std::vector<std::shared_ptr<ptrn::Pattern>> &&patterns) {
             for (auto &pattern : patterns) {
-                pattern->setVariableName(fmt::format("[{}]", entryIndex));
+                pattern->setArrayIndex(entryIndex);
                 pattern->setEndian(arrayPattern->getEndian());
                 if (pattern->getSection() == ptrn::Pattern::MainSectionId)
                     pattern->setSection(arrayPattern->getSection());

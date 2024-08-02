@@ -222,7 +222,15 @@ namespace pl::ptrn {
     public:
         using PatternBitfieldField::PatternBitfieldField;
 
-        void setEnumValues(const std::vector<PatternEnum::EnumValue> &enumValues) {
+        [[nodiscard]] std::string getFormattedName() const override {
+            return "enum " + Pattern::getTypeName();
+        }
+
+        [[nodiscard]] std::string getTypeName() const override {
+            return Pattern::getTypeName();
+        }
+
+        void setEnumValues(const std::map<std::string, PatternEnum::EnumValue> &enumValues) {
             this->m_enumValues = enumValues;
         }
 
@@ -235,13 +243,8 @@ namespace pl::ptrn {
                 return false;
 
             auto &otherEnum = *static_cast<const PatternBitfieldFieldEnum *>(&other);
-            if (this->m_enumValues.size() != otherEnum.m_enumValues.size())
+            if (this->m_enumValues != otherEnum.m_enumValues)
                 return false;
-
-            for (u64 i = 0; i < this->m_enumValues.size(); i++) {
-                if (this->m_enumValues[i] != otherEnum.m_enumValues[i])
-                    return false;
-            }
 
             return true;
         }
@@ -262,7 +265,7 @@ namespace pl::ptrn {
         }
 
     private:
-        std::vector<PatternEnum::EnumValue> m_enumValues;
+        std::map<std::string, PatternEnum::EnumValue> m_enumValues;
     };
 
     class PatternBitfieldArray : public PatternBitfieldMember,

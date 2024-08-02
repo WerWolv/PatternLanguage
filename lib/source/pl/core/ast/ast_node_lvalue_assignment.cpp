@@ -31,14 +31,20 @@ namespace pl::core::ast {
         if (literal == nullptr)
             err::E0010.throwError("Cannot assign void expression to variable.", {}, this->getLocation());
 
-
+        auto value = literal->getValue();
         if (this->getLValueName() == "$")
-            evaluator->setReadOffset(literal->getValue().toUnsigned());
+            evaluator->setReadOffset(value.toUnsigned());
         else {
             auto variable = evaluator->getVariableByName(this->getLValueName());
             applyVariableAttributes(evaluator, this, variable);
 
-            evaluator->setVariable(this->getLValueName(), literal->getValue());
+            if (value.isPattern()) {
+                auto decayedValue = value.toPattern()->getValue();
+                if (!decayedValue.isPattern())
+                    value = std::move(decayedValue);
+            }
+
+            evaluator->setVariable(this->getLValueName(), value);
         }
 
         return {};

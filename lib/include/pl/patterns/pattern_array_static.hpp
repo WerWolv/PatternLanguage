@@ -45,7 +45,7 @@ namespace pl::ptrn {
                 entry->clearFormatCache();
                 entry->clearByteCache();
 
-                entry->setVariableName(fmt::format("[{0}]", index));
+                entry->setArrayIndex(index);
                 entry->setOffset(this->getOffset() + index * this->m_template->getSize());
                 evaluator->setCurrentArrayIndex(index);
 

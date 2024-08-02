@@ -7,19 +7,23 @@
 
 #include <pl/patterns/pattern_pointer.hpp>
 #include <pl/patterns/pattern_array_dynamic.hpp>
+#include <pl/patterns/pattern_bitfield.hpp>
 
 #include <bit>
 
 namespace pl::core::ast {
 
-    ASTNodeAttribute::ASTNodeAttribute(std::string attribute, std::vector<std::unique_ptr<ASTNode>> &&value)
-        : ASTNode(), m_attribute(std::move(attribute)), m_value(std::move(value)) { }
+    ASTNodeAttribute::ASTNodeAttribute(std::string attribute, std::vector<std::unique_ptr<ASTNode>> &&value, std::string aliasNamespaceString, std::string autoNamespace)
+        : ASTNode(), m_attribute(std::move(attribute)), m_value(std::move(value)), m_aliasNamespaceString(std::move(aliasNamespaceString)), m_autoNamespace(std::move(autoNamespace)) { }
 
     ASTNodeAttribute::ASTNodeAttribute(const ASTNodeAttribute &other) : ASTNode(other) {
         this->m_attribute = other.m_attribute;
 
         for (const auto &value : other.m_value)
             this->m_value.emplace_back(value->clone());
+
+        this->m_autoNamespace = other.m_autoNamespace;
+        this->m_aliasNamespaceString = other.m_aliasNamespaceString;
     }
 
 
@@ -51,6 +55,15 @@ namespace pl::core::ast {
         return it->get();
     }
 
+    [[nodiscard]] ASTNodeAttribute *Attributable::getFirstAttributeByName(const std::vector<std::string> &keys) const {
+        for (const auto &key : keys) {
+            if (auto result = getAttributeByName(key); result != nullptr)
+                return result;
+        }
+
+        return nullptr;
+    }
+
     [[nodiscard]] bool Attributable::hasAttribute(const std::string &key, bool needsParameter) const {
         return std::any_of(this->m_attributes.begin(), this->m_attributes.end(), [&](const std::unique_ptr<ASTNodeAttribute> &attribute) {
             if (attribute->getAttribute() == key) {
@@ -75,6 +88,22 @@ namespace pl::core::ast {
         return attribute->getArguments();
     }
 
+    [[nodiscard]] std::string Attributable::getFirstAttributeAutoNamespace(const std::vector<std::string> &keys) const {
+        auto attribute = this->getFirstAttributeByName(keys);
+        if (attribute == nullptr)
+            return "";
+        else
+            return attribute->getAutoNamespace();
+    }
+
+    [[nodiscard]] std::string Attributable::getFirstAttributeAliasNamespace(const std::vector<std::string> &keys) const {
+        auto attribute = this->getFirstAttributeByName(keys);
+        if (attribute == nullptr)
+            return "";
+        else
+            return attribute->getAliasNamespaceString();
+    }
+
     [[nodiscard]] std::shared_ptr<ASTNode> Attributable::getFirstAttributeValue(const std::vector<std::string> &keys) const {
         for (const auto &key : keys) {
             if (const auto &arguments = this->getAttributeArguments(key); !arguments.empty())
@@ -82,6 +111,15 @@ namespace pl::core::ast {
         }
 
         return nullptr;
+    }
+
+    [[nodiscard]] std::vector<std::string> Attributable::getAttributeKeys() const {
+        std::vector<std::string> result;
+        for (const auto &attribute : this->m_attributes) {
+            result.push_back(attribute->getAttribute());
+        }
+
+        return result;
     }
 
 
@@ -92,6 +130,29 @@ namespace pl::core::ast {
             auto literal = static_cast<ASTNodeLiteral*>(literalNode.get());
 
             return literal->getValue().toString(true);
+        }
+
+        u128 getAttributeValueAsInteger(const auto &value, Evaluator *evaluator) {
+            auto literalNode = value->evaluate(evaluator);
+            auto literal = static_cast<ASTNodeLiteral*>(literalNode.get());
+
+            return literal->getValue().toUnsigned();
+        }
+
+        std::string getAttributeValueAsFunctionName(const auto &value, const Attributable *attributable, Evaluator *evaluator) {
+            auto literalNode = value->evaluate(evaluator);
+            auto literal = static_cast<ASTNodeLiteral*>(literalNode.get());
+
+            auto result = literal->getValue().toString(true);
+
+            const auto attributeKeys = attributable->getAttributeKeys();
+            auto autoNamespace = attributable->getFirstAttributeAutoNamespace(attributeKeys);
+            auto aliasNamespace = attributable->getFirstAttributeAliasNamespace(attributeKeys);
+            if (result.starts_with(autoNamespace)) {
+                result = aliasNamespace + result.substr(autoNamespace.size());
+            }
+
+            return result;
         }
 
     }
@@ -111,7 +172,7 @@ namespace pl::core::ast {
         }
 
         if (auto value = attributable->getFirstAttributeValue({ "format", "format_read" }); value) {
-            auto functionName = getAttributeValueAsString(value, evaluator);
+            auto functionName = getAttributeValueAsFunctionName(value, attributable, evaluator);
             auto function = evaluator->findFunction(functionName);
             if (!function.has_value())
                 err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", functionName), {}, node->getLocation());
@@ -123,7 +184,7 @@ namespace pl::core::ast {
         }
 
         if (const auto &arguments = attributable->getAttributeArguments("format_write"); arguments.size() == 1) {
-            auto functionName = getAttributeValueAsString(arguments.front(), evaluator);
+            auto functionName = getAttributeValueAsFunctionName(arguments.front(), attributable, evaluator);
             auto function = evaluator->findFunction(functionName);
             if (!function.has_value())
                 err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", functionName), {}, node->getLocation());
@@ -135,7 +196,7 @@ namespace pl::core::ast {
         }
 
         if (const auto &value = attributable->getFirstAttributeValue({ "format_entries", "format_read_entries" }); value) {
-            auto functionName = getAttributeValueAsString(value, evaluator);
+            auto functionName = getAttributeValueAsFunctionName(value, attributable, evaluator);
             auto function = evaluator->findFunction(functionName);
             if (!function.has_value())
                 err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", functionName), {}, node->getLocation());
@@ -153,7 +214,7 @@ namespace pl::core::ast {
         }
 
         if (const auto &arguments = attributable->getAttributeArguments("format_write_entries"); arguments.size() == 1) {
-            auto functionName = getAttributeValueAsString(arguments.front(), evaluator);
+            auto functionName = getAttributeValueAsFunctionName(arguments.front(), attributable, evaluator);
             auto function = evaluator->findFunction(functionName);
             if (!function.has_value())
                 err::E0009.throwError(fmt::format("Formatter function '{}' does not exist.", functionName), {}, node->getLocation());
@@ -171,7 +232,7 @@ namespace pl::core::ast {
         }
 
         if (const auto &arguments = attributable->getAttributeArguments("transform"); arguments.size() == 1) {
-            auto functionName = getAttributeValueAsString(arguments.front(), evaluator);
+            auto functionName = getAttributeValueAsFunctionName(arguments.front(), attributable, evaluator);
             auto function = evaluator->findFunction(functionName);
             if (!function.has_value())
                 err::E0009.throwError(fmt::format("Transform function '{}' does not exist.", functionName), {}, node->getLocation());
@@ -183,7 +244,7 @@ namespace pl::core::ast {
         }
 
         if (const auto &arguments = attributable->getAttributeArguments("transform_entries"); arguments.size() == 1) {
-            auto functionName = getAttributeValueAsString(arguments.front(), evaluator);
+            auto functionName = getAttributeValueAsFunctionName(arguments.front(), attributable, evaluator);
             auto function = evaluator->findFunction(functionName);
             if (!function.has_value())
                 err::E0009.throwError(fmt::format("Transform function '{}' does not exist.", functionName), {}, node->getLocation());
@@ -201,7 +262,7 @@ namespace pl::core::ast {
         }
 
         if (const auto &arguments = attributable->getAttributeArguments("pointer_base"); arguments.size() == 1) {
-            auto functionName = getAttributeValueAsString(arguments.front(), evaluator);
+            auto functionName = getAttributeValueAsFunctionName(arguments.front(), attributable, evaluator);
             auto function = evaluator->findFunction(functionName);
             if (!function.has_value())
                 err::E0009.throwError(fmt::format("Pointer base function '{}' does not exist.", functionName), {}, node->getLocation());
@@ -234,6 +295,18 @@ namespace pl::core::ast {
 
         if (attributable->hasAttribute("sealed", false)) {
             pattern->setSealed(true);
+        }
+
+        if (const auto &arguments = attributable->getAttributeArguments("fixed_size"); arguments.size() == 1) {
+            auto requestedSize = getAttributeValueAsInteger(arguments.front(), evaluator);
+            auto actualSize = pattern->getSize();
+            if (actualSize < requestedSize) {
+                pattern->setSize(requestedSize);
+                evaluator->setReadOffset(evaluator->getReadOffset() + (requestedSize - actualSize));
+            }
+            else if (actualSize > requestedSize)
+                err::E0004.throwError("Type size larger than expected", fmt::format("Pattern of type {} is larger than expected. Expected size {}, got {}", pattern->getTypeName(), requestedSize, actualSize), node->getLocation());
+
         }
 
         if (!pattern->hasOverriddenColor()) {
@@ -271,8 +344,16 @@ namespace pl::core::ast {
         auto endOffset = evaluator->getBitwiseReadOffset();
         evaluator->setReadOffset(pattern->getOffset());
         ON_SCOPE_EXIT {
-            if (!attributable->hasAttribute("no_unique_address", false))
+            if (attributable->hasAttribute("no_unique_address", false)) {
+                if (auto bitfieldPattern = dynamic_cast<const ptrn::PatternBitfieldField*>(pattern.get()); bitfieldPattern != nullptr) {
+                    evaluator->setBitwiseReadOffset(ByteAndBitOffset {
+                        .byteOffset = bitfieldPattern->getOffset(),
+                        .bitOffset = bitfieldPattern->getBitOffset()
+                    });
+                }
+            } else {
                 evaluator->setBitwiseReadOffset(endOffset);
+            }
         };
 
         auto thisScope = evaluator->getScope(0).scope;

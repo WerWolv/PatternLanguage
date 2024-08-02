@@ -7,6 +7,8 @@
 #include <pl/core/tokens.hpp>
 #include <pl/core/parser.hpp>
 
+#include <iterator>
+
 namespace pl::core {
 
     Preprocessor::Preprocessor() : ErrorCollector() {
@@ -473,10 +475,18 @@ namespace pl::core {
     }
 
     Location Preprocessor::location() {
-        if (isInitialized())
-            return m_token->location;
-        else
-            return {nullptr, 0, 0, 0 };
+        if (isInitialized()) {
+            if (m_result.empty())
+                return { nullptr, 0, 0, 0 };
+
+            auto token = m_token;
+            if (token == m_result.end()) {
+                token = std::prev(token);
+            }
+
+            return token->location;
+        } else
+            return { nullptr, 0, 0, 0 };
     }
 
     void Preprocessor::registerDirectiveHandler(const Token::Directive& name, auto memberFunction) {

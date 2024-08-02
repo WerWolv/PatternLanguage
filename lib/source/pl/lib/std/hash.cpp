@@ -9,27 +9,56 @@
 
 namespace pl::lib::libstd::hash {
 
+    template<size_t Size>
+    static u128 crc(const auto &params) {
+        if (!params[0].isPattern() && !params[0].isString())
+            core::err::E0012.throwError("Only patterns and strings are supported for CRC hash functions.");
+
+        auto bytes   = params[0].toBytes();
+        auto init    = params[1].toUnsigned();
+        auto poly    = params[2].toUnsigned();
+        auto xorout  = params[3].toUnsigned();
+        auto reflectIn  = params[4].toUnsigned();
+        auto reflectOut = params[5].toUnsigned();
+
+        wolv::hash::Crc<Size> crc(poly, init, xorout, reflectIn, reflectOut);
+        crc.process(bytes);
+
+        return u128(crc.getResult());
+    }
+
     void registerFunctions(pl::PatternLanguage &runtime) {
         using FunctionParameterCount = pl::api::FunctionParameterCount;
         using namespace pl::core;
 
         api::Namespace nsStdHash = { "builtin", "std", "hash" };
         {
-            /* crc32(pattern, init, poly, xorout, reflect_in, reflect_out) */
-            runtime.addFunction(nsStdHash, "crc32", FunctionParameterCount::exactly(6), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
+            /* crc8(pattern, init, poly, xorout, reflect_in, reflect_out) */
+            runtime.addFunction(nsStdHash, "crc8", FunctionParameterCount::exactly(6), [](Evaluator *ctx, const auto &params) -> std::optional<Token::Literal> {
                 wolv::util::unused(ctx);
 
-                auto pattern = params[0].toPattern();
-                auto init    = params[1].toUnsigned();
-                auto poly    = params[2].toUnsigned();
-                auto xorout  = params[3].toUnsigned();
-                auto reflectIn  = params[4].toUnsigned();
-                auto reflectOut = params[5].toUnsigned();
+                return crc<8>(params);
+            });
 
-                wolv::hash::Crc<32> crc(poly, init, xorout, reflectIn, reflectOut);
-                crc.process(pattern->getBytes());
+            /* crc16(pattern, init, poly, xorout, reflect_in, reflect_out) */
+            runtime.addFunction(nsStdHash, "crc16", FunctionParameterCount::exactly(6), [](Evaluator *ctx, const auto &params) -> std::optional<Token::Literal> {
+                wolv::util::unused(ctx);
 
-                return u128(crc.getResult());
+                return crc<16>(params);
+            });
+
+            /* crc32(pattern, init, poly, xorout, reflect_in, reflect_out) */
+            runtime.addFunction(nsStdHash, "crc32", FunctionParameterCount::exactly(6), [](Evaluator *ctx, const auto &params) -> std::optional<Token::Literal> {
+                wolv::util::unused(ctx);
+
+                return crc<32>(params);
+            });
+
+            /* crc64(pattern, init, poly, xorout, reflect_in, reflect_out) */
+            runtime.addFunction(nsStdHash, "crc64", FunctionParameterCount::exactly(6), [](Evaluator *ctx, const auto &params) -> std::optional<Token::Literal> {
+                wolv::util::unused(ctx);
+
+                return crc<64>(params);
             });
         }
     }

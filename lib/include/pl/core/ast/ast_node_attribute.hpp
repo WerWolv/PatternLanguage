@@ -6,7 +6,7 @@ namespace pl::core::ast {
 
     class ASTNodeAttribute : public ASTNode {
     public:
-        explicit ASTNodeAttribute(std::string attribute, std::vector<std::unique_ptr<ASTNode>> &&value = {});
+        explicit ASTNodeAttribute(std::string attribute, std::vector<std::unique_ptr<ASTNode>> &&value = {}, std::string aliasNamespaceString = "", std::string autoNamespace = "");
         ASTNodeAttribute(const ASTNodeAttribute &other);
         ~ASTNodeAttribute() override = default;
 
@@ -22,9 +22,18 @@ namespace pl::core::ast {
             return this->m_value;
         }
 
+        [[nodiscard]] const std::string& getAutoNamespace() const {
+            return m_autoNamespace;
+        }
+
+        [[nodiscard]] const std::string& getAliasNamespaceString() const {
+            return m_aliasNamespaceString;
+        }
+
     private:
         std::string m_attribute;
         std::vector<std::unique_ptr<ASTNode>> m_value;
+        std::string m_aliasNamespaceString, m_autoNamespace;
     };
 
 
@@ -37,11 +46,15 @@ namespace pl::core::ast {
         virtual void addAttribute(std::unique_ptr<ASTNodeAttribute> &&attribute);
         [[nodiscard]] const std::vector<std::unique_ptr<ASTNodeAttribute>> &getAttributes() const;
         [[nodiscard]] ASTNodeAttribute *getAttributeByName(const std::string &key) const;
+        [[nodiscard]] ASTNodeAttribute *getFirstAttributeByName(const std::vector<std::string> &keys) const;
         [[nodiscard]] bool hasAttribute(const std::string &key, bool needsParameter) const;
 
         [[nodiscard]] const std::vector<std::unique_ptr<ASTNode>>& getAttributeArguments(const std::string &key) const;
+        [[nodiscard]] std::string getFirstAttributeAutoNamespace(const std::vector<std::string> &keys) const;
+        [[nodiscard]] std::string getFirstAttributeAliasNamespace(const std::vector<std::string> &keys) const;
         [[nodiscard]] std::shared_ptr<ASTNode> getFirstAttributeValue(const std::vector<std::string> &keys) const;
 
+        [[nodiscard]] std::vector<std::string> getAttributeKeys() const;
     private:
         std::vector<std::unique_ptr<ASTNodeAttribute>> m_attributes;
     };

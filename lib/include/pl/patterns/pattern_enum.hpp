@@ -8,7 +8,6 @@ namespace pl::ptrn {
     public:
         struct EnumValue {
             core::Token::Literal min, max;
-            std::string name;
 
             [[nodiscard]] bool operator==(const EnumValue &other) const = default;
             [[nodiscard]] bool operator!=(const EnumValue &other) const = default;
@@ -37,7 +36,7 @@ namespace pl::ptrn {
             return Pattern::getTypeName();
         }
 
-        void setEnumValues(const std::vector<EnumValue> &enumValues) {
+        void setEnumValues(const std::map<std::string, EnumValue> &enumValues) {
             this->m_enumValues = enumValues;
         }
 
@@ -53,10 +52,8 @@ namespace pl::ptrn {
             if (this->m_enumValues.size() != otherEnum.m_enumValues.size())
                 return false;
 
-            for (u64 i = 0; i < this->m_enumValues.size(); i++) {
-                if (this->m_enumValues[i] != otherEnum.m_enumValues[i])
-                    return false;
-            }
+            if (this->m_enumValues != otherEnum.m_enumValues)
+                return false;
 
             return true;
         }
@@ -69,11 +66,12 @@ namespace pl::ptrn {
             return fmt::format("{}", this->toString());
         }
 
-        static std::string getEnumName(const std::string &typeName, u128 value, const std::vector<EnumValue> &enumValues) {
+        static std::string getEnumName(const std::string &typeName, u128 value, const std::map<std::string, EnumValue> &enumValues) {
             std::string result = typeName + "::";
 
             bool foundValue = false;
-            for (const auto &[min, max, name] : enumValues) {
+            for (const auto &[name, values] : enumValues) {
+                const auto& [min, max] = values;
                 if (value >= min.toUnsigned() && value <= max.toUnsigned()) {
                     result += name;
                     foundValue = true;
@@ -88,7 +86,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string toString() const override {
             u128 value = this->getValue().toUnsigned();
-            return Pattern::callUserFormatFunc(this->clone(), true).value_or(getEnumName(this->getTypeName(), value, this->m_enumValues));
+            return Pattern::callUserFormatFunc(this->clone(), true).value_or(getEnumName(this->getTypeName(), value, m_enumValues));
         }
 
         std::vector<u8> getRawBytes() override {
@@ -103,7 +101,7 @@ namespace pl::ptrn {
         }
 
     private:
-        std::vector<EnumValue> m_enumValues;
+        std::map<std::string, EnumValue> m_enumValues;
     };
 
 }

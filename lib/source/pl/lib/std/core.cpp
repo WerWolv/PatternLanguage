@@ -152,7 +152,7 @@ namespace pl::lib::libstd::core {
 
                 if (auto enumPattern = dynamic_cast<ptrn::PatternEnum*>(pattern.get()); enumPattern != nullptr) {
                     auto value = enumPattern->getValue().toUnsigned();
-                    for (auto &entry : enumPattern->getEnumValues()) {
+                    for (auto &[name, entry] : enumPattern->getEnumValues()) {
                         auto min = entry.min.toUnsigned();
                         auto max = entry.max.toUnsigned();
 

@@ -862,7 +862,7 @@ namespace pl::core {
                 err::E0012.throwError(fmt::format("Tried accessing a non-existing section with id {}.", sectionId));
         }
 
-        if (this->isDebugModeEnabled())
+        if (this->isDebugModeEnabled()) [[unlikely]]
             this->m_console.log(LogConsole::Level::Debug, fmt::format("{} {} bytes from address 0x{:02X} in section {:02X}", write ? "Writing" : "Reading", size, address, sectionId));
     }
 
@@ -932,6 +932,7 @@ namespace pl::core {
         this->m_heap.clear();
         this->m_patternLocalStorage.clear();
         this->m_templateParameters.clear();
+        this->m_stringPool.clear();
 
         this->m_mainResult.reset();
         this->m_colorIndex = 0;
@@ -1094,20 +1095,23 @@ namespace pl::core {
             return;
 
         evaluator->handleAbort();
-        auto temp = node->getLocation().line;
-        const auto line = temp + (temp == 0);
-        if (evaluator->m_shouldPauseNextLine && evaluator->m_lastPauseLine != line) {
-            evaluator->m_shouldPauseNextLine = false;
-            evaluator->m_lastPauseLine = line;
-            evaluator->m_breakpointHitCallback();
-        } else if (evaluator->m_breakpoints.contains(line)) {
-            if (evaluator->m_lastPauseLine != line) {
+
+        if (node != nullptr) {
+            auto rawLine = node->getLocation().line;
+            const auto line = rawLine + (rawLine == 0);
+            if (evaluator->m_shouldPauseNextLine && evaluator->m_lastPauseLine != line) {
+                evaluator->m_shouldPauseNextLine = false;
                 evaluator->m_lastPauseLine = line;
                 evaluator->m_breakpointHitCallback();
+            } else if (evaluator->m_breakpoints.contains(line)) {
+                if (evaluator->m_lastPauseLine != line) {
+                    evaluator->m_lastPauseLine = line;
+                    evaluator->m_breakpointHitCallback();
+                }
             }
-        }
 
-        evaluator->m_callStack.push_back(node->clone());
+            evaluator->m_callStack.push_back(node->clone());
+        }
     }
 
     Evaluator::UpdateHandler::~UpdateHandler() {
@@ -1122,8 +1126,8 @@ namespace pl::core {
         evaluator->m_callStack.pop_back();
     }
 
-    std::unique_ptr<Evaluator::UpdateHandler> Evaluator::updateRuntime(const ast::ASTNode *node) {
-        return std::make_unique<UpdateHandler>(this, node);
+    Evaluator::UpdateHandler Evaluator::updateRuntime(const ast::ASTNode *node) {
+        return { this, node };
     }
 
     void Evaluator::addBreakpoint(u64 line) { this->m_breakpoints.insert(line); }

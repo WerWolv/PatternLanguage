@@ -13,25 +13,25 @@ namespace pl::test {
     class TestPatternNestedStructs : public TestPattern {
     public:
         TestPatternNestedStructs() : TestPattern("NestedStructs") {
-            const size_t HEADER_START = 0x0;
-            const size_t HEADER_SIZE = sizeof(u8);
-            const size_t BODY_START = HEADER_SIZE;
-            const size_t BODY_SIZE = 0x89 - 1;
+            constexpr static size_t HeaderStart = 0x0;
+            constexpr static size_t HeaderSize = sizeof(u8);
+            constexpr static size_t BodyStart = HeaderSize;
+            constexpr static size_t BodySize = 0x89 - 1;
 
-            auto data = create<PatternStruct>("Data", "data", HEADER_START, HEADER_SIZE + BODY_SIZE, 0);
+            auto data = create<PatternStruct>("Data", "data", HeaderStart, HeaderSize + BodySize, 0);
             {
-                auto hdr = create<PatternStruct>("Header", "hdr", HEADER_START, HEADER_SIZE, 0);
+                auto hdr = create<PatternStruct>("Header", "hdr", HeaderStart, HeaderSize, 0);
                 {
                     std::vector<std::shared_ptr<Pattern>> hdrMembers {
-                        std::shared_ptr(create<PatternUnsigned>("u8", "len", HEADER_START, sizeof(u8), 0))
+                        std::shared_ptr(create<PatternUnsigned>("u8", "len", HeaderStart, sizeof(u8), 0))
                     };
                     hdr->setMembers(std::move(hdrMembers));
                 }
 
-                auto body = create<PatternStruct>("Body", "body", BODY_START, BODY_SIZE, 0);
+                auto body = create<PatternStruct>("Body", "body", BodyStart, BodySize, 0);
                 {
-                    auto bodyArray = create<PatternArrayStatic>("u8", "arr", BODY_START, BODY_SIZE, 0);
-                    bodyArray->setEntries(create<PatternUnsigned>("u8", "", BODY_START, sizeof(u8), 0), BODY_SIZE);
+                    auto bodyArray = create<PatternArrayStatic>("u8", "arr", BodyStart, BodySize, 0);
+                    bodyArray->setEntries(create<PatternUnsigned>("u8", "", BodyStart, sizeof(u8), 0), BodySize);
                     std::vector<std::shared_ptr<Pattern>> bodyMembers {
                         std::shared_ptr(std::move(bodyArray))
                     };

@@ -114,9 +114,10 @@ namespace pl::core::ast {
                     if (variable != nullptr) {
                         variable->setInitialized(false);
                         evaluator->setVariable(variable, value);
-                        templatePatterns.push_back(variable);
 
-                        variable->setVisibility(ptrn::Visibility::Hidden);
+                        auto templateVariable = variable->clone();
+                        templateVariable->setVisibility(ptrn::Visibility::Hidden);
+                        templatePatterns.emplace_back(std::move(templateVariable));
                     }
                 }
             }
