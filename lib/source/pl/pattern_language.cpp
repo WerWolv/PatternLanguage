@@ -10,6 +10,7 @@
 #include <pl/core/resolvers.hpp>
 
 #include <pl/patterns/pattern.hpp>
+#include <pl/patterns/pattern_array_static.hpp>
 
 #include <pl/lib/std/libstd.hpp>
 
@@ -438,8 +439,11 @@ namespace pl {
         std::transform(intervals.begin(), intervals.end(), std::back_inserter(results), [](const auto &interval) {
             ptrn::Pattern* value = interval.value;
 
-            value->setOffset(interval.interval.start);
-            value->clearFormatCache();
+            // Handle static array members
+            if (dynamic_cast<const ptrn::PatternArrayStatic*>(value->getParent())) {
+                value->setOffset(interval.interval.start);
+                value->clearFormatCache();
+            }
 
             return value;
         });
