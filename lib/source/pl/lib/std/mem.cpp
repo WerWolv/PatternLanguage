@@ -12,14 +12,19 @@
 
 namespace pl::lib::libstd::mem {
 
-    static std::optional<u128> findSequence(::pl::core::Evaluator *ctx, u64 occurrenceIndex, u64 offsetFrom, u64 offsetTo, const std::vector<u8> &sequence) {
+    static std::optional<i128> findSequence(::pl::core::Evaluator *ctx, u64 occurrenceIndex, u64 offsetFrom, u64 offsetTo, const std::vector<u8> &sequence) {
         u32 occurrences = 0;
         const u64 bufferSize = ctx->getDataSize();
-        const u64 endOffset  = offsetTo <= offsetFrom ? bufferSize : std::min(bufferSize, u64(offsetTo));
+
+        if (offsetFrom >= offsetTo || sequence.empty() || bufferSize == 0)
+            return std::nullopt;
+
+        if (offsetTo - offsetFrom > bufferSize)
+            offsetTo = offsetFrom + bufferSize;
 
         std::vector<u8> bytes(std::max(sequence.size(), size_t(4 * 1024)), 0x00);
-        for (u64 offset = offsetFrom; offset < endOffset; offset += bytes.size()) {
-            const auto bytesToRead = std::min<std::size_t>(bytes.size(), endOffset - offset);
+        for (u64 offset = offsetFrom; offset < offsetTo; offset += bytes.size()) {
+            const auto bytesToRead = std::min<std::size_t>(bytes.size(), offsetTo - offset);
             ctx->readData(offset, bytes.data(), bytesToRead, ptrn::Pattern::MainSectionId);
             ctx->handleAbort();
 
