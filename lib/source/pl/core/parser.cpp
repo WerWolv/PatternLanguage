@@ -835,8 +835,7 @@ namespace pl::core {
         if (sequence(tkn::Literal::Identifier)) {
             auto identifier = getValue<Token::Identifier>(-1).get();
             auto functionIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-            if (functionIdentifier != nullptr)
-                functionIdentifier->setType(Token::Identifier::IdentifierType::FunctionVariable);
+
             if (MATCHES(sequence(tkn::Separator::LeftBracket) && !peek(tkn::Separator::LeftBracket))) {
                 statement = parseMemberArrayVariable(std::move(type), constant);
 
@@ -851,8 +850,16 @@ namespace pl::core {
 
                         compoundStatement.emplace_back(std::move(initStatement));
                     }
-
+                    if (functionIdentifier != nullptr)
+                            functionIdentifier->setType(Token::Identifier::IdentifierType::FunctionVariable);
                     statement = create<ast::ASTNodeCompoundStatement>(unwrapSafePointerVector(std::move(compoundStatement)));
+                } else {
+                    if (functionIdentifier != nullptr) {
+                        if (peek(tkn::Operator::At, 0))
+                            functionIdentifier->setType(Token::Identifier::IdentifierType::View);
+                        else
+                            functionIdentifier->setType(Token::Identifier::IdentifierType::FunctionVariable);
+                    }
                 }
             } else {
                 statement = parseMemberVariable(std::move(type), constant, identifier);
@@ -867,8 +874,17 @@ namespace pl::core {
                         compoundStatement.emplace_back(std::move(statement));
                         compoundStatement.emplace_back(create<ast::ASTNodeLValueAssignment>(identifier, std::move(expression)));
                     }
+                    if (functionIdentifier != nullptr)
+                        functionIdentifier->setType(Token::Identifier::IdentifierType::FunctionVariable);
 
                     statement = create<ast::ASTNodeCompoundStatement>(unwrapSafePointerVector(std::move(compoundStatement)));
+                } else {
+                    if (functionIdentifier != nullptr) {
+                        if (peek(tkn::Operator::At, 0))
+                            functionIdentifier->setType(Token::Identifier::IdentifierType::View);
+                        else
+                            functionIdentifier->setType(Token::Identifier::IdentifierType::FunctionVariable);
+                    }
                 }
             }
         } else {
@@ -1584,9 +1600,12 @@ namespace pl::core {
 
             auto variableName = getValue<Token::Identifier>(-2).get();
 
-            if (memberIdentifier != nullptr)
-                memberIdentifier->setType(Token::Identifier::IdentifierType::CalculatedPointer);
-
+            if (memberIdentifier != nullptr) {
+                if (m_currTemplateType.empty())
+                    memberIdentifier->setType(Token::Identifier::IdentifierType::View);
+                else
+                    memberIdentifier->setType(Token::Identifier::IdentifierType::CalculatedPointer);
+            }
             hlp::safe_unique_ptr<ast::ASTNode> placementSection;
             hlp::safe_unique_ptr<ast::ASTNode> placementOffset = parseMathematicalExpression();
             if (placementOffset == nullptr)
@@ -1610,9 +1629,12 @@ namespace pl::core {
 
             compounds.emplace_back(create<ast::ASTNodeLValueAssignment>(identifier, std::move(expression)));
 
-            if (memberIdentifier != nullptr)
-                memberIdentifier->setType(Token::Identifier::IdentifierType::LocalVariable);
-
+            if (memberIdentifier != nullptr) {
+                if (m_currTemplateType.empty())
+                    memberIdentifier->setType(Token::Identifier::IdentifierType::FunctionVariable);
+                else
+                    memberIdentifier->setType(Token::Identifier::IdentifierType::LocalVariable);
+            }
             return create<ast::ASTNodeCompoundStatement>(unwrapSafePointerVector(std::move(compounds)));
         } else {
             if (constant) {
@@ -1620,9 +1642,12 @@ namespace pl::core {
             }
         }
 
-        if (memberIdentifier != nullptr)
-            memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
-
+        if (memberIdentifier != nullptr) {
+            if (m_currTemplateType.empty())
+                memberIdentifier->setType(Token::Identifier::IdentifierType::FunctionVariable);
+            else
+                memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
+        }
         return create<ast::ASTNodeVariableDecl>(identifier, type.unwrapUnchecked(), nullptr, nullptr, false, false, constant);
     }
 
@@ -1653,9 +1678,12 @@ namespace pl::core {
                 errorDesc("Cannot mark placed variable as 'const'.", "Variables placed in memory are always implicitly const.");
             }
 
-            if (memberIdentifier != nullptr)
-                memberIdentifier->setType(Token::Identifier::IdentifierType::CalculatedPointer);
-
+            if (memberIdentifier != nullptr) {
+                if (m_currTemplateType.empty())
+                    memberIdentifier->setType(Token::Identifier::IdentifierType::View);
+                else
+                    memberIdentifier->setType(Token::Identifier::IdentifierType::CalculatedPointer);
+            }
             hlp::safe_unique_ptr<ast::ASTNode> placementSection;
             hlp::safe_unique_ptr<ast::ASTNode> placementOffset = parseMathematicalExpression();
             if (placementOffset == nullptr)

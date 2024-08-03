@@ -662,7 +662,7 @@ namespace pl::core {
             m_cursor++;
         }
 
-        addToken(makeToken(Separator::EndOfProgram));
+        addToken(makeToken(Separator::EndOfProgram,0));
 
         return { m_tokens, collectErrors() };
     }
