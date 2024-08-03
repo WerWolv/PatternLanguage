@@ -29,6 +29,7 @@ namespace pl::ptrn {
 
     class IIterable {
     public:
+        virtual ~IIterable() = default;
         [[nodiscard]] virtual std::vector<std::shared_ptr<Pattern>> getEntries() = 0;
         virtual void setEntries(std::vector<std::shared_ptr<Pattern>> &&entries) = 0;
 
@@ -46,7 +47,7 @@ namespace pl::ptrn {
 
     class IIndexable : public IIterable {
     public:
-        virtual ~IIndexable() = default;
+        ~IIndexable() override = default;
 
         using IIterable::getEntries;
         using IIterable::getEntry;
@@ -67,11 +68,12 @@ namespace pl::ptrn {
             if (evaluator != nullptr) {
                 this->m_color       = evaluator->getNextPatternColor();
                 this->m_manualColor = false;
+                this->m_variableName = m_evaluator->getStringPool().end();
+                this->m_typeName = m_evaluator->getStringPool().end();
+
                 evaluator->patternCreated(this);
             }
 
-            m_variableName = m_evaluator->getStringPool().end();
-            m_typeName = m_evaluator->getStringPool().end();
         }
 
         Pattern(const Pattern &other) {
