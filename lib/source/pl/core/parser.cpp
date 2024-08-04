@@ -14,6 +14,7 @@
 #include <pl/core/ast/ast_node_enum.hpp>
 #include <pl/core/ast/ast_node_function_call.hpp>
 #include <pl/core/ast/ast_node_function_definition.hpp>
+#include <pl/core/ast/ast_node_imported_type.hpp>
 #include <pl/core/ast/ast_node_literal.hpp>
 #include <pl/core/ast/ast_node_lvalue_assignment.hpp>
 #include <pl/core/ast/ast_node_mathematical_expression.hpp>
@@ -1435,8 +1436,18 @@ namespace pl::core {
     }
 
     // import (String | ( Identifier [dot Identifier] )) (parseNamespaceResolution)? (as parseNamespaceResolution)?
-    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseImportStatement() {
+    hlp::safe_shared_ptr<ast::ASTNode> Parser::parseImportStatement() {
         std::string path;
+
+        bool importAll = false;
+        if (sequence(tkn::Operator::Star)) {
+            if (!sequence(tkn::Keyword::From)) {
+                error("Expected 'from' after import *.");
+                return nullptr;
+            }
+
+            importAll = true;
+        }
 
         if (sequence(tkn::Literal::String)) {
             path = std::get<std::string>(getValue<Token::Literal>(-1));
@@ -1447,6 +1458,22 @@ namespace pl::core {
                 path += "/" + getValue<Token::Identifier>(-1).get();
         } else {
             error("Expected string or identifier after 'import', got {}.", getFormattedToken(0));
+        }
+
+        if (importAll) {
+            if (!sequence(tkn::Keyword::As)) {
+                error("Alias name required for import *.");
+                return nullptr;
+            }
+
+            if (!sequence(tkn::Literal::Identifier)) {
+                error("Expected identifier after 'as', got {}.", getFormattedToken(0));
+                return nullptr;
+            }
+
+            const auto importName = getValue<Token::Identifier>(-1).get();
+
+            return addType(importName, create<ast::ASTNodeImportedType>(path));
         }
 
         // TODO: struct import
@@ -1512,6 +1539,7 @@ namespace pl::core {
         type->setTemplateParameters(unwrapSafePointerVector(std::move(templateList)));
 
         this->m_currTemplateType.push_back(type);
+
         auto replaceType = parseType();
         if (replaceType == nullptr)
             return nullptr;

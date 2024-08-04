@@ -268,6 +268,7 @@ namespace pl::core {
                                       case Import: return "import";
                                       case As: return "as";
                                       case Is: return "is";
+                                      case From: return "from";
                                   }
 
                                   return "";
