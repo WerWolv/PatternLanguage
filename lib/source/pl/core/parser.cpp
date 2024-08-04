@@ -1712,9 +1712,12 @@ namespace pl::core {
                 compoundStatement.emplace_back(std::move(initStatement));
             }
 
-            if (memberIdentifier != nullptr)
-                memberIdentifier->setType(Token::Identifier::IdentifierType::LocalVariable);
-
+            if (memberIdentifier != nullptr) {
+                if (m_currTemplateType.empty())
+                    memberIdentifier->setType(Token::Identifier::IdentifierType::FunctionVariable);
+                else
+                    memberIdentifier->setType(Token::Identifier::IdentifierType::LocalVariable);
+            }
             return create<ast::ASTNodeCompoundStatement>(unwrapSafePointerVector(std::move(compoundStatement)));
         } else {
             if (constant) {
@@ -1722,9 +1725,12 @@ namespace pl::core {
             }
         }
 
-        if (memberIdentifier != nullptr)
-            memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
-
+        if (memberIdentifier != nullptr) {
+            if (m_currTemplateType.empty())
+                memberIdentifier->setType(Token::Identifier::IdentifierType::FunctionVariable);
+            else
+                memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
+        }
         return create<ast::ASTNodeArrayVariableDecl>(name, type.unwrapUnchecked(), std::move(size.unwrapUnchecked()), nullptr, nullptr, constant);
     }
 
@@ -1742,13 +1748,20 @@ namespace pl::core {
             auto expression = parseMathematicalExpression();
             if (expression == nullptr)
                 return nullptr;
-            if (memberIdentifier != nullptr)
-                memberIdentifier->setType(Token::Identifier::IdentifierType::CalculatedPointer);
-
+            if (memberIdentifier != nullptr) {
+                if (m_currTemplateType.empty())
+                    memberIdentifier->setType(Token::Identifier::IdentifierType::View);
+                else
+                    memberIdentifier->setType(Token::Identifier::IdentifierType::CalculatedPointer);
+            }
             return create<ast::ASTNodePointerVariableDecl>(name, type.unwrapUnchecked(), std::move(sizeType), std::move(expression));
         }
-        if (memberIdentifier != nullptr)
-            memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
+        if (memberIdentifier != nullptr) {
+            if (m_currTemplateType.empty())
+                memberIdentifier->setType(Token::Identifier::IdentifierType::FunctionVariable);
+            else
+                memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
+        }
 
         return create<ast::ASTNodePointerVariableDecl>(name, type.unwrapUnchecked(), std::move(sizeType));
     }
@@ -1790,14 +1803,20 @@ namespace pl::core {
             auto expression = parseMathematicalExpression();
             if (expression == nullptr)
                 return nullptr;
-            if (memberIdentifier != nullptr)
-                memberIdentifier->setType(Token::Identifier::IdentifierType::CalculatedPointer);
-
+            if (memberIdentifier != nullptr) {
+                if (m_currTemplateType.empty())
+                    memberIdentifier->setType(Token::Identifier::IdentifierType::View);
+                else
+                    memberIdentifier->setType(Token::Identifier::IdentifierType::CalculatedPointer);
+            }
             return create<ast::ASTNodePointerVariableDecl>(name, std::move(arrayType), std::move(sizeType), std::move(expression));
         }
-        if (memberIdentifier != nullptr)
-            memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
-
+        if (memberIdentifier != nullptr) {
+            if (m_currTemplateType.empty())
+                memberIdentifier->setType(Token::Identifier::IdentifierType::FunctionVariable);
+            else
+                memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
+        }
         return create<ast::ASTNodePointerVariableDecl>(name, std::move(arrayType), std::move(sizeType));
     }
 
