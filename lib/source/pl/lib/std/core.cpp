@@ -179,6 +179,31 @@ namespace pl::lib::libstd::core {
 
                 return function.value().func(evaluator, functionParams);
             });
+
+            /* insert_pattern(pattern) */
+            runtime.addFunction(nsStdCore, "insert_pattern", FunctionParameterCount::exactly(1), [](Evaluator *evaluator, auto params) -> std::optional<Token::Literal> {
+                auto pattern = params[0].toPattern();
+
+                auto &currScope = *evaluator->getScope(0).scope;
+                if (auto iterable = dynamic_cast<ptrn::IIterable*>(pattern.get()); iterable != nullptr && pattern->getTypeName().empty()) {
+                    auto entries = iterable->getEntries();
+
+                    // Check for duplicates
+                    for (auto &a : entries) {
+                        for (auto &b : currScope) {
+                            if (a == b) {
+                                err::E0012.throwError(fmt::format("Error inserting patterns into current scope. Pattern with name '{}' already exists.", a->getVariableName()));
+                            }
+                        }
+                    }
+
+                    std::move(entries.begin(), entries.end(), std::back_inserter(currScope));
+                } else {
+                    currScope.emplace_back(pattern->clone());
+                }
+
+                return std::nullopt;
+            });
         }
     }
 
