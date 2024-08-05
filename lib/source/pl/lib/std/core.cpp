@@ -191,7 +191,7 @@ namespace pl::lib::libstd::core {
                     // Check for duplicates
                     for (auto &a : entries) {
                         for (auto &b : currScope) {
-                            if (a == b) {
+                            if (a->getVariableName() == b->getVariableName()) [[unlikely]] {
                                 err::E0012.throwError(fmt::format("Error inserting patterns into current scope. Pattern with name '{}' already exists.", a->getVariableName()));
                             }
                         }
