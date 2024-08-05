@@ -76,7 +76,7 @@ namespace pl::core::ast {
             }
         }
 
-        pattern->setMembers(memberPatterns);
+        pattern->setEntries(memberPatterns);
 
         if (evaluator->isReadOrderReversed())
             pattern->setAbsoluteOffset(evaluator->getReadOffset());

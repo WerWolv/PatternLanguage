@@ -31,12 +31,19 @@ namespace pl::ptrn {
     public:
         virtual ~IIterable() = default;
         [[nodiscard]] virtual std::vector<std::shared_ptr<Pattern>> getEntries() = 0;
-        virtual void setEntries(std::vector<std::shared_ptr<Pattern>> &&entries) = 0;
+        virtual void setEntries(const std::vector<std::shared_ptr<Pattern>> &entries) = 0;
 
         [[nodiscard]] virtual std::shared_ptr<Pattern> getEntry(size_t index) const = 0;
         virtual void forEachEntry(u64 start, u64 end, const std::function<void(u64, Pattern*)> &callback) = 0;
 
         [[nodiscard]] virtual size_t getEntryCount() const = 0;
+
+    protected:
+        friend class core::Evaluator;
+
+        virtual void addEntry(const std::shared_ptr<Pattern> &) {
+            core::err::E0012.throwError("Cannot add entry to this pattern");
+        }
     };
 
     enum class Visibility : u8 {
@@ -54,6 +61,8 @@ namespace pl::ptrn {
         using IIterable::getEntry;
         using IIterable::forEachEntry;
         using IIterable::getEntryCount;
+
+        friend class core::Evaluator;
     };
 
     class Pattern {
@@ -162,7 +171,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] virtual std::string getTypeName() const {
             if (!getEvaluator()->isStringPoolEntryValid(this->m_typeName))
-                return "< ??? >";
+                return "";
             else
                 return *this->m_typeName;
         }

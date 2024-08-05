@@ -31,7 +31,7 @@ namespace pl::test {
 
                 auto pointedTo = create<PatternArrayStatic>("u32", "", 0, sizeof(u32[10]), 0);
                 auto arrayTemplate = create<PatternUnsigned>("u32", "", 0, sizeof(u32), 0);
-                pointedTo->setEntries(std::move(arrayTemplate), 10);
+                pointedTo->setEntries(arrayTemplate, 10);
                 placementPointer->setPointedAtPattern(std::move(pointedTo));
                 addPattern(std::move(placementPointer));
             }

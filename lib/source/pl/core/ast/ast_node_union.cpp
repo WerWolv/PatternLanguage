@@ -54,7 +54,7 @@ namespace pl::core::ast {
         evaluator->setReadOffset(startOffset + size);
         if (evaluator->isReadOrderReversed())
             pattern->setAbsoluteOffset(evaluator->getReadOffset());
-        pattern->setMembers(memberPatterns);
+        pattern->setEntries(memberPatterns);
 
         applyTypeAttributes(evaluator, this, pattern);
 

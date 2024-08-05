@@ -147,7 +147,7 @@ namespace pl::core::ast {
                 ON_SCOPE_EXIT { evaluator->popScope(); };
                 applyTypeAttributes(evaluator, this, pattern);
 
-                iterable->setEntries(std::move(scope));
+                iterable->setEntries(scope);
                 templatePatterns.clear();
             } else {
                 applyTypeAttributes(evaluator, this, pattern);

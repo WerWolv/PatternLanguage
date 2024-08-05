@@ -29,7 +29,7 @@ namespace pl::core::ast {
             return patterns;
         } else {
             auto structPattern = std::make_shared<ptrn::PatternStruct>(evaluator, evaluator->getReadOffset(), 0, getLocation().line);
-            structPattern->setMembers(std::move(patterns));
+            structPattern->setEntries(patterns);
 
             return { structPattern };
         }

@@ -224,7 +224,7 @@ namespace pl::core {
 
                 entries.push_back(std::move(entryPattern));
             }
-            pattern->setEntries(std::move(entries));
+            pattern->setEntries(entries);
             pattern->setSection(section);
 
         } else if (section == ptrn::Pattern::HeapSectionId) {
@@ -240,7 +240,7 @@ namespace pl::core {
 
                 entries.push_back(std::move(entryPattern));
             }
-            pattern->setEntries(std::move(entries));
+            pattern->setEntries(entries);
             pattern->setLocal(true);
         } else {
             typePattern->setSection(section);
@@ -250,7 +250,7 @@ namespace pl::core {
                 entryPattern->setOffset(entryPattern->getSize() * i);
                 entries.push_back(std::move(entryPattern));
             }
-            pattern->setEntries(std::move(entries));
+            pattern->setEntries(entries);
             pattern->setSection(section);
         }
 
