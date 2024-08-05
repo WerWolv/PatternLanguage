@@ -516,7 +516,8 @@ namespace pl {
 
         std::vector<u32> results;
         for (auto &[interval, pattern] : intervals) {
-            if (pattern->getVisibility() != pl::ptrn::Visibility::Visible)
+            auto visibility = pattern->getVisibility();
+            if (visibility == pl::ptrn::Visibility::Hidden || visibility == pl::ptrn::Visibility::HighlightHidden)
                 continue;
 
             results.push_back(pattern->getColor());

@@ -42,6 +42,7 @@ namespace pl::ptrn {
     enum class Visibility : u8 {
         Visible,
         HighlightHidden,
+        TreeHidden,
         Hidden
     };
 
@@ -275,14 +276,22 @@ namespace pl::ptrn {
                 case Visibility::Visible:
                     this->removeAttribute("hidden");
                     this->removeAttribute("highlight_hidden");
+                    this->removeAttribute("tree_hidden");
                     break;
                 case Visibility::Hidden:
                     this->addAttribute("hidden");
                     this->removeAttribute("highlight_hidden");
+                    this->removeAttribute("tree_hidden");
                     break;
                 case Visibility::HighlightHidden:
                     this->removeAttribute("hidden");
                     this->addAttribute("highlight_hidden");
+                    this->removeAttribute("tree_hidden");
+                    break;
+                case Visibility::TreeHidden:
+                    this->removeAttribute("hidden");
+                    this->removeAttribute("highlight_hidden");
+                    this->addAttribute("tree_hidden");
                     break;
             }
         }
@@ -292,6 +301,8 @@ namespace pl::ptrn {
                 return Visibility::Hidden;
             else if (this->hasAttribute("highlight_hidden"))
                 return Visibility::HighlightHidden;
+            else if (this->hasAttribute("tree_hidden"))
+                return Visibility::TreeHidden;
             else
                 return Visibility::Visible;
         }

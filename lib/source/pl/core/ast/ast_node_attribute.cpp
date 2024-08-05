@@ -293,6 +293,10 @@ namespace pl::core::ast {
             pattern->setVisibility(ptrn::Visibility::HighlightHidden);
         }
 
+        if (attributable->hasAttribute("tree_hidden", false)) {
+            pattern->setVisibility(ptrn::Visibility::TreeHidden);
+        }
+
         if (attributable->hasAttribute("sealed", false)) {
             pattern->setSealed(true);
         }
