@@ -176,9 +176,17 @@ namespace pl::core {
 
         while (m_sourceCode[m_cursor] != '\"') {
             char c = peek();
-            if (c == '\n' || c == '\0') {
+            if (c == '\n') {
                 m_errorLength = 1;
-                error(c == '\n' ? "Unexpected newline in string literal" : "Unexpected end of file in string literal");
+                error("Unexpected newline in string literal");
+                m_line++;
+                m_lineBegin = m_cursor;
+                return std::nullopt;
+            }
+
+            if (c == '\0') {
+                m_errorLength = 1;
+                error("Unexpected end of file in string literal");
                 return std::nullopt;
             }
 
