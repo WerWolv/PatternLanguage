@@ -149,10 +149,10 @@ namespace pl::core {
         hlp::safe_unique_ptr<ast::ASTNode> parseUnaryExpression();
         hlp::safe_unique_ptr<ast::ASTNode> parseMultiplicativeExpression();
         hlp::safe_unique_ptr<ast::ASTNode> parseAdditiveExpression();
-        hlp::safe_unique_ptr<ast::ASTNode> parseShiftExpression();
-        hlp::safe_unique_ptr<ast::ASTNode> parseBinaryAndExpression();
-        hlp::safe_unique_ptr<ast::ASTNode> parseBinaryXorExpression();
-        hlp::safe_unique_ptr<ast::ASTNode> parseBinaryOrExpression(bool inMatchRange);
+        hlp::safe_unique_ptr<ast::ASTNode> parseShiftExpression(bool inTemplate);
+        hlp::safe_unique_ptr<ast::ASTNode> parseBinaryAndExpression(bool inTemplate);
+        hlp::safe_unique_ptr<ast::ASTNode> parseBinaryXorExpression(bool inTemplate);
+        hlp::safe_unique_ptr<ast::ASTNode> parseBinaryOrExpression(bool inTemplate, bool inMatchRange);
         hlp::safe_unique_ptr<ast::ASTNode> parseBooleanAnd(bool inTemplate, bool inMatchRange);
         hlp::safe_unique_ptr<ast::ASTNode> parseBooleanXor(bool inTemplate, bool inMatchRange);
         hlp::safe_unique_ptr<ast::ASTNode> parseBooleanOr(bool inTemplate, bool inMatchRange);

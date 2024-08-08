@@ -34,16 +34,15 @@ namespace pl::core {
         void addDirectiveHandler(const Token::Directive &directiveType, const api::DirectiveHandler &handler);
         void removePragmaHandler(const std::string &pragmaType);
         void removeDirectiveHandler(const Token::Directive &directiveType);
-        void validateExcludedLocations();
-        void appendExcludedLocation(const ExcludedLocation &location);
+
         void validateOutput();
 
         [[nodiscard]] auto getExcludedLocations() const {
             return m_excludedLocations;
         }
 
-        [[nodiscard]] auto getResult() const {
-            return this->m_result;
+        [[nodiscard]] auto getResult() {
+            return &m_result;
         }
 
         [[nodiscard]] auto getOutput() const {
@@ -51,7 +50,31 @@ namespace pl::core {
         }
 
         void setOutput(std::vector<pl::core::Token> tokens) {
-            m_output = tokens;
+            u32 j =0;
+            auto tokenCount = m_result.size();
+            for (auto token : tokens) {
+                if (auto identifier = std::get_if<Token::Identifier>(&token.value); identifier != nullptr) {
+                    if (auto type = identifier->getType(); type > Token::Identifier::IdentifierType::ScopeResolutionUnknown) {
+                        auto location = token.location;
+                        if (location.source->source != "<Source Code>")
+                            continue;
+                        auto line = location.line;
+                        auto column = location.column;
+                        while (m_result[j].location.line < line) {
+                            if (j >= tokenCount)
+                                break;
+                            j++;
+                        }
+                        while (m_result[j].location.column < column) {
+                            if (j >= tokenCount)
+                                break;
+                            j++;
+                        }
+                        if (auto identifier2 = std::get_if<Token::Identifier>(&m_result[j].value); identifier2 != nullptr)
+                            identifier2->setType(type);
+                    }
+                }
+            }
         }
 
         [[nodiscard]] auto getErrors() const {
@@ -70,6 +93,10 @@ namespace pl::core {
             return m_initialized;
         }
 
+        [[nodiscard]] const api::Resolver& getResolver() const {
+            return m_resolver;
+        }
+
         void setResolver(const api::Resolver& resolvers) {
             m_resolver = resolvers;
         }
@@ -85,6 +112,7 @@ namespace pl::core {
         bool eof();
         Location location() override;
         void removeKey(const Token &token);
+        void nextLine(u32 line);
         // directive handlers
         void handleIfDef(u32 line);
         void handleIfNDef(u32 line);

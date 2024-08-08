@@ -121,8 +121,7 @@ namespace pl {
 
         if (ast->empty() || !ast.has_value())
             return std::nullopt;
-        this->m_currAST = std::move(*ast);
-        return m_currAST;
+        return ast;
     }
 
     bool PatternLanguage::executeString(std::string code, const std::string& source, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
