@@ -372,6 +372,12 @@ namespace pl::core {
                 continue;
             m_output.push_back(token);
         }
+        if (!m_output.empty() && m_output.back() != Token::Separator::EndOfProgram ) {
+            auto location = m_output.back().location;
+            location.column += 1;
+            location.length = 0;
+            m_output.push_back(Token{Token::Type::Separator, Token::Separator::EndOfProgram, location});
+        }
     }
 
     void Preprocessor::appendToNamespaces(std::vector<Token> tokens) {
