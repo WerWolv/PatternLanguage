@@ -32,6 +32,9 @@ Result ParserManager::parse(api::Source *source, const std::string &namespacePre
     Preprocessor preprocessor;
     preprocessor.setResolver(m_resolver);
 
+    // Add a define that's used to determine if a file is imported
+    preprocessor.addDefine("IMPORTED");
+
     for (const auto& [name, value] : m_patternLanguage->getDefines()) {
         preprocessor.addDefine(name, value);
     }
