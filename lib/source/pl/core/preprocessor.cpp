@@ -30,6 +30,7 @@ namespace pl::core {
 
     Preprocessor::Preprocessor(const Preprocessor &other) : ErrorCollector(other) {
         this->m_defines = other.m_defines;
+        this->m_addedDefines = other.m_addedDefines;
         this->m_pragmas = other.m_pragmas;
         this->m_onceIncludedFiles = other.m_onceIncludedFiles;
         this->m_resolver = other.m_resolver;
@@ -277,6 +278,7 @@ namespace pl::core {
 
         std::ranges::copy(preprocessor.m_onceIncludedFiles.begin(), preprocessor.m_onceIncludedFiles.end(), std::inserter(this->m_onceIncludedFiles, this->m_onceIncludedFiles.begin()));
         std::ranges::copy(preprocessor.m_defines.begin(), preprocessor.m_defines.end(), std::inserter(this->m_defines, this->m_defines.begin()));
+        std::ranges::copy(preprocessor.m_addedDefines.begin(), preprocessor.m_addedDefines.end(), std::inserter(this->m_addedDefines, this->m_addedDefines.begin()));
         std::ranges::copy(preprocessor.m_pragmas.begin(), preprocessor.m_pragmas.end(), std::inserter(this->m_pragmas, this->m_pragmas.begin()));
         std::ranges::copy(preprocessor.m_keys.begin(), preprocessor.m_keys.end(), std::inserter(this->m_keys, this->m_keys.begin()));
         std::ranges::copy(preprocessor.m_namespaces.begin(), preprocessor.m_namespaces.end(), std::inserter(this->m_namespaces, this->m_namespaces.begin()));
@@ -408,11 +410,15 @@ namespace pl::core {
             this->m_onlyIncludeOnce = false;
             this->m_pragmas.clear();
             for (const auto& [name, value] : m_runtime->getDefines()) {
-                addDefine(name, value);
+                m_defines[name] = {Token { Token::Type::String, value, {nullptr, 0, 0, 0 } } } ;
             }
             for (const auto& [name, handler]: m_runtime->getPragmas()) {
                 addPragmaHandler(name, handler);
             }
+        }
+
+        for (const auto& [name, value] : m_addedDefines) {
+            m_defines[name] = {Token { Token::Type::String, value, {nullptr, 0, 0, 0 } } } ;
         }
 
         auto [result,errors] = lexer->lex(m_source);
@@ -451,7 +457,12 @@ namespace pl::core {
     }
 
     void Preprocessor::addDefine(const std::string &name, const std::string &value) {
-        m_defines[name] = {Token { Token::Type::String, value, {nullptr, 0, 0, 0 } } } ;
+        m_addedDefines[name] = value;
+    }
+
+    void Preprocessor::removeDefine(const std::string &name) {
+        if (m_addedDefines.contains(name))
+            m_addedDefines.erase(name);
     }
 
     void Preprocessor::addPragmaHandler(const std::string &pragmaType, const api::PragmaHandler &handler) {

@@ -30,6 +30,7 @@ namespace pl::core {
         hlp::CompileResult<std::vector<Token>> preprocess(PatternLanguage *runtime, api::Source* source, bool initialRun = true);
 
         void addDefine(const std::string &name, const std::string &value = "");
+        void removeDefine(const std::string &name);
         void addPragmaHandler(const std::string &pragmaType, const api::PragmaHandler &handler);
         void addDirectiveHandler(const Token::Directive &directiveType, const api::DirectiveHandler &handler);
         void removePragmaHandler(const std::string &pragmaType);
@@ -37,19 +38,19 @@ namespace pl::core {
 
         void validateOutput();
 
-        [[nodiscard]] auto getExcludedLocations() const {
+        [[nodiscard]] const std::vector<ExcludedLocation> &getExcludedLocations() const {
             return m_excludedLocations;
         }
 
-        [[nodiscard]] auto getResult() {
-            return &m_result;
+        [[nodiscard]] const std::vector<Token> &getResult() {
+            return m_result;
         }
 
         [[nodiscard]] auto getOutput() const {
             return this->m_output;
         }
 
-        void setOutput(std::vector<pl::core::Token> tokens) {
+        void setOutput(const std::vector<pl::core::Token> &tokens) {
             u32 j =0;
             auto tokenCount = m_result.size();
             for (auto token : tokens) {
@@ -77,11 +78,11 @@ namespace pl::core {
             }
         }
 
-        [[nodiscard]] auto getErrors() const {
+        [[nodiscard]] const std::vector<err::CompileError> &getErrors() const {
             return this->m_errors;
         }
 
-        void setErrors(std::vector<err::CompileError> errors) {
+        void setErrors(const std::vector<err::CompileError> &errors) {
             m_errors = errors;
         }
 
@@ -101,7 +102,7 @@ namespace pl::core {
             m_resolver = resolvers;
         }
 
-        auto getNamespaces() const {
+        const std::vector<std::string> getNamespaces() const {
             return m_namespaces;
         }
 
@@ -131,6 +132,7 @@ namespace pl::core {
         std::unordered_map<Token::Directive, api::DirectiveHandler> m_directiveHandlers;
 
         std::unordered_map<std::string, std::vector<Token>> m_defines;
+        std::map<std::string, std::string> m_addedDefines;
         std::unordered_map<std::string, std::vector<std::pair<std::string, u32>>> m_pragmas;
         std::vector<ExcludedLocation> m_excludedLocations;
 
