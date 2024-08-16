@@ -315,11 +315,25 @@ namespace pl::core {
         } else if (m_token->type == Token::Type::Comment)
             m_token++;
         else {
-            if (auto *identifier = std::get_if<Token::Identifier>(&m_token->value);
-                identifier != nullptr && identifier->getType() == Token::Identifier::IdentifierType::NameSpace) {
-                if (std::ranges::find(m_namespaces, identifier->get()) == m_namespaces.end())
-                    m_namespaces.push_back(identifier->get());
+            u32 idx = 1;
+            if (auto *keyword = std::get_if<Token::Keyword>(&m_token->value); keyword != nullptr && *keyword == Token::Keyword::Namespace) {
+                if (auto *valueType = std::get_if<Token::ValueType>(&m_token[1].value); valueType != nullptr && *valueType == Token::ValueType::Auto)
+                  idx += 1;
+
+                auto *identifier = std::get_if<Token::Identifier>(&m_token[idx].value);
+                while ( identifier != nullptr) {
+                    if (auto *separator = std::get_if<Token::Separator>(&m_token[idx].value); separator != nullptr && *separator == Token::Separator::EndOfProgram)
+                        break;
+                    if (std::ranges::find(m_namespaces, identifier->get()) == m_namespaces.end())
+                        m_namespaces.push_back(identifier->get());
+                    idx += 1;
+                    if (auto *operatorToken = std::get_if<Token::Operator>(&m_token[idx].value); operatorToken == nullptr || *operatorToken != Token::Operator::ScopeResolution)
+                        break;
+                    idx += 1;
+                    identifier = std::get_if<Token::Identifier>(&m_token[idx].value);
+                }
             }
+
             std::vector<Token> values;
             std::vector<Token> resultValues;
             values.push_back(*m_token);
@@ -374,7 +388,10 @@ namespace pl::core {
                 continue;
             m_output.push_back(token);
         }
-        if (!m_output.empty() && m_output.back() != Token::Separator::EndOfProgram ) {
+
+        if (m_output.empty())
+            m_output.push_back(Token{Token::Type::Separator, Token::Separator::EndOfProgram, Location { m_source, 1, 1, 0}});
+        else if (m_output.back() != Token::Separator::EndOfProgram) {
             auto location = m_output.back().location;
             location.column += 1;
             location.length = 0;
