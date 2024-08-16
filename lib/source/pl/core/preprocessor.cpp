@@ -315,25 +315,6 @@ namespace pl::core {
         } else if (m_token->type == Token::Type::Comment)
             m_token++;
         else {
-            u32 idx = 1;
-            if (auto *keyword = std::get_if<Token::Keyword>(&m_token->value); keyword != nullptr && *keyword == Token::Keyword::Namespace) {
-                if (auto *valueType = std::get_if<Token::ValueType>(&m_token[1].value); valueType != nullptr && *valueType == Token::ValueType::Auto)
-                  idx += 1;
-
-                auto *identifier = std::get_if<Token::Identifier>(&m_token[idx].value);
-                while ( identifier != nullptr) {
-                    if (auto *separator = std::get_if<Token::Separator>(&m_token[idx].value); separator != nullptr && *separator == Token::Separator::EndOfProgram)
-                        break;
-                    if (std::ranges::find(m_namespaces, identifier->get()) == m_namespaces.end())
-                        m_namespaces.push_back(identifier->get());
-                    idx += 1;
-                    if (auto *operatorToken = std::get_if<Token::Operator>(&m_token[idx].value); operatorToken == nullptr || *operatorToken != Token::Operator::ScopeResolution)
-                        break;
-                    idx += 1;
-                    identifier = std::get_if<Token::Identifier>(&m_token[idx].value);
-                }
-            }
-
             std::vector<Token> values;
             std::vector<Token> resultValues;
             values.push_back(*m_token);
@@ -400,12 +381,30 @@ namespace pl::core {
     }
 
     void Preprocessor::appendToNamespaces(std::vector<Token> tokens) {
-        for (const auto &token : tokens) {
-            if (auto *identifier = std::get_if<Token::Identifier>(&token.value); identifier != nullptr && identifier->getType() == Token::Identifier::IdentifierType::NameSpace)
-                if (std::ranges::find(m_namespaces, identifier->get()) == m_namespaces.end())
-                    m_namespaces.push_back(identifier->get());
+        for (auto token = tokens.begin(); token != tokens.end(); token++ ) {
+            u32 idx = 1;
+            if (auto *keyword = std::get_if<Token::Keyword>(&token->value); keyword != nullptr && *keyword == Token::Keyword::Namespace) {
+                if (auto *valueType = std::get_if<Token::ValueType>(&token[1].value);
+                                                        valueType != nullptr && *valueType == Token::ValueType::Auto)
+                    idx += 1;
+                auto *identifier = std::get_if<Token::Identifier>(&token[idx].value);
+                while (identifier != nullptr) {
+                    if (auto *separator = std::get_if<Token::Separator>(&token[idx].value);
+                                                        separator != nullptr && *separator == Token::Separator::EndOfProgram)
+                        break;
+                    if (std::ranges::find(m_namespaces, identifier->get()) == m_namespaces.end())
+                        m_namespaces.push_back(identifier->get());
+                    idx += 1;
+                    if (auto *operatorToken = std::get_if<Token::Operator>(&token[idx].value);
+                                                        operatorToken == nullptr || *operatorToken != Token::Operator::ScopeResolution)
+                        break;
+                    idx += 1;
+                    identifier = std::get_if<Token::Identifier>(&token[idx].value);
+                }
+            }
         }
     }
+
     hlp::CompileResult<std::vector<Token>> Preprocessor::preprocess(PatternLanguage* runtime, api::Source* source, bool initialRun) {
         m_source = source;
         m_source->content = wolv::util::replaceStrings(m_source->content, "\r\n", "\n");
@@ -451,6 +450,8 @@ namespace pl::core {
         m_initialized = true;
         while (!eof())
             process();
+
+        appendToNamespaces(m_output);
 
         // Handle pragmas
         for (const auto &[type, datas] : this->m_pragmas) {
