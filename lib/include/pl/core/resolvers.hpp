@@ -23,8 +23,8 @@ namespace pl::core::resolvers {
             this->m_includePaths = includePaths;
         }
 
-        api::Source* addVirtualFile(const std::string &code, const std::string &path) const {
-            this->m_virtualFiles[path] = api::Source(code, path);
+        api::Source* addVirtualFile(const std::string &code, const std::string &path, bool mainSource = false) const {
+            this->m_virtualFiles[path] = api::Source(code, path, mainSource);
             return &this->m_virtualFiles[path];
         }
 

@@ -44,7 +44,7 @@ namespace pl::core::resolvers {
 
             const auto content = file.readString();
 
-            return Result::good(api::Source { content, utf8 });
+            return Result::good(api::Source(content, utf8, false));
         }
 
         return Result::err("Could not find file " + path);

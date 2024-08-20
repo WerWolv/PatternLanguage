@@ -65,9 +65,11 @@ namespace pl::core {
     bool operator==(const std::vector<Token>& a, const std::vector<Token>& b) {
         if (a.size() != b.size())
             return false;
-        for (u32 i = 0; i < a.size(); i++)
+
+        for (u32 i = 0; i < a.size(); i += 1) {
             if (a[i].type != b[i].type || a[i].value != b[i].value || a[i].location != b[i].location)
                 return false;
+        }
         return true;
     }
 
@@ -80,9 +82,11 @@ namespace pl::core {
     }
 
     void Preprocessor::removeKey(const Token &token) {
-        for (u32 i = 0; i < m_keys.size(); i++)
-            if (m_keys[i].value == token.value)
+        for (u32 i = 0; i < m_keys.size(); i++) {
+            if (m_keys[i].value == token.value) {
                 m_keys.erase(m_keys.begin() + i);
+            }
+        }
     }
 
     void Preprocessor::processIfDef(const bool add) {
@@ -421,13 +425,19 @@ namespace pl::core {
         if (initialRun) {
             this->m_excludedLocations.clear();
             this->m_onceIncludedFiles.clear();
-            this->m_defines.clear();
             this->m_keys.clear();
             this->m_onlyIncludeOnce = false;
-            this->m_pragmas.clear();
+
+            this->m_defines.clear();
             for (const auto& [name, value] : m_runtime->getDefines()) {
                 m_defines[name] = {Token { Token::Type::String, value, {nullptr, 0, 0, 0 } } } ;
             }
+
+            if (!source->mainSource) {
+                addDefine("IMPORTED");
+            }
+
+            this->m_pragmas.clear();
             for (const auto& [name, handler]: m_runtime->getPragmas()) {
                 addPragmaHandler(name, handler);
             }

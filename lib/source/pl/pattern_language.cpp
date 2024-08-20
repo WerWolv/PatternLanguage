@@ -71,7 +71,7 @@ namespace pl {
     [[nodiscard]] std::optional<std::vector<pl::core::Token>> PatternLanguage::preprocessString(const std::string& code, const std::string& source) {
         this->reset();
 
-        auto internalSource = addVirtualSource(code, source); // add virtual source to file resolver
+        auto internalSource = addVirtualSource(code, source, true); // add virtual source to file resolver
 
         // add defines to preprocessor
         for (const auto &[name, value] : this->m_defines)
@@ -240,8 +240,8 @@ namespace pl {
         return { success, std::move(result) };
     }
 
-    api::Source* PatternLanguage::addVirtualSource(const std::string &code, const std::string &source) const {
-        return this->m_fileResolver.addVirtualFile(code, source);
+    api::Source* PatternLanguage::addVirtualSource(const std::string &code, const std::string &source, bool mainSource) const {
+        return this->m_fileResolver.addVirtualFile(code, source, mainSource);
     }
 
     void PatternLanguage::abort() {
