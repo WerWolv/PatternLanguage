@@ -38,11 +38,12 @@ namespace pl::api {
         std::string content;
         std::string source;
         u32 id = 0;
+        bool mainSource;
 
         static u32 idCounter;
 
-        Source(std::string content, std::string source = DefaultSource) :
-            content(std::move(content)), source(std::move(source)), id(idCounter++) { }
+        Source(std::string content, std::string source = DefaultSource, bool mainSource = false) :
+            content(std::move(content)), source(std::move(source)), id(idCounter++), mainSource(mainSource) { }
 
         Source() = default;
 

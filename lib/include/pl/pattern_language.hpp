@@ -120,7 +120,7 @@ namespace pl {
          * @param source the source of the code
          * @return the source that was added or that already existed
          */
-        [[nodiscard]] api::Source* addVirtualSource(const std::string& code, const std::string& source) const;
+        [[nodiscard]] api::Source* addVirtualSource(const std::string& code, const std::string& source, bool mainSource = false) const;
 
         /**
          * @brief Aborts the currently running execution asynchronously
