@@ -206,7 +206,7 @@ namespace pl::core::ast {
 
             auto array = dynamic_cast<ptrn::PatternArrayDynamic *>(pattern.get());
             if (array == nullptr)
-                err::E0009.throwError("The [[format_entries_read]] attribute can only be applied to dynamic array types.", {}, node->getLocation());
+                err::E0009.throwError("The [[format_read_entries]] attribute can only be applied to dynamic array types.", {}, node->getLocation());
 
             for (const auto &entry : array->getEntries()) {
                 entry->setReadFormatterFunction(functionName);
@@ -224,7 +224,7 @@ namespace pl::core::ast {
 
             auto array = dynamic_cast<ptrn::PatternArrayDynamic *>(pattern.get());
             if (array == nullptr)
-                err::E0009.throwError("The [[format_entries_write]] attribute can only be applied to dynamic array types.", {}, node->getLocation());
+                err::E0009.throwError("The [[format_write_entries]] attribute can only be applied to dynamic array types.", {}, node->getLocation());
 
             for (const auto &entry : array->getEntries()) {
                 entry->setWriteFormatterFunction(functionName);
@@ -272,7 +272,7 @@ namespace pl::core::ast {
                 i128 pointerValue = pointerPattern->getPointedAtAddress();
 
                 if (function->parameterCount != api::FunctionParameterCount::exactly(1))
-                    err::E0009.throwError(fmt::format("Transform function '{}' needs to take exactly one parameter.", functionName), fmt::format("Try 'fn {}({} value)' instead", functionName, pointerPattern->getPointerType()->getTypeName()), node->getLocation());
+                    err::E0009.throwError(fmt::format("Pointer base function '{}' needs to take exactly one parameter.", functionName), fmt::format("Try 'fn {}({} value)' instead", functionName, pointerPattern->getPointerType()->getTypeName()), node->getLocation());
 
                 auto result = function->func(evaluator, { pointerValue });
 
