@@ -52,9 +52,9 @@ namespace pl::core {
     }
 
 
-    std::optional<char> Lexer::parseCharacter() {
+    std::optional<char> Lexer::parseCharacter(bool isWindowsPath) {
         const char& c = m_sourceCode[m_cursor++];
-        if (c == '\\') {
+        if (c == '\\' && !isWindowsPath) {
             switch (m_sourceCode[m_cursor++]) {
                 case 'a':
                     return '\a';
@@ -118,7 +118,7 @@ namespace pl::core {
         return std::nullopt;
     }
 
-    std::optional<Token> Lexer::parseDirectiveValue() {
+    std::optional<Token> Lexer::parseDirectiveValue(bool forInclude) {
         std::string result;
 
         m_cursor++; // Skip space
@@ -126,7 +126,7 @@ namespace pl::core {
 
         while (!std::isblank(m_sourceCode[m_cursor]) && !std::isspace(m_sourceCode[m_cursor]) && m_sourceCode[m_cursor] != '\0' ) {
 
-            auto character = parseCharacter();
+            auto character = parseCharacter(forInclude);
             if (!character.has_value()) {
                 return std::nullopt;
             }
@@ -176,9 +176,17 @@ namespace pl::core {
 
         while (m_sourceCode[m_cursor] != '\"') {
             char c = peek();
-            if (c == '\n' || c == '\0') {
+            if (c == '\n') {
                 m_errorLength = 1;
-                error(c == '\n' ? "Unexpected newline in string literal" : "Unexpected end of file in string literal");
+                error("Unexpected newline in string literal");
+                m_line++;
+                m_lineBegin = m_cursor;
+                return std::nullopt;
+            }
+
+            if (c == '\0') {
+                m_errorLength = 1;
+                error("Unexpected end of file in string literal");
                 return std::nullopt;
             }
 
@@ -599,7 +607,8 @@ namespace pl::core {
                 if (processToken(&Lexer::parseDirectiveName, directiveName)) {
                     Token::Directive directive = get<Token::Directive>(m_tokens.back().value);
                     if (m_line != line || directive == Token::Directive::Define || directive == Token::Directive::Undef ||
-                         peek(0) == 0  || directive == Token::Directive::IfDef  || directive == Token::Directive::IfNDef)
+                         peek(0) == 0  || directive == Token::Directive::IfDef  || directive == Token::Directive::IfNDef ||
+                         directive == Token::Directive::EndIf)
                         continue;
                     if (peek(0) == '\n') {
                         m_line++;
@@ -607,7 +616,7 @@ namespace pl::core {
                         m_cursor++;
                         continue;
                     }
-                    auto directiveValue = parseDirectiveValue();
+                    auto directiveValue = parseDirectiveValue(directive == Token::Directive::Include);
                     if (directiveValue.has_value()) {
                         addToken(directiveValue.value());
                         if (m_line != line || peek(0) == 0)
@@ -661,7 +670,7 @@ namespace pl::core {
             m_cursor++;
         }
 
-        addToken(makeToken(Separator::EndOfProgram));
+        addToken(makeToken(Separator::EndOfProgram,0));
 
         return { m_tokens, collectErrors() };
     }

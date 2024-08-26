@@ -30,6 +30,7 @@ namespace pl::core {
 
     Preprocessor::Preprocessor(const Preprocessor &other) : ErrorCollector(other) {
         this->m_defines = other.m_defines;
+        this->m_addedDefines = other.m_addedDefines;
         this->m_pragmas = other.m_pragmas;
         this->m_onceIncludedFiles = other.m_onceIncludedFiles;
         this->m_resolver = other.m_resolver;
@@ -72,6 +73,14 @@ namespace pl::core {
         return true;
     }
 
+    void Preprocessor::nextLine(u32 line) {
+        while (!eof() && m_token->location.line == line) {
+            if (m_token->type == Token::Type::Comment || m_token->type == Token::Type::DocComment)
+                m_output.push_back(*m_token);
+            m_token++;
+        }
+    }
+
     void Preprocessor::removeKey(const Token &token) {
         for (u32 i = 0; i < m_keys.size(); i++) {
             if (m_keys[i].value == token.value) {
@@ -97,7 +106,7 @@ namespace pl::core {
                     location.column = 0;
                     m_excludedLocations.push_back({false, location});
                 }
-                m_token++;
+                nextLine(m_token->location.line);
                 continue;
             }
             if(add) {
@@ -106,7 +115,7 @@ namespace pl::core {
                 if (auto *directive = std::get_if<Token::Directive>(&m_token->value);directive != nullptr &&
                     (*directive == Token::Directive::IfDef || *directive == Token::Directive::IfNDef))
                     depth++;
-                m_token++;
+                nextLine(m_token->location.line);
             }
         }
 
@@ -125,7 +134,7 @@ namespace pl::core {
             return;
         } else
             identifier->setType(Token::Identifier::IdentifierType::Macro);
-        m_token++;
+        nextLine(line);
         processIfDef(m_defines.contains(identifier->get()));
     }
 
@@ -138,7 +147,7 @@ namespace pl::core {
             return;
         } else
             identifier->setType(Token::Identifier::IdentifierType::Macro);
-        m_token++;
+        nextLine(line);
         processIfDef(!m_defines.contains(identifier->get()));
     }
 
@@ -195,6 +204,7 @@ namespace pl::core {
             m_defines.erase(name);
             removeKey(token);
         }
+        nextLine(line);
     }
 
     void Preprocessor::handlePragma(u32 line) {
@@ -272,6 +282,7 @@ namespace pl::core {
 
         std::ranges::copy(preprocessor.m_onceIncludedFiles.begin(), preprocessor.m_onceIncludedFiles.end(), std::inserter(this->m_onceIncludedFiles, this->m_onceIncludedFiles.begin()));
         std::ranges::copy(preprocessor.m_defines.begin(), preprocessor.m_defines.end(), std::inserter(this->m_defines, this->m_defines.begin()));
+        std::ranges::copy(preprocessor.m_addedDefines.begin(), preprocessor.m_addedDefines.end(), std::inserter(this->m_addedDefines, this->m_addedDefines.begin()));
         std::ranges::copy(preprocessor.m_pragmas.begin(), preprocessor.m_pragmas.end(), std::inserter(this->m_pragmas, this->m_pragmas.begin()));
         std::ranges::copy(preprocessor.m_keys.begin(), preprocessor.m_keys.end(), std::inserter(this->m_keys, this->m_keys.begin()));
         std::ranges::copy(preprocessor.m_namespaces.begin(), preprocessor.m_namespaces.end(), std::inserter(this->m_namespaces, this->m_namespaces.begin()));
@@ -287,6 +298,7 @@ namespace pl::core {
                         m_output.push_back(entry);
                 }
         }
+        nextLine(line);
     }
 
     void Preprocessor::process() {
@@ -301,16 +313,12 @@ namespace pl::core {
             } else {
                 m_token++;
                 handler->second(this, line);
+                nextLine(line);
             }
 
         } else if (m_token->type == Token::Type::Comment)
             m_token++;
         else {
-            if (auto *identifier = std::get_if<Token::Identifier>(&m_token->value);
-                identifier != nullptr && identifier->getType() == Token::Identifier::IdentifierType::NameSpace) {
-                if (std::ranges::find(m_namespaces, identifier->get()) == m_namespaces.end())
-                    m_namespaces.push_back(identifier->get());
-            }
             std::vector<Token> values;
             std::vector<Token> resultValues;
             values.push_back(*m_token);
@@ -357,27 +365,6 @@ namespace pl::core {
         }
     }
 
-    void Preprocessor::appendExcludedLocation(const ExcludedLocation &location) {
-
-        auto it = std::find_if(m_excludedLocations.begin(), m_excludedLocations.end(), [&location](const ExcludedLocation& el) {
-            return el.isExcluded == location.isExcluded;
-        });
-
-        if (it == m_excludedLocations.end()) {
-            m_excludedLocations.push_back(location);
-        }
-    }
-
-    void Preprocessor::validateExcludedLocations() {
-        auto size = m_excludedLocations.size();
-        if (size == 0)
-            return;
-        auto excludedLocations = m_excludedLocations;
-        m_excludedLocations.clear();
-        for (auto &location : excludedLocations)
-            appendExcludedLocation(location);
-    }
-
     void Preprocessor::validateOutput() {
         std::vector<Token> output = m_output;
         m_output.clear();
@@ -386,15 +373,42 @@ namespace pl::core {
                 continue;
             m_output.push_back(token);
         }
+
+        if (m_output.empty())
+            m_output.push_back(Token{Token::Type::Separator, Token::Separator::EndOfProgram, Location { m_source, 1, 1, 0}});
+        else if (m_output.back() != Token::Separator::EndOfProgram) {
+            auto location = m_output.back().location;
+            location.column += 1;
+            location.length = 0;
+            m_output.push_back(Token{Token::Type::Separator, Token::Separator::EndOfProgram, location});
+        }
     }
 
     void Preprocessor::appendToNamespaces(std::vector<Token> tokens) {
-        for (const auto &token : tokens) {
-            if (auto *identifier = std::get_if<Token::Identifier>(&token.value); identifier != nullptr && identifier->getType() == Token::Identifier::IdentifierType::NameSpace)
-                if (std::ranges::find(m_namespaces, identifier->get()) == m_namespaces.end())
-                    m_namespaces.push_back(identifier->get());
+        for (auto token = tokens.begin(); token != tokens.end(); token++ ) {
+            u32 idx = 1;
+            if (auto *keyword = std::get_if<Token::Keyword>(&token->value); keyword != nullptr && *keyword == Token::Keyword::Namespace) {
+                if (auto *valueType = std::get_if<Token::ValueType>(&token[1].value);
+                                                        valueType != nullptr && *valueType == Token::ValueType::Auto)
+                    idx += 1;
+                auto *identifier = std::get_if<Token::Identifier>(&token[idx].value);
+                while (identifier != nullptr) {
+                    if (auto *separator = std::get_if<Token::Separator>(&token[idx].value);
+                                                        separator != nullptr && *separator == Token::Separator::EndOfProgram)
+                        break;
+                    if (std::ranges::find(m_namespaces, identifier->get()) == m_namespaces.end())
+                        m_namespaces.push_back(identifier->get());
+                    idx += 1;
+                    if (auto *operatorToken = std::get_if<Token::Operator>(&token[idx].value);
+                                                        operatorToken == nullptr || *operatorToken != Token::Operator::ScopeResolution)
+                        break;
+                    idx += 1;
+                    identifier = std::get_if<Token::Identifier>(&token[idx].value);
+                }
+            }
         }
     }
+
     hlp::CompileResult<std::vector<Token>> Preprocessor::preprocess(PatternLanguage* runtime, api::Source* source, bool initialRun) {
         m_source = source;
         m_source->content = wolv::util::replaceStrings(m_source->content, "\r\n", "\n");
@@ -416,7 +430,7 @@ namespace pl::core {
 
             this->m_defines.clear();
             for (const auto& [name, value] : m_runtime->getDefines()) {
-                addDefine(name, value);
+                m_defines[name] = {Token { Token::Type::String, value, {nullptr, 0, 0, 0 } } } ;
             }
 
             if (!source->mainSource) {
@@ -427,6 +441,10 @@ namespace pl::core {
             for (const auto& [name, handler]: m_runtime->getPragmas()) {
                 addPragmaHandler(name, handler);
             }
+        }
+
+        for (const auto& [name, value] : m_addedDefines) {
+            m_defines[name] = {Token { Token::Type::String, value, {nullptr, 0, 0, 0 } } } ;
         }
 
         auto [result,errors] = lexer->lex(m_source);
@@ -442,6 +460,8 @@ namespace pl::core {
         m_initialized = true;
         while (!eof())
             process();
+
+        appendToNamespaces(m_output);
 
         // Handle pragmas
         for (const auto &[type, datas] : this->m_pragmas) {
@@ -465,7 +485,12 @@ namespace pl::core {
     }
 
     void Preprocessor::addDefine(const std::string &name, const std::string &value) {
-        m_defines[name] = {Token { Token::Type::String, value, {nullptr, 0, 0, 0 } } } ;
+        m_addedDefines[name] = value;
+    }
+
+    void Preprocessor::removeDefine(const std::string &name) {
+        if (m_addedDefines.contains(name))
+            m_addedDefines.erase(name);
     }
 
     void Preprocessor::addPragmaHandler(const std::string &pragmaType, const api::PragmaHandler &handler) {
