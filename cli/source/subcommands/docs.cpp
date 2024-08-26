@@ -177,6 +177,8 @@ namespace pl::cli::sub {
                 {
                     std::string sectionContent;
                     for (const auto &[name, type] : runtime.getInternals().parser->getTypes()) {
+                        if (!type->getLocation().source->mainSource)
+                            continue;
                         if (!type->shouldDocument())
                             continue;
                         if (hideImplementationDetails && name.contains("impl::"))
@@ -226,6 +228,9 @@ namespace pl::cli::sub {
                     std::string sectionContent;
 
                     for (const auto &node : *ast) {
+                        if (!node->getLocation().source->mainSource)
+                            continue;
+
                         if (!node->shouldDocument())
                             continue;
 
