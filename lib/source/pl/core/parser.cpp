@@ -423,10 +423,13 @@ namespace pl::core {
     }
 
     // (parseAdditiveExpression) < >>|<< > (parseAdditiveExpression)
-    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseShiftExpression() {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseShiftExpression(const bool inTemplate) {
         auto node = this->parseAdditiveExpression();
         if (node == nullptr)
             return nullptr;
+
+        if (inTemplate && peek(tkn::Operator::BoolGreaterThan) && peek(tkn::Operator::BoolGreaterThan, 1))
+            return node;
 
         while (true) {
             if (sequence(tkn::Operator::BoolGreaterThan, tkn::Operator::BoolGreaterThan)) {
@@ -450,13 +453,13 @@ namespace pl::core {
     }
 
     // (parseShiftExpression) & (parseShiftExpression)
-    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseBinaryAndExpression() {
-        auto node = this->parseShiftExpression();
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseBinaryAndExpression(const bool inTemplate) {
+        auto node = this->parseShiftExpression(inTemplate);
         if (node == nullptr)
             return nullptr;
 
         while (sequence(tkn::Operator::BitAnd)) {
-            auto other = this->parseShiftExpression();
+            auto other = this->parseShiftExpression(inTemplate);
             if (other == nullptr)
                 return nullptr;
 
@@ -467,13 +470,13 @@ namespace pl::core {
     }
 
     // (parseBinaryAndExpression) ^ (parseBinaryAndExpression)
-    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseBinaryXorExpression() {
-        auto node = this->parseBinaryAndExpression();
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseBinaryXorExpression(const bool inTemplate) {
+        auto node = this->parseBinaryAndExpression(inTemplate);
         if (node == nullptr)
             return nullptr;
 
         while (sequence(tkn::Operator::BitXor)) {
-            auto other = this->parseBinaryAndExpression();
+            auto other = this->parseBinaryAndExpression(inTemplate);
             if (other == nullptr)
                 return nullptr;
 
@@ -484,15 +487,15 @@ namespace pl::core {
     }
 
     // (parseBinaryXorExpression) | (parseBinaryXorExpression)
-    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseBinaryOrExpression(const bool inMatchRange) {
-        auto node = this->parseBinaryXorExpression();
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseBinaryOrExpression(const bool inTemplate, const bool inMatchRange) {
+        auto node = this->parseBinaryXorExpression(inTemplate);
         if (node == nullptr)
             return nullptr;
 
         if (inMatchRange && peek(tkn::Operator::BitOr))
             return node;
         while (sequence(tkn::Operator::BitOr)) {
-            auto other = this->parseBinaryXorExpression();
+            auto other = this->parseBinaryXorExpression(inTemplate);
             if (other == nullptr)
                 return nullptr;
 
@@ -504,7 +507,7 @@ namespace pl::core {
 
     // (parseBinaryOrExpression) < >=|<=|>|< > (parseBinaryOrExpression)
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseRelationExpression(const bool inTemplate, const bool inMatchRange) {
-        auto node = this->parseBinaryOrExpression(inMatchRange);
+        auto node = this->parseBinaryOrExpression(inTemplate, inMatchRange);
         if (node == nullptr)
             return nullptr;
 
@@ -513,27 +516,27 @@ namespace pl::core {
 
         while (true) {
             if (sequence(tkn::Operator::BoolGreaterThan, tkn::Operator::Assign)) {
-                auto other = this->parseBinaryOrExpression(inMatchRange);
+                auto other = this->parseBinaryOrExpression(inTemplate, inMatchRange);
                 if (other == nullptr)
                     return nullptr;
 
                 node = create<ast::ASTNodeMathematicalExpression>(std::move(node), std::move(other), Token::Operator::BoolGreaterThanOrEqual);
             } else if (sequence(tkn::Operator::BoolLessThan, tkn::Operator::Assign)) {
-                auto other = this->parseBinaryOrExpression(inMatchRange);
+                auto other = this->parseBinaryOrExpression(inTemplate, inMatchRange);
                 if (other == nullptr)
                     return nullptr;
 
                 node = create<ast::ASTNodeMathematicalExpression>(std::move(node), std::move(other), Token::Operator::BoolLessThanOrEqual);
             }
             else if (sequence(tkn::Operator::BoolGreaterThan)) {
-                auto other = this->parseBinaryOrExpression(inMatchRange);
+                auto other = this->parseBinaryOrExpression(inTemplate, inMatchRange);
                 if (other == nullptr)
                     return nullptr;
 
                 node = create<ast::ASTNodeMathematicalExpression>(std::move(node), std::move(other), Token::Operator::BoolGreaterThan);
             }
             else if (sequence(tkn::Operator::BoolLessThan)) {
-                auto other = this->parseBinaryOrExpression(inMatchRange);
+                auto other = this->parseBinaryOrExpression(inTemplate, inMatchRange);
                 if (other == nullptr)
                     return nullptr;
 
