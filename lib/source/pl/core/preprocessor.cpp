@@ -74,7 +74,9 @@ namespace pl::core {
 
     void Preprocessor::nextLine(u32 line) {
         while (!eof() && m_token->location.line == line) {
-            if (m_token->type == Token::Type::Comment || m_token->type == Token::Type::DocComment)
+            if (auto *separator = std::get_if<Token::Separator>(&m_token->value);
+                    (separator != nullptr && *separator == Token::Separator::EndOfProgram) ||
+                    m_token->type == Token::Type::Comment || m_token->type == Token::Type::DocComment)
                 m_output.push_back(*m_token);
             m_token++;
         }
@@ -168,6 +170,11 @@ namespace pl::core {
         while (m_token->location.line == line) {
             values.push_back(*m_token);
             m_token++;
+            if (eof()){
+                values.pop_back();
+                m_token--;
+                break;
+            }
         }
 
         if (m_defines.contains(name)) {
