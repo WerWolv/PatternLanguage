@@ -72,6 +72,14 @@ namespace pl::core {
         return true;
     }
 
+    void Preprocessor::nextLine(u32 line) {
+        while (!eof() && m_token->location.line == line) {
+            if (m_token->type == Token::Type::Comment || m_token->type == Token::Type::DocComment)
+                m_output.push_back(*m_token);
+            m_token++;
+        }
+    }
+
     void Preprocessor::removeKey(const Token &token) {
         for (u32 i = 0; i < m_keys.size(); i++) {
             if (m_keys[i].value == token.value) {
@@ -97,7 +105,7 @@ namespace pl::core {
                     location.column = 0;
                     m_excludedLocations.push_back({false, location});
                 }
-                m_token++;
+                nextLine(m_token->location.line);
                 continue;
             }
             if(add) {
@@ -106,7 +114,7 @@ namespace pl::core {
                 if (auto *directive = std::get_if<Token::Directive>(&m_token->value);directive != nullptr &&
                     (*directive == Token::Directive::IfDef || *directive == Token::Directive::IfNDef))
                     depth++;
-                m_token++;
+                nextLine(m_token->location.line);
             }
         }
 
@@ -125,7 +133,7 @@ namespace pl::core {
             return;
         } else
             identifier->setType(Token::Identifier::IdentifierType::Macro);
-        m_token++;
+        nextLine(line);
         processIfDef(m_defines.contains(identifier->get()));
     }
 
@@ -138,7 +146,7 @@ namespace pl::core {
             return;
         } else
             identifier->setType(Token::Identifier::IdentifierType::Macro);
-        m_token++;
+        nextLine(line);
         processIfDef(!m_defines.contains(identifier->get()));
     }
 
@@ -195,6 +203,7 @@ namespace pl::core {
             m_defines.erase(name);
             removeKey(token);
         }
+        nextLine(line);
     }
 
     void Preprocessor::handlePragma(u32 line) {
@@ -287,6 +296,7 @@ namespace pl::core {
                         m_output.push_back(entry);
                 }
         }
+        nextLine(line);
     }
 
     void Preprocessor::process() {
@@ -301,6 +311,7 @@ namespace pl::core {
             } else {
                 m_token++;
                 handler->second(this, line);
+                nextLine(line);
             }
 
         } else if (m_token->type == Token::Type::Comment)
