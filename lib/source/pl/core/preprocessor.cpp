@@ -7,7 +7,6 @@
 #include <pl/core/tokens.hpp>
 #include <pl/core/parser.hpp>
 
-#include <iterator>
 
 namespace pl::core {
 
@@ -57,8 +56,6 @@ namespace pl::core {
         return std::ranges::all_of(name, [](char c) {
             return std::isalnum(c) || c == '_';
         });
-
-        return true;
     }
 
     bool operator==(const std::vector<Token>& a, const std::vector<Token>& b) {
@@ -306,11 +303,6 @@ namespace pl::core {
         } else if (m_token->type == Token::Type::Comment)
             m_token++;
         else {
-            if (auto *identifier = std::get_if<Token::Identifier>(&m_token->value);
-                identifier != nullptr && identifier->getType() == Token::Identifier::IdentifierType::NameSpace) {
-                if (std::ranges::find(m_namespaces, identifier->get()) == m_namespaces.end())
-                    m_namespaces.push_back(identifier->get());
-            }
             std::vector<Token> values;
             std::vector<Token> resultValues;
             values.push_back(*m_token);
@@ -357,27 +349,6 @@ namespace pl::core {
         }
     }
 
-    void Preprocessor::appendExcludedLocation(const ExcludedLocation &location) {
-
-        auto it = std::find_if(m_excludedLocations.begin(), m_excludedLocations.end(), [&location](const ExcludedLocation& el) {
-            return el.isExcluded == location.isExcluded;
-        });
-
-        if (it == m_excludedLocations.end()) {
-            m_excludedLocations.push_back(location);
-        }
-    }
-
-    void Preprocessor::validateExcludedLocations() {
-        auto size = m_excludedLocations.size();
-        if (size == 0)
-            return;
-        auto excludedLocations = m_excludedLocations;
-        m_excludedLocations.clear();
-        for (auto &location : excludedLocations)
-            appendExcludedLocation(location);
-    }
-
     void Preprocessor::validateOutput() {
         std::vector<Token> output = m_output;
         m_output.clear();
@@ -389,12 +360,30 @@ namespace pl::core {
     }
 
     void Preprocessor::appendToNamespaces(std::vector<Token> tokens) {
-        for (const auto &token : tokens) {
-            if (auto *identifier = std::get_if<Token::Identifier>(&token.value); identifier != nullptr && identifier->getType() == Token::Identifier::IdentifierType::NameSpace)
-                if (std::ranges::find(m_namespaces, identifier->get()) == m_namespaces.end())
-                    m_namespaces.push_back(identifier->get());
+        for (auto token = tokens.begin(); token != tokens.end(); token++ ) {
+            u32 idx = 1;
+            if (auto *keyword = std::get_if<Token::Keyword>(&token->value); keyword != nullptr && *keyword == Token::Keyword::Namespace) {
+                if (auto *valueType = std::get_if<Token::ValueType>(&token[1].value);
+                                                        valueType != nullptr && *valueType == Token::ValueType::Auto)
+                    idx += 1;
+                auto *identifier = std::get_if<Token::Identifier>(&token[idx].value);
+                while (identifier != nullptr) {
+                    if (auto *separator = std::get_if<Token::Separator>(&token[idx].value);
+                                                        separator != nullptr && *separator == Token::Separator::EndOfProgram)
+                        break;
+                    if (std::ranges::find(m_namespaces, identifier->get()) == m_namespaces.end())
+                        m_namespaces.push_back(identifier->get());
+                    idx += 1;
+                    if (auto *operatorToken = std::get_if<Token::Operator>(&token[idx].value);
+                                                        operatorToken == nullptr || *operatorToken != Token::Operator::ScopeResolution)
+                        break;
+                    idx += 1;
+                    identifier = std::get_if<Token::Identifier>(&token[idx].value);
+                }
+            }
         }
     }
+
     hlp::CompileResult<std::vector<Token>> Preprocessor::preprocess(PatternLanguage* runtime, api::Source* source, bool initialRun) {
         m_source = source;
         m_source->content = wolv::util::replaceStrings(m_source->content, "\r\n", "\n");
@@ -442,6 +431,8 @@ namespace pl::core {
         m_initialized = true;
         while (!eof())
             process();
+
+        appendToNamespaces(m_output);
 
         // Handle pragmas
         for (const auto &[type, datas] : this->m_pragmas) {
