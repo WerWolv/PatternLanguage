@@ -45,7 +45,9 @@ namespace pl::core {
             std::string alias;
 
             auto operator<=>(const OnceIncludePair& other) const {
-                return std::tie(*this->source, this->alias) <=> std::tie(*other.source, other.alias);
+                auto sourcePtr = reinterpret_cast<uintptr_t>(source);
+                auto otherSourcePtr = reinterpret_cast<uintptr_t>(other.source);
+                return std::tie(sourcePtr, this->alias) <=> std::tie(otherSourcePtr, other.alias);
             }
         };
 
