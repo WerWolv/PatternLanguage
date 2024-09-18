@@ -70,6 +70,13 @@ namespace pl::core {
         };
 
         struct Scope {
+            Scope(const std::shared_ptr<pl::ptrn::Pattern>& parentPattern,
+                std::vector<std::shared_ptr<pl::ptrn::Pattern>>* scopePatterns,
+                unsigned long heapSize)
+                : parent(parentPattern),
+                scope(scopePatterns),
+                heapStartSize(heapSize) {}
+
             std::shared_ptr<ptrn::Pattern> parent;
             std::vector<std::shared_ptr<ptrn::Pattern>> *scope;
             std::optional<ParameterPack> parameterPack;
