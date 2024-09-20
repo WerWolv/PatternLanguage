@@ -26,7 +26,7 @@ namespace pl::core {
         bool processToken(auto parserFunction, const std::string_view& identifier);
         Location location() override;
 
-        std::optional<char> parseCharacter();
+        std::optional<char> parseCharacter(bool isWindowsPath=false);
         std::optional<Token> parseOperator();
         std::optional<Token> parseSeparator();
         std::optional<Token> parseOneLineComment();
@@ -40,7 +40,7 @@ namespace pl::core {
         std::optional<Token> parseConstant(const std::string_view &identifier);
         std::optional<Token> parseStringLiteral();
         std::optional<Token> parseDirectiveArgument();
-        std::optional<Token> parseDirectiveValue();
+        std::optional<Token> parseDirectiveValue(bool forInclude=false);
         std::optional<Token::Literal> parseIntegerLiteral(std::string_view literal);
 
         std::optional<double> parseFloatingPoint(std::string_view literal, char suffix);

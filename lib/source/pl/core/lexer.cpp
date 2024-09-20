@@ -52,9 +52,9 @@ namespace pl::core {
     }
 
 
-    std::optional<char> Lexer::parseCharacter() {
+    std::optional<char> Lexer::parseCharacter(bool isWindowsPath) {
         const char& c = m_sourceCode[m_cursor++];
-        if (c == '\\') {
+        if (c == '\\' && !isWindowsPath) {
             switch (m_sourceCode[m_cursor++]) {
                 case 'a':
                     return '\a';
@@ -118,7 +118,7 @@ namespace pl::core {
         return std::nullopt;
     }
 
-    std::optional<Token> Lexer::parseDirectiveValue() {
+    std::optional<Token> Lexer::parseDirectiveValue(bool forInclude) {
         std::string result;
 
         m_cursor++; // Skip space
@@ -126,7 +126,7 @@ namespace pl::core {
 
         while (!std::isblank(m_sourceCode[m_cursor]) && !std::isspace(m_sourceCode[m_cursor]) && m_sourceCode[m_cursor] != '\0' ) {
 
-            auto character = parseCharacter();
+            auto character = parseCharacter(forInclude);
             if (!character.has_value()) {
                 return std::nullopt;
             }
@@ -607,7 +607,7 @@ namespace pl::core {
                         m_cursor++;
                         continue;
                     }
-                    auto directiveValue = parseDirectiveValue();
+                    auto directiveValue = parseDirectiveValue(directive == Token::Directive::Include);
                     if (directiveValue.has_value()) {
                         addToken(directiveValue.value());
                         if (m_line != line || peek(0) == 0)
