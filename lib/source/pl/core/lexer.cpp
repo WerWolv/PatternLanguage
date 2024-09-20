@@ -599,7 +599,8 @@ namespace pl::core {
                 if (processToken(&Lexer::parseDirectiveName, directiveName)) {
                     Token::Directive directive = get<Token::Directive>(m_tokens.back().value);
                     if (m_line != line || directive == Token::Directive::Define || directive == Token::Directive::Undef ||
-                         peek(0) == 0  || directive == Token::Directive::IfDef  || directive == Token::Directive::IfNDef)
+                         peek(0) == 0  || directive == Token::Directive::IfDef  || directive == Token::Directive::IfNDef ||
+                         directive == Token::Directive::EndIf)
                         continue;
                     if (peek(0) == '\n') {
                         m_line++;
