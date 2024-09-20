@@ -85,6 +85,7 @@ namespace pl::core {
         bool eof();
         Location location() override;
         void removeKey(const Token &token);
+        void nextLine(u32 line);
         // directive handlers
         void handleIfDef(u32 line);
         void handleIfNDef(u32 line);
