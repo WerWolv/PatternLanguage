@@ -25,6 +25,7 @@
 
 #include <exception>
 #include <utility>
+#include "wolv/utils/string.hpp"
 
 namespace pl::core {
 
@@ -1099,17 +1100,23 @@ namespace pl::core {
         if (node != nullptr) {
             auto rawLine = node->getLocation().line;
             const auto line = rawLine + (rawLine == 0);
+            auto rawColumn = node->getLocation().column;
+            const auto column = rawColumn + (rawColumn == 0);
+            u32 lineLength = 0;
+            if (auto source = node->getLocation().source; source!= nullptr){
+                lineLength = wolv::util::splitString(source->content, "\n").at(rawLine-1).size();
+            }
             if (evaluator->m_shouldPauseNextLine && evaluator->m_lastPauseLine != line) {
                 evaluator->m_shouldPauseNextLine = false;
                 evaluator->m_lastPauseLine = line;
                 evaluator->m_breakpointHitCallback();
             } else if (evaluator->m_breakpoints.contains(line)) {
-                if (evaluator->m_lastPauseLine != line) {
+                if (evaluator->m_lastPauseLine != line && column < lineLength) {
                     evaluator->m_lastPauseLine = line;
                     evaluator->m_breakpointHitCallback();
                 }
-            }
-
+            } else
+                evaluator->m_lastPauseLine = std::nullopt;
             evaluator->m_callStack.push_back(node->clone());
         }
     }
