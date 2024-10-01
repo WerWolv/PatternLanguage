@@ -1130,11 +1130,12 @@ namespace pl::core {
         return { this, node };
     }
 
-    void Evaluator::addBreakpoint(u64 line) { this->m_breakpoints.insert(line); }
-    void Evaluator::removeBreakpoint(u64 line) { this->m_breakpoints.erase(line); }
+    void Evaluator::addBreakpoint(u32 line) { this->m_breakpoints.insert(line); }
+    void Evaluator::removeBreakpoint(u32 line) { this->m_breakpoints.erase(line); }
     void Evaluator::clearBreakpoints() { this->m_breakpoints.clear(); }
     void Evaluator::setBreakpointHitCallback(const std::function<void()> &callback) { this->m_breakpointHitCallback = callback; }
-    const std::unordered_set<int> &Evaluator::getBreakpoints() const { return this->m_breakpoints; }
+    const std::unordered_set<u32> &Evaluator::getBreakpoints() const { return this->m_breakpoints; }
+    void Evaluator::setBreakpoints(const std::unordered_set<u32> &breakpoints) { m_breakpoints = breakpoints; }
     void Evaluator::pauseNextLine() { this->m_shouldPauseNextLine = true; }
 
     std::optional<u32> Evaluator::getPauseLine() const {
