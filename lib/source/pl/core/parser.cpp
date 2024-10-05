@@ -2513,12 +2513,22 @@ namespace pl::core {
         return nullptr;
     }
 
+    void Parser::includeGuard() {
+        if (m_curr->location.source->source == "<Source Code")
+            return;
+        ParserManager::OnceIncludePair key = {const_cast<api::Source *>(m_curr->location.source), ""};
+        if (m_parserManager->getPreprocessorOnceIncluded().contains(key))
+            m_parserManager->getOnceIncluded().insert(key);
+    }
+
     /* Program */
 
     // <(parseUsingDeclaration)|(parseVariablePlacement)|(parseStruct)>
     std::vector<hlp::safe_shared_ptr<ast::ASTNode>> Parser::parseStatements() {
         hlp::safe_shared_ptr<ast::ASTNode> statement;
         bool requiresSemicolon = true;
+
+        includeGuard();
 
         if (const auto docComment = parseDocComment(true); docComment.has_value())
             this->addGlobalDocComment(docComment->comment);

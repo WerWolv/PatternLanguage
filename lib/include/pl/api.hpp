@@ -9,6 +9,7 @@
 #include <functional>
 #include <string>
 #include <optional>
+#include "pl/helpers/utils.hpp"
 
 namespace pl {
 
@@ -31,6 +32,7 @@ namespace pl::api {
     using PragmaHandler = std::function<bool(PatternLanguage&, const std::string &)>;
 
     using DirectiveHandler = std::function<void(core::Preprocessor*, u32)>;
+    using StatementHandler = std::function<void(core::Preprocessor*, u32)>;
 
     using Resolver = std::function<hlp::Result<Source*, std::string>(const std::string&)>;
 
@@ -40,10 +42,10 @@ namespace pl::api {
         u32 id = 0;
         bool mainSource;
 
-        static u32 idCounter;
-
-        Source(std::string content, std::string source = DefaultSource, bool mainSource = false) :
-            content(std::move(content)), source(std::move(source)), id(idCounter++), mainSource(mainSource) { }
+         Source(std::string content, std::string source = DefaultSource, bool mainSource = false) :
+            content(std::move(content)), source(std::move(source)), mainSource(mainSource) {
+            this->id = pl::hlp::stringCrc32(source);
+        }
 
         Source() = default;
 

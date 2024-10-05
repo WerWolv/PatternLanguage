@@ -26,6 +26,7 @@ namespace pl::core {
         registerDirectiveHandler(Token::Directive::Pragma, &Preprocessor::handlePragma);
         registerDirectiveHandler(Token::Directive::Include, &Preprocessor::handleInclude);
         registerDirectiveHandler(Token::Directive::Error, &Preprocessor::handleError);
+        registerStatementHandler(Token::Keyword::Import, &Preprocessor::handleImport);
     }
 
     Preprocessor::Preprocessor(const Preprocessor &other) : ErrorCollector(other) {
@@ -36,6 +37,7 @@ namespace pl::core {
         this->m_onlyIncludeOnce = false;
         this->m_pragmaHandlers = other.m_pragmaHandlers;
         this->m_directiveHandlers = other.m_directiveHandlers;
+        this->m_statementHandlers = other.m_statementHandlers;
         this->m_keys = other.m_keys;
         this->m_initialized = false;
 
@@ -70,6 +72,16 @@ namespace pl::core {
                 return false;
         }
         return true;
+    }
+
+    void Preprocessor::nextLine(u32 line) {
+        while (!eof() && m_token->location.line == line) {
+            if (auto *separator = std::get_if<Token::Separator>(&m_token->value);
+                    (separator != nullptr && *separator == Token::Separator::EndOfProgram) ||
+                    m_token->type == Token::Type::Comment || m_token->type == Token::Type::DocComment)
+                m_output.push_back(*m_token);
+            m_token++;
+        }
     }
 
     void Preprocessor::removeKey(const Token &token) {
@@ -218,30 +230,23 @@ namespace pl::core {
     void Preprocessor::handleInclude(u32 line) {
         // get include name
         auto *tokenLiteral = std::get_if<Token::Literal>(&m_token->value);
-        if (tokenLiteral == nullptr || m_token->location.line != line) {
+        std::string path;
+        if (tokenLiteral != nullptr && m_token->type == Token::Type::String) {
+            path = tokenLiteral->toString(false);
+            if (path.contains('.'))
+                path = wolv::util::replaceStrings(path, ".", "/");
+        } else if (tokenLiteral == nullptr || m_token->location.line != line) {
             errorDesc("No file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
             return;
         }
-        auto includeFile = tokenLiteral->toString(false);
         m_token++;
-
-        if (!(includeFile.starts_with('"') && includeFile.ends_with('"')) && !(includeFile.starts_with('<') && includeFile.ends_with('>'))) {
-            errorDesc("Invalid file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
-            return;
-        }
-
-        const std::string includePath = includeFile.substr(1, includeFile.length() - 2);
-
-        // determine if we should include this file
-        if (this->m_onceIncludedFiles.contains(includePath))
-            return;
 
         if(!m_resolver) {
             errorDesc("Unable to lookup results", "No include resolver was set.");
             return;
         }
 
-        auto [resolved, error] = this->m_resolver(includePath);
+        auto [resolved, error] = this->m_resolver(path);
 
         if(!resolved.has_value()) {
             for (const auto &item: error) {
@@ -249,6 +254,9 @@ namespace pl::core {
             }
             return;
         }
+        // determine if we should include this file
+        if (this->m_onceIncludedFiles.contains({resolved.value(),""}))
+            return;
 
         Preprocessor preprocessor(*this);
         preprocessor.m_pragmas.clear();
@@ -264,7 +272,7 @@ namespace pl::core {
 
         bool shouldInclude = true;
         if (preprocessor.shouldOnlyIncludeOnce()) {
-            auto [iter, added] = this->m_onceIncludedFiles.insert(includePath);
+            auto [iter, added] = this->m_onceIncludedFiles.insert({resolved.value(), ""});
             if (!added) {
                 shouldInclude = false;
             }
@@ -289,18 +297,127 @@ namespace pl::core {
         }
     }
 
+    void Preprocessor::handleImport(u32 line) {
+        std::vector<Token> saveImport;
+        saveImport.push_back(m_token[-1]);
+        saveImport.push_back(*m_token);
+        // get include name
+        auto *tokenLiteral = std::get_if<Token::Literal>(&m_token->value);
+        std::string path;
+        if (m_token->type == Token::Type::String) {
+            path = tokenLiteral->toString(false);
+        } else if (m_token->type == Token::Type::Identifier) {
+            path = std::get_if<Token::Identifier>(&m_token->value)->get();
+            m_token++;
+            auto *separator = std::get_if<Token::Separator>(&m_token->value);
+            while (separator != nullptr && *separator == Token::Separator::Dot) {
+                saveImport.push_back(*m_token);
+                m_token++;
+                if (m_token->type != Token::Type::Identifier) {
+                    error("Expected identifier after '.' in import statement.");
+                    return;
+                }
+                path += "/" + std::get_if<Token::Identifier>(&m_token->value)->get();
+                saveImport.push_back(*m_token);
+                m_token++;
+                separator = std::get_if<Token::Separator>(&m_token->value);
+            }
+        } else {
+            errorDesc("No file to import given in import statement.", "An import statement expects a path to a file: import path.to.file; or import \"path/to/file\".");
+            return;
+        }
+        std::string alias;
+        if (auto *keyword = std::get_if<Token::Keyword>(&m_token->value); keyword != nullptr && *keyword == Token::Keyword::As) {
+            saveImport.push_back(*m_token);
+            m_token++;
+            if (m_token->type != Token::Type::Identifier) {
+                error("Expected identifier after 'as' in import statement.");
+                return;
+            }
+            alias = std::get_if<Token::Identifier>(&m_token->value)->get();
+            saveImport.push_back(*m_token);
+            m_token++;
+        }
+
+        auto *separator = std::get_if<Token::Separator>(&m_token->value);
+        if (separator == nullptr || *separator != Token::Separator::Semicolon) {
+            errorDesc("No semicolon found after import statement.", "An import statement expects a semicolon at the end: import path.to.file;");
+            return;
+        }
+        saveImport.push_back(*m_token);
+        m_token++;
+        if(!m_resolver) {
+            errorDesc("Unable to lookup results", "No include resolver was set.");
+            return;
+        }
+
+        auto [resolved, error] = this->m_resolver(path);
+
+        if(!resolved.has_value()) {
+            for (const auto &item: error) {
+                this->error(item);
+            }
+            return;
+        }
+        // determine if we should include this file
+        if (this->m_onceIncludedFiles.contains({resolved.value(),alias}))
+            return;
+
+
+        Preprocessor preprocessor(*this);
+        preprocessor.m_pragmas.clear();
+
+        auto result = preprocessor.preprocess(m_runtime, resolved.value(), false);
+
+        if (result.hasErrs()) {
+            for (auto &item: result.errs) {
+                this->error(item);
+            }
+            return;
+        }
+
+        bool shouldInclude = true;
+        if (preprocessor.shouldOnlyIncludeOnce()) {
+            auto [iter, added] = this->m_onceIncludedFiles.insert({resolved.value(), alias});
+            if (!added) {
+                shouldInclude = false;
+            }
+        }
+
+        std::ranges::copy(preprocessor.m_onceIncludedFiles.begin(), preprocessor.m_onceIncludedFiles.end(), std::inserter(this->m_onceIncludedFiles, this->m_onceIncludedFiles.begin()));
+
+        if (shouldInclude) {
+          for (auto entry : saveImport) {
+              m_output.push_back(entry);
+          }
+        }
+        nextLine(line);
+    }
+
     void Preprocessor::process() {
         u32 line = m_token->location.line;
 
         if (auto *directive = std::get_if<Token::Directive>(&m_token->value); directive != nullptr ) {
             auto handler = m_directiveHandlers.find(*directive);
-            if(handler == m_directiveHandlers.end()) {
+            if (handler == m_directiveHandlers.end()) {
                 error("Unknown directive '{}'", m_token->getFormattedValue());
                 m_token++;
                 return;
             } else {
                 m_token++;
                 handler->second(this, line);
+            }
+
+        } else  if (auto *statement = std::get_if<Token::Keyword>(&m_token->value); statement != nullptr && *statement == Token::Keyword::Import) {
+            auto handler = m_statementHandlers.find(*statement);
+            if (handler == m_statementHandlers.end()) {
+                error("Unknown statement '{}'", m_token->getFormattedValue());
+                m_token++;
+                return;
+            } else {
+                m_token++;
+                handler->second(this, line);
+                nextLine(line);
             }
 
         } else if (m_token->type == Token::Type::Comment)
@@ -476,6 +593,10 @@ namespace pl::core {
         this->m_directiveHandlers[directiveType] = handler;
     }
 
+    void Preprocessor::addStatementHandler(const Token::Keyword &statementType, const api::StatementHandler &handler) {
+        this->m_statementHandlers[statementType] = handler;
+    }
+
     void Preprocessor::removePragmaHandler(const std::string &pragmaType) {
         this->m_pragmaHandlers.erase(pragmaType);
     }
@@ -497,6 +618,11 @@ namespace pl::core {
             return token->location;
         } else
             return { nullptr, 0, 0, 0 };
+    }
+    void Preprocessor::registerStatementHandler(const Token::Keyword &name, auto memberFunction) {
+        this->m_statementHandlers[name] = [memberFunction](Preprocessor* preprocessor, u32 line){
+            (preprocessor->*memberFunction)(line);
+        };
     }
 
     void Preprocessor::registerDirectiveHandler(const Token::Directive& name, auto memberFunction) {
