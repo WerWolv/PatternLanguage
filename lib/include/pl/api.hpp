@@ -44,7 +44,7 @@ namespace pl::api {
 
          Source(std::string content, std::string source = DefaultSource, bool mainSource = false) :
             content(std::move(content)), source(std::move(source)), mainSource(mainSource) {
-            this->id = pl::hlp::stringCrc32(source);
+            this->id = pl::hlp::stringCrc32(this->source);
         }
 
         Source() = default;
