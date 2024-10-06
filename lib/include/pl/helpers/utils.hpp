@@ -49,6 +49,8 @@ namespace pl::hlp {
     }
 
     std::string encodeByteString(const std::vector<u8> &bytes);
+    std::vector<u8> decodeByteString(const std::string &str);
+    u32 stringCrc32(const std::string &str);
 
     [[nodiscard]] constexpr inline i128 signExtend(size_t numBits, i128 value) {
         i128 mask = u128(1) << u128(numBits - 1);

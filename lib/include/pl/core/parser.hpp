@@ -212,6 +212,8 @@ namespace pl::core {
 
         hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> addType(const std::string &name, hlp::safe_unique_ptr<ast::ASTNode> &&node, std::optional<std::endian> endian = std::nullopt);
 
+        void includeGuard();
+
         std::vector<hlp::safe_shared_ptr<ast::ASTNode>> parseTillToken(const Token &endToken) {
             std::vector<hlp::safe_shared_ptr<ast::ASTNode>> program;
 

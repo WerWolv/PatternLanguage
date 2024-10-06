@@ -39,7 +39,6 @@ namespace pl::core {
             this->m_parsedTypes.clear();
         }
 
-    private:
         struct OnceIncludePair {
             api::Source* source;
             std::string alias;
@@ -48,9 +47,13 @@ namespace pl::core {
                 return std::tie(*this->source, this->alias) <=> std::tie(*other.source, other.alias);
             }
         };
-
+        std::set<OnceIncludePair> & getOnceIncluded() { return m_onceIncluded; }
+        std::set<OnceIncludePair> & getPreprocessorOnceIncluded() { return m_preprocessorOnceIncluded; }
+        void setPreprocessorOnceIncluded(const std::set<OnceIncludePair>& onceIncluded) { m_preprocessorOnceIncluded = onceIncluded; }
+private:
         std::map<OnceIncludePair, std::map<std::string, hlp::safe_shared_ptr<ast::ASTNodeTypeDecl>>> m_parsedTypes {};
         std::set<OnceIncludePair> m_onceIncluded {};
+        std::set<OnceIncludePair> m_preprocessorOnceIncluded {};
         api::Resolver m_resolver = nullptr;
         PatternLanguage* m_patternLanguage = nullptr;
     };

@@ -95,6 +95,8 @@ namespace pl {
         if (!tokens.has_value() || tokens->empty())
             return std::nullopt;
 
+        this->m_parserManager.setPreprocessorOnceIncluded(this->m_internals.preprocessor->getOnceIncludedFiles());
+        this->m_internals.parser->setParserManager(&this->m_parserManager);
         auto [ast, parserErrors] = this->m_internals.parser->parse(tokens.value());
         if (!parserErrors.empty()) {
             this->m_compileErrors.insert(m_compileErrors.end(), parserErrors.begin(), parserErrors.end());

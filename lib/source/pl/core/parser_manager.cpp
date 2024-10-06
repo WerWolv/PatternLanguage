@@ -15,8 +15,7 @@ Result ParserManager::parse(api::Source *source, const std::string &namespacePre
 
     if (m_onceIncluded.contains( key )) {
         const auto& types = m_parsedTypes[key];
-        if (!types.empty())
-            return Result::good({ {}, types });
+        return Result::good({ {}, types }); // Even if types is empty we still need to return now
     }
 
     Parser parser;

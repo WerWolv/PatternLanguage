@@ -14,6 +14,7 @@
 #include <pl/core/errors/result.hpp>
 
 #include <utility>
+#include "parser.hpp"
 
 namespace pl::core {
 
@@ -32,6 +33,7 @@ namespace pl::core {
         void addDefine(const std::string &name, const std::string &value = "");
         void addPragmaHandler(const std::string &pragmaType, const api::PragmaHandler &handler);
         void addDirectiveHandler(const Token::Directive &directiveType, const api::DirectiveHandler &handler);
+        void addStatementHandler(const Token::Keyword &statementType, const api::StatementHandler &handler);
         void removePragmaHandler(const std::string &pragmaType);
         void removeDirectiveHandler(const Token::Directive &directiveType);
         void validateExcludedLocations();
@@ -78,6 +80,10 @@ namespace pl::core {
             return m_namespaces;
         }
 
+        const auto &getOnceIncludedFiles() const {
+            return m_onceIncludedFiles;
+        }
+
         void appendToNamespaces(std::vector<Token> tokens);
 
     private:
@@ -85,6 +91,7 @@ namespace pl::core {
         bool eof();
         Location location() override;
         void removeKey(const Token &token);
+        void nextLine(u32 line);
         // directive handlers
         void handleIfDef(u32 line);
         void handleIfNDef(u32 line);
@@ -92,21 +99,24 @@ namespace pl::core {
         void handleUnDefine(u32 line);
         void handlePragma(u32 line);
         void handleInclude(u32 line);
+        void handleImport(u32 line);
         void handleError(u32 line);
 
         void process();
         void processIfDef(bool add);
 
         void registerDirectiveHandler(const Token::Directive &name, auto memberFunction);
+        void registerStatementHandler(const Token::Keyword &name, auto memberFunction);
 
         std::unordered_map<std::string, api::PragmaHandler> m_pragmaHandlers;
         std::unordered_map<Token::Directive, api::DirectiveHandler> m_directiveHandlers;
+        std::unordered_map<Token::Keyword, api::StatementHandler> m_statementHandlers;
 
         std::unordered_map<std::string, std::vector<Token>> m_defines;
         std::unordered_map<std::string, std::vector<std::pair<std::string, u32>>> m_pragmas;
         std::vector<ExcludedLocation> m_excludedLocations;
 
-        std::set<std::string> m_onceIncludedFiles;
+        std::set<pl::core::ParserManager::OnceIncludePair> m_onceIncludedFiles;
 
         api::Resolver m_resolver = nullptr;
         PatternLanguage *m_runtime = nullptr;
