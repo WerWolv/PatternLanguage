@@ -960,6 +960,16 @@ namespace pl::core {
         if (this->isDebugModeEnabled())
             this->m_console.log(LogConsole::Level::Debug, fmt::format("Base Pattern size: 0x{:02X} bytes", sizeof(ptrn::Pattern)));
 
+        for (auto &topLevelNode : ast) {
+            if (topLevelNode->getLocation().source->source == "<Source Code>") {
+                std::vector<std::string> sourceLines = wolv::util::splitString(topLevelNode->getLocation().source->content, "\n");
+                for (const auto &sourceLine : sourceLines) {
+                    this->m_sourceLineLength.push_back(sourceLine.size());
+                }
+                break;
+            }
+        }
+
         try {
             this->setCurrentControlFlowStatement(ControlFlowStatement::None);
             this->pushScope(nullptr, this->m_patterns);
@@ -1102,16 +1112,12 @@ namespace pl::core {
             const auto line = rawLine + (rawLine == 0);
             auto rawColumn = node->getLocation().column;
             const auto column = rawColumn + (rawColumn == 0);
-            u32 lineLength = 0;
-            if (auto source = node->getLocation().source; source!= nullptr){
-                lineLength = wolv::util::splitString(source->content, "\n").at(rawLine-1).size();
-            }
             if (evaluator->m_shouldPauseNextLine && evaluator->m_lastPauseLine != line) {
                 evaluator->m_shouldPauseNextLine = false;
                 evaluator->m_lastPauseLine = line;
                 evaluator->m_breakpointHitCallback();
             } else if (evaluator->m_breakpoints.contains(line)) {
-                if (evaluator->m_lastPauseLine != line && column < lineLength) {
+                if (evaluator->m_lastPauseLine != line && column < evaluator->m_sourceLineLength[rawLine-1]) {
                     evaluator->m_lastPauseLine = line;
                     evaluator->m_breakpointHitCallback();
                 }

@@ -469,6 +469,7 @@ namespace pl::core {
         bool m_shouldPauseNextLine = false;
 
         std::atomic<u64> m_lastReadAddress, m_lastWriteAddress, m_lastPatternAddress;
+        std::vector<u32> m_sourceLineLength;
 
         u32 getNextPatternColor() {
             constexpr static std::array Palette = { 0x70B4771F, 0x700E7FFF, 0x702CA02C, 0x702827D6, 0x70BD6794, 0x704B568C, 0x70C277E3, 0x7022BDBC, 0x70CFBE17 };
