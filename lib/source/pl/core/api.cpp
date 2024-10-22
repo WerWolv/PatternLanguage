@@ -2,6 +2,6 @@
 
 namespace pl::api {
 
-    u32 Source::idCounter;
+    std::atomic<u32> Source::idCounter;
 
 }

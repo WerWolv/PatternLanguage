@@ -438,7 +438,7 @@ namespace pl::core {
         u64 m_patternLimit = 0;
         u64 m_loopLimit = 0;
 
-        u64 m_currPatternCount = 0;
+        std::atomic<u64> m_currPatternCount = 0;
 
         std::atomic<bool> m_aborted;
 

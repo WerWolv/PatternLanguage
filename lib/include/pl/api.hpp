@@ -9,6 +9,7 @@
 #include <functional>
 #include <string>
 #include <optional>
+#include <atomic>
 
 namespace pl {
 
@@ -39,10 +40,11 @@ namespace pl::api {
         std::string source;
         u32 id = 0;
 
-        static u32 idCounter;
+        static std::atomic<u32> idCounter;
 
         Source(std::string content, std::string source = DefaultSource) :
-            content(std::move(content)), source(std::move(source)), id(idCounter++) { }
+            content(std::move(content)), source(std::move(source)), id(idCounter.fetch_add(1)) {
+        }
 
         Source() = default;
 
