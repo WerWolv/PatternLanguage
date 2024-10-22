@@ -33,6 +33,16 @@ namespace pl::core::ast {
             evaluator->setReadOffset(startOffset);
 
             for (auto &memberPattern : member->createPatterns(evaluator)) {
+                const auto &varName = memberPattern->getVariableName();
+                if (varName.starts_with("$") && varName.ends_with("$"))
+                    continue;
+
+                for (auto &existingPattern : memberPatterns) {
+                    if (existingPattern->getVariableName() == varName) {
+                        err::E0003.throwError(fmt::format("Redeclaration of identifier '{}'.", existingPattern->getVariableName()), "", member->getLocation());
+                    }
+                }
+
                 size = std::max(memberPattern->getSize(), size);
                 memberPattern->setSection(evaluator->getSectionId());
                 memberPatterns.push_back(std::move(memberPattern));

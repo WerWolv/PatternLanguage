@@ -198,6 +198,11 @@ namespace pl {
         this->m_runId += 1;
         ON_SCOPE_EXIT { this->m_running = false; };
 
+        evaluator->setReadOffset(this->m_startAddress.value_or(evaluator->getDataBaseAddress()));
+        evaluator->setDataSource(this->m_dataBaseAddress, this->m_dataSize, this->m_dataReadFunction, this->m_dataWriteFunction);
+        evaluator->setDangerousFunctionCallHandler(this->m_dangerousFunctionCallCallback);
+        evaluator->getConsole().setLogCallback(this->m_logCallback);
+
         ON_SCOPE_EXIT {
             for (const auto &error: this->m_compileErrors) {
                 evaluator->getConsole().log(core::LogConsole::Level::Error, error.format());
@@ -226,11 +231,6 @@ namespace pl {
             return false;
 
         this->m_currAST = std::move(*ast);
-
-        evaluator->setReadOffset(this->m_startAddress.value_or(evaluator->getDataBaseAddress()));
-        evaluator->setDataSource(this->m_dataBaseAddress, this->m_dataSize, this->m_dataReadFunction, this->m_dataWriteFunction);
-        evaluator->setDangerousFunctionCallHandler(this->m_dangerousFunctionCallCallback);
-        evaluator->getConsole().setLogCallback(this->m_logCallback);
 
         for (const auto &[ns, name, parameterCount, callback, dangerous] : this->m_functions) {
             this->m_internals.evaluator->addBuiltinFunction(getFunctionName(ns, name), parameterCount, { }, callback, dangerous);

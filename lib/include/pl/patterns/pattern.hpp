@@ -38,9 +38,6 @@ namespace pl::ptrn {
 
         [[nodiscard]] virtual size_t getEntryCount() const = 0;
 
-    protected:
-        friend class core::Evaluator;
-
         virtual void addEntry(const std::shared_ptr<Pattern> &) {
             core::err::E0012.throwError("Cannot add entry to this pattern");
         }
@@ -142,7 +139,7 @@ namespace pl::ptrn {
         void setSize(size_t size) { this->m_size = size; }
 
         [[nodiscard]] std::string getVariableName() const {
-            if (!getEvaluator()->isStringPoolEntryValid(this->m_variableName)) {
+            if (!hasVariableName()) {
                 if (this->m_arrayIndex.has_value())
                     return fmt::format("[{}]", m_arrayIndex.value());
                 else
@@ -150,6 +147,11 @@ namespace pl::ptrn {
             } else
                 return *this->m_variableName;
         }
+
+        [[nodiscard]] bool hasVariableName() const {
+            return getEvaluator()->isStringPoolEntryValid(this->m_variableName);
+        }
+
         void setVariableName(const std::string &name) {
             if (!name.empty()) {
                 auto [it, inserted] = m_evaluator->getStringPool().emplace(name);
@@ -528,7 +530,11 @@ namespace pl::ptrn {
             return m_parent;
         }
 
-        void setParent(const Pattern *parent) {
+        [[nodiscard]] Pattern* getParent() {
+            return m_parent;
+        }
+
+        void setParent(Pattern *parent) {
             m_parent = parent;
         }
 
@@ -610,7 +616,7 @@ namespace pl::ptrn {
         core::Evaluator *m_evaluator;
 
         std::unique_ptr<std::map<std::string, std::vector<core::Token::Literal>>> m_attributes;
-        const Pattern *m_parent = nullptr;
+        Pattern *m_parent = nullptr;
         u32 m_line = 0;
 
         std::set<std::string>::const_iterator m_variableName;
