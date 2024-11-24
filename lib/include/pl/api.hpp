@@ -10,6 +10,7 @@
 #include <functional>
 #include <string>
 #include <optional>
+#include <atomic>
 
 namespace pl {
 

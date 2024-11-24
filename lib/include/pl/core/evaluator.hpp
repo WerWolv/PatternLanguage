@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <bit>
+#include <list>
 #include <map>
 #include <optional>
 #include <vector>
@@ -18,6 +19,11 @@
 
 #include <fmt/format.h>
 #include <fmt/ranges.h>
+#include <pl/pattern_language.hpp>
+
+namespace pl {
+    class PatternLanguage;
+}
 
 namespace pl::ptrn {
 
@@ -137,7 +143,11 @@ namespace pl::core {
             this->m_templateParameters.pop_back();
         }
 
-        [[nodiscard]] const std::vector<std::shared_ptr<ptrn::Pattern>>& getTemplateParameters() {
+        [[nodiscard]] const std::vector<std::shared_ptr<ptrn::Pattern>>& getTemplateParameters() const {
+            return this->m_templateParameters.back();
+        }
+
+        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>>& getTemplateParameters() {
             return this->m_templateParameters.back();
         }
 
@@ -402,13 +412,24 @@ namespace pl::core {
             return it != this->m_stringPool.end();
         }
 
+        PatternLanguage& createSubRuntime() {
+            return m_subRuntimes.emplace_back(this->m_patternLanguage->cloneRuntime());
+        }
+
     private:
         void patternCreated(const ptrn::Pattern *pattern);
         void patternDestroyed(const ptrn::Pattern *pattern);
 
         api::FunctionCallback handleDangerousFunctionCall(const std::string &functionName, const api::FunctionCallback &function);
 
+        void setRuntime(PatternLanguage *runtime) {
+            this->m_patternLanguage = runtime;
+        }
+
     private:
+        PatternLanguage *m_patternLanguage;
+        std::list<PatternLanguage> m_subRuntimes;
+
         u64 m_currOffset = 0x00;
         i8 m_currBitOffset = 0;
         bool m_readOrderReversed = false;
@@ -425,7 +446,7 @@ namespace pl::core {
         u64 m_patternLimit = 0;
         u64 m_loopLimit = 0;
 
-        u64 m_currPatternCount = 0;
+        std::atomic<u64> m_currPatternCount = 0;
 
         std::atomic<bool> m_aborted;
 
@@ -487,6 +508,7 @@ namespace pl::core {
             return Palette[index];
         }
 
+        friend class pl::PatternLanguage;
         friend class pl::ptrn::PatternCreationLimiter;
         friend class pl::ptrn::Pattern;
         friend struct UpdateHandler;

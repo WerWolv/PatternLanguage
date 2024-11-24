@@ -30,6 +30,7 @@ add_library(libpl ${LIBRARY_TYPE}
         source/pl/core/ast/ast_node_enum.cpp
         source/pl/core/ast/ast_node_function_call.cpp
         source/pl/core/ast/ast_node_function_definition.cpp
+        source/pl/core/ast/ast_node_imported_type.cpp
         source/pl/core/ast/ast_node_literal.cpp
         source/pl/core/ast/ast_node_lvalue_assignment.cpp
         source/pl/core/ast/ast_node_match_statement.cpp

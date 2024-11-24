@@ -56,7 +56,7 @@ namespace pl::test {
                     arrayEntries.push_back(std::move(array1Bitfield));
                 }
                 array->setParentBitfield(testBitfield.get());
-                array->setEntries(std::move(arrayEntries));
+                array->setEntries(arrayEntries);
                 array->setEndian(std::endian::big);
                 bitfieldFields.push_back(std::move(array));
             }

@@ -134,19 +134,19 @@ namespace pl {
          * @param readFunction Function to read data from the data source
          * @param writerFunction Optional function to write data to the data source
          */
-        void setDataSource(u64 baseAddress, u64 size, std::function<void(u64, u8*, size_t)> readFunction, std::optional<std::function<void(u64, const u8*, size_t)>> writerFunction = std::nullopt) const;
+        void setDataSource(u64 baseAddress, u64 size, std::function<void(u64, u8*, size_t)> readFunction, std::optional<std::function<void(u64, const u8*, size_t)>> writerFunction = std::nullopt);
 
         /**
          * @brief Sets the base address of the data source
          * @param baseAddress Base address of the data source
          */
-        void setDataBaseAddress(u64 baseAddress) const;
+        void setDataBaseAddress(u64 baseAddress);
 
         /**
          * @brief Sets the size of the data source
          * @param size Size of the data source
          */
-        void setDataSize(u64 size) const;
+        void setDataSize(u64 size);
 
         /**
          * @brief Sets the default endianess used in the pattern language
@@ -191,7 +191,7 @@ namespace pl {
          * @brief Sets the include paths for where to look for include files
          * @param paths List of paths to look in
          */
-        void setIncludePaths(const std::vector<std::fs::path>& paths) const;
+        void setIncludePaths(const std::vector<std::fs::path>& paths);
 
         /**
          * @brief Sets the source resolver of the pattern language
@@ -206,13 +206,13 @@ namespace pl {
          * @note If the callback is not set, dangerous functions are disabled
          * @param callback Callback to call
          */
-        void setDangerousFunctionCallHandler(std::function<bool()> callback) const;
+        void setDangerousFunctionCallHandler(std::function<bool()> callback);
 
         /**
          * @brief Sets the console log callback
          * @param callback Callback to call
          */
-        void setLogCallback(const core::LogConsole::Callback &callback) const;
+        void setLogCallback(const core::LogConsole::Callback &callback);
 
         /**
          * @brief Gets the potential error that occurred during the last evaluation of the compiled AST. This does NOT include compilation errors.
@@ -309,7 +309,7 @@ namespace pl {
          * @param parameterCount Number of parameters the function takes
          * @param func Callback to execute when the function is called
          */
-        void addFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) const;
+        void addFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func);
 
         /**
          * @brief Adds a new dangerous built-in function to the pattern language
@@ -318,7 +318,7 @@ namespace pl {
          * @param parameterCount Number of parameters the function takes
          * @param func Callback to execute when the function is called
          */
-        void addDangerousFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) const;
+        void addDangerousFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func);
 
         /**
          * @brief Gets the internals of the pattern language
@@ -386,16 +386,22 @@ namespace pl {
         [[nodiscard]] const std::atomic<u64>& getLastWriteAddress() const;
         [[nodiscard]] const std::atomic<u64>& getLastPatternPlaceAddress() const;
 
+        PatternLanguage cloneRuntime() const;
+
+        [[nodiscard]] bool isSubRuntime() const {
+            return this->m_subRuntime;
+        }
+
     private:
         void flattenPatterns();
 
     private:
-
         Internals m_internals;
         std::vector<core::err::CompileError> m_compileErrors;
         std::optional<core::err::PatternLanguageError> m_currError;
         std::map<std::string, std::string> m_defines;
         std::map<std::string, api::PragmaHandler> m_pragmas;
+        bool m_subRuntime = false;
 
         core::Resolver m_resolvers;
         core::resolvers::FileResolver m_fileResolver;
@@ -414,6 +420,23 @@ namespace pl {
         std::optional<u64> m_startAddress;
         std::endian m_defaultEndian = std::endian::little;
         double m_runningTime = 0;
+
+        u64 m_dataBaseAddress;
+        u64 m_dataSize;
+        std::function<void(u64, u8*, size_t)> m_dataReadFunction;
+        std::optional<std::function<void(u64, const u8*, size_t)>> m_dataWriteFunction;
+
+        std::function<bool()> m_dangerousFunctionCallCallback;
+        core::LogConsole::Callback m_logCallback;
+
+        struct Function {
+            api::Namespace nameSpace;
+            std::string name;
+            api::FunctionParameterCount parameterCount;
+            api::FunctionCallback callback;
+            bool dangerous;
+        };
+        std::vector<Function> m_functions;
     };
 
 }

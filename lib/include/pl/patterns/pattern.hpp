@@ -31,17 +31,22 @@ namespace pl::ptrn {
     public:
         virtual ~IIterable() = default;
         [[nodiscard]] virtual std::vector<std::shared_ptr<Pattern>> getEntries() = 0;
-        virtual void setEntries(std::vector<std::shared_ptr<Pattern>> &&entries) = 0;
+        virtual void setEntries(const std::vector<std::shared_ptr<Pattern>> &entries) = 0;
 
         [[nodiscard]] virtual std::shared_ptr<Pattern> getEntry(size_t index) const = 0;
         virtual void forEachEntry(u64 start, u64 end, const std::function<void(u64, Pattern*)> &callback) = 0;
 
         [[nodiscard]] virtual size_t getEntryCount() const = 0;
+
+        virtual void addEntry(const std::shared_ptr<Pattern> &) {
+            core::err::E0012.throwError("Cannot add entry to this pattern");
+        }
     };
 
     enum class Visibility : u8 {
         Visible,
         HighlightHidden,
+        TreeHidden,
         Hidden
     };
 
@@ -53,6 +58,8 @@ namespace pl::ptrn {
         using IIterable::getEntry;
         using IIterable::forEachEntry;
         using IIterable::getEntryCount;
+
+        friend class core::Evaluator;
     };
 
     class Pattern {
@@ -132,7 +139,7 @@ namespace pl::ptrn {
         void setSize(size_t size) { this->m_size = size; }
 
         [[nodiscard]] std::string getVariableName() const {
-            if (!getEvaluator()->isStringPoolEntryValid(this->m_variableName)) {
+            if (!hasVariableName()) {
                 if (this->m_arrayIndex.has_value())
                     return fmt::format("[{}]", m_arrayIndex.value());
                 else
@@ -140,6 +147,11 @@ namespace pl::ptrn {
             } else
                 return *this->m_variableName;
         }
+
+        [[nodiscard]] bool hasVariableName() const {
+            return getEvaluator()->isStringPoolEntryValid(this->m_variableName);
+        }
+
         void setVariableName(const std::string &name) {
             if (!name.empty()) {
                 auto [it, inserted] = m_evaluator->getStringPool().emplace(name);
@@ -161,7 +173,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] virtual std::string getTypeName() const {
             if (!getEvaluator()->isStringPoolEntryValid(this->m_typeName))
-                return "< ??? >";
+                return "";
             else
                 return *this->m_typeName;
         }
@@ -275,14 +287,22 @@ namespace pl::ptrn {
                 case Visibility::Visible:
                     this->removeAttribute("hidden");
                     this->removeAttribute("highlight_hidden");
+                    this->removeAttribute("tree_hidden");
                     break;
                 case Visibility::Hidden:
                     this->addAttribute("hidden");
                     this->removeAttribute("highlight_hidden");
+                    this->removeAttribute("tree_hidden");
                     break;
                 case Visibility::HighlightHidden:
                     this->removeAttribute("hidden");
                     this->addAttribute("highlight_hidden");
+                    this->removeAttribute("tree_hidden");
+                    break;
+                case Visibility::TreeHidden:
+                    this->removeAttribute("hidden");
+                    this->removeAttribute("highlight_hidden");
+                    this->addAttribute("tree_hidden");
                     break;
             }
         }
@@ -292,6 +312,8 @@ namespace pl::ptrn {
                 return Visibility::Hidden;
             else if (this->hasAttribute("highlight_hidden"))
                 return Visibility::HighlightHidden;
+            else if (this->hasAttribute("tree_hidden"))
+                return Visibility::TreeHidden;
             else
                 return Visibility::Visible;
         }
@@ -508,7 +530,11 @@ namespace pl::ptrn {
             return m_parent;
         }
 
-        void setParent(const Pattern *parent) {
+        [[nodiscard]] Pattern* getParent() {
+            return m_parent;
+        }
+
+        void setParent(Pattern *parent) {
             m_parent = parent;
         }
 
@@ -590,7 +616,7 @@ namespace pl::ptrn {
         core::Evaluator *m_evaluator;
 
         std::unique_ptr<std::map<std::string, std::vector<core::Token::Literal>>> m_attributes;
-        const Pattern *m_parent = nullptr;
+        Pattern *m_parent = nullptr;
         u32 m_line = 0;
 
         std::set<std::string>::const_iterator m_variableName;

@@ -32,14 +32,23 @@ namespace pl::ptrn {
             return this->m_members;
         }
 
-        void setEntries(std::vector<std::shared_ptr<Pattern>> &&entries) override {
-            this->m_members = std::move(entries);
-            this->m_sortedMembers.clear();
+        void addEntry(const std::shared_ptr<Pattern> &entry) override {
+            if (entry == nullptr) return;
 
-            for (const auto &member : this->m_members) {
-                this->m_sortedMembers.push_back(member.get());
-                member->setParent(this);
+            entry->setParent(this);
+            this->m_sortedMembers.push_back(entry.get());
+            this->m_members.push_back(entry);
+        }
+
+        void setEntries(const std::vector<std::shared_ptr<Pattern>> &entries) override {
+            this->m_members.clear();
+
+            for (const auto &member : entries) {
+                addEntry(member);
             }
+
+            if (!this->m_members.empty())
+                this->setBaseColor(this->m_members.front()->getColor());
         }
 
         void forEachEntry(u64 start, u64 end, const std::function<void(u64, Pattern*)>& fn) override {
@@ -122,19 +131,6 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string getFormattedName() const override {
             return "union " + Pattern::getTypeName();
-        }
-
-        void setMembers(std::vector<std::shared_ptr<Pattern>> members) {
-            this->m_members.clear();
-            for (auto &member : members) {
-                if (member == nullptr) continue;
-
-                this->m_sortedMembers.push_back(member.get());
-                this->m_members.push_back(std::move(member));
-            }
-
-            if (!this->m_members.empty())
-                this->setBaseColor(this->m_members.front()->getColor());
         }
 
         [[nodiscard]] std::string toString() const override {

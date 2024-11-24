@@ -59,6 +59,7 @@ namespace pl::gen::fmt {
 
         void formatString(const pl::ptrn::Pattern *pattern) {
             if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
+            if (pattern->getVisibility() == ptrn::Visibility::TreeHidden) return;
 
             const auto string = pattern->toString();
 
@@ -76,6 +77,7 @@ namespace pl::gen::fmt {
         template<typename T>
         void formatArray(T *pattern) {
             if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
+            if (pattern->getVisibility() == ptrn::Visibility::TreeHidden) return;
 
             addLine(pattern->getVariableName(), "[");
             pushIndent();
@@ -89,6 +91,7 @@ namespace pl::gen::fmt {
 
         void formatPointer(ptrn::PatternPointer *pattern) {
             if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
+            if (pattern->getVisibility() == ptrn::Visibility::TreeHidden) return;
 
             addLine(pattern->getVariableName(), "{");
             pushIndent();
@@ -100,6 +103,7 @@ namespace pl::gen::fmt {
         template<typename T>
         void formatObject(T *pattern) {
             if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
+            if (pattern->getVisibility() == ptrn::Visibility::TreeHidden) return;
 
             if (pattern->isSealed()) {
                 formatValue(pattern);
@@ -120,6 +124,7 @@ namespace pl::gen::fmt {
 
         void formatValue(const pl::ptrn::Pattern *pattern) {
             if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
+            if (pattern->getVisibility() == ptrn::Visibility::TreeHidden) return;
 
             if (const auto &functionName = pattern->getReadFormatterFunction(); !functionName.empty())
                 formatString(pattern);

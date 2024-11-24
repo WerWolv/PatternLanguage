@@ -19,6 +19,19 @@
 #include <wolv/utils/string.hpp>
 
 namespace pl {
+
+    static std::string getFunctionName(const api::Namespace &ns, const std::string &name) {
+        std::string functionName;
+
+
+        for (auto &scope : ns)
+            functionName += fmt::format("{}::", scope);
+
+        functionName += name;
+
+        return functionName;
+    }
+
     PatternLanguage::PatternLanguage(const bool addLibStd) {
         this->m_internals = {
             .preprocessor   = std::make_unique<core::Preprocessor>(),
@@ -27,6 +40,8 @@ namespace pl {
             .validator      = std::make_unique<core::Validator>(),
             .evaluator      = std::make_unique<core::Evaluator>()
         };
+
+        this->m_internals.evaluator->setRuntime(this);
 
         if (addLibStd)
             lib::libstd::registerFunctions(*this);
@@ -42,6 +57,8 @@ namespace pl {
     PatternLanguage::PatternLanguage(PatternLanguage &&other) noexcept {
         this->m_internals           = std::move(other.m_internals);
         other.m_internals = { };
+        this->m_internals.evaluator->setRuntime(this);
+
 
         this->m_compileErrors       = std::move(other.m_compileErrors);
         this->m_currError           = std::move(other.m_currError);
@@ -50,22 +67,59 @@ namespace pl {
         this->m_pragmas             = std::move(other.m_pragmas);
 
         this->m_resolvers           = std::move(other.m_resolvers);
-        this->m_fileResolver         = std::move(other.m_fileResolver);
+        this->m_fileResolver        = std::move(other.m_fileResolver);
         this->m_parserManager       = std::move(other.m_parserManager);
 
         this->m_patterns            = std::move(other.m_patterns);
-        this->m_flattenedPatterns    = std::move(other.m_flattenedPatterns);
+        this->m_flattenedPatterns   = std::move(other.m_flattenedPatterns);
         this->m_cleanupCallbacks    = std::move(other.m_cleanupCallbacks);
         this->m_currAST             = std::move(other.m_currAST);
+
+        this->m_dataBaseAddress     = other.m_dataBaseAddress;
+        this->m_dataSize            = other.m_dataSize;
+        this->m_dataReadFunction    = std::move(other.m_dataReadFunction);
+        this->m_dataWriteFunction   = std::move(other.m_dataWriteFunction);
+
+        this->m_logCallback                     = std::move(other.m_logCallback);
+        this->m_dangerousFunctionCallCallback   = std::move(other.m_dangerousFunctionCallCallback);
+
+        this->m_functions           = std::move(other.m_functions);
 
         this->m_running.exchange(other.m_running.load());
         this->m_patternsValid.exchange(other.m_patternsValid.load());
         this->m_aborted.exchange(other.m_aborted.load());
         this->m_runId.exchange(other.m_runId.load());
+        this->m_subRuntime = other.m_subRuntime;
 
         m_startAddress  = std::move(other.m_startAddress);
         m_defaultEndian = other.m_defaultEndian;
         m_runningTime   = other.m_runningTime;
+    }
+
+    PatternLanguage PatternLanguage::cloneRuntime() const {
+        PatternLanguage runtime;
+        runtime.m_defines       = this->m_defines;
+        runtime.m_pragmas       = this->m_pragmas;
+
+        runtime.m_resolvers     = this->m_resolvers;
+        runtime.m_fileResolver  = this->m_fileResolver;
+        runtime.m_parserManager = this->m_parserManager;
+
+        runtime.m_startAddress  = this->m_startAddress;
+        runtime.m_defaultEndian = this->m_defaultEndian;
+
+        runtime.m_dataBaseAddress     = this->m_dataBaseAddress;
+        runtime.m_dataSize            = this->m_dataSize;
+        runtime.m_dataReadFunction    = this->m_dataReadFunction;
+        runtime.m_dataWriteFunction   = this->m_dataWriteFunction;
+
+        runtime.m_logCallback                     = this->m_logCallback;
+        runtime.m_dangerousFunctionCallCallback   = this->m_dangerousFunctionCallCallback;
+
+        runtime.m_functions = this->m_functions;
+        runtime.m_subRuntime = true;
+
+        return runtime;
     }
 
     [[nodiscard]] std::optional<std::vector<pl::core::Token>> PatternLanguage::preprocessString(const std::string& code, const std::string& source) {
@@ -144,6 +198,11 @@ namespace pl {
         this->m_runId += 1;
         ON_SCOPE_EXIT { this->m_running = false; };
 
+        evaluator->setReadOffset(this->m_startAddress.value_or(evaluator->getDataBaseAddress()));
+        evaluator->setDataSource(this->m_dataBaseAddress, this->m_dataSize, this->m_dataReadFunction, this->m_dataWriteFunction);
+        evaluator->setDangerousFunctionCallHandler(this->m_dangerousFunctionCallCallback);
+        evaluator->getConsole().setLogCallback(this->m_logCallback);
+
         ON_SCOPE_EXIT {
             for (const auto &error: this->m_compileErrors) {
                 evaluator->getConsole().log(core::LogConsole::Level::Error, error.format());
@@ -173,7 +232,9 @@ namespace pl {
 
         this->m_currAST = std::move(*ast);
 
-        evaluator->setReadOffset(this->m_startAddress.value_or(evaluator->getDataBaseAddress()));
+        for (const auto &[ns, name, parameterCount, callback, dangerous] : this->m_functions) {
+            this->m_internals.evaluator->addBuiltinFunction(getFunctionName(ns, name), parameterCount, { }, callback, dangerous);
+        }
 
         if (!evaluator->evaluate(this->m_currAST)) {
             auto &console = evaluator->getConsole();
@@ -202,7 +263,10 @@ namespace pl {
         }
 
         auto returnCode = evaluator->getMainResult().value_or(0).toSigned();
-        evaluator->getConsole().log(core::LogConsole::Level::Info, fmt::format("Pattern exited with code: {}", returnCode));
+
+        if (!isSubRuntime()) {
+            evaluator->getConsole().log(core::LogConsole::Level::Info, fmt::format("Pattern exited with code: {}", returnCode));
+        }
 
         if (checkResult && returnCode != 0) {
             this->m_currError = core::err::PatternLanguageError(core::err::E0009.format(fmt::format("Pattern exited with non-zero result: {}", returnCode)), 0, 1);
@@ -252,7 +316,7 @@ namespace pl {
         this->m_aborted = true;
     }
 
-    void PatternLanguage::setIncludePaths(const std::vector<std::fs::path>& paths) const {
+    void PatternLanguage::setIncludePaths(const std::vector<std::fs::path>& paths) {
         this->m_fileResolver.setIncludePaths(paths);
     }
 
@@ -276,8 +340,11 @@ namespace pl {
         this->m_defines.erase(name);
     }
 
-    void PatternLanguage::setDataSource(u64 baseAddress, u64 size, std::function<void(u64, u8*, size_t)> readFunction, std::optional<std::function<void(u64, const u8*, size_t)>> writeFunction) const {
-        this->m_internals.evaluator->setDataSource(baseAddress, size, std::move(readFunction), std::move(writeFunction));
+    void PatternLanguage::setDataSource(u64 baseAddress, u64 size, std::function<void(u64, u8*, size_t)> readFunction, std::optional<std::function<void(u64, const u8*, size_t)>> writeFunction) {
+        this->m_dataBaseAddress = baseAddress;
+        this->m_dataSize = size;
+        this->m_dataReadFunction = std::move(readFunction);
+        this->m_dataWriteFunction = std::move(writeFunction);
     }
 
     const std::atomic<u64>& PatternLanguage::getLastReadAddress() const {
@@ -292,12 +359,12 @@ namespace pl {
         return this->m_internals.evaluator->getLastPatternPlaceAddress();
     }
 
-    void PatternLanguage::setDataBaseAddress(u64 baseAddress) const {
-        this->m_internals.evaluator->setDataBaseAddress(baseAddress);
+    void PatternLanguage::setDataBaseAddress(u64 baseAddress) {
+        this->m_dataBaseAddress = baseAddress;
     }
 
-    void PatternLanguage::setDataSize(u64 size) const {
-        this->m_internals.evaluator->setDataSize(size);
+    void PatternLanguage::setDataSize(u64 size) {
+        this->m_dataSize = size;
     }
 
     void PatternLanguage::setDefaultEndian(std::endian endian) {
@@ -308,8 +375,8 @@ namespace pl {
         this->m_startAddress = address;
     }
 
-    void PatternLanguage::setDangerousFunctionCallHandler(std::function<bool()> callback) const {
-        this->m_internals.evaluator->setDangerousFunctionCallHandler(std::move(callback));
+    void PatternLanguage::setDangerousFunctionCallHandler(std::function<bool()> callback) {
+        this->m_dangerousFunctionCallCallback = std::move(callback);
     }
 
     [[nodiscard]] std::map<std::string, core::Token::Literal> PatternLanguage::getOutVariables() const {
@@ -317,8 +384,8 @@ namespace pl {
     }
 
 
-    void PatternLanguage::setLogCallback(const core::LogConsole::Callback &callback) const {
-        this->m_internals.evaluator->getConsole().setLogCallback(callback);
+    void PatternLanguage::setLogCallback(const core::LogConsole::Callback &callback) {
+        this->m_logCallback = callback;
     }
 
     const std::optional<core::err::PatternLanguageError> &PatternLanguage::getEvalError() const {
@@ -391,25 +458,12 @@ namespace pl {
         this->m_parserManager.setPatternLanguage(this);
     }
 
-
-    static std::string getFunctionName(const api::Namespace &ns, const std::string &name) {
-        std::string functionName;
-
-
-        for (auto &scope : ns)
-            functionName += fmt::format("{}::", scope);
-
-        functionName += name;
-
-        return functionName;
+    void PatternLanguage::addFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) {
+        this->m_functions.emplace_back(ns, name, parameterCount, func, false);
     }
 
-    void PatternLanguage::addFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) const {
-        this->m_internals.evaluator->addBuiltinFunction(getFunctionName(ns, name), parameterCount, { }, func, false);
-    }
-
-    void PatternLanguage::addDangerousFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) const {
-        this->m_internals.evaluator->addBuiltinFunction(getFunctionName(ns, name), parameterCount, { }, func, true);
+    void PatternLanguage::addDangerousFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) {
+        this->m_functions.emplace_back(ns, name, parameterCount, func, true);
     }
 
     void PatternLanguage::flattenPatterns() {
@@ -462,7 +516,8 @@ namespace pl {
 
         std::vector<u32> results;
         for (auto &[interval, pattern] : intervals) {
-            if (pattern->getVisibility() != pl::ptrn::Visibility::Visible)
+            auto visibility = pattern->getVisibility();
+            if (visibility == pl::ptrn::Visibility::Hidden || visibility == pl::ptrn::Visibility::HighlightHidden)
                 continue;
 
             results.push_back(pattern->getColor());
