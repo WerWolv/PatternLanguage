@@ -451,9 +451,6 @@ namespace pl::ptrn {
         }
 
         virtual void clearFormatCache() {
-            if (this->m_cachedDisplayValue == nullptr)
-                return;
-
             this->m_cachedDisplayValue.reset();
         }
 
@@ -463,7 +460,7 @@ namespace pl::ptrn {
 
             this->m_cachedBytes.reset();
 
-            if (auto *iterable = dynamic_cast<IIterable*>(this); iterable != nullptr) {
+            if (auto *iterable = dynamic_cast<IIterable*>(this); iterable != nullptr) [[unlikely]] {
                 iterable->forEachEntry(0, iterable->getEntryCount(), [](u64, Pattern *pattern) {
                     pattern->clearByteCache();
                 });

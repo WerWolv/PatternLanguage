@@ -41,12 +41,13 @@ namespace pl::ptrn {
             };
 
             auto &entry = this->m_template;
-            for (u64 index = start; index < std::min<u64>(end, this->m_entryCount); index++) {
+            const auto count = std::min<u64>(end, this->m_entryCount);
+            for (u64 index = start; index < count; index += 1) {
                 entry->clearFormatCache();
                 entry->clearByteCache();
 
                 entry->setArrayIndex(index);
-                entry->setOffset(this->getOffset() + index * this->m_template->getSize());
+                entry->setOffset(this->getOffset() + index * entry->getSize());
                 evaluator->setCurrentArrayIndex(index);
 
                 fn(index, entry.get());
