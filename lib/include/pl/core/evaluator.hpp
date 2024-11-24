@@ -369,11 +369,12 @@ namespace pl::core {
 
         [[nodiscard]] Evaluator::UpdateHandler updateRuntime(const ast::ASTNode *node);
 
-        void addBreakpoint(u64 line);
-        void removeBreakpoint(u64 line);
+        void addBreakpoint(u32 line);
+        void removeBreakpoint(u32 line);
         void clearBreakpoints();
         void setBreakpointHitCallback(const std::function<void()> &callback);
-        const std::unordered_set<int>& getBreakpoints() const;
+        void setBreakpoints(const std::unordered_set<u32>& breakpoints);
+        const std::unordered_set<u32>& getBreakpoints() const;
         void pauseNextLine();
         std::optional<u32> getPauseLine() const;
 
@@ -471,7 +472,7 @@ namespace pl::core {
 
         std::optional<u64> m_currArrayIndex;
 
-        std::unordered_set<int> m_breakpoints;
+        std::unordered_set<u32> m_breakpoints;
         std::optional<u32> m_lastPauseLine;
         bool m_shouldPauseNextLine = false;
 
