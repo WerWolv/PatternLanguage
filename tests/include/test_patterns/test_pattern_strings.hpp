@@ -6,7 +6,7 @@ namespace pl::test {
 
     class TestPatternStrings : public TestPattern {
     public:
-        TestPatternStrings() : TestPattern("Strings") {
+        TestPatternStrings(core::Evaluator *evaluator) : TestPattern(evaluator, "Strings") {
         }
         ~TestPatternStrings() override = default;
 

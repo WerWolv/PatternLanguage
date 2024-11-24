@@ -11,7 +11,7 @@ namespace pl::test {
 
     class TestPatternStructs : public TestPattern {
     public:
-        TestPatternStructs() : TestPattern("Structs") {
+        TestPatternStructs(core::Evaluator *evaluator) : TestPattern(evaluator, "Structs") {
             auto testStruct = create<PatternStruct>("TestStruct", "testStruct", 0x100, sizeof(i32) + sizeof(u8[0x10]), 0);
 
             auto variable = create<PatternSigned>("s32", "variable", 0x100, sizeof(i32), 0);

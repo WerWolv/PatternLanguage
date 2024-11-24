@@ -5,7 +5,9 @@
 
 #include <pl/patterns/pattern.hpp>
 
-#define TEST(name) (pl::test::TestPattern *)new pl::test::TestPattern##name()
+extern pl::PatternLanguage runtime;
+
+#define TEST(name) (pl::test::TestPattern *)new pl::test::TestPattern##name(runtime.getInternals().evaluator.get())
 
 namespace pl::test {
 
@@ -19,7 +21,7 @@ namespace pl::test {
 
     class TestPattern {
     public:
-        explicit TestPattern(const std::string &name, Mode mode = Mode::Succeeding) : m_mode(mode) {
+        explicit TestPattern(core::Evaluator *evaluator, const std::string &name, Mode mode = Mode::Succeeding) : m_evaluator(evaluator), m_mode(mode) {
             TestPattern::s_tests.insert({ name, this });
         }
 
@@ -30,8 +32,8 @@ namespace pl::test {
         virtual ~TestPattern() = default;
 
         template<typename T>
-        static std::unique_ptr<T> create(const std::string &typeName, const std::string &varName, auto... args) {
-            auto pattern = std::make_unique<T>(nullptr, args...);
+        std::unique_ptr<T> create(const std::string &typeName, const std::string &varName, auto... args) {
+            auto pattern = std::make_unique<T>(m_evaluator, args...);
             pattern->setTypeName(typeName);
             pattern->setVariableName(varName);
 
@@ -61,6 +63,7 @@ namespace pl::test {
 
     private:
         std::vector<std::unique_ptr<ptrn::Pattern>> m_patterns;
+        core::Evaluator *m_evaluator;
         Mode m_mode;
 
         static inline std::map<std::string, TestPattern *> s_tests;

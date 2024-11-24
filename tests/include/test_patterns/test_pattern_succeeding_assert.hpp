@@ -6,7 +6,7 @@ namespace pl::test {
 
     class TestPatternSucceedingAssert : public TestPattern {
     public:
-        TestPatternSucceedingAssert() : TestPattern("SucceedingAssert") {
+        TestPatternSucceedingAssert(core::Evaluator *evaluator) : TestPattern(evaluator, "SucceedingAssert") {
         }
         ~TestPatternSucceedingAssert() override = default;
 

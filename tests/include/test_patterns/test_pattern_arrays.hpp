@@ -12,7 +12,7 @@ namespace pl::test {
 
     class TestPatternArrays : public TestPattern {
     public:
-        TestPatternArrays() : TestPattern("Arrays") {
+        TestPatternArrays(core::Evaluator *evaluator) : TestPattern(evaluator, "Arrays") {
             auto first = create<PatternArrayStatic>("u8", "first", 0x0, sizeof(u8[4]), 0);
             first->setEntries(create<PatternUnsigned>("u8", "", 0x0, sizeof(u8), 0), 4);
 

@@ -15,6 +15,8 @@
 
 #include <fmt/args.h>
 
+pl::PatternLanguage runtime;
+
 using namespace pl;
 using namespace pl::test;
 
@@ -38,7 +40,6 @@ int runTests(int argc, char **argv) {
     bool failing         = currTest->getMode() == Mode::Failing;
 
     wolv::io::File testData("test_data", wolv::io::File::Mode::Read);
-    static pl::PatternLanguage runtime;
     runtime.setDataSource(0x00, testData.getSize(), [&testData](u64 offset, u8 *buffer, u64 size) {
         testData.seek(offset);
         testData.readBuffer(buffer, size);

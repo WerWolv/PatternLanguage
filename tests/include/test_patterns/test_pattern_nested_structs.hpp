@@ -12,7 +12,7 @@ namespace pl::test {
 
     class TestPatternNestedStructs : public TestPattern {
     public:
-        TestPatternNestedStructs() : TestPattern("NestedStructs") {
+        TestPatternNestedStructs(core::Evaluator *evaluator) : TestPattern(evaluator, "NestedStructs") {
             constexpr static size_t HeaderStart = 0x0;
             constexpr static size_t HeaderSize = sizeof(u8);
             constexpr static size_t BodyStart = HeaderSize;

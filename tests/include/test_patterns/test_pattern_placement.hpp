@@ -9,7 +9,7 @@ namespace pl::test {
 
     class TestPatternPlacement : public TestPattern {
     public:
-        TestPatternPlacement() : TestPattern("Placement") {
+        TestPatternPlacement(core::Evaluator *evaluator) : TestPattern(evaluator, "Placement") {
             // placementVar
             {
                 addPattern(create<PatternUnsigned>("u32", "placementVar", 0x00, sizeof(u32), 0));

@@ -7,7 +7,7 @@ namespace pl::test {
 
     class TestPatternPragmas : public TestPattern {
     public:
-        TestPatternPragmas() : TestPattern("Pragmas") {
+        TestPatternPragmas(core::Evaluator *evaluator) : TestPattern(evaluator, "Pragmas") {
         }
         ~TestPatternPragmas() override = default;
 

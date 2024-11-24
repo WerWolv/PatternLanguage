@@ -6,7 +6,7 @@ namespace pl::test {
 
     class TestPatternNamespaces : public TestPattern {
     public:
-        TestPatternNamespaces() : TestPattern("Namespaces") {
+        TestPatternNamespaces(core::Evaluator *evaluator) : TestPattern(evaluator, "Namespaces") {
         }
         ~TestPatternNamespaces() override = default;
 

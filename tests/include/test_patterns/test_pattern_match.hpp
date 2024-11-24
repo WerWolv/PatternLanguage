@@ -9,7 +9,7 @@ namespace pl::test {
 
     class TestPatternMatching : public TestPattern {
     public:
-        TestPatternMatching() : TestPattern("Matching") {
+        TestPatternMatching(core::Evaluator *evaluator) : TestPattern(evaluator, "Matching") {
             auto testStruct = create<PatternStruct>("a", "b", 0x100, 3, 0);
 
             std::vector<std::shared_ptr<Pattern>> members;

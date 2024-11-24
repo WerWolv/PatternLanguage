@@ -6,7 +6,7 @@ namespace pl::test {
 
     class TestPatternMath : public TestPattern {
     public:
-        TestPatternMath() : TestPattern("Math") {
+        TestPatternMath(core::Evaluator *evaluator) : TestPattern(evaluator, "Math") {
         }
         ~TestPatternMath() override = default;
 
