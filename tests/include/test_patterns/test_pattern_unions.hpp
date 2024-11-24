@@ -24,7 +24,7 @@ namespace pl::test {
                 unionMembers.push_back(std::move(variable));
             }
 
-            testUnion->setMembers(std::move(unionMembers));
+            testUnion->setEntries(std::move(unionMembers));
 
             addPattern(std::move(testUnion));
         }

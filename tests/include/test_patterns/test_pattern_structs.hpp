@@ -23,7 +23,7 @@ namespace pl::test {
                 structMembers.push_back(std::move(variable));
                 structMembers.push_back(std::move(array));
             }
-            testStruct->setMembers(std::move(structMembers));
+            testStruct->setEntries(std::move(structMembers));
 
             addPattern(std::move(testStruct));
         }

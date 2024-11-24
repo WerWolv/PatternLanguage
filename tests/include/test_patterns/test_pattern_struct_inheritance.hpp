@@ -20,7 +20,7 @@ namespace pl::test {
                 structMembers.push_back(std::move(inheritedVariable));
                 structMembers.push_back(std::move(ownVariable));
             }
-            childStruct->setMembers(std::move(structMembers));
+            childStruct->setEntries(std::move(structMembers));
 
             addPattern(std::move(childStruct));
         }

@@ -18,7 +18,7 @@ namespace pl::test {
                 structMembers.push_back(create<PatternUnsigned>("u8", "documentedVariable2", 0x01, sizeof(u8), 0));
             }
 
-            structPattern->setMembers(std::move(structMembers));
+            structPattern->setEntries(std::move(structMembers));
 
         }
         ~TestPatternDocComments() override = default;

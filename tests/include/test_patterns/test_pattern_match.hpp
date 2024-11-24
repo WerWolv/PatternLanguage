@@ -19,7 +19,7 @@ namespace pl::test {
                 members.push_back(create<PatternUnsigned>("u8", "l", 0x102, sizeof(u8), 0));
             }
 
-            testStruct->setMembers(std::move(members));
+            testStruct->setEntries(std::move(members));
 
             addPattern(std::move(testStruct));
         }

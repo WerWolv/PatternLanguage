@@ -25,7 +25,7 @@ namespace pl::test {
                 structMembers.push_back(std::move(first));
                 structMembers.push_back(std::move(second));
             }
-            testStruct->setMembers(std::move(structMembers));
+            testStruct->setEntries(std::move(structMembers));
 
             addPattern(std::move(testStruct));
         }
