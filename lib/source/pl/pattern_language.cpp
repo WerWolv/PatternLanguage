@@ -119,7 +119,7 @@ namespace pl {
         }
 
 
-        this->m_internals.preprocessor->setErrors(this->m_compileErrors);
+        this->m_internals.preprocessor->setStoredErrors(this->m_compileErrors);
 
         if (ast->empty() || !ast.has_value())
             return std::nullopt;
