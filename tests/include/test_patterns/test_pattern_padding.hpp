@@ -16,14 +16,12 @@ namespace pl::test {
             auto testStruct = create<PatternStruct>("TestStruct", "testStruct", 0x100, sizeof(i32) + 20 + sizeof(u8[0x10]), 0);
 
             auto variable = create<PatternSigned>("s32", "variable", 0x100, sizeof(i32), 0);
-            auto padding  = create<PatternPadding>("padding", "$padding$", 0x100 + sizeof(i32), 20, 0);
             auto array    = create<PatternArrayStatic>("u8", "array", 0x100 + sizeof(i32) + 20, sizeof(u8[0x10]), 0);
             array->setEntries(create<PatternUnsigned>("u8", "", 0x100 + sizeof(i32) + 20, sizeof(u8), 0), 0x10);
 
             std::vector<std::shared_ptr<Pattern>> structMembers;
             {
                 structMembers.push_back(std::move(variable));
-                structMembers.push_back(std::move(padding));
                 structMembers.push_back(std::move(array));
             }
 

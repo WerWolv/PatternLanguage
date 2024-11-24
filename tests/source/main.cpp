@@ -15,7 +15,6 @@
 
 #include <fmt/args.h>
 
-pl::PatternLanguage runtime;
 
 using namespace pl;
 using namespace pl::test;
@@ -40,6 +39,7 @@ int runTests(int argc, char **argv) {
     bool failing         = currTest->getMode() == Mode::Failing;
 
     wolv::io::File testData("test_data", wolv::io::File::Mode::Read);
+    pl::PatternLanguage runtime;
     runtime.setDataSource(0x00, testData.getSize(), [&testData](u64 offset, u8 *buffer, u64 size) {
         testData.seek(offset);
         testData.readBuffer(buffer, size);
@@ -83,7 +83,7 @@ int runTests(int argc, char **argv) {
     // Imports test
     (void)runtime.addVirtualSource(R"(
         import IB;
-        import IC as C;
+        //import IC as C;
 
         fn a() {};
     )", "IA");
@@ -92,7 +92,7 @@ int runTests(int argc, char **argv) {
         // auto means will be skipped if alias is set, effectively acting as a fallback
         namespace auto B {
 
-            import IC as C;
+            //import IC as C;
 
             fn b() {};
 
@@ -108,7 +108,7 @@ int runTests(int argc, char **argv) {
     auto &test = testPatterns[testName];
     test->m_runtime = &runtime;
     test->setup();
-    auto result = runtime.executeString(test->getSourceCode(), "<test: " + testName + ">");
+    auto result = runtime.executeString(test->getSourceCode());
 
     // Check if compilation succeeded
     if (!result) {

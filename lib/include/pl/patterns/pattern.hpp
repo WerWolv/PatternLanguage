@@ -601,8 +601,8 @@ namespace pl::ptrn {
                    this->m_size == other.m_size &&
                    (this->m_attributes == nullptr || other.m_attributes == nullptr || *this->m_attributes == *other.m_attributes) &&
                    (this->m_endian == other.m_endian || (!this->m_endian.has_value() && other.m_endian == std::endian::native) || (!other.m_endian.has_value() && this->m_endian == std::endian::native)) &&
-                   this->m_variableName == other.m_variableName &&
-                   this->m_typeName == other.m_typeName &&
+                   *this->m_variableName == *other.m_variableName &&
+                   *this->m_typeName == *other.m_typeName &&
                    this->m_section == other.m_section;
         }
 

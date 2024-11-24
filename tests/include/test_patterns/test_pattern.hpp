@@ -5,9 +5,7 @@
 
 #include <pl/patterns/pattern.hpp>
 
-extern pl::PatternLanguage runtime;
-
-#define TEST(name) (pl::test::TestPattern *)new pl::test::TestPattern##name(runtime.getInternals().evaluator.get())
+#define TEST(name) (pl::test::TestPattern *)new pl::test::TestPattern##name(&s_evaluator)
 
 namespace pl::test {
 

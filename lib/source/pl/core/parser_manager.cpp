@@ -13,7 +13,7 @@ using Result = pl::hlp::CompileResult<ParserManager::ParsedData>;
 Result ParserManager::parse(api::Source *source, const std::string &namespacePrefix) {
     OnceIncludePair key = { source, namespacePrefix };
 
-    if (m_onceIncluded.contains( key )) {
+    if (m_onceIncluded.contains(key)) {
         const auto& types = m_parsedTypes[key];
         return Result::good({ {}, types }); // Even if types is empty we still need to return now
     }

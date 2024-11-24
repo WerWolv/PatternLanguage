@@ -27,6 +27,8 @@
 #include "test_patterns/test_pattern_pragmas_fail.hpp"
 #include "test_patterns/test_pattern_format.hpp"
 
+static pl::core::Evaluator s_evaluator;
+
 std::array Tests = {
     TEST(Placement),
     TEST(Structs),

@@ -2542,7 +2542,7 @@ namespace pl::core {
     }
 
     void Parser::includeGuard() {
-        if (m_curr->location.source->source == "<Source Code>")
+        if (m_curr->location.source->mainSource)
             return;
         
         ParserManager::OnceIncludePair key = {const_cast<api::Source *>(m_curr->location.source), ""};

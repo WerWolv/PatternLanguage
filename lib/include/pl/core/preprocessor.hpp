@@ -58,7 +58,7 @@ namespace pl::core {
                 if (auto identifier = std::get_if<Token::Identifier>(&token.value); identifier != nullptr) {
                     if (auto type = identifier->getType(); type > Token::Identifier::IdentifierType::ScopeResolutionUnknown) {
                         auto location = token.location;
-                        if (location.source->source != "<Source Code>")
+                        if (!location.source->mainSource)
                             continue;
                         auto line = location.line;
                         auto column = location.column;

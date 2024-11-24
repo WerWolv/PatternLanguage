@@ -1145,7 +1145,7 @@ namespace pl::core {
     void Evaluator::patternCreated(const ptrn::Pattern *pattern) {
         this->m_lastPatternAddress = pattern->getOffset();
 
-        if (this->m_currPatternCount > this->m_patternLimit && !this->m_evaluated)
+        if (this->m_patternLimit > 0 && this->m_currPatternCount > this->m_patternLimit && !this->m_evaluated)
             err::E0007.throwError(fmt::format("Pattern count exceeded set limit of '{}'.", this->getPatternLimit()), "If this is intended, try increasing the limit using '#pragma pattern_limit <new_limit>'.");
         this->m_currPatternCount++;
 
