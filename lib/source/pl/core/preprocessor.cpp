@@ -314,9 +314,19 @@ namespace pl::core {
         // get include name
         auto *tokenLiteral = std::get_if<Token::Literal>(&m_token->value);
         std::string path;
+
+        const bool isImportAll = m_token->type == Token::Type::Operator && std::get<Token::Operator>(m_token->value) == Token::Operator::Star;
+
         if (m_token->type == Token::Type::String) {
             path = tokenLiteral->toString(false);
-        } else if (m_token->type == Token::Type::Identifier) {
+        } else if (isImportAll || m_token->type == Token::Type::Identifier) {
+            if (isImportAll) {
+                m_token++;
+                saveImport.push_back(*m_token);
+                m_token++;
+                saveImport.push_back(*m_token);
+            }
+
             path = std::get_if<Token::Identifier>(&m_token->value)->get();
             m_token++;
             auto *separator = std::get_if<Token::Separator>(&m_token->value);
