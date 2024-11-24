@@ -3,6 +3,7 @@
 #include <codecvt>
 
 #include <fmt/format.h>
+#include <wolv/hash/crc.hpp>
 
 namespace pl::hlp {
 
@@ -12,6 +13,15 @@ namespace pl::hlp {
 
     std::string to_string(i128 value) {
         return fmt::format("{}", value);
+    }
+
+    std::vector<u8> decodeByteString(const std::string &str) {
+        std::vector<u8> result;
+
+        for (size_t i = 0; i < str.size(); i++)
+            result.push_back(str[i]);
+
+        return result;
     }
 
     std::string encodeByteString(const std::vector<u8> &bytes) {
@@ -54,6 +64,14 @@ namespace pl::hlp {
         }
 
         return result;
+    }
+
+    u32 stringCrc32(const std::string &str) {
+        wolv::hash::Crc<32> crc32(0x04C11DB7, 0xFFFFFFFF, 0xFFFFFFFF, true, true);
+
+        crc32.process(decodeByteString(str));
+
+        return crc32.getResult();
     }
 
     float float16ToFloat32(u16 float16) {
