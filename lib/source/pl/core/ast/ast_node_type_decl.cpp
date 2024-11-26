@@ -69,6 +69,7 @@ namespace pl::core::ast {
         std::vector<std::unique_ptr<ASTNodeLiteral>> templateParamLiterals(this->m_templateParameters.size());
 
         // Get template parameter values before pushing a new template parameter scope so that variables from the parent scope are used before being overwritten.
+        std::string templateTypeString;
         for (size_t i = 0; i < this->m_templateParameters.size(); i++) {
             auto &templateParameter = this->m_templateParameters[i];
             if (auto lvalue = dynamic_cast<ASTNodeLValueAssignment *>(templateParameter.get())) {
@@ -76,11 +77,28 @@ namespace pl::core::ast {
                     err::E0003.throwError(fmt::format("No value set for non-type template parameter {}. This is a bug.", lvalue->getLValueName()), {}, this->getLocation());
                 auto value = lvalue->getRValue()->evaluate(evaluator);
                 if (auto literal = dynamic_cast<ASTNodeLiteral*>(value.get()); literal != nullptr) {
+                    templateTypeString += fmt::format("{}, ", literal->getValue().toString(true));
                     templateParamLiterals[i] = std::unique_ptr<ASTNodeLiteral>(literal);
                     value.release();
-                }
-                else
+                } else {
                     err::E0003.throwError(fmt::format("Template parameter {} is not a literal. This is a bug.", lvalue->getLValueName()), {}, this->getLocation());
+                }
+            } else if (const auto *typeNode = dynamic_cast<ASTNodeTypeDecl*>(templateParameter.get())) {
+                const ASTNode *node = typeNode->getType().get();
+                while (node != nullptr) {
+                    if (const auto *innerNode = dynamic_cast<const ASTNodeTypeDecl*>(node)) {
+                        if (const auto name = innerNode->getName(); !name.empty()) {
+                            templateTypeString += fmt::format("{}, ", name);
+                            break;
+                        }
+                        node = innerNode->getType().get();
+                    }
+                    if (const auto *innerNode = dynamic_cast<const ASTNodeBuiltinType*>(node)) {
+                        templateTypeString += fmt::format("{}, ", Token::getTypeName(innerNode->getType()));
+
+                        break;
+                    }
+                }
             }
         }
 
@@ -136,8 +154,13 @@ namespace pl::core::ast {
             if (!pattern->hasOverriddenEndian())
                 pattern->setEndian(evaluator->getDefaultEndian());
 
-            if (!this->m_name.empty())
-                pattern->setTypeName(this->m_name);
+            if (!this->m_name.empty()) {
+                if (this->m_templateParameters.empty()) {
+                    pattern->setTypeName(this->m_name);
+                } else if (templateTypeString.size() >= 2) {
+                    pattern->setTypeName(fmt::format("{}<{}>", this->m_name, templateTypeString.substr(0, templateTypeString.size() - 2)));
+                }
+            }
 
             if (auto iterable = dynamic_cast<ptrn::IIterable *>(pattern.get()); iterable != nullptr) {
                 auto scope = iterable->getEntries();
