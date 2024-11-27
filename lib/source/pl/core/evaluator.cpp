@@ -279,9 +279,16 @@ namespace pl::core {
                         if (auto lvalue = dynamic_cast<ast::ASTNodeLValueAssignment *>(templateParameter.get())) {
                             if (!lvalue->getRValue())
                                 err::E0003.throwError(fmt::format("No value set for non-type template parameter {}. This is a bug.", lvalue->getLValueName()), {}, type->getLocation());
-                            auto value = lvalue->getRValue()->evaluate(this);
-                            if (auto literal = dynamic_cast<ast::ASTNodeLiteral*>(value.get()); literal != nullptr) {
-                                templateTypeString += fmt::format("{}, ", literal->getValue().toString(true));
+                            auto valueNode = lvalue->getRValue()->evaluate(this);
+                            if (auto literal = dynamic_cast<ast::ASTNodeLiteral*>(valueNode.get()); literal != nullptr) {
+                                const auto &value = literal->getValue();
+
+                                if (value.isString())
+                                    templateTypeString += fmt::format("\"{}\", ", value.toString());
+                                else if (value.isPattern())
+                                    templateTypeString += fmt::format("{}{{ }}, ", value.toPattern()->getTypeName());
+                                else
+                                    templateTypeString += fmt::format("{}, ", value.toString(true));
                             } else {
                                 err::E0003.throwError(fmt::format("Template parameter {} is not a literal. This is a bug.", lvalue->getLValueName()), {}, type->getLocation());
                             }
