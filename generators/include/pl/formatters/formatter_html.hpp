@@ -25,6 +25,7 @@ namespace pl::gen::fmt {
             std::string content;
             for (const auto *pattern : patterns) {
                 if (pattern->getVisibility() == ptrn::Visibility::Hidden) continue;
+                if (pattern->getVisibility() == ptrn::Visibility::TreeHidden) continue;
 
                 // TODO do that in pattern->toString() directly ?
                 std::string result;
@@ -52,7 +53,9 @@ namespace pl::gen::fmt {
 
             bool isHighlighted = false;
             for (const auto pattern : patterns) {
-                if (pattern->getVisibility() != ptrn::Visibility::Visible) continue;
+                auto visibility = pattern->getVisibility();
+                if (visibility == pl::ptrn::Visibility::Hidden || visibility == pl::ptrn::Visibility::HighlightHidden)
+                    continue;
 
                 isHighlighted = true;
             }

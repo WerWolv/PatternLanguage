@@ -14,6 +14,7 @@
 #include <pl/core/ast/ast_node_enum.hpp>
 #include <pl/core/ast/ast_node_function_call.hpp>
 #include <pl/core/ast/ast_node_function_definition.hpp>
+#include <pl/core/ast/ast_node_imported_type.hpp>
 #include <pl/core/ast/ast_node_literal.hpp>
 #include <pl/core/ast/ast_node_lvalue_assignment.hpp>
 #include <pl/core/ast/ast_node_mathematical_expression.hpp>
@@ -422,10 +423,13 @@ namespace pl::core {
     }
 
     // (parseAdditiveExpression) < >>|<< > (parseAdditiveExpression)
-    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseShiftExpression() {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseShiftExpression(const bool inTemplate) {
         auto node = this->parseAdditiveExpression();
         if (node == nullptr)
             return nullptr;
+
+        if (inTemplate && peek(tkn::Operator::BoolGreaterThan))
+            return node;
 
         while (true) {
             if (sequence(tkn::Operator::BoolGreaterThan, tkn::Operator::BoolGreaterThan)) {
@@ -449,13 +453,13 @@ namespace pl::core {
     }
 
     // (parseShiftExpression) & (parseShiftExpression)
-    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseBinaryAndExpression() {
-        auto node = this->parseShiftExpression();
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseBinaryAndExpression(const bool inTemplate) {
+        auto node = this->parseShiftExpression(inTemplate);
         if (node == nullptr)
             return nullptr;
 
         while (sequence(tkn::Operator::BitAnd)) {
-            auto other = this->parseShiftExpression();
+            auto other = this->parseShiftExpression(inTemplate);
             if (other == nullptr)
                 return nullptr;
 
@@ -466,13 +470,13 @@ namespace pl::core {
     }
 
     // (parseBinaryAndExpression) ^ (parseBinaryAndExpression)
-    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseBinaryXorExpression() {
-        auto node = this->parseBinaryAndExpression();
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseBinaryXorExpression(const bool inTemplate) {
+        auto node = this->parseBinaryAndExpression(inTemplate);
         if (node == nullptr)
             return nullptr;
 
         while (sequence(tkn::Operator::BitXor)) {
-            auto other = this->parseBinaryAndExpression();
+            auto other = this->parseBinaryAndExpression(inTemplate);
             if (other == nullptr)
                 return nullptr;
 
@@ -483,15 +487,15 @@ namespace pl::core {
     }
 
     // (parseBinaryXorExpression) | (parseBinaryXorExpression)
-    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseBinaryOrExpression(const bool inMatchRange) {
-        auto node = this->parseBinaryXorExpression();
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseBinaryOrExpression(const bool inTemplate, const bool inMatchRange) {
+        auto node = this->parseBinaryXorExpression(inTemplate);
         if (node == nullptr)
             return nullptr;
 
         if (inMatchRange && peek(tkn::Operator::BitOr))
             return node;
         while (sequence(tkn::Operator::BitOr)) {
-            auto other = this->parseBinaryXorExpression();
+            auto other = this->parseBinaryXorExpression(inTemplate);
             if (other == nullptr)
                 return nullptr;
 
@@ -503,7 +507,7 @@ namespace pl::core {
 
     // (parseBinaryOrExpression) < >=|<=|>|< > (parseBinaryOrExpression)
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseRelationExpression(const bool inTemplate, const bool inMatchRange) {
-        auto node = this->parseBinaryOrExpression(inMatchRange);
+        auto node = this->parseBinaryOrExpression(inTemplate, inMatchRange);
         if (node == nullptr)
             return nullptr;
 
@@ -512,27 +516,27 @@ namespace pl::core {
 
         while (true) {
             if (sequence(tkn::Operator::BoolGreaterThan, tkn::Operator::Assign)) {
-                auto other = this->parseBinaryOrExpression(inMatchRange);
+                auto other = this->parseBinaryOrExpression(inTemplate, inMatchRange);
                 if (other == nullptr)
                     return nullptr;
 
                 node = create<ast::ASTNodeMathematicalExpression>(std::move(node), std::move(other), Token::Operator::BoolGreaterThanOrEqual);
             } else if (sequence(tkn::Operator::BoolLessThan, tkn::Operator::Assign)) {
-                auto other = this->parseBinaryOrExpression(inMatchRange);
+                auto other = this->parseBinaryOrExpression(inTemplate, inMatchRange);
                 if (other == nullptr)
                     return nullptr;
 
                 node = create<ast::ASTNodeMathematicalExpression>(std::move(node), std::move(other), Token::Operator::BoolLessThanOrEqual);
             }
             else if (sequence(tkn::Operator::BoolGreaterThan)) {
-                auto other = this->parseBinaryOrExpression(inMatchRange);
+                auto other = this->parseBinaryOrExpression(inTemplate, inMatchRange);
                 if (other == nullptr)
                     return nullptr;
 
                 node = create<ast::ASTNodeMathematicalExpression>(std::move(node), std::move(other), Token::Operator::BoolGreaterThan);
             }
             else if (sequence(tkn::Operator::BoolLessThan)) {
-                auto other = this->parseBinaryOrExpression(inMatchRange);
+                auto other = this->parseBinaryOrExpression(inTemplate, inMatchRange);
                 if (other == nullptr)
                     return nullptr;
 
@@ -1447,8 +1451,18 @@ namespace pl::core {
     }
 
     // import (String | ( Identifier [dot Identifier] )) (parseNamespaceResolution)? (as parseNamespaceResolution)?
-    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseImportStatement() {
+    hlp::safe_shared_ptr<ast::ASTNode> Parser::parseImportStatement() {
         std::string path;
+
+        bool importAll = false;
+        if (sequence(tkn::Operator::Star)) {
+            if (!sequence(tkn::Keyword::From)) {
+                error("Expected 'from' after import *.");
+                return nullptr;
+            }
+
+            importAll = true;
+        }
 
         if (sequence(tkn::Literal::String)) {
             path = std::get<std::string>(getValue<Token::Literal>(-1));
@@ -1459,6 +1473,22 @@ namespace pl::core {
                 path += "/" + getValue<Token::Identifier>(-1).get();
         } else {
             error("Expected string or identifier after 'import', got {}.", getFormattedToken(0));
+        }
+
+        if (importAll) {
+            if (!sequence(tkn::Keyword::As)) {
+                error("Alias name required for import *.");
+                return nullptr;
+            }
+
+            if (!sequence(tkn::Literal::Identifier)) {
+                error("Expected identifier after 'as', got {}.", getFormattedToken(0));
+                return nullptr;
+            }
+
+            const auto importName = getValue<Token::Identifier>(-1).get();
+
+            return addType(importName, create<ast::ASTNodeImportedType>(path));
         }
 
         // TODO: struct import
@@ -1524,6 +1554,7 @@ namespace pl::core {
         type->setTemplateParameters(unwrapSafePointerVector(std::move(templateList)));
 
         this->m_currTemplateType.push_back(type);
+
         auto replaceType = parseType();
         if (replaceType == nullptr)
             return nullptr;
@@ -2561,12 +2592,23 @@ namespace pl::core {
         return nullptr;
     }
 
+    void Parser::includeGuard() {
+        if (m_curr->location.source->mainSource)
+            return;
+        
+        ParserManager::OnceIncludePair key = {const_cast<api::Source *>(m_curr->location.source), ""};
+        if (m_parserManager->getPreprocessorOnceIncluded().contains(key))
+            m_parserManager->getOnceIncluded().insert(key);
+    }
+
     /* Program */
 
     // <(parseUsingDeclaration)|(parseVariablePlacement)|(parseStruct)>
     std::vector<hlp::safe_shared_ptr<ast::ASTNode>> Parser::parseStatements() {
         hlp::safe_shared_ptr<ast::ASTNode> statement;
         bool requiresSemicolon = true;
+
+        includeGuard();
 
         if (const auto docComment = parseDocComment(true); docComment.has_value())
             this->addGlobalDocComment(docComment->comment);

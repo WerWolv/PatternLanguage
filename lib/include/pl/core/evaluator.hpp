@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <bit>
+#include <list>
 #include <map>
 #include <optional>
 #include <vector>
@@ -18,6 +19,11 @@
 
 #include <fmt/format.h>
 #include <fmt/ranges.h>
+#include <pl/pattern_language.hpp>
+
+namespace pl {
+    class PatternLanguage;
+}
 
 namespace pl::ptrn {
 
@@ -70,6 +76,13 @@ namespace pl::core {
         };
 
         struct Scope {
+            Scope(const std::shared_ptr<pl::ptrn::Pattern>& parentPattern,
+                std::vector<std::shared_ptr<pl::ptrn::Pattern>>* scopePatterns,
+                unsigned long heapSize)
+                : parent(parentPattern),
+                scope(scopePatterns),
+                heapStartSize(heapSize) {}
+
             std::shared_ptr<ptrn::Pattern> parent;
             std::vector<std::shared_ptr<ptrn::Pattern>> *scope;
             std::optional<ParameterPack> parameterPack;
@@ -130,7 +143,11 @@ namespace pl::core {
             this->m_templateParameters.pop_back();
         }
 
-        [[nodiscard]] const std::vector<std::shared_ptr<ptrn::Pattern>>& getTemplateParameters() {
+        [[nodiscard]] const std::vector<std::shared_ptr<ptrn::Pattern>>& getTemplateParameters() const {
+            return this->m_templateParameters.back();
+        }
+
+        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>>& getTemplateParameters() {
             return this->m_templateParameters.back();
         }
 
@@ -362,11 +379,12 @@ namespace pl::core {
 
         [[nodiscard]] Evaluator::UpdateHandler updateRuntime(const ast::ASTNode *node);
 
-        void addBreakpoint(u64 line);
-        void removeBreakpoint(u64 line);
+        void addBreakpoint(u32 line);
+        void removeBreakpoint(u32 line);
         void clearBreakpoints();
         void setBreakpointHitCallback(const std::function<void()> &callback);
-        const std::unordered_set<int>& getBreakpoints() const;
+        void setBreakpoints(const std::unordered_set<u32>& breakpoints);
+        const std::unordered_set<u32>& getBreakpoints() const;
         void pauseNextLine();
         std::optional<u32> getPauseLine() const;
 
@@ -394,13 +412,24 @@ namespace pl::core {
             return it != this->m_stringPool.end();
         }
 
+        PatternLanguage& createSubRuntime() {
+            return m_subRuntimes.emplace_back(this->m_patternLanguage->cloneRuntime());
+        }
+
     private:
         void patternCreated(const ptrn::Pattern *pattern);
         void patternDestroyed(const ptrn::Pattern *pattern);
 
         api::FunctionCallback handleDangerousFunctionCall(const std::string &functionName, const api::FunctionCallback &function);
 
+        void setRuntime(PatternLanguage *runtime) {
+            this->m_patternLanguage = runtime;
+        }
+
     private:
+        PatternLanguage *m_patternLanguage;
+        std::list<PatternLanguage> m_subRuntimes;
+
         u64 m_currOffset = 0x00;
         i8 m_currBitOffset = 0;
         bool m_readOrderReversed = false;
@@ -417,7 +446,7 @@ namespace pl::core {
         u64 m_patternLimit = 0;
         u64 m_loopLimit = 0;
 
-        u64 m_currPatternCount = 0;
+        std::atomic<u64> m_currPatternCount = 0;
 
         std::atomic<bool> m_aborted;
 
@@ -464,7 +493,7 @@ namespace pl::core {
 
         std::optional<u64> m_currArrayIndex;
 
-        std::unordered_set<int> m_breakpoints;
+        std::unordered_set<u32> m_breakpoints;
         std::optional<u32> m_lastPauseLine;
         bool m_shouldPauseNextLine = false;
 
@@ -479,6 +508,7 @@ namespace pl::core {
             return Palette[index];
         }
 
+        friend class pl::PatternLanguage;
         friend class pl::ptrn::PatternCreationLimiter;
         friend class pl::ptrn::Pattern;
         friend struct UpdateHandler;

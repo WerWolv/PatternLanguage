@@ -6,7 +6,7 @@ namespace pl::test {
 
     class TestPatternDocComments : public TestPattern {
     public:
-        TestPatternDocComments() : TestPattern("DocComments") {
+        TestPatternDocComments(core::Evaluator *evaluator) : TestPattern(evaluator, "DocComments") {
 
             auto variablePattern = create<PatternUnsigned>("u8", "documentedVariable", 0x00, sizeof(u8), 0);
 
@@ -18,7 +18,7 @@ namespace pl::test {
                 structMembers.push_back(create<PatternUnsigned>("u8", "documentedVariable2", 0x01, sizeof(u8), 0));
             }
 
-            structPattern->setMembers(std::move(structMembers));
+            structPattern->setEntries(std::move(structMembers));
 
         }
         ~TestPatternDocComments() override = default;

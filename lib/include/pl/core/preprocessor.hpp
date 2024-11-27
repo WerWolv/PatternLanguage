@@ -10,6 +10,7 @@
 #include <pl/api.hpp>
 #include <pl/helpers/types.hpp>
 #include <pl/core/errors/error.hpp>
+#include <pl/core/parser.hpp>
 
 #include <pl/core/errors/result.hpp>
 
@@ -32,34 +33,58 @@ namespace pl::core {
         void addDefine(const std::string &name, const std::string &value = "");
         void addPragmaHandler(const std::string &pragmaType, const api::PragmaHandler &handler);
         void addDirectiveHandler(const Token::Directive &directiveType, const api::DirectiveHandler &handler);
+        void addStatementHandler(const Token::Keyword &statementType, const api::StatementHandler &handler);
         void removePragmaHandler(const std::string &pragmaType);
         void removeDirectiveHandler(const Token::Directive &directiveType);
-        void validateExcludedLocations();
-        void appendExcludedLocation(const ExcludedLocation &location);
+
         void validateOutput();
 
-        [[nodiscard]] auto getExcludedLocations() const {
+        [[nodiscard]] const std::vector<ExcludedLocation>& getExcludedLocations() const {
             return m_excludedLocations;
         }
 
-        [[nodiscard]] auto getResult() const {
-            return this->m_result;
+        [[nodiscard]] const std::vector<Token>& getResult() {
+            return m_result;
         }
 
         [[nodiscard]] auto getOutput() const {
             return this->m_output;
         }
 
-        void setOutput(std::vector<pl::core::Token> tokens) {
-            m_output = tokens;
+        void setOutput(const std::vector<pl::core::Token> &tokens) {
+            u32 j =0;
+            auto tokenCount = m_result.size();
+            for (auto token : tokens) {
+                if (auto identifier = std::get_if<Token::Identifier>(&token.value); identifier != nullptr) {
+                    if (auto type = identifier->getType(); type > Token::Identifier::IdentifierType::ScopeResolutionUnknown) {
+                        auto location = token.location;
+                        if (!location.source->mainSource)
+                            continue;
+                        auto line = location.line;
+                        auto column = location.column;
+                        while (m_result[j].location.line < line) {
+                            if (j >= tokenCount)
+                                break;
+                            j++;
+                        }
+                        while (m_result[j].location.column < column) {
+                            if (j >= tokenCount)
+                                break;
+                            j++;
+                        }
+                        if (auto identifier2 = std::get_if<Token::Identifier>(&m_result[j].value); identifier2 != nullptr)
+                            identifier2->setType(type);
+                    }
+                }
+            }
         }
 
-        [[nodiscard]] auto getErrors() const {
-            return this->m_errors;
+        [[nodiscard]] const std::vector<err::CompileError>& getStoredErrors() const {
+            return this->m_storedErrors;
         }
 
-        void setErrors(std::vector<err::CompileError> errors) {
-            m_errors = errors;
+        void setStoredErrors(const std::vector<err::CompileError> &errors) {
+            m_storedErrors = errors;
         }
 
         [[nodiscard]] bool shouldOnlyIncludeOnce() const {
@@ -70,12 +95,20 @@ namespace pl::core {
             return m_initialized;
         }
 
-        void setResolver(const api::Resolver& resolvers) {
+        [[nodiscard]] const api::Resolver& getResolver() const {
+            return m_resolver;
+        }
+
+        void setResolver(const api::Resolver &resolvers) {
             m_resolver = resolvers;
         }
 
-        auto getNamespaces() const {
+        const std::vector<std::string> &getNamespaces() const {
             return m_namespaces;
+        }
+
+        const auto &getOnceIncludedFiles() const {
+            return m_onceIncludedFiles;
         }
 
         void appendToNamespaces(std::vector<Token> tokens);
@@ -85,6 +118,7 @@ namespace pl::core {
         bool eof();
         Location location() override;
         void removeKey(const Token &token);
+        void nextLine(u32 line);
         // directive handlers
         void handleIfDef(u32 line);
         void handleIfNDef(u32 line);
@@ -92,21 +126,24 @@ namespace pl::core {
         void handleUnDefine(u32 line);
         void handlePragma(u32 line);
         void handleInclude(u32 line);
+        void handleImport(u32 line);
         void handleError(u32 line);
 
         void process();
         void processIfDef(bool add);
 
         void registerDirectiveHandler(const Token::Directive &name, auto memberFunction);
+        void registerStatementHandler(const Token::Keyword &name, auto memberFunction);
 
         std::unordered_map<std::string, api::PragmaHandler> m_pragmaHandlers;
         std::unordered_map<Token::Directive, api::DirectiveHandler> m_directiveHandlers;
+        std::unordered_map<Token::Keyword, api::StatementHandler> m_statementHandlers;
 
         std::unordered_map<std::string, std::vector<Token>> m_defines;
         std::unordered_map<std::string, std::vector<std::pair<std::string, u32>>> m_pragmas;
         std::vector<ExcludedLocation> m_excludedLocations;
 
-        std::set<std::string> m_onceIncludedFiles;
+        std::set<pl::core::ParserManager::OnceIncludePair> m_onceIncludedFiles;
 
         api::Resolver m_resolver = nullptr;
         PatternLanguage *m_runtime = nullptr;
@@ -114,7 +151,7 @@ namespace pl::core {
         std::vector<Token> m_keys;
         std::atomic<bool> m_initialized = false;
         std::vector<Token>::iterator m_token;
-        std::vector<err::CompileError> m_errors;
+        std::vector<err::CompileError> m_storedErrors;
         std::vector<Token> m_result;
         std::vector<Token> m_output;
         std::vector<std::string> m_namespaces;

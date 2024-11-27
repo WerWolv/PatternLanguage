@@ -73,7 +73,8 @@ namespace pl::core {
             Catch,
             Import,
             As,
-            Is
+            Is,
+            From
         };
 
         enum class Operator {

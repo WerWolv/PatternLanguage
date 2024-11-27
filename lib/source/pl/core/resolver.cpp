@@ -1,7 +1,7 @@
 #include <pl/core/resolver.hpp>
 
 namespace pl::core {
-    Resolver::Result Resolver::resolve(const std::string&path) const {
+    Resolver::Result Resolver::resolve(const std::string &path) const {
         hlp::Result<api::Source, std::string> result;
 
         // look for protocol

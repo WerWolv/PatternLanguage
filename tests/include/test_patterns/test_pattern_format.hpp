@@ -9,7 +9,7 @@ namespace pl::test {
 
     class TestPatternFormat : public TestPattern {
     public:
-        TestPatternFormat() : TestPattern("Format", Mode::Succeeding) {
+        TestPatternFormat(core::Evaluator *evaluator) : TestPattern(evaluator, "Format", Mode::Succeeding) {
         }
         ~TestPatternFormat() override = default;
 

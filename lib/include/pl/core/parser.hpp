@@ -149,10 +149,10 @@ namespace pl::core {
         hlp::safe_unique_ptr<ast::ASTNode> parseUnaryExpression();
         hlp::safe_unique_ptr<ast::ASTNode> parseMultiplicativeExpression();
         hlp::safe_unique_ptr<ast::ASTNode> parseAdditiveExpression();
-        hlp::safe_unique_ptr<ast::ASTNode> parseShiftExpression();
-        hlp::safe_unique_ptr<ast::ASTNode> parseBinaryAndExpression();
-        hlp::safe_unique_ptr<ast::ASTNode> parseBinaryXorExpression();
-        hlp::safe_unique_ptr<ast::ASTNode> parseBinaryOrExpression(bool inMatchRange);
+        hlp::safe_unique_ptr<ast::ASTNode> parseShiftExpression(bool inTemplate);
+        hlp::safe_unique_ptr<ast::ASTNode> parseBinaryAndExpression(bool inTemplate);
+        hlp::safe_unique_ptr<ast::ASTNode> parseBinaryXorExpression(bool inTemplate);
+        hlp::safe_unique_ptr<ast::ASTNode> parseBinaryOrExpression(bool inTemplate, bool inMatchRange);
         hlp::safe_unique_ptr<ast::ASTNode> parseBooleanAnd(bool inTemplate, bool inMatchRange);
         hlp::safe_unique_ptr<ast::ASTNode> parseBooleanXor(bool inTemplate, bool inMatchRange);
         hlp::safe_unique_ptr<ast::ASTNode> parseBooleanOr(bool inTemplate, bool inMatchRange);
@@ -184,7 +184,7 @@ namespace pl::core {
         void parseCustomTypeParameters(hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> &type);
         hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> parseType();
         std::vector<hlp::safe_shared_ptr<ast::ASTNode>> parseTemplateList();
-        hlp::safe_unique_ptr<ast::ASTNode> parseImportStatement();
+        hlp::safe_shared_ptr<ast::ASTNode> parseImportStatement();
         hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> parseUsingDeclaration();
         hlp::safe_unique_ptr<ast::ASTNode> parsePadding();
         hlp::safe_unique_ptr<ast::ASTNode> parseMemberVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool constant, const std::string &identifier);
@@ -211,6 +211,8 @@ namespace pl::core {
         std::optional<Token::DocComment> parseDocComment(bool global);
 
         hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> addType(const std::string &name, hlp::safe_unique_ptr<ast::ASTNode> &&node, std::optional<std::endian> endian = std::nullopt);
+
+        void includeGuard();
 
         std::vector<hlp::safe_shared_ptr<ast::ASTNode>> parseTillToken(const Token &endToken) {
             std::vector<hlp::safe_shared_ptr<ast::ASTNode>> program;

@@ -6,7 +6,7 @@ namespace pl::test {
 
     class TestPatternInclude : public TestPattern {
     public:
-        TestPatternInclude() : TestPattern("Include") {
+        TestPatternInclude(core::Evaluator *evaluator) : TestPattern(evaluator, "Include") {
         }
         ~TestPatternInclude() override = default;
 

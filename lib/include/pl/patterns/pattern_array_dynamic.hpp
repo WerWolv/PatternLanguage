@@ -16,7 +16,7 @@ namespace pl::ptrn {
             for (const auto &entry : other.m_entries)
                 entries.push_back(entry->clone());
 
-            this->setEntries(std::move(entries));
+            this->setEntries(entries);
         }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
@@ -128,13 +128,21 @@ namespace pl::ptrn {
             }
         }
 
-        void setEntries(std::vector<std::shared_ptr<Pattern>> &&entries) override {
-            this->m_entries = std::move(entries);
+        void addEntry(const std::shared_ptr<Pattern> &entry) override {
+            if (entry == nullptr) return;
 
-            for (auto &entry : this->m_entries) {
-                if (!entry->hasOverriddenColor())
-                    entry->setBaseColor(this->getColor());
-                entry->setParent(this);
+            if (!entry->hasOverriddenColor())
+                entry->setBaseColor(this->getColor());
+            entry->setParent(this);
+
+            this->m_entries.emplace_back(entry);
+        }
+
+        void setEntries(const std::vector<std::shared_ptr<Pattern>> &entries) override {
+            this->m_entries.clear();
+
+            for (const auto &entry : entries) {
+                addEntry(entry);
             }
 
             if (!this->m_entries.empty())

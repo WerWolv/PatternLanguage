@@ -420,7 +420,7 @@ namespace pl::core::ast {
         if (arrayPattern->getEntryCount() > 0)
             arrayPattern->setTypeName(arrayPattern->getEntry(0)->getTypeName());
 
-        arrayPattern->setEntries(std::move(entries));
+        arrayPattern->setEntries(entries);
         arrayPattern->setSize(size);
 
         return arrayPattern;

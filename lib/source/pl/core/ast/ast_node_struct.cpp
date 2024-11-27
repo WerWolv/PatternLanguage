@@ -60,6 +60,16 @@ namespace pl::core::ast {
         for (auto &member : this->m_members) {
             evaluator->alignToByte();
             for (auto &memberPattern : member->createPatterns(evaluator)) {
+                const auto &varName = memberPattern->getVariableName();
+                if (varName.starts_with("$") && varName.ends_with("$"))
+                    continue;
+
+                for (auto &existingPattern : memberPatterns) {
+                    if (existingPattern->getVariableName() == varName) {
+                        err::E0003.throwError(fmt::format("Redeclaration of identifier '{}'.", existingPattern->getVariableName()), "", member->getLocation());
+                    }
+                }
+
                 memberPattern->setSection(evaluator->getSectionId());
                 memberPatterns.push_back(std::move(memberPattern));
             }
@@ -76,7 +86,7 @@ namespace pl::core::ast {
             }
         }
 
-        pattern->setMembers(memberPatterns);
+        pattern->setEntries(memberPatterns);
 
         if (evaluator->isReadOrderReversed())
             pattern->setAbsoluteOffset(evaluator->getReadOffset());

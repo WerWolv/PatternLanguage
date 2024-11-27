@@ -6,7 +6,7 @@ namespace pl::test {
 
     class TestPatternExtraSemicolon : public TestPattern {
     public:
-        TestPatternExtraSemicolon() : TestPattern("ExtraSemicolon") {
+        TestPatternExtraSemicolon(core::Evaluator *evaluator) : TestPattern(evaluator, "ExtraSemicolon") {
         }
         ~TestPatternExtraSemicolon() override = default;
 

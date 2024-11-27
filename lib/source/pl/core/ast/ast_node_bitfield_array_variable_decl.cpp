@@ -164,7 +164,7 @@ namespace pl::core::ast {
                 bitfieldMember->setParentBitfield(arrayPattern.get());
         }
 
-        arrayPattern->setEntries(std::move(entries));
+        arrayPattern->setEntries(entries);
 
         if (arrayPattern->getEntryCount() > 0)
             arrayPattern->setTypeName(arrayPattern->getEntry(0)->getTypeName());

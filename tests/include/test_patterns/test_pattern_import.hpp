@@ -6,7 +6,7 @@ namespace pl::test {
 
     class TestPatternImport : public TestPattern {
     public:
-        TestPatternImport() : TestPattern("Import") {
+        TestPatternImport(core::Evaluator *evaluator) : TestPattern(evaluator, "Import") {
         }
         ~TestPatternImport() override = default;
 

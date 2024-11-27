@@ -9,7 +9,7 @@ namespace pl::test {
 
     class TestPatternPointers : public TestPattern {
     public:
-        TestPatternPointers() : TestPattern("Pointers") {
+        TestPatternPointers(core::Evaluator *evaluator) : TestPattern(evaluator, "Pointers") {
             // placementPointer
             {
                 auto placementPointer = create<PatternPointer>("", "placementPointer", 0x0C, sizeof(u8), 0);

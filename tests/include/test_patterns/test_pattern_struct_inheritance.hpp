@@ -9,7 +9,7 @@ namespace pl::test {
 
     class TestPatternStructInheritance : public TestPattern {
     public:
-        TestPatternStructInheritance() : TestPattern("StructInheritance") {
+        TestPatternStructInheritance(core::Evaluator *evaluator) : TestPattern(evaluator, "StructInheritance") {
             auto childStruct = create<PatternStruct>("Child", "test", 0x0, sizeof(u32) * 2, 0);
 
             auto inheritedVariable = create<PatternUnsigned>("u32", "inherited", 0x0, sizeof(u32), 0);
@@ -20,7 +20,7 @@ namespace pl::test {
                 structMembers.push_back(std::move(inheritedVariable));
                 structMembers.push_back(std::move(ownVariable));
             }
-            childStruct->setMembers(std::move(structMembers));
+            childStruct->setEntries(std::move(structMembers));
 
             addPattern(std::move(childStruct));
         }
