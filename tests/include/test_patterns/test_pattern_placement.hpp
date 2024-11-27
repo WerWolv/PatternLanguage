@@ -9,7 +9,7 @@ namespace pl::test {
 
     class TestPatternPlacement : public TestPattern {
     public:
-        TestPatternPlacement() : TestPattern("Placement") {
+        TestPatternPlacement(core::Evaluator *evaluator) : TestPattern(evaluator, "Placement") {
             // placementVar
             {
                 addPattern(create<PatternUnsigned>("u32", "placementVar", 0x00, sizeof(u32), 0));
@@ -18,7 +18,7 @@ namespace pl::test {
             // placementArray
             {
                 auto placementArray = create<PatternArrayStatic>("u8", "placementArray", 0x10, sizeof(u8) * 10, 0);
-                placementArray->setEntries(std::move(create<PatternUnsigned>("u8", "", 0x10, sizeof(u8), 0)), 10);
+                placementArray->setEntries(create<PatternUnsigned>("u8", "", 0x10, sizeof(u8), 0), 10);
                 addPattern(std::move(placementArray));
             }
         }

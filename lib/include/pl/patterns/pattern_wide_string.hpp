@@ -76,7 +76,7 @@ namespace pl::ptrn {
             return { };
         }
 
-        void setEntries(std::vector<std::shared_ptr<Pattern>> &&) override {
+        void setEntries(const std::vector<std::shared_ptr<Pattern>> &) override {
 
         }
 

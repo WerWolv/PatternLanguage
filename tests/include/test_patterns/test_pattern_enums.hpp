@@ -8,7 +8,7 @@ namespace pl::test {
 
     class TestPatternEnums : public TestPattern {
     public:
-        TestPatternEnums() : TestPattern("Enums") {
+        TestPatternEnums(core::Evaluator *evaluator) : TestPattern(evaluator, "Enums") {
             auto testEnum = create<PatternEnum>("TestEnum", "testEnum", 0x08, sizeof(u32), 0);
             testEnum->setEnumValues({
                 { "A", { u128(0x00), u128(0x00) } },

@@ -175,13 +175,12 @@ namespace pl::lib::libstd::math {
                     err::E0003.throwError("Size cannot be bigger than sizeof(u128)", {});
  
                 u128 result = 0;
-                u128 endAddr = end / size;
 
                 auto reader = hlp::MemoryReader(ctx, section);
                 reader.seek(start);
                 reader.setEndAddress(end);
 
-                for (u128 addr = start; addr < endAddr; ++addr) {
+                for (u128 addr = start; addr < end; addr += size) {
                     auto bytes = reader.read(addr, size);
 
                     // Copy bytes to u128

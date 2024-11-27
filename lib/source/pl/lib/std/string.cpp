@@ -51,7 +51,9 @@ namespace pl::lib::libstd::string {
                 auto size   = params[2].toUnsigned();
 
                 if (pos > string.length())
-                    err::E0012.throwError(fmt::format("Character index {} out of range of string '{}' with length {}.", pos, string, string.length()));
+                    err::E0012.throwError(fmt::format("The starting position {} out of range for string '{}' with length {}.", pos, string, string.length()));
+                if (pos+size > string.length())
+                    err::E0012.throwError(fmt::format("The ending position {} out of range for string '{}' with length {}.", pos+size, string, string.length()));
 
                 return string.substr(pos, size);
             });

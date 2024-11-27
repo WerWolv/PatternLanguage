@@ -55,6 +55,7 @@ namespace pl::core::tkn {
         const auto Import       = makeKeyword(Token::Keyword::Import, "import");
         const auto As           = makeKeyword(Token::Keyword::As, "as");
         const auto Is           = makeKeyword(Token::Keyword::Is, "is");
+        const auto From         = makeKeyword(Token::Keyword::From, "from");
 
     }
 

@@ -6,7 +6,7 @@ namespace pl::test {
 
     class TestPatternLiterals : public TestPattern {
     public:
-        TestPatternLiterals() : TestPattern("Literals") {
+        TestPatternLiterals(core::Evaluator *evaluator) : TestPattern(evaluator, "Literals") {
         }
         ~TestPatternLiterals() override = default;
 

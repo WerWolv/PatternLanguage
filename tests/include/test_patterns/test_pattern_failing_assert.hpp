@@ -6,7 +6,7 @@ namespace pl::test {
 
     class TestPatternFailingAssert : public TestPattern {
     public:
-        TestPatternFailingAssert() : TestPattern("FailingAssert", Mode::Failing) {
+        TestPatternFailingAssert(core::Evaluator *evaluator) : TestPattern(evaluator, "FailingAssert", Mode::Failing) {
         }
         ~TestPatternFailingAssert() override = default;
 

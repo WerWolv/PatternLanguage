@@ -428,8 +428,8 @@ namespace pl::ptrn {
             }
         }
 
-        void setEntries(std::vector<std::shared_ptr<Pattern>> &&entries) override {
-            this->m_entries = std::move(entries);
+        void setEntries(const std::vector<std::shared_ptr<Pattern>> &entries) override {
+            this->m_entries = entries;
 
             for (auto &entry : this->m_entries) {
                 if (!entry->hasOverriddenColor())
@@ -774,8 +774,8 @@ namespace pl::ptrn {
             return this->m_fields;
         }
 
-        void setEntries(std::vector<std::shared_ptr<Pattern>> &&entries) override {
-            this->m_fields = std::move(entries);
+        void setEntries(const std::vector<std::shared_ptr<Pattern>> &entries) override {
+            this->m_fields = entries;
         }
 
         void setOffset(u64 offset) override {

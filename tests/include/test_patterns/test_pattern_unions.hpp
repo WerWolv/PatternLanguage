@@ -11,7 +11,7 @@ namespace pl::test {
 
     class TestPatternUnions : public TestPattern {
     public:
-        TestPatternUnions() : TestPattern("Unions") {
+        TestPatternUnions(core::Evaluator *evaluator) : TestPattern(evaluator, "Unions") {
             auto testUnion = create<PatternUnion>("TestUnion", "testUnion", 0x200, sizeof(u128), 0);
 
             auto array = create<PatternArrayStatic>("s32", "array", 0x200, sizeof(i32[2]), 0);
@@ -24,7 +24,7 @@ namespace pl::test {
                 unionMembers.push_back(std::move(variable));
             }
 
-            testUnion->setMembers(std::move(unionMembers));
+            testUnion->setEntries(std::move(unionMembers));
 
             addPattern(std::move(testUnion));
         }

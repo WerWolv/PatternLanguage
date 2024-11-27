@@ -225,7 +225,7 @@ namespace pl::core {
 
                 entries.push_back(std::move(entryPattern));
             }
-            pattern->setEntries(std::move(entries));
+            pattern->setEntries(entries);
             pattern->setSection(section);
 
         } else if (section == ptrn::Pattern::HeapSectionId) {
@@ -241,7 +241,7 @@ namespace pl::core {
 
                 entries.push_back(std::move(entryPattern));
             }
-            pattern->setEntries(std::move(entries));
+            pattern->setEntries(entries);
             pattern->setLocal(true);
         } else {
             typePattern->setSection(section);
@@ -251,7 +251,7 @@ namespace pl::core {
                 entryPattern->setOffset(entryPattern->getSize() * i);
                 entries.push_back(std::move(entryPattern));
             }
-            pattern->setEntries(std::move(entries));
+            pattern->setEntries(entries);
             pattern->setSection(section);
         }
 
@@ -756,7 +756,7 @@ namespace pl::core {
 
         const auto &heap = this->getHeap();
 
-        this->m_scopes.emplace_back(std::make_unique<Scope>(parent, &scope, std::nullopt, heap.size()));
+        this->m_scopes.emplace_back(std::make_unique<Scope>(parent, &scope, heap.size()));
 
         if (this->isDebugModeEnabled())
             this->getConsole().log(LogConsole::Level::Debug, fmt::format("Entering new scope #{}. Parent: '{}', Heap Size: {}.", this->m_scopes.size(), parent == nullptr ? "None" : parent->getVariableName(), heap.size()));
@@ -1145,11 +1145,12 @@ namespace pl::core {
         return { this, node };
     }
 
-    void Evaluator::addBreakpoint(u64 line) { this->m_breakpoints.insert(line); }
-    void Evaluator::removeBreakpoint(u64 line) { this->m_breakpoints.erase(line); }
+    void Evaluator::addBreakpoint(u32 line) { this->m_breakpoints.insert(line); }
+    void Evaluator::removeBreakpoint(u32 line) { this->m_breakpoints.erase(line); }
     void Evaluator::clearBreakpoints() { this->m_breakpoints.clear(); }
     void Evaluator::setBreakpointHitCallback(const std::function<void()> &callback) { this->m_breakpointHitCallback = callback; }
-    const std::unordered_set<int> &Evaluator::getBreakpoints() const { return this->m_breakpoints; }
+    const std::unordered_set<u32> &Evaluator::getBreakpoints() const { return this->m_breakpoints; }
+    void Evaluator::setBreakpoints(const std::unordered_set<u32> &breakpoints) { m_breakpoints = breakpoints; }
     void Evaluator::pauseNextLine() { this->m_shouldPauseNextLine = true; }
 
     std::optional<u32> Evaluator::getPauseLine() const {
@@ -1159,7 +1160,7 @@ namespace pl::core {
     void Evaluator::patternCreated(const ptrn::Pattern *pattern) {
         this->m_lastPatternAddress = pattern->getOffset();
 
-        if (this->m_currPatternCount > this->m_patternLimit && !this->m_evaluated)
+        if (this->m_patternLimit > 0 && this->m_currPatternCount > this->m_patternLimit && !this->m_evaluated)
             err::E0007.throwError(fmt::format("Pattern count exceeded set limit of '{}'.", this->getPatternLimit()), "If this is intended, try increasing the limit using '#pragma pattern_limit <new_limit>'.");
         this->m_currPatternCount++;
 

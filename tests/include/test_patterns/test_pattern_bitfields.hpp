@@ -8,7 +8,7 @@ namespace pl::test {
 
     class TestPatternBitfields : public TestPattern {
     public:
-        TestPatternBitfields() : TestPattern("Bitfields") {
+        TestPatternBitfields(core::Evaluator *evaluator) : TestPattern(evaluator, "Bitfields") {
             auto testBitfield = create<PatternBitfield>("TestBitfield", "testBitfield", 0x25, 0, 2 + 3 + (4 * 8), 0);
 
             std::vector<std::shared_ptr<Pattern>> bitfieldFields;
@@ -56,7 +56,7 @@ namespace pl::test {
                     arrayEntries.push_back(std::move(array1Bitfield));
                 }
                 array->setParentBitfield(testBitfield.get());
-                array->setEntries(std::move(arrayEntries));
+                array->setEntries(arrayEntries);
                 array->setEndian(std::endian::big);
                 bitfieldFields.push_back(std::move(array));
             }
@@ -102,7 +102,7 @@ namespace pl::test {
 
     class TestPatternReversedBitfields : public TestPattern {
     public:
-        TestPatternReversedBitfields() : TestPattern("ReversedBitfields") {
+        TestPatternReversedBitfields(core::Evaluator *evaluator) : TestPattern(evaluator, "ReversedBitfields") {
             auto testBitfield = create<PatternBitfield>("Test", "test", 0x02, 0, 16, 0);
 
             std::vector<std::shared_ptr<Pattern>> bitfieldFields;

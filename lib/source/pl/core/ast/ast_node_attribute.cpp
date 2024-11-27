@@ -171,6 +171,35 @@ namespace pl::core::ast {
                 inlinable->setInlined(true);
         }
 
+        if (attributable->hasAttribute("merge", false)) {
+            auto inlinable = dynamic_cast<ptrn::IInlinable *>(pattern.get());
+
+            if (inlinable == nullptr)
+                err::E0008.throwError("[[merge]] attribute can only be used with nested types.", "Try applying it to a struct, union, bitfield or array instead.", node->getLocation());
+            else {
+                auto child = dynamic_cast<ptrn::IIterable*>(pattern.get());
+                auto &currScope = evaluator->getScope(0);
+
+                if (currScope.parent == pattern)
+
+                for (const auto& entry : child->getEntries()) {
+                    for (auto &existingPattern : *currScope.scope) {
+                        if (entry->hasVariableName() && existingPattern->getVariableName() == entry->getVariableName()) {
+                            err::E0008.throwError(fmt::format("Cannot merge '{}' from Type '{}' into current scope. Pattern with this name already exists.", entry->getVariableName(), pattern->getTypeName()), "", node->getLocation());
+                        }
+                    }
+
+                    if (entry->hasAttribute("private"))
+                        continue;
+
+                    currScope.scope->emplace_back(entry);
+                }
+
+                child->setEntries({});
+                pattern->setVisibility(ptrn::Visibility::Hidden);
+            }
+        }
+
         if (auto value = attributable->getFirstAttributeValue({ "format", "format_read" }); value) {
             auto functionName = getAttributeValueAsFunctionName(value, attributable, evaluator);
             auto function = evaluator->findFunction(functionName);
@@ -206,7 +235,7 @@ namespace pl::core::ast {
 
             auto array = dynamic_cast<ptrn::PatternArrayDynamic *>(pattern.get());
             if (array == nullptr)
-                err::E0009.throwError("The [[format_entries_read]] attribute can only be applied to dynamic array types.", {}, node->getLocation());
+                err::E0009.throwError("The [[format_read_entries]] attribute can only be applied to dynamic array types.", {}, node->getLocation());
 
             for (const auto &entry : array->getEntries()) {
                 entry->setReadFormatterFunction(functionName);
@@ -224,7 +253,7 @@ namespace pl::core::ast {
 
             auto array = dynamic_cast<ptrn::PatternArrayDynamic *>(pattern.get());
             if (array == nullptr)
-                err::E0009.throwError("The [[format_entries_write]] attribute can only be applied to dynamic array types.", {}, node->getLocation());
+                err::E0009.throwError("The [[format_write_entries]] attribute can only be applied to dynamic array types.", {}, node->getLocation());
 
             for (const auto &entry : array->getEntries()) {
                 entry->setWriteFormatterFunction(functionName);
@@ -272,7 +301,7 @@ namespace pl::core::ast {
                 i128 pointerValue = pointerPattern->getPointedAtAddress();
 
                 if (function->parameterCount != api::FunctionParameterCount::exactly(1))
-                    err::E0009.throwError(fmt::format("Transform function '{}' needs to take exactly one parameter.", functionName), fmt::format("Try 'fn {}({} value)' instead", functionName, pointerPattern->getPointerType()->getTypeName()), node->getLocation());
+                    err::E0009.throwError(fmt::format("Pointer base function '{}' needs to take exactly one parameter.", functionName), fmt::format("Try 'fn {}({} value)' instead", functionName, pointerPattern->getPointerType()->getTypeName()), node->getLocation());
 
                 auto result = function->func(evaluator, { pointerValue });
 
@@ -291,6 +320,10 @@ namespace pl::core::ast {
 
         if (attributable->hasAttribute("highlight_hidden", false)) {
             pattern->setVisibility(ptrn::Visibility::HighlightHidden);
+        }
+
+        if (attributable->hasAttribute("tree_hidden", false)) {
+            pattern->setVisibility(ptrn::Visibility::TreeHidden);
         }
 
         if (attributable->hasAttribute("sealed", false)) {
