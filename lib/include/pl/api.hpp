@@ -124,6 +124,11 @@ namespace pl::api {
     using FunctionCallback  = std::function<std::optional<core::Token::Literal>(core::Evaluator *, const std::vector<core::Token::Literal> &)>;
 
     /**
+     * @brief A function callback called when a custom built-in type is being instantiated
+     */
+    using TypeCallback = std::function<std::unique_ptr<ptrn::Pattern>(core::Evaluator *, const std::vector<core::Token::Literal> &)>;
+
+    /**
      * @brief A type representing a function.
      */
     struct Function {

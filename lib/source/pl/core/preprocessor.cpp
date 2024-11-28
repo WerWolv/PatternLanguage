@@ -32,6 +32,7 @@ namespace pl::core {
         this->m_defines = other.m_defines;
         this->m_pragmas = other.m_pragmas;
         this->m_onceIncludedFiles = other.m_onceIncludedFiles;
+        this->m_onceImportedFiles = other.m_onceImportedFiles;
         this->m_resolver = other.m_resolver;
         this->m_onlyIncludeOnce = false;
         this->m_pragmaHandlers = other.m_pragmaHandlers;
@@ -233,21 +234,18 @@ namespace pl::core {
     void Preprocessor::handleInclude(u32 line) {
         // get include name
         auto *tokenLiteral = std::get_if<Token::Literal>(&m_token->value);
-        std::string path;
-        if (tokenLiteral != nullptr && m_token->type == Token::Type::String) {
-            path = tokenLiteral->toString(false);
-
-            const bool isInclude = (path.starts_with('"') && path.ends_with('"')) || (path.starts_with('<') && path.ends_with('>'));
-
-            if (isInclude) {
-                path = path.substr(1, path.length() - 2);
-            } else {
-                path = wolv::util::replaceStrings(path, ".", "/");
-            }
-        } else if (tokenLiteral == nullptr || m_token->location.line != line) {
+        if (tokenLiteral == nullptr || m_token->location.line != line ||  m_token->type != Token::Type::String) {
             errorDesc("No file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
             return;
         }
+        auto path = tokenLiteral->toString(false);
+        if (!(path.starts_with('"') && path.ends_with('"')) && !(path.starts_with('<') && path.ends_with('>'))) {
+            errorDesc("Invalid file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
+            return;
+        }
+
+        path = path.substr(1, path.length() - 2);
+
         m_token++;
 
         if(!m_resolver) {
@@ -264,7 +262,8 @@ namespace pl::core {
             return;
         }
         // determine if we should include this file
-        if (this->m_onceIncludedFiles.contains({resolved.value(),""}))
+        if (this->m_onceIncludedFiles.contains({resolved.value(),""}) ||
+            this->m_onceImportedFiles.contains({resolved.value(),""}))
             return;
 
         Preprocessor preprocessor(*this);
@@ -288,6 +287,7 @@ namespace pl::core {
         }
 
         std::ranges::copy(preprocessor.m_onceIncludedFiles.begin(), preprocessor.m_onceIncludedFiles.end(), std::inserter(this->m_onceIncludedFiles, this->m_onceIncludedFiles.begin()));
+        std::ranges::copy(preprocessor.m_onceImportedFiles.begin(), preprocessor.m_onceImportedFiles.end(), std::inserter(this->m_onceImportedFiles, this->m_onceImportedFiles.begin()));
         std::ranges::copy(preprocessor.m_defines.begin(), preprocessor.m_defines.end(), std::inserter(this->m_defines, this->m_defines.begin()));
         std::ranges::copy(preprocessor.m_pragmas.begin(), preprocessor.m_pragmas.end(), std::inserter(this->m_pragmas, this->m_pragmas.begin()));
         std::ranges::copy(preprocessor.m_keys.begin(), preprocessor.m_keys.end(), std::inserter(this->m_keys, this->m_keys.begin()));
@@ -310,24 +310,28 @@ namespace pl::core {
     void Preprocessor::handleImport(u32 line) {
         std::vector<Token> saveImport;
         saveImport.push_back(m_token[-1]);
-        saveImport.push_back(*m_token);
-        // get include name
-        auto *tokenLiteral = std::get_if<Token::Literal>(&m_token->value);
-        std::string path;
-
         const bool isImportAll = m_token->type == Token::Type::Operator && std::get<Token::Operator>(m_token->value) == Token::Operator::Star;
 
-        if (m_token->type == Token::Type::String) {
-            path = tokenLiteral->toString(false);
-        } else if (isImportAll || m_token->type == Token::Type::Identifier) {
-            if (isImportAll) {
-                m_token++;
-                saveImport.push_back(*m_token);
-                m_token++;
-                saveImport.push_back(*m_token);
-            }
+        if (isImportAll) {
+            saveImport.push_back(*m_token);
+            m_token++;
 
-            path = std::get_if<Token::Identifier>(&m_token->value)->get();
+            if (auto keyword = std::get_if<Token::Keyword>(&m_token->value); keyword != nullptr && *keyword != Token::Keyword::From) {
+                error("Expected 'from' after import *.");
+                return;
+            }
+            saveImport.push_back(*m_token);
+            m_token++;
+        }
+        // get include name
+        std::string path;
+
+        if (auto *tokenLiteral = std::get_if<Token::Literal>(&m_token->value); m_token->type == Token::Type::String && tokenLiteral != nullptr) {
+            path = tokenLiteral->toString(false);
+
+        } else if (auto *identifier = std::get_if<Token::Identifier>(&m_token->value); m_token->type == Token::Type::Identifier) {
+            saveImport.push_back(*m_token);
+            path = identifier->get();
             m_token++;
             auto *separator = std::get_if<Token::Separator>(&m_token->value);
             while (separator != nullptr && *separator == Token::Separator::Dot) {
@@ -380,7 +384,8 @@ namespace pl::core {
             return;
         }
         // determine if we should include this file
-        if (this->m_onceIncludedFiles.contains({resolved.value(),alias}))
+        if ((m_onceIncludedFiles.contains({resolved.value(), alias}) && (alias.empty())) ||
+             m_onceImportedFiles.contains({resolved.value(), alias}))
             return;
 
 
@@ -398,13 +403,14 @@ namespace pl::core {
 
         bool shouldInclude = true;
         if (preprocessor.shouldOnlyIncludeOnce()) {
-            auto [iter, added] = this->m_onceIncludedFiles.insert({resolved.value(), alias});
+            auto [iter, added] = this->m_onceImportedFiles.insert({resolved.value(), alias});
             if (!added) {
                 shouldInclude = false;
             }
         }
 
         std::ranges::copy(preprocessor.m_onceIncludedFiles.begin(), preprocessor.m_onceIncludedFiles.end(), std::inserter(this->m_onceIncludedFiles, this->m_onceIncludedFiles.begin()));
+        std::ranges::copy(preprocessor.m_onceImportedFiles.begin(), preprocessor.m_onceImportedFiles.end(), std::inserter(this->m_onceImportedFiles, this->m_onceImportedFiles.begin()));
 
         if (shouldInclude) {
           for (auto entry : saveImport) {
@@ -541,6 +547,7 @@ namespace pl::core {
         if (initialRun) {
             this->m_excludedLocations.clear();
             this->m_onceIncludedFiles.clear();
+            this->m_onceImportedFiles.clear();
             this->m_keys.clear();
             this->m_onlyIncludeOnce = false;
 

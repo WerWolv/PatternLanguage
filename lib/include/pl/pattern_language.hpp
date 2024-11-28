@@ -321,6 +321,15 @@ namespace pl {
         void addDangerousFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func);
 
         /**
+         * @brief Adds a new custom built-in type to the pattern language
+         * @param ns Namespace of the type
+         * @param name Name of the type
+         * @param parameterCount Number of non-type template parameters the type takes
+         * @param func Callback to execute when the type is instantiated
+         */
+        void addType(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::TypeCallback &func);
+
+        /**
          * @brief Gets the internals of the pattern language
          * @warning Generally this should only be used by "IDEs" or other tools that need to access the internals of the pattern language
          * @return Internals
