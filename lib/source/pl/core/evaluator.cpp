@@ -1009,7 +1009,7 @@ namespace pl::core {
 
         this->m_sourceLineLength.clear();
         for (auto &topLevelNode : ast) {
-            if (topLevelNode->getLocation().source->source == "<Source Code>") {
+            if (topLevelNode->getLocation().source->mainSource) {
                 std::vector<std::string> sourceLines = wolv::util::splitString(topLevelNode->getLocation().source->content, "\n");
                 for (const auto &sourceLine : sourceLines) {
                     this->m_sourceLineLength.push_back(sourceLine.size());
