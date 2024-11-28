@@ -426,6 +426,8 @@ namespace pl::core {
             this->m_patternLanguage = runtime;
         }
 
+        std::optional<std::string> findTypeName(const ast::ASTNodeTypeDecl *type);
+
     private:
         PatternLanguage *m_patternLanguage;
         std::list<PatternLanguage> m_subRuntimes;
