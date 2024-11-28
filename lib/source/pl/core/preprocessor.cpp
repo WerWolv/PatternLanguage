@@ -233,21 +233,18 @@ namespace pl::core {
     void Preprocessor::handleInclude(u32 line) {
         // get include name
         auto *tokenLiteral = std::get_if<Token::Literal>(&m_token->value);
-        std::string path;
-        if (tokenLiteral != nullptr && m_token->type == Token::Type::String) {
-            path = tokenLiteral->toString(false);
-
-            const bool isInclude = (path.starts_with('"') && path.ends_with('"')) || (path.starts_with('<') && path.ends_with('>'));
-
-            if (isInclude) {
-                path = path.substr(1, path.length() - 2);
-            } else {
-                path = wolv::util::replaceStrings(path, ".", "/");
-            }
-        } else if (tokenLiteral == nullptr || m_token->location.line != line) {
+        if (tokenLiteral == nullptr || m_token->location.line != line ||  m_token->type != Token::Type::String) {
             errorDesc("No file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
             return;
         }
+        auto path = tokenLiteral->toString(false);
+        if (!(path.starts_with('"') && path.ends_with('"')) && !(path.starts_with('<') && path.ends_with('>'))) {
+            errorDesc("Invalid file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
+            return;
+        }
+
+        path = path.substr(1, path.length() - 2);
+
         m_token++;
 
         if(!m_resolver) {
