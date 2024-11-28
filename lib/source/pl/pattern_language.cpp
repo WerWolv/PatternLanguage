@@ -466,6 +466,10 @@ namespace pl {
         this->m_functions.emplace_back(ns, name, parameterCount, func, true);
     }
 
+    void PatternLanguage::addType(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::TypeCallback &func) {
+        this->m_internals.parser->addBuiltinType(getFunctionName(ns, name), parameterCount, func);
+    }
+
     void PatternLanguage::flattenPatterns() {
 
         for (const auto &[section, patterns] : this->m_patterns) {

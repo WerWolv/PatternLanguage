@@ -44,6 +44,8 @@ namespace pl::core {
             return this->m_globalDocComments;
         }
 
+        ast::ASTNodeTypeDecl* addBuiltinType(const std::string &name, api::FunctionParameterCount parameterCount, const api::TypeCallback &func);
+
         void setParserManager(ParserManager* parserManager) {
             this->m_parserManager = parserManager;
         }
@@ -53,7 +55,7 @@ namespace pl::core {
         TokenIter m_startToken, m_originalPosition, m_partOriginalPosition;
 
         std::vector<hlp::safe_shared_ptr<ast::ASTNodeTypeDecl>> m_currTemplateType;
-        std::map<std::string, hlp::safe_shared_ptr<ast::ASTNodeTypeDecl>> m_types;
+        std::map<std::string, hlp::safe_shared_ptr<ast::ASTNodeTypeDecl>> m_builtinTypes, m_types;
 
         std::vector<TokenIter> m_matchedOptionals;
         std::vector<std::vector<std::string>> m_currNamespace;

@@ -40,6 +40,14 @@ namespace pl::core::ast {
             pattern = std::make_unique<ptrn::PatternPadding>(evaluator, offset, 1, getLocation().line);
         else if (this->m_type == Token::ValueType::String)
             pattern = std::make_unique<ptrn::PatternString>(evaluator, offset, 0, getLocation().line);
+        else if (this->m_type == Token::ValueType::CustomType) {
+            std::vector<Token::Literal> params;
+            for (const auto &param : evaluator->getTemplateParameters()) {
+                params.emplace_back(param->getValue());
+            }
+
+            pattern = m_customTypeCallback(evaluator, params);
+        }
         else if (this->m_type == Token::ValueType::Auto)
             return { };
         else

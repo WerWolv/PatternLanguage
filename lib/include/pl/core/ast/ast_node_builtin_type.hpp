@@ -1,12 +1,16 @@
 #pragma once
 
+#include <pl/api.hpp>
 #include <pl/core/ast/ast_node.hpp>
+#include <functional>
 
 namespace pl::core::ast {
 
     class ASTNodeBuiltinType : public ASTNode {
     public:
         explicit ASTNodeBuiltinType(Token::ValueType type);
+        explicit ASTNodeBuiltinType(api::TypeCallback callback)
+        : m_type(Token::ValueType::CustomType), m_customTypeCallback(std::move(callback)) {}
 
         [[nodiscard]] constexpr const Token::ValueType& getType() const {
             return this->m_type;
@@ -20,6 +24,7 @@ namespace pl::core::ast {
 
     private:
         Token::ValueType m_type;
+        api::TypeCallback m_customTypeCallback;
     };
 
 }

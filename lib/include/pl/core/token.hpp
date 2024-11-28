@@ -134,7 +134,7 @@ namespace pl::core {
             Double         = 0x82,
             String         = 0x15,
             Auto           = 0x16,
-            CustomType     = 0x00,
+            CustomType     = 0x0F,
             Padding        = 0x1F,
 
             Unsigned      = 0xFF00,
