@@ -144,6 +144,7 @@ namespace pl::core {
         std::vector<ExcludedLocation> m_excludedLocations;
 
         std::set<pl::core::ParserManager::OnceIncludePair> m_onceIncludedFiles;
+        std::set<pl::core::ParserManager::OnceIncludePair> m_onceImportedFiles;
 
         api::Resolver m_resolver = nullptr;
         PatternLanguage *m_runtime = nullptr;

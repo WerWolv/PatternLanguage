@@ -32,6 +32,7 @@ namespace pl::core {
         this->m_defines = other.m_defines;
         this->m_pragmas = other.m_pragmas;
         this->m_onceIncludedFiles = other.m_onceIncludedFiles;
+        this->m_onceImportedFiles = other.m_onceImportedFiles;
         this->m_resolver = other.m_resolver;
         this->m_onlyIncludeOnce = false;
         this->m_pragmaHandlers = other.m_pragmaHandlers;
@@ -264,7 +265,8 @@ namespace pl::core {
             return;
         }
         // determine if we should include this file
-        if (this->m_onceIncludedFiles.contains({resolved.value(),""}))
+        if (this->m_onceIncludedFiles.contains({resolved.value(),""}) ||
+            this->m_onceImportedFiles.contains({resolved.value(),""}))
             return;
 
         Preprocessor preprocessor(*this);
@@ -288,6 +290,7 @@ namespace pl::core {
         }
 
         std::ranges::copy(preprocessor.m_onceIncludedFiles.begin(), preprocessor.m_onceIncludedFiles.end(), std::inserter(this->m_onceIncludedFiles, this->m_onceIncludedFiles.begin()));
+        std::ranges::copy(preprocessor.m_onceImportedFiles.begin(), preprocessor.m_onceImportedFiles.end(), std::inserter(this->m_onceImportedFiles, this->m_onceImportedFiles.begin()));
         std::ranges::copy(preprocessor.m_defines.begin(), preprocessor.m_defines.end(), std::inserter(this->m_defines, this->m_defines.begin()));
         std::ranges::copy(preprocessor.m_pragmas.begin(), preprocessor.m_pragmas.end(), std::inserter(this->m_pragmas, this->m_pragmas.begin()));
         std::ranges::copy(preprocessor.m_keys.begin(), preprocessor.m_keys.end(), std::inserter(this->m_keys, this->m_keys.begin()));
@@ -380,7 +383,8 @@ namespace pl::core {
             return;
         }
         // determine if we should include this file
-        if (this->m_onceIncludedFiles.contains({resolved.value(),alias}))
+        if ((m_onceIncludedFiles.contains({resolved.value(), alias}) && (alias.empty())) ||
+             m_onceImportedFiles.contains({resolved.value(), alias}))
             return;
 
 
@@ -398,13 +402,14 @@ namespace pl::core {
 
         bool shouldInclude = true;
         if (preprocessor.shouldOnlyIncludeOnce()) {
-            auto [iter, added] = this->m_onceIncludedFiles.insert({resolved.value(), alias});
+            auto [iter, added] = this->m_onceImportedFiles.insert({resolved.value(), alias});
             if (!added) {
                 shouldInclude = false;
             }
         }
 
         std::ranges::copy(preprocessor.m_onceIncludedFiles.begin(), preprocessor.m_onceIncludedFiles.end(), std::inserter(this->m_onceIncludedFiles, this->m_onceIncludedFiles.begin()));
+        std::ranges::copy(preprocessor.m_onceImportedFiles.begin(), preprocessor.m_onceImportedFiles.end(), std::inserter(this->m_onceImportedFiles, this->m_onceImportedFiles.begin()));
 
         if (shouldInclude) {
           for (auto entry : saveImport) {
@@ -541,6 +546,7 @@ namespace pl::core {
         if (initialRun) {
             this->m_excludedLocations.clear();
             this->m_onceIncludedFiles.clear();
+            this->m_onceImportedFiles.clear();
             this->m_keys.clear();
             this->m_onlyIncludeOnce = false;
 
