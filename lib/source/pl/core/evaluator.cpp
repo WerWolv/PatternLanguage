@@ -9,6 +9,10 @@
 #include <pl/core/ast/ast_node_function_definition.hpp>
 #include <pl/core/ast/ast_node_compound_statement.hpp>
 #include <pl/core/ast/ast_node_control_flow_statement.hpp>
+#include <pl/core/ast/ast_node_lvalue_assignment.hpp>
+#include <pl/core/ast/ast_node_literal.hpp>
+#include <pl/core/ast/ast_node_type_decl.hpp>
+#include <pl/core/ast/ast_node_builtin_type.hpp>
 
 #include <pl/patterns/pattern_unsigned.hpp>
 #include <pl/patterns/pattern_signed.hpp>
@@ -263,12 +267,55 @@ namespace pl::core {
         variables.push_back(std::unique_ptr<ptrn::Pattern>(pattern));
     }
 
-    static std::optional<std::string> findTypeName(const ast::ASTNodeTypeDecl *type) {
-
+    std::optional<std::string> Evaluator::findTypeName(const ast::ASTNodeTypeDecl *type) {
         const ast::ASTNodeTypeDecl *typeDecl = type;
         while (true) {
-            if (auto name = typeDecl->getName(); !name.empty())
-                return name;
+            if (auto name = typeDecl->getName(); !name.empty()) {
+                if (const auto &templateParams = typeDecl->getTemplateParameters(); templateParams.empty()) {
+                    return name;
+                } else {
+                    std::string templateTypeString;
+                    for (const auto &templateParameter : templateParams) {
+                        if (auto lvalue = dynamic_cast<ast::ASTNodeLValueAssignment *>(templateParameter.get())) {
+                            if (!lvalue->getRValue())
+                                err::E0003.throwError(fmt::format("No value set for non-type template parameter {}. This is a bug.", lvalue->getLValueName()), {}, type->getLocation());
+                            auto valueNode = lvalue->getRValue()->evaluate(this);
+                            if (auto literal = dynamic_cast<ast::ASTNodeLiteral*>(valueNode.get()); literal != nullptr) {
+                                const auto &value = literal->getValue();
+
+                                if (value.isString())
+                                    templateTypeString += fmt::format("\"{}\", ", value.toString());
+                                else if (value.isPattern())
+                                    templateTypeString += fmt::format("{}{{ }}, ", value.toPattern()->getTypeName());
+                                else
+                                    templateTypeString += fmt::format("{}, ", value.toString(true));
+                            } else {
+                                err::E0003.throwError(fmt::format("Template parameter {} is not a literal. This is a bug.", lvalue->getLValueName()), {}, type->getLocation());
+                            }
+                        } else if (const auto *typeNode = dynamic_cast<ast::ASTNodeTypeDecl*>(templateParameter.get())) {
+                            const auto *node = typeNode->getType().get();
+                            while (node != nullptr) {
+                                if (const auto *innerNode = dynamic_cast<const ast::ASTNodeTypeDecl*>(node)) {
+                                    if (const auto name = innerNode->getName(); !name.empty()) {
+                                        templateTypeString += fmt::format("{}, ", name);
+                                        break;
+                                    }
+                                    node = innerNode->getType().get();
+                                }
+                                if (const auto *innerNode = dynamic_cast<const ast::ASTNodeBuiltinType*>(node)) {
+                                    templateTypeString += fmt::format("{}, ", Token::getTypeName(innerNode->getType()));
+
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    templateTypeString = templateTypeString.substr(0, templateTypeString.size() - 2);
+
+                    return fmt::format("{}<{}>", name, templateTypeString);
+                }
+            }
             else if (auto innerType = dynamic_cast<ast::ASTNodeTypeDecl*>(typeDecl->getType().get()); innerType != nullptr)
                 typeDecl = innerType;
             else
