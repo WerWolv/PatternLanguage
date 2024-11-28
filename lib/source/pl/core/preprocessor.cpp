@@ -310,24 +310,28 @@ namespace pl::core {
     void Preprocessor::handleImport(u32 line) {
         std::vector<Token> saveImport;
         saveImport.push_back(m_token[-1]);
-        saveImport.push_back(*m_token);
-        // get include name
-        auto *tokenLiteral = std::get_if<Token::Literal>(&m_token->value);
-        std::string path;
-
         const bool isImportAll = m_token->type == Token::Type::Operator && std::get<Token::Operator>(m_token->value) == Token::Operator::Star;
 
-        if (m_token->type == Token::Type::String) {
-            path = tokenLiteral->toString(false);
-        } else if (isImportAll || m_token->type == Token::Type::Identifier) {
-            if (isImportAll) {
-                m_token++;
-                saveImport.push_back(*m_token);
-                m_token++;
-                saveImport.push_back(*m_token);
-            }
+        if (isImportAll) {
+            saveImport.push_back(*m_token);
+            m_token++;
 
-            path = std::get_if<Token::Identifier>(&m_token->value)->get();
+            if (auto keyword = std::get_if<Token::Keyword>(&m_token->value); keyword != nullptr && *keyword != Token::Keyword::From) {
+                error("Expected 'from' after import *.");
+                return;
+            }
+            saveImport.push_back(*m_token);
+            m_token++;
+        }
+        // get include name
+        std::string path;
+
+        if (auto *tokenLiteral = std::get_if<Token::Literal>(&m_token->value); m_token->type == Token::Type::String && tokenLiteral != nullptr) {
+            path = tokenLiteral->toString(false);
+
+        } else if (auto *identifier = std::get_if<Token::Identifier>(&m_token->value); m_token->type == Token::Type::Identifier) {
+            saveImport.push_back(*m_token);
+            path = identifier->get();
             m_token++;
             auto *separator = std::get_if<Token::Separator>(&m_token->value);
             while (separator != nullptr && *separator == Token::Separator::Dot) {
