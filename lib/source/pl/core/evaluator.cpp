@@ -29,6 +29,7 @@
 
 #include <exception>
 #include <utility>
+#include "wolv/utils/string.hpp"
 
 namespace pl::core {
 
@@ -1006,6 +1007,18 @@ namespace pl::core {
         if (this->isDebugModeEnabled())
             this->m_console.log(LogConsole::Level::Debug, fmt::format("Base Pattern size: 0x{:02X} bytes", sizeof(ptrn::Pattern)));
 
+        this->m_sourceLineLength.clear();
+        for (auto &topLevelNode : ast) {
+            if (topLevelNode->getLocation().source->mainSource) {
+                std::vector<std::string> sourceLines = wolv::util::splitString(topLevelNode->getLocation().source->content, "\n");
+                for (const auto &sourceLine : sourceLines) {
+                    this->m_sourceLineLength.push_back(sourceLine.size());
+                }
+                break;
+            }
+        }
+        this->m_lastPauseLine = std::nullopt;
+
         try {
             this->setCurrentControlFlowStatement(ControlFlowStatement::None);
             this->pushScope(nullptr, this->m_patterns);
@@ -1146,17 +1159,19 @@ namespace pl::core {
         if (node != nullptr) {
             auto rawLine = node->getLocation().line;
             const auto line = rawLine + (rawLine == 0);
-            if (evaluator->m_shouldPauseNextLine && evaluator->m_lastPauseLine != line) {
-                evaluator->m_shouldPauseNextLine = false;
-                evaluator->m_lastPauseLine = line;
-                evaluator->m_breakpointHitCallback();
-            } else if (evaluator->m_breakpoints.contains(line)) {
-                if (evaluator->m_lastPauseLine != line) {
-                    evaluator->m_lastPauseLine = line;
-                    evaluator->m_breakpointHitCallback();
+            auto rawColumn = node->getLocation().column;
+            const auto column = rawColumn + (rawColumn == 0);
+            if (node->getLocation().source->mainSource) {
+                if (evaluator->m_lastPauseLine != line && column < evaluator->m_sourceLineLength[line - 1]) {
+                    if (evaluator->m_shouldPauseNextLine || evaluator->m_breakpoints.contains(line)) {
+                        if (evaluator->m_shouldPauseNextLine)
+                            evaluator->m_shouldPauseNextLine = false;
+                        evaluator->m_lastPauseLine = line;
+                        evaluator->m_breakpointHitCallback();
+                    } else if (!evaluator->m_breakpoints.contains(line))
+                        evaluator->m_lastPauseLine = std::nullopt;
                 }
             }
-
             evaluator->m_callStack.push_back(node->clone());
         }
     }
