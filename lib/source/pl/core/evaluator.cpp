@@ -1161,7 +1161,7 @@ namespace pl::core {
             const auto line = rawLine + (rawLine == 0);
             auto rawColumn = node->getLocation().column;
             const auto column = rawColumn + (rawColumn == 0);
-            if (bool isSourceCode = node->getLocation().source == nullptr ? false : node->getLocation().source->source == "<Source Code>";isSourceCode) {
+            if (node->getLocation().source->mainSource) {
                 if (evaluator->m_lastPauseLine != line && column < evaluator->m_sourceLineLength[line - 1]) {
                     if (evaluator->m_shouldPauseNextLine || evaluator->m_breakpoints.contains(line)) {
                         if (evaluator->m_shouldPauseNextLine)
