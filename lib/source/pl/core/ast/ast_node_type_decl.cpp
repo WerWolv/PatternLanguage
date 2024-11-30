@@ -79,8 +79,10 @@ namespace pl::core::ast {
                 if (auto literal = dynamic_cast<ASTNodeLiteral*>(valueNode.get()); literal != nullptr) {
                     const auto &value = literal->getValue();
 
-                    if (value.isString())
-                        templateTypeString += fmt::format("\"{}\", ", value.toString());
+                    if (value.isString()) {
+                        auto string = value.toString();
+                        templateTypeString += fmt::format("\"{}\", ", hlp::encodeByteString({ string.begin(), string.end() }));
+                    }
                     else if (value.isPattern())
                         templateTypeString += fmt::format("{}{{ }}, ", value.toPattern()->getTypeName());
                     else
