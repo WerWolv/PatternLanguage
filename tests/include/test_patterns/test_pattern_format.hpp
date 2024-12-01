@@ -51,7 +51,7 @@ namespace pl::test {
                 auto actualResultBytes = formatter->format(*this->m_runtime);
                 std::string actualResult(actualResultBytes.begin(), actualResultBytes.end());
 
-                std::string inputFilename = "../tests/files/export/"+formatter->getName()+"."+formatter->getFileExtension();
+                std::string inputFilename = "./files/export/"+formatter->getName()+"."+formatter->getFileExtension();
                 wolv::io::File inputFile(inputFilename, wolv::io::File::Mode::Read);
                 if (!inputFile.isValid()) {
                     throw std::runtime_error(fmt::format("Could not open file {}", inputFilename));
