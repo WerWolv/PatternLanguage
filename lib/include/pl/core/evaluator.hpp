@@ -513,7 +513,7 @@ namespace pl::core {
         std::vector<u32> m_sourceLineLength;
 
         constexpr static std::array<u32, 9> DefaultPatternColorPalette = { 0x70B4771F, 0x700E7FFF, 0x702CA02C, 0x702827D6, 0x70BD6794, 0x704B568C, 0x70C277E3, 0x7022BDBC, 0x70CFBE17 };
-        std::vector<u32> m_patternColorPalette;
+        std::vector<u32> m_patternColorPalette = { DefaultPatternColorPalette.begin(), DefaultPatternColorPalette.end() };
         u32 m_patternColorPaletteIndex = 0;
 
         u32 getNextPatternColor() {
