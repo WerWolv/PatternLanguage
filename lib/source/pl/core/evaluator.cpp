@@ -984,9 +984,10 @@ namespace pl::core {
         this->m_stringPool.clear();
 
         this->m_mainResult.reset();
-        this->m_colorIndex = 0;
         this->m_aborted = false;
         this->m_evaluated = false;
+
+        this->setPatternColorPalette(DefaultPatternColorPalette);
 
         if (this->m_allowDangerousFunctions == DangerousFunctionPermission::Deny)
             this->m_allowDangerousFunctions = DangerousFunctionPermission::Ask;

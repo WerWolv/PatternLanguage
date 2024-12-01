@@ -416,6 +416,18 @@ namespace pl::core {
             return m_subRuntimes.emplace_back(this->m_patternLanguage->cloneRuntime());
         }
 
+        void setPatternColorPalette(std::span<const u32> palette) {
+            m_patternColorPalette.clear();
+            m_patternColorPalette.reserve(palette.size());
+
+            std::ranges::copy(palette, std::back_inserter(m_patternColorPalette));
+            resetPatternColorPaletteIndex();
+        }
+
+        void resetPatternColorPaletteIndex() {
+            m_patternColorPaletteIndex = 0;
+        }
+
     private:
         void patternCreated(const ptrn::Pattern *pattern);
         void patternDestroyed(const ptrn::Pattern *pattern);
@@ -439,8 +451,6 @@ namespace pl::core {
         bool m_evaluated = false;
         bool m_debugMode = false;
         LogConsole m_console;
-
-        u32 m_colorIndex = 0;
 
         std::endian m_defaultEndian = std::endian::native;
         u64 m_evalDepth = 0;
@@ -502,13 +512,15 @@ namespace pl::core {
         std::atomic<u64> m_lastReadAddress, m_lastWriteAddress, m_lastPatternAddress;
         std::vector<u32> m_sourceLineLength;
 
+        constexpr static std::array<u32, 9> DefaultPatternColorPalette = { 0x70B4771F, 0x700E7FFF, 0x702CA02C, 0x702827D6, 0x70BD6794, 0x704B568C, 0x70C277E3, 0x7022BDBC, 0x70CFBE17 };
+        std::vector<u32> m_patternColorPalette;
+        u32 m_patternColorPaletteIndex = 0;
+
         u32 getNextPatternColor() {
-            constexpr static std::array Palette = { 0x70B4771F, 0x700E7FFF, 0x702CA02C, 0x702827D6, 0x70BD6794, 0x704B568C, 0x70C277E3, 0x7022BDBC, 0x70CFBE17 };
+            const auto index = this->m_patternColorPaletteIndex;
+            this->m_patternColorPaletteIndex = (index + 1) % m_patternColorPalette.size();
 
-            auto index = this->m_colorIndex;
-            this->m_colorIndex = (this->m_colorIndex + 1) % Palette.size();
-
-            return Palette[index];
+            return m_patternColorPalette[index];
         }
 
         friend class pl::PatternLanguage;
