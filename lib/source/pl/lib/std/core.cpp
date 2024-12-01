@@ -93,9 +93,9 @@ namespace pl::lib::libstd::core {
             runtime.addFunction(nsStdCore, "get_endian", FunctionParameterCount::none(), [](Evaluator *ctx, auto) -> std::optional<Token::Literal> {
                 switch (ctx->getDefaultEndian()) {
                     case std::endian::big:
-                        return 1;
+                        return u128(1);
                     case std::endian::little:
-                        return 2;
+                        return u128(2);
                 }
 
                 return std::nullopt;
@@ -108,7 +108,7 @@ namespace pl::lib::libstd::core {
                 if (index.has_value())
                     return u128(*index);
                 else
-                    return 0;
+                    return u128(0);
             });
 
             /* member_count(pattern) -> count */
@@ -202,6 +202,27 @@ namespace pl::lib::libstd::core {
                     currScope.emplace_back(pattern->clone());
                 }
 
+                return std::nullopt;
+            });
+
+
+            runtime.addFunction(nsStdCore, "set_pattern_palette_colors", FunctionParameterCount::moreThan(0), [](Evaluator *evaluator, auto params) -> std::optional<Token::Literal> {
+                std::vector<u32> colors;
+                for (const auto &param : params) {
+                    auto value = param.toUnsigned();
+                    if (value > std::numeric_limits<u32>::max())
+                        err::E0012.throwError(fmt::format("Invalid color value: 0x{:08X}", value));
+
+                    colors.emplace_back(value);
+                }
+
+                evaluator->setPatternColorPalette(colors);
+
+                return std::nullopt;
+            });
+
+            runtime.addFunction(nsStdCore, "reset_pattern_palette", FunctionParameterCount::none(), [](Evaluator *evaluator, auto) -> std::optional<Token::Literal> {
+                evaluator->resetPatternColorPaletteIndex();
                 return std::nullopt;
             });
         }
