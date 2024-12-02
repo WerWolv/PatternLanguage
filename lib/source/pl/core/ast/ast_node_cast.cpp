@@ -1,5 +1,7 @@
 #include <pl/core/ast/ast_node_cast.hpp>
 
+#include <pl/core/ast/ast_node_literal.hpp>
+
 #include <pl/core/evaluator.hpp>
 #include <pl/patterns/pattern.hpp>
 
@@ -121,9 +123,7 @@ namespace pl::core::ast {
 
         auto literal = dynamic_cast<ASTNodeLiteral *>(evaluatedValue.get());
         if (literal == nullptr)
-            err::E0010.throwError("Cannot use void expression in a cast.", {}, this->getLocation());
-
-        auto type = dynamic_cast<ASTNodeBuiltinType *>(evaluatedType.get())->getType();
+            err::E0004.throwError("Cannot use void expression in a cast.", {}, this->getLocation());
 
         auto typePatterns = this->m_type->createPatterns(evaluator);
         if (typePatterns.empty())

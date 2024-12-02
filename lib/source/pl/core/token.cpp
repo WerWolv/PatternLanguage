@@ -75,7 +75,7 @@ namespace pl::core {
     std::vector<u8> Token::Literal::toBytes() const {
         return std::visit(wolv::util::overloaded {
                 [](const std::string &result) -> std::vector<u8> { return { result.begin(), result.end() }; },
-                [](ptrn::Pattern *result) -> std::vector<u8> { return result->getBytes(); },
+                [](const std::shared_ptr<ptrn::Pattern> &result) -> std::vector<u8> { return result->getBytes(); },
                 [](auto &&result) -> std::vector<u8> {
                     return wolv::util::toContainer<std::vector<u8>>(wolv::util::toBytes(result));
                 }
