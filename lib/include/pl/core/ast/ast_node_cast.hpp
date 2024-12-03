@@ -1,14 +1,12 @@
 #pragma once
 
 #include <pl/core/ast/ast_node.hpp>
-#include <pl/core/ast/ast_node_literal.hpp>
-#include <pl/core/ast/ast_node_builtin_type.hpp>
 
 namespace pl::core::ast {
 
     class ASTNodeCast : public ASTNode {
     public:
-        ASTNodeCast(std::unique_ptr<ASTNode> &&value, std::unique_ptr<ASTNode> &&type);
+        ASTNodeCast(std::unique_ptr<ASTNode> &&value, std::unique_ptr<ASTNode> &&type, bool reinterpret);
         ASTNodeCast(const ASTNodeCast &other);
 
         [[nodiscard]] std::unique_ptr<ASTNode> clone() const override {
@@ -23,6 +21,7 @@ namespace pl::core::ast {
     private:
         std::unique_ptr<ASTNode> m_value;
         std::unique_ptr<ASTNode> m_type;
+        bool m_reinterpret;
     };
 
 }

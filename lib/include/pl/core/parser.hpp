@@ -148,6 +148,7 @@ namespace pl::core {
         hlp::safe_unique_ptr<ast::ASTNode> parseUserDefinedLiteral(hlp::safe_unique_ptr<ast::ASTNode> &&literal);
         hlp::safe_unique_ptr<ast::ASTNode> parseFactor();
         hlp::safe_unique_ptr<ast::ASTNode> parseCastExpression();
+        hlp::safe_unique_ptr<ast::ASTNode> parseReinterpretExpression();
         hlp::safe_unique_ptr<ast::ASTNode> parseUnaryExpression();
         hlp::safe_unique_ptr<ast::ASTNode> parseMultiplicativeExpression();
         hlp::safe_unique_ptr<ast::ASTNode> parseAdditiveExpression();

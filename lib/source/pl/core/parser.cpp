@@ -335,6 +335,18 @@ namespace pl::core {
         return nullptr;
     }
 
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseReinterpretExpression() {
+        auto value = parseFactor();
+
+        if (sequence(tkn::Keyword::As)) {
+            auto type = parseType();
+
+            return create<ast::ASTNodeCast>(std::move(value), std::move(type), true);
+        } else {
+            return value;
+        }
+    }
+
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseCastExpression() {
         if (peek(tkn::Keyword::BigEndian) || peek(tkn::Keyword::LittleEndian) || peek(tkn::ValueType::Any)) {
             auto type        = parseType();
@@ -357,10 +369,10 @@ namespace pl::core {
             if (node == nullptr)
                 return nullptr;
 
-            return create<ast::ASTNodeCast>(std::move(node), std::move(type));
+            return create<ast::ASTNodeCast>(std::move(node), std::move(type), false);
         }
 
-        return parseFactor();
+        return parseReinterpretExpression();
     }
 
     // <+|-|!|~> (parseFactor)

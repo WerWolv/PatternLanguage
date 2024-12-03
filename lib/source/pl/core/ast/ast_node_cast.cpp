@@ -1,5 +1,7 @@
 #include <pl/core/ast/ast_node_cast.hpp>
 
+#include <pl/core/ast/ast_node_literal.hpp>
+
 #include <pl/core/evaluator.hpp>
 #include <pl/patterns/pattern.hpp>
 
@@ -103,11 +105,12 @@ namespace pl::core::ast {
         literal));
     }
 
-    ASTNodeCast::ASTNodeCast(std::unique_ptr<ASTNode> &&value, std::unique_ptr<ASTNode> &&type) : m_value(std::move(value)), m_type(std::move(type)) { }
+    ASTNodeCast::ASTNodeCast(std::unique_ptr<ASTNode> &&value, std::unique_ptr<ASTNode> &&type, bool reinterpret) : m_value(std::move(value)), m_type(std::move(type)), m_reinterpret(reinterpret) { }
 
     ASTNodeCast::ASTNodeCast(const ASTNodeCast &other) : ASTNode(other) {
         this->m_value = other.m_value->clone();
         this->m_type  = other.m_type->clone();
+        this->m_reinterpret = other.m_reinterpret;
     }
 
     [[nodiscard]] std::unique_ptr<ASTNode> ASTNodeCast::evaluate(Evaluator *evaluator) const {
@@ -121,9 +124,7 @@ namespace pl::core::ast {
 
         auto literal = dynamic_cast<ASTNodeLiteral *>(evaluatedValue.get());
         if (literal == nullptr)
-            err::E0010.throwError("Cannot use void expression in a cast.", {}, this->getLocation());
-
-        auto type = dynamic_cast<ASTNodeBuiltinType *>(evaluatedType.get())->getType();
+            err::E0004.throwError("Cannot use void expression in a cast.", {}, this->getLocation());
 
         auto typePatterns = this->m_type->createPatterns(evaluator);
         if (typePatterns.empty())
@@ -133,8 +134,11 @@ namespace pl::core::ast {
 
         auto value = literal->getValue();
 
-        value = std::visit(wolv::util::overloaded {
-                [&](const std::shared_ptr<ptrn::Pattern> &value) -> Token::Literal {
+        if (!m_reinterpret) {
+            auto type = dynamic_cast<ASTNodeBuiltinType *>(evaluatedType.get())->getType();
+
+            value = std::visit(wolv::util::overloaded {
+                [&evaluator, &type](const std::shared_ptr<ptrn::Pattern> &value) -> Token::Literal {
                     if (Token::isInteger(type) && value->getSize() <= Token::getTypeSize(type)) {
                         u128 result = 0;
                         evaluator->readData(value->getOffset(), &result, value->getSize(), value->getSection());
@@ -145,9 +149,27 @@ namespace pl::core::ast {
                     }
                 },
                 [](auto &value) -> Token::Literal { return value; }
-        }, value);
+            }, value);
 
-        return castValue(value, type, typePattern, evaluator);
+            return castValue(value, type, typePattern, evaluator);
+        } else {
+            auto bytes = value.toBytes();
+
+            if (bytes.size() != typePattern->getSize()) {
+                err::E0004.throwError("Types of both sides in reinterpret expression need to have the same size.", fmt::format("Left side is {} bytes, Right side is {} bytes", bytes.size(), typePattern->getSize()), this->getLocation());
+            }
+
+            typePattern->setLocal(true);
+            auto &heap = evaluator->getHeap();
+            typePattern->setOffset(u64(heap.size()) << 32);
+            auto &data = heap.emplace_back();
+
+            data.resize(typePattern->getSize());
+
+            std::memcpy(data.data(), bytes.data(), data.size());
+
+            return std::make_unique<ASTNodeLiteral>(typePattern);
+        }
     }
 
 }
