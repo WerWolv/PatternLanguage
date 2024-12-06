@@ -85,7 +85,7 @@ namespace pl::core::ast {
     } else if (dynamic_cast<ptrn::PatternBoolean *>(pattern.get()) != nullptr) {
         result = std::make_shared<ptrn::PatternBitfieldFieldBoolean>(evaluator, byteOffset, bitOffset, bitSize, getLocation().line);
     } else {
-        err::E0004.throwError("Can only use enums or bools as sized bitfield fields.", {}, this->getLocation());
+        err::E0004.throwError("Bit size specifiers may only be used with unsigned, signed, bool or enum types.", {}, this->getLocation());
     }
 
     return result;
