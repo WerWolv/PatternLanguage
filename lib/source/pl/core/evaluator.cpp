@@ -955,6 +955,13 @@ namespace pl::core {
             err::E0011.throwError(fmt::format("Tried accessing a non-existing section with id {}.", id));
     }
 
+    u64 Evaluator::getSectionSize(u64 id) {
+        if (id == ptrn::Pattern::MainSectionId)
+            return this->getDataSize();
+        else
+            return this->getSection(id).size();
+    }
+
     const std::map<u64, api::Section> &Evaluator::getSections() const {
         return this->m_sections;
     }
