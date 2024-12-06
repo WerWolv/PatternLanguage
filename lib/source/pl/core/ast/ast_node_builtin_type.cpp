@@ -47,6 +47,9 @@ namespace pl::core::ast {
             }
 
             pattern = m_customTypeCallback(evaluator, params);
+
+            // The size of the custom built-in type is only known now so we need to increment the cursor here manually again
+            std::ignore = evaluator->getReadOffsetAndIncrement(pattern->getSize());
         }
         else if (this->m_type == Token::ValueType::Auto)
             return { };
