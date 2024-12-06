@@ -27,6 +27,7 @@ namespace pl::gen::fmt {
         void visit(pl::ptrn::PatternUnsigned& pattern)      override { formatValue(&pattern);       }
         void visit(pl::ptrn::PatternWideCharacter& pattern) override { formatString(&pattern);      }
         void visit(pl::ptrn::PatternWideString& pattern)    override { formatString(&pattern);      }
+        void visit(pl::ptrn::Pattern& pattern)              override { formatString(&pattern);      }
 
         [[nodiscard]] auto getResult() const {
             return this->m_result;
