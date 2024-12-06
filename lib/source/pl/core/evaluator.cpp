@@ -286,11 +286,14 @@ namespace pl::core {
 
                                 if (value.isString()) {
                                     auto string = value.toString();
+                                    if (string.size() > 32)
+                                        string = "...";
                                     templateTypeString += fmt::format("\"{}\", ", hlp::encodeByteString({ string.begin(), string.end() }));
-                                } else if (value.isPattern())
+                                } else if (value.isPattern()) {
                                     templateTypeString += fmt::format("{}{{ }}, ", value.toPattern()->getTypeName());
-                                else
+                                } else {
                                     templateTypeString += fmt::format("{}, ", value.toString(true));
+                                }
                             } else {
                                 err::E0003.throwError(fmt::format("Template parameter {} is not a literal. This is a bug.", lvalue->getLValueName()), {}, type->getLocation());
                             }

@@ -81,12 +81,16 @@ namespace pl::core::ast {
 
                     if (value.isString()) {
                         auto string = value.toString();
+                        if (string.size() > 32)
+                            string = "...";
                         templateTypeString += fmt::format("\"{}\", ", hlp::encodeByteString({ string.begin(), string.end() }));
                     }
-                    else if (value.isPattern())
+                    else if (value.isPattern()) {
                         templateTypeString += fmt::format("{}{{ }}, ", value.toPattern()->getTypeName());
-                    else
+                    }
+                    else {
                         templateTypeString += fmt::format("{}, ", value.toString(true));
+                    }
 
                     templateParamLiterals[i] = std::unique_ptr<ASTNodeLiteral>(literal);
                     valueNode.release();
