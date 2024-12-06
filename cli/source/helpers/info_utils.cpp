@@ -14,11 +14,19 @@ namespace pl::cli {
         return trimmed;
     }
 
+    void clearPragmas(pl::PatternLanguage &runtime) {
+        std::vector<std::string> pragmas;
+        for (const auto &pragma : runtime.getPragmas()) {
+            pragmas.push_back(pragma.first);
+        }
+        for (const auto &pragma : pragmas) {
+            runtime.removePragma(pragma);
+        }
+    }
+
     nlohmann::json runSingleFile(pl::PatternLanguage &runtime, const std::string &patternFilePath) {
         // reset pragma handlers
-        for (const auto &pragma : runtime.getPragmas()) {
-            // runtime.removePragma(pragma.first);
-        }
+        clearPragmas(runtime);
 
         // Setup pragma handlers
 
