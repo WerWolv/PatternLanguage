@@ -16,6 +16,7 @@ namespace pl::cli {
         void addRunSubcommand(CLI::App *app);
         void addDocsSubcommand(CLI::App *app);
         void addInfoSubcommand(CLI::App *app);
+        void addMassInfoSubcommand(CLI::App *app);
 
     }
 
@@ -30,6 +31,7 @@ namespace pl::cli {
         sub::addRunSubcommand(&app);
         sub::addDocsSubcommand(&app);
         sub::addInfoSubcommand(&app);
+        sub::addMassInfoSubcommand(&app);
 
         // Print help message if not enough arguments were provided
         if (args.size() == 0) {
