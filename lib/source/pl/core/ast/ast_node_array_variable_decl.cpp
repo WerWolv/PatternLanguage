@@ -81,17 +81,17 @@ namespace pl::core::ast {
             auto type = this->m_type->evaluate(evaluator);
 
             std::shared_ptr<ptrn::Pattern> pattern;
-            if (dynamic_cast<ASTNodeBuiltinType *>(type.get()) != nullptr)
+            if (auto builtinType = dynamic_cast<ASTNodeBuiltinType *>(type.get()); builtinType != nullptr && builtinType->getType() != Token::ValueType::CustomType)
                 pattern = createStaticArray(evaluator);
-            else if (auto attributable = dynamic_cast<Attributable *>(type.get())) {
-                bool isStaticType = attributable->hasAttribute("static", false);
+            else {
+                bool isStaticType = false;
+                if (auto attributable = dynamic_cast<Attributable *>(type.get()))
+                    isStaticType = attributable->hasAttribute("static", false);
 
                 if (isStaticType)
                     pattern = createStaticArray(evaluator);
                 else
                     pattern = createDynamicArray(evaluator);
-            } else {
-                err::E0001.throwError("Invalid type used in array variable declaration.", { }, this->getLocation());
             }
 
             pattern->setSection(evaluator->getSectionId());
