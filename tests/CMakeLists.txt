@@ -52,6 +52,15 @@ add_custom_command(TARGET pattern_language_tests
         POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/test_data" ${CMAKE_BINARY_DIR})
 
+add_custom_command(TARGET pattern_language_tests
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/files/export/json.json" ${CMAKE_BINARY_DIR}/files/export/json.json)
+
+add_custom_command(TARGET pattern_language_tests
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}//files/export/yaml.yml" ${CMAKE_BINARY_DIR}/files/export/yaml.yml)
+
 foreach (test IN LISTS AVAILABLE_TESTS)
     add_test(NAME "PatternLanguage/${test}" COMMAND pattern_language_tests "${test}" WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 endforeach ()
+add_dependencies(unit_tests ${PROJECT_NAME})
