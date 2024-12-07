@@ -52,9 +52,12 @@ namespace pl::cli::sub {
             // run files and put output in JSON
             nlohmann::json json = {};
             int successParses = 0;
-            for (const auto &patternFile : patternFiles) {
-                std::string relativeFilePath = patternFile.string().substr(patternsFolderPath.string().size() + 1);
-                json[relativeFilePath] = runSingleFile(runtime, patternFile);
+            for (const auto &patternFilepath : patternFiles) {
+                std::string relativeFilePath = patternFilepath.string().substr(patternsFolderPath.string().size() + 1);
+                wolv::io::File patternFile(patternFilepath, wolv::io::File::Mode::Read);
+
+                json[relativeFilePath] = parsePatternMetadata(runtime, patternFile.readString()).toJSON();
+
                 successParses++;
             }
 

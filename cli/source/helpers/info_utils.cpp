@@ -24,45 +24,40 @@ namespace pl::cli {
         }
     }
 
-    nlohmann::json runSingleFile(pl::PatternLanguage &runtime, const std::string &patternFilePath) {
+    PatternMetadata parsePatternMetadata(pl::PatternLanguage &runtime, const std::string &patternData) {
         // reset pragma handlers
         clearPragmas(runtime);
 
         // Setup pragma handlers
-
-        std::string patternName, patternVersion;
-        std::vector<std::string> patternAuthors, patternDescriptions, patternMimes;
-
+        PatternMetadata metadata;
+        std::vector<std::string> descriptions;
         runtime.addPragma("name", [&](auto &, const std::string &value) -> bool {
-            patternName = trimValue(value);
+            metadata.name = trimValue(value);
             return true;
         });
 
         runtime.addPragma("author", [&](auto &, const std::string &value) -> bool {
-            patternAuthors.push_back(trimValue(value));
+            metadata.authors.push_back(trimValue(value));
             return true;
         });
 
         runtime.addPragma("description", [&](auto &, const std::string &value) -> bool {
-            patternDescriptions.push_back(trimValue(value));
+            descriptions.push_back(trimValue(value));
             return true;
         });
 
         runtime.addPragma("MIME", [&](auto &, const std::string &value) -> bool {
-            patternMimes.push_back(trimValue(value));
+            metadata.mimes.push_back(trimValue(value));
             return true;
         });
 
         runtime.addPragma("version", [&](auto &, const std::string &value) -> bool {
-            patternVersion = trimValue(value);
+            metadata.version = trimValue(value);
             return true;
         });
 
-        // Open pattern file
-        wolv::io::File patternFile(patternFilePath, wolv::io::File::Mode::Read);
-
         // Run pattern file
-        auto ast = runtime.parseString(patternFile.readString(), patternFilePath);
+        auto ast = runtime.parseString(patternData, "pattern.hexpat");
         if (!ast.has_value()) {
             auto compileErrors = runtime.getCompileErrors();
             if (compileErrors.size()>0) {
@@ -77,12 +72,19 @@ namespace pl::cli {
             std::exit(EXIT_FAILURE);
         }
 
-        return nlohmann::json {
-            {"name", patternName},
-            {"authors", patternAuthors},
-            {"description", wolv::util::combineStrings(patternDescriptions, ".\n")},
-            {"MIMEs", patternMimes},
-            {"version", patternVersion},
+        // Set description
+        metadata.description = wolv::util::combineStrings(descriptions, ".\n");
+
+        return metadata;
+    }
+
+    nlohmann::json PatternMetadata::toJSON() {
+        return {
+            {"name", name},
+            {"description", description},
+            {"authors", authors},
+            {"mimes", mimes},
+            {"version", version}
         };
     }
 }
