@@ -17,7 +17,5 @@ namespace pl::cli {
         nlohmann::json toJSON();
     };
 
-
-    
     std::optional<PatternMetadata> parsePatternMetadata(pl::PatternLanguage &runtime, const std::string &patternData);
 }
