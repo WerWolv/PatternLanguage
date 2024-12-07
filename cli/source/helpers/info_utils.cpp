@@ -73,7 +73,7 @@ namespace pl::cli {
         }
 
         // Set description
-        metadata.description = wolv::util::combineStrings(descriptions, ".\n");
+        metadata.description = wolv::util::combineStrings(descriptions, "\n");
 
         return metadata;
     }
