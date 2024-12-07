@@ -53,13 +53,9 @@ namespace pl::cli::sub {
             nlohmann::json json = {};
             int successParses = 0;
             for (const auto &patternFile : patternFiles) {
-                    std::string relativeFilePath = patternFile.string().substr(patternsFolderPath.string().size() + 1);
-                try {
-                    json[relativeFilePath] = runSingleFile(runtime, patternFile);
-                    successParses++;
-                } catch (std::exception &e) {
-                    fmt::print(stderr, "Error in file '{}': {}\n", relativeFilePath, e.what());
-                }
+                std::string relativeFilePath = patternFile.string().substr(patternsFolderPath.string().size() + 1);
+                json[relativeFilePath] = runSingleFile(runtime, patternFile);
+                successParses++;
             }
 
             fmt::print("{}\n", json.dump());
