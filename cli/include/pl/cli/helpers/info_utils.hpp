@@ -19,5 +19,5 @@ namespace pl::cli {
 
 
     
-    PatternMetadata parsePatternMetadata(pl::PatternLanguage &runtime, const std::string &patternData);
+    std::optional<PatternMetadata> parsePatternMetadata(pl::PatternLanguage &runtime, const std::string &patternData);
 }

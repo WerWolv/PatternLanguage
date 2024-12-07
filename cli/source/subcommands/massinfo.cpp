@@ -54,9 +54,13 @@ namespace pl::cli::sub {
                 std::string relativeFilePath = patternFilepath.string().substr(patternsFolderPath.string().size() + 1);
                 wolv::io::File patternFile(patternFilepath, wolv::io::File::Mode::Read);
 
-                json[relativeFilePath] = parsePatternMetadata(runtime, patternFile.readString()).toJSON();
-
-                successParses++;
+                auto metadata_opt = parsePatternMetadata(runtime, patternFile.readString());
+                if (metadata_opt.has_value()) {
+                    json[relativeFilePath] = metadata_opt.value().toJSON();
+                    successParses++;
+                } else {
+                    fmt::print(stderr, "Failed to parse pattern file: {}\n", patternFilepath.string());
+                }
             }
 
             fmt::print("{}\n", json.dump());

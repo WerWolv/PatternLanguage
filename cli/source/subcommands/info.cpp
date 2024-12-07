@@ -55,7 +55,12 @@ namespace pl::cli::sub {
 
             // Execute pattern file
             wolv::io::File patternFile(patternFilePath, wolv::io::File::Mode::Read);
-            auto metadata = parsePatternMetadata(runtime, patternFile.readString());
+            auto metadata_opt = parsePatternMetadata(runtime, patternFile.readString());
+            if (!metadata_opt.has_value()) {
+                fmt::print("Error: Failed to parse pattern metadata\n");
+                std::exit(EXIT_FAILURE);
+            }
+            auto metadata = metadata_opt.value();
 
             if (formatterName == "json") {
                 if(!type.empty()) {

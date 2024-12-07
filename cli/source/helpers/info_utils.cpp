@@ -24,7 +24,7 @@ namespace pl::cli {
         }
     }
 
-    PatternMetadata parsePatternMetadata(pl::PatternLanguage &runtime, const std::string &patternData) {
+    std::optional<PatternMetadata> parsePatternMetadata(pl::PatternLanguage &runtime, const std::string &patternData) {
         // reset pragma handlers
         clearPragmas(runtime);
 
@@ -69,7 +69,7 @@ namespace pl::cli {
                 auto error = runtime.getEvalError().value();
                 fmt::print("Pattern Error: {}:{} -> {}\n", error.line, error.column, error.message);
             }
-            std::exit(EXIT_FAILURE);
+            return {};
         }
 
         // Set description
