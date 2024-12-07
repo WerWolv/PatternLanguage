@@ -1,5 +1,6 @@
 #include <pl/pattern_language.hpp>
 #include <pl/core/parser.hpp>
+#include <pl/cli/helpers/info_utils.hpp>
 
 #include <wolv/io/file.hpp>
 #include <wolv/utils/string.hpp>
@@ -11,19 +12,6 @@
 #include <nlohmann/json.hpp>
 
 namespace pl::cli::sub {
-
-    namespace {
-
-        std::string trimValue(const std::string &string) {
-            std::string trimmed = wolv::util::trim(string);
-
-            if (trimmed.starts_with('"') && trimmed.ends_with('"'))
-                trimmed = trimmed.substr(1, trimmed.size() - 2);
-
-            return trimmed;
-        }
-
-    }
 
     void addInfoSubcommand(CLI::App *app) {
         static std::vector<std::fs::path> includePaths;
@@ -67,49 +55,7 @@ namespace pl::cli::sub {
 
             // Execute pattern file
             wolv::io::File patternFile(patternFilePath, wolv::io::File::Mode::Read);
-
-            std::string patternName, patternVersion;
-            std::vector<std::string> patternAuthors, patternDescriptions, patternMimes;
-
-            runtime.addPragma("name", [&](auto &, const std::string &value) -> bool {
-                patternName = trimValue(value);
-                return true;
-            });
-
-            runtime.addPragma("author", [&](auto &, const std::string &value) -> bool {
-                patternAuthors.push_back(trimValue(value));
-                return true;
-            });
-
-            runtime.addPragma("description", [&](auto &, const std::string &value) -> bool {
-                patternDescriptions.push_back(trimValue(value));
-                return true;
-            });
-
-            runtime.addPragma("MIME", [&](auto &, const std::string &value) -> bool {
-                patternMimes.push_back(trimValue(value));
-                return true;
-            });
-
-            runtime.addPragma("version", [&](auto &, const std::string &value) -> bool {
-                patternVersion = trimValue(value);
-                return true;
-            });
-
-            auto ast = runtime.parseString(patternFile.readString(), wolv::util::toUTF8String(patternFile.getPath()));
-            if (!ast.has_value()) {
-                auto compileErrors = runtime.getCompileErrors();
-                if (compileErrors.size()>0) {
-                    fmt::print("Compilation failed\n");
-                    for (const auto &error : compileErrors) {
-                        fmt::print("{}\n", error.format());
-                    }
-                } else {
-                    auto error = runtime.getEvalError().value();
-                    fmt::print("Pattern Error: {}:{} -> {}\n", error.line, error.column, error.message);
-                }
-                std::exit(EXIT_FAILURE);
-            }
+            auto metadata = parsePatternMetadata(runtime, patternFile.readString());
 
             if (formatterName == "json") {
                 if(!type.empty()) {
@@ -117,39 +63,30 @@ namespace pl::cli::sub {
                     std::exit(EXIT_FAILURE);
                 }
 
-                nlohmann::json json = {
-                    {"name", patternName},
-                    {"authors", patternAuthors},
-                    {"description", wolv::util::combineStrings(patternDescriptions, ".\n")},
-                    {"MIMEs", patternMimes},
-                    {"version", patternVersion},
-                };
-                fmt::print("{}\n", json.dump());
+                fmt::print("{}\n", metadata.toJSON().dump());
             } else if (formatterName == "pretty") {
                 if (type.empty()) {
-                        fmt::print("Pattern name: {}\n", patternName);
-                        fmt::print("Authors: {}\n", wolv::util::combineStrings(patternAuthors, ", "));
-                        fmt::print("Description: {}\n", wolv::util::combineStrings(patternDescriptions, ".\n"));
-                        fmt::print("MIMEs: {}\n", wolv::util::combineStrings(patternMimes, ", "));
-                        fmt::print("Version: {}\n", patternVersion);
+                        fmt::print("Pattern name: {}\n", metadata.name);
+                        fmt::print("Authors: {}\n", wolv::util::combineStrings(metadata.authors, ", "));
+                        fmt::print("Description: {}\n", metadata.description);
+                        fmt::print("MIMEs: {}\n", wolv::util::combineStrings(metadata.mimes, ", "));
+                        fmt::print("Version: {}\n", metadata.version);
                 } else if (type == "name") {
-                    if (!patternName.empty())
-                        fmt::print("{}\n", patternName);
+                    if (!metadata.name.empty())
+                        fmt::print("{}\n", metadata.name);
                 } else if (type == "authors") {
-                    for (const auto &author : patternAuthors) {
+                    for (const auto &author : metadata.authors) {
                         fmt::print("{}\n", author);
                     }
                 } else if (type == "description") {
-                    for (const auto &description : patternDescriptions) {
-                        fmt::print("{}\n", description);
-                    }
+                    fmt::print("{}\n", metadata.description);
                 } else if (type == "mime") {
-                    for (const auto &mime : patternMimes) {
+                    for (const auto &mime : metadata.mimes) {
                         fmt::print("{}\n", mime);
                     }
                 } else if (type == "version") {
-                    if (!patternVersion.empty())
-                        fmt::print("{}\n", patternVersion);
+                    if (!metadata.version.empty())
+                        fmt::print("{}\n", metadata.version);
                 }
             }
 
