@@ -18,8 +18,6 @@ namespace pl::cli::sub {
         static std::vector<std::string> defines;
 
         static std::fs::path patternsFolderPath;
-        static std::string type;
-        static std::string formatterName;
 
         auto subcommand = app->add_subcommand("massinfo", "Print all information in JSON about a folder of patterns");
 
