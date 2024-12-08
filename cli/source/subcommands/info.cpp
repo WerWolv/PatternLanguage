@@ -82,7 +82,6 @@ namespace pl::cli::sub {
 
         static std::fs::path patternFilePath;
         static std::fs::path patternDirPath;
-        static std::string type;
         static std::string formatterName;
 
         auto subcommand = app->add_subcommand("info", "Print information about a pattern");
@@ -95,12 +94,6 @@ namespace pl::cli::sub {
 
         subcommand->add_option("-I,--includes", includePaths, "Include file paths")->take_all()->check(CLI::ExistingDirectory);
         subcommand->add_option("-D,--define", defines, "Define a preprocessor macro")->take_all();
-        subcommand->add_option("-t,--type", type, "Type of information you want to query")->check([](const std::string &value) -> std::string {
-            if (value == "name" || value == "authors" || value == "description" || value == "mime" || value == "version")
-                return "";
-            else
-                return "Invalid type. Valid types are: [ name, authors, description, mime, version ]";
-        });
         subcommand->add_option("-f,--formatter", formatterName, "Formatter")->default_val("pretty")->check([&](const auto &value) -> std::string {
             if (value == "pretty" || value == "json")
                 return "";
