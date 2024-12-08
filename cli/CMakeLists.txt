@@ -13,7 +13,6 @@ set(PLCLI_SOURCES
         source/subcommands/run.cpp
         source/subcommands/docs.cpp
         source/subcommands/info.cpp
-        source/subcommands/massinfo.cpp
 )
 
 if (LIBPL_BUILD_CLI_AS_EXECUTABLE)
