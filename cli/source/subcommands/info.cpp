@@ -13,18 +13,86 @@
 
 namespace pl::cli::sub {
 
+    // Helper method
+    void printPatternFilePlain(const pl::cli::PatternMetadata &metadata) {
+        fmt::print("Pattern name: {}\n", metadata.name);
+        fmt::print("Authors: {}\n", wolv::util::combineStrings(metadata.authors, ", "));
+        fmt::print("Description: {}\n", metadata.description);
+        fmt::print("MIMEs: {}\n", wolv::util::combineStrings(metadata.mimes, ", "));
+        fmt::print("Version: {}\n", metadata.version);
+    }
+
+    // Logic for --formatter plain -p
+    void outputPatternFilePlain(pl::PatternLanguage &runtime, const std::string &filePath) {
+        wolv::io::File patternFile(filePath, wolv::io::File::Mode::Read);
+        auto metadata_opt = parsePatternMetadata(runtime, patternFile.readString());
+        if (metadata_opt.has_value()) {
+            printPatternFilePlain(metadata_opt.value());
+        } else {
+            fmt::print(stderr, "Error parsing file: {}\n", filePath);
+        }
+    }
+
+    // Logic for --formatter json -p
+    void outputPatternFileJSON(pl::PatternLanguage &runtime, const std::string &filePath) {
+        wolv::io::File patternFile(filePath, wolv::io::File::Mode::Read);
+        auto metadata_opt = parsePatternMetadata(runtime, patternFile.readString());
+        if (metadata_opt.has_value()) {
+            fmt::print("{}\n", metadata_opt.value().toJSON().dump());
+        } else {
+            fmt::print(stderr, "Error parsing file: {}\n", filePath);
+        }
+    }
+
+    // Logic for --formatter plain -P
+    void outputPatternDirectoryPlain(pl::PatternLanguage &runtime, const std::string &directoryPath) {
+        for (const auto &entry : std::fs::directory_iterator(directoryPath)) {
+            if (entry.is_regular_file() && entry.path().extension() == ".hexpat") {
+                auto file = wolv::io::File(entry.path(), wolv::io::File::Mode::Read);
+                auto metadata_opt = parsePatternMetadata(runtime, file.readString());
+                if (metadata_opt.has_value()) {
+                    printPatternFilePlain(metadata_opt.value());
+                } else {
+                    fmt::print(stderr, "Error parsing file: {}\n", entry.path().filename().string());
+                }
+            }
+        }
+    }
+
+    // Logic for --formatter json -P
+    void outputPatternDirectoryJSON(pl::PatternLanguage &runtime, const std::string &directoryPath) {
+        nlohmann::json json = {};
+        for (const auto &entry : std::fs::directory_iterator(directoryPath)) {
+            if (entry.is_regular_file() && entry.path().extension() == ".hexpat") {
+                auto file = wolv::io::File(entry.path(), wolv::io::File::Mode::Read);
+                auto metadata_opt = parsePatternMetadata(runtime, file.readString());
+                if (metadata_opt.has_value()) {
+                    json[entry.path().filename().string()] = metadata_opt.value().toJSON();
+                } else {
+                    fmt::print(stderr, "Error parsing file: {}\n", entry.path().filename().string());
+                }
+            }
+        }
+        fmt::print("{}\n", json.dump());
+    }
+
     void addInfoSubcommand(CLI::App *app) {
         static std::vector<std::fs::path> includePaths;
         static std::vector<std::string> defines;
 
         static std::fs::path patternFilePath;
+        static std::fs::path patternDirPath;
         static std::string type;
         static std::string formatterName;
 
         auto subcommand = app->add_subcommand("info", "Print information about a pattern");
 
         // Add command line arguments
-        subcommand->add_option("-p,--pattern,PATTERN_FILE", patternFilePath, "Pattern file")->required()->check(CLI::ExistingFile);
+        auto exclusive_group = subcommand->add_option_group("Pattern Options", "Only one pattern option can be used");
+        exclusive_group->add_option("-p,--pattern,PATTERN_FILE", patternFilePath, "Pattern file")->check(CLI::ExistingFile);
+        exclusive_group->add_option("-P,--pattern-dir,PATTERN_DIR", patternDirPath, "Pattern directory")->check(CLI::ExistingDirectory);
+        exclusive_group->require_option(1); // Require exactly one of these
+
         subcommand->add_option("-I,--includes", includePaths, "Include file paths")->take_all()->check(CLI::ExistingDirectory);
         subcommand->add_option("-D,--define", defines, "Define a preprocessor macro")->take_all();
         subcommand->add_option("-t,--type", type, "Type of information you want to query")->check([](const std::string &value) -> std::string {
@@ -53,47 +121,22 @@ namespace pl::cli::sub {
 
             runtime.setIncludePaths(includePaths);
 
-            // Execute pattern file
-            wolv::io::File patternFile(patternFilePath, wolv::io::File::Mode::Read);
-            auto metadata_opt = parsePatternMetadata(runtime, patternFile.readString());
-            if (!metadata_opt.has_value()) {
-                fmt::print("Error: Failed to parse pattern metadata\n");
-                std::exit(EXIT_FAILURE);
-            }
-            auto metadata = metadata_opt.value();
-
-            if (formatterName == "json") {
-                if(!type.empty()) {
-                    fmt::print("Error: --type is not compatible with --format json\n");
-                    std::exit(EXIT_FAILURE);
-                }
-
-                fmt::print("{}\n", metadata.toJSON().dump());
-            } else if (formatterName == "pretty") {
-                if (type.empty()) {
-                        fmt::print("Pattern name: {}\n", metadata.name);
-                        fmt::print("Authors: {}\n", wolv::util::combineStrings(metadata.authors, ", "));
-                        fmt::print("Description: {}\n", metadata.description);
-                        fmt::print("MIMEs: {}\n", wolv::util::combineStrings(metadata.mimes, ", "));
-                        fmt::print("Version: {}\n", metadata.version);
-                } else if (type == "name") {
-                    if (!metadata.name.empty())
-                        fmt::print("{}\n", metadata.name);
-                } else if (type == "authors") {
-                    for (const auto &author : metadata.authors) {
-                        fmt::print("{}\n", author);
-                    }
-                } else if (type == "description") {
-                    fmt::print("{}\n", metadata.description);
-                } else if (type == "mime") {
-                    for (const auto &mime : metadata.mimes) {
-                        fmt::print("{}\n", mime);
-                    }
-                } else if (type == "version") {
-                    if (!metadata.version.empty())
-                        fmt::print("{}\n", metadata.version);
-                }
-            }
+           // Execute correct logic method
+           if (formatterName == "pretty") {
+               if (patternFilePath.empty()) {
+                   outputPatternDirectoryPlain(runtime, patternDirPath);
+               } else {
+                   outputPatternFilePlain(runtime, patternFilePath);
+               }
+           } else if (formatterName == "json") {
+               if (patternFilePath.empty()) {
+                   outputPatternDirectoryJSON(runtime, patternDirPath);
+               } else {
+                   outputPatternFileJSON(runtime, patternFilePath);
+               }
+           } else {
+             throw std::runtime_error("SHOULD NOT HAPPEN: Invalid formatter");
+           }
 
         });
     }
