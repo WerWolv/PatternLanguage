@@ -117,15 +117,15 @@ namespace pl::cli::sub {
            // Execute correct logic method
            if (formatterName == "pretty") {
                if (patternFilePath.empty()) {
-                   outputPatternDirectoryPlain(runtime, patternDirPath);
+                   outputPatternDirectoryPlain(runtime, wolv::util::toUTF8String(patternDirPath));
                } else {
-                   outputPatternFilePlain(runtime, patternFilePath);
+                   outputPatternFilePlain(runtime, wolv::util::toUTF8String(patternFilePath));
                }
            } else if (formatterName == "json") {
                if (patternFilePath.empty()) {
-                   outputPatternDirectoryJSON(runtime, patternDirPath);
+                   outputPatternDirectoryJSON(runtime, wolv::util::toUTF8String(patternDirPath));
                } else {
-                   outputPatternFileJSON(runtime, patternFilePath);
+                   outputPatternFileJSON(runtime, wolv::util::toUTF8String(patternFilePath));
                }
            } else {
              throw std::runtime_error("SHOULD NOT HAPPEN: Invalid formatter");
