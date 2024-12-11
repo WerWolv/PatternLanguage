@@ -1,3 +1,9 @@
 cmake-build-*/
 build/
+
+.vscode/
+.devcontainer/
+.cache/
 .idea/
+
+compile_commands.json

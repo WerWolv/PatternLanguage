@@ -46,12 +46,21 @@ add_executable(pattern_language_tests
 target_include_directories(pattern_language_tests PRIVATE include)
 target_link_libraries(pattern_language_tests PRIVATE libpl libpl-gen fmt::fmt-header-only)
 
-set_target_properties(pattern_language_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set_target_properties(pattern_language_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_custom_command(TARGET pattern_language_tests
         POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/test_data" ${CMAKE_BINARY_DIR})
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/test_data" ${CMAKE_BINARY_DIR}/bin)
+
+add_custom_command(TARGET pattern_language_tests
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/files/export/json.json" ${CMAKE_BINARY_DIR}/bin/files/export/json.json)
+
+add_custom_command(TARGET pattern_language_tests
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}//files/export/yaml.yml" ${CMAKE_BINARY_DIR}/bin/files/export/yaml.yml)
 
 foreach (test IN LISTS AVAILABLE_TESTS)
-    add_test(NAME "PatternLanguage/${test}" COMMAND pattern_language_tests "${test}" WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+    add_test(NAME "PatternLanguage/${test}" COMMAND pattern_language_tests "${test}" WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 endforeach ()
+add_dependencies(unit_tests ${PROJECT_NAME})
