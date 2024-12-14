@@ -2,8 +2,6 @@
 
 #include <pl/patterns/pattern.hpp>
 
-#include <codecvt>
-#include <locale>
 #include <wolv/utils/string.hpp>
 
 namespace pl::ptrn {

@@ -2,8 +2,6 @@
 
 #include <pl/patterns/pattern.hpp>
 
-#include <codecvt>
-#include <locale>
 #include <wolv/utils/string.hpp>
 
 namespace pl::ptrn {
@@ -18,7 +16,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
-            char16_t character = '\u0000';
+            char16_t character = u'\u0000';
             this->getEvaluator()->readData(this->getOffset(), &character, 2, this->getSection());
             return transformValue(u128(hlp::changeEndianess(character, this->getEndian())));
         }
