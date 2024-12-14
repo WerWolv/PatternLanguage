@@ -4,6 +4,7 @@
 
 #include <codecvt>
 #include <locale>
+#include <wolv/utils/string.hpp>
 
 namespace pl::ptrn {
 
@@ -31,7 +32,7 @@ namespace pl::ptrn {
             char16_t character = value.toUnsigned();
             character = hlp::changeEndianess(character, this->getEndian());
 
-            auto result = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>("???").to_bytes(character);
+            auto result = wolv::util::utf16ToUtf8(std::u16string(&character, 1));
 
             return Pattern::callUserFormatFunc(value, true).value_or(result);
         }
