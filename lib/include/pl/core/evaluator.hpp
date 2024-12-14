@@ -17,7 +17,7 @@
 
 #include <pl/core/errors/runtime_errors.hpp>
 
-#include <fmt/format.h>
+#include <fmt/core.h>
 #include <fmt/ranges.h>
 #include <pl/pattern_language.hpp>
 
