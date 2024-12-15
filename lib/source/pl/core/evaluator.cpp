@@ -286,11 +286,14 @@ namespace pl::core {
 
                                 if (value.isString()) {
                                     auto string = value.toString();
+                                    if (string.size() > 32)
+                                        string = "...";
                                     templateTypeString += fmt::format("\"{}\", ", hlp::encodeByteString({ string.begin(), string.end() }));
-                                } else if (value.isPattern())
+                                } else if (value.isPattern()) {
                                     templateTypeString += fmt::format("{}{{ }}, ", value.toPattern()->getTypeName());
-                                else
+                                } else {
                                     templateTypeString += fmt::format("{}, ", value.toString(true));
+                                }
                             } else {
                                 err::E0003.throwError(fmt::format("Template parameter {} is not a literal. This is a bug.", lvalue->getLValueName()), {}, type->getLocation());
                             }
@@ -953,6 +956,13 @@ namespace pl::core {
             err::E0012.throwError("Cannot access data of type that hasn't been placed in memory.");
         else
             err::E0011.throwError(fmt::format("Tried accessing a non-existing section with id {}.", id));
+    }
+
+    u64 Evaluator::getSectionSize(u64 id) {
+        if (id == ptrn::Pattern::MainSectionId)
+            return this->getDataSize();
+        else
+            return this->getSection(id).size();
     }
 
     const std::map<u64, api::Section> &Evaluator::getSections() const {

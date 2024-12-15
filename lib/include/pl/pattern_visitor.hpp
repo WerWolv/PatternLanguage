@@ -46,5 +46,6 @@ namespace pl {
         virtual void visit(ptrn::PatternUnsigned& pattern)      = 0;
         virtual void visit(ptrn::PatternWideCharacter& pattern) = 0;
         virtual void visit(ptrn::PatternWideString& pattern)    = 0;
+        virtual void visit(ptrn::Pattern& pattern)              = 0;
     };
 }

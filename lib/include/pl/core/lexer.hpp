@@ -5,7 +5,7 @@
 
 #include <pl/core/token.hpp>
 
-#include <fmt/format.h>
+#include <fmt/core.h>
 
 #include <optional>
 #include <string>

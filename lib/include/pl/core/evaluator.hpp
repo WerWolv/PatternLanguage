@@ -17,7 +17,7 @@
 
 #include <pl/core/errors/runtime_errors.hpp>
 
-#include <fmt/format.h>
+#include <fmt/core.h>
 #include <fmt/ranges.h>
 #include <pl/pattern_language.hpp>
 
@@ -157,6 +157,7 @@ namespace pl::core {
         [[nodiscard]] u64 createSection(const std::string &name);
         void removeSection(u64 id);
         [[nodiscard]] std::vector<u8>& getSection(u64 id);
+        [[nodiscard]] u64 getSectionSize(u64 id);
         [[nodiscard]] const std::map<u64, api::Section>& getSections() const;
 
         [[nodiscard]] u64 getSectionCount() const;

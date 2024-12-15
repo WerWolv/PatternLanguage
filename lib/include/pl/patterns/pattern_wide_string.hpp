@@ -2,8 +2,7 @@
 
 #include <pl/patterns/pattern.hpp>
 
-#include <codecvt>
-#include <locale>
+#include <wolv/utils/string.hpp>
 
 namespace pl::ptrn {
 
@@ -32,7 +31,7 @@ namespace pl::ptrn {
                                      [](auto c) { return c == 0x00; });
             buffer.erase(it, buffer.end());
 
-            return std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>("???").to_bytes(buffer);
+            return wolv::util::utf16ToUtf8(buffer);
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
@@ -50,7 +49,7 @@ namespace pl::ptrn {
                 return c == 0x00;
             });
 
-            auto result = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>("???").to_bytes(buffer);
+            auto result = wolv::util::utf16ToUtf8(buffer);
 
             return Pattern::callUserFormatFunc(this->getValue(), true).value_or(result);
         }

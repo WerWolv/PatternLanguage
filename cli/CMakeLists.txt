@@ -7,6 +7,7 @@ set(PLCLI_SOURCES
         source/main.cpp
 
         source/helpers/utils.cpp
+        source/helpers/info_utils.cpp
 
         source/subcommands/format.cpp
         source/subcommands/run.cpp
