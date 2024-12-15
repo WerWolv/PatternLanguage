@@ -92,8 +92,7 @@ namespace pl::core::ast {
                         templateTypeString += fmt::format("{}, ", value.toString(true));
                     }
 
-                    templateParamLiterals[i] = std::unique_ptr<ASTNodeLiteral>(literal);
-                    valueNode.release();
+                    templateParamLiterals[i] = std::make_unique<ASTNodeLiteral>(value);
                 } else {
                     err::E0003.throwError(fmt::format("Template parameter {} is not a literal. This is a bug.", lvalue->getLValueName()), {}, this->getLocation());
                 }
