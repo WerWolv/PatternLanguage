@@ -193,6 +193,8 @@ namespace pl {
 
         const auto &evaluator = this->m_internals.evaluator;
 
+        evaluator->getConsole().setLogCallback(this->m_logCallback);
+
         this->m_running = true;
         this->m_aborted = false;
         this->m_runId += 1;
@@ -234,7 +236,6 @@ namespace pl {
         evaluator->setReadOffset(this->m_startAddress.value_or(evaluator->getDataBaseAddress()));
         evaluator->setDataSource(this->m_dataBaseAddress, this->m_dataSize, this->m_dataReadFunction, this->m_dataWriteFunction);
         evaluator->setDangerousFunctionCallHandler(this->m_dangerousFunctionCallCallback);
-        evaluator->getConsole().setLogCallback(this->m_logCallback);
         if (!evaluator->evaluate(this->m_currAST)) {
             auto &console = evaluator->getConsole();
 
