@@ -10,6 +10,14 @@ option(LIBPL_BUILD_CLI_AS_EXECUTABLE "Build the CLI tool as an executable" ON)
 option(LIBPL_ENABLE_EXAMPLE "Enable building the examples" OFF)
 option(LIBPL_ENABLE_PRECOMPILED_HEADERS "Enable building with precompiled headers" OFF)
 
+# if enabled, add a unit_test custom target for all the unit tests to be registered against
+if (LIBPL_ENABLE_TESTS)
+    if(NOT TARGET unit_tests)
+        enable_testing()
+        add_custom_target(unit_tests)
+    endif()
+endif ()
+
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -60,7 +68,6 @@ if (LIBPL_ENABLE_EXAMPLE)
 endif ()
 
 if (LIBPL_ENABLE_TESTS)
-    enable_testing()
     add_subdirectory(tests EXCLUDE_FROM_ALL)
 endif ()
 

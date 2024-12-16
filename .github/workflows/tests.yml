@@ -58,7 +58,7 @@ jobs:
           -DCMAKE_C_COMPILER_LAUNCHER=ccache                                                                          \
           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache                                                                        \
           ..
-        make -j4 pattern_language_tests plcli
+        make -j4 unit_tests plcli
 
     - name: 🧪 Perform plcli Integration Tests
       run: |
