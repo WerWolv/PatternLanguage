@@ -474,11 +474,13 @@ namespace pl::ptrn {
                 this->m_attributes = std::make_unique<std::map<std::string, std::vector<core::Token::Literal>>>();
 
             (*this->m_attributes)[attribute] = arguments;
+            getEvaluator()->addAttributedPattern(attribute, this);
         }
 
         void removeAttribute(const std::string &attribute) {
             if (this->m_attributes != nullptr)
                 this->m_attributes->erase(attribute);
+            getEvaluator()->removeAttributedPattern(attribute, this);
         }
 
         [[nodiscard]] bool hasAttribute(const std::string &attribute) const {

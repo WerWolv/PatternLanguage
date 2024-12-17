@@ -302,7 +302,7 @@ namespace pl::core {
         void setVariable(std::shared_ptr<ptrn::Pattern> &pattern, const Token::Literal &value);
         void setVariableAddress(const std::string &variableName, u64 address, u64 section = 0);
         void changePatternSection(ptrn::Pattern *pattern, u64 section);
-        void changePatternType(std::shared_ptr<ptrn::Pattern> &pattern, std::shared_ptr<ptrn::Pattern> &&newPattern);
+        void changePatternType(std::shared_ptr<ptrn::Pattern> &pattern, std::shared_ptr<ptrn::Pattern> &&newPattern) const;
 
         void abort() {
             this->m_aborted = true;
@@ -429,6 +429,15 @@ namespace pl::core {
             m_patternColorPaletteIndex = 0;
         }
 
+        const std::set<const ptrn::Pattern*>& getPatternsWithAttribute(const std::string &attribute) const {
+            if (const auto it = m_attributedPatterns.find(attribute); it != m_attributedPatterns.end()) {
+                return it->second;
+            } else {
+                static const std::set<const ptrn::Pattern*> empty;
+                return empty;
+            }
+        }
+
     private:
         void patternCreated(const ptrn::Pattern *pattern);
         void patternDestroyed(const ptrn::Pattern *pattern);
@@ -440,6 +449,14 @@ namespace pl::core {
         }
 
         std::optional<std::string> findTypeName(const ast::ASTNodeTypeDecl *type);
+
+        void addAttributedPattern(const std::string &attribute, const ptrn::Pattern *pattern) {
+            m_attributedPatterns[attribute].insert(pattern);
+        }
+
+        void removeAttributedPattern(const std::string &attribute, const ptrn::Pattern *pattern) {
+            m_attributedPatterns[attribute].erase(pattern);
+        }
 
     private:
         PatternLanguage *m_patternLanguage;
@@ -512,6 +529,8 @@ namespace pl::core {
 
         std::atomic<u64> m_lastReadAddress, m_lastWriteAddress, m_lastPatternAddress;
         std::vector<u32> m_sourceLineLength;
+
+        std::map<std::string, std::set<const ptrn::Pattern*>> m_attributedPatterns;
 
         constexpr static std::array<u32, 9> DefaultPatternColorPalette = { 0x70B4771F, 0x700E7FFF, 0x702CA02C, 0x702827D6, 0x70BD6794, 0x704B568C, 0x70C277E3, 0x7022BDBC, 0x70CFBE17 };
         std::vector<u32> m_patternColorPalette = { DefaultPatternColorPalette.begin(), DefaultPatternColorPalette.end() };

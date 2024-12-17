@@ -11,14 +11,11 @@
 #include <pl/core/ast/ast_node_control_flow_statement.hpp>
 #include <pl/core/ast/ast_node_lvalue_assignment.hpp>
 #include <pl/core/ast/ast_node_literal.hpp>
-#include <pl/core/ast/ast_node_type_decl.hpp>
 #include <pl/core/ast/ast_node_builtin_type.hpp>
 
 #include <pl/patterns/pattern_unsigned.hpp>
 #include <pl/patterns/pattern_signed.hpp>
 #include <pl/patterns/pattern_enum.hpp>
-#include <pl/patterns/pattern_struct.hpp>
-#include <pl/patterns/pattern_union.hpp>
 #include <pl/patterns/pattern_float.hpp>
 #include <pl/patterns/pattern_boolean.hpp>
 #include <pl/patterns/pattern_character.hpp>
@@ -301,8 +298,8 @@ namespace pl::core {
                             const auto *node = typeNode->getType().get();
                             while (node != nullptr) {
                                 if (const auto *innerNode = dynamic_cast<const ast::ASTNodeTypeDecl*>(node)) {
-                                    if (const auto name = innerNode->getName(); !name.empty()) {
-                                        templateTypeString += fmt::format("{}, ", name);
+                                    if (const auto &innerNodeName = innerNode->getName(); !innerNodeName.empty()) {
+                                        templateTypeString += fmt::format("{}, ", innerNodeName);
                                         break;
                                     }
                                     node = innerNode->getType().get();
@@ -625,7 +622,7 @@ namespace pl::core {
         this->setVariable(pattern, variableValue);
     }
 
-    void Evaluator::changePatternType(std::shared_ptr<ptrn::Pattern> &pattern, std::shared_ptr<ptrn::Pattern> &&newPattern) {
+    void Evaluator::changePatternType(std::shared_ptr<ptrn::Pattern> &pattern, std::shared_ptr<ptrn::Pattern> &&newPattern) const {
         if (dynamic_cast<ptrn::PatternPadding*>(pattern.get()) == nullptr)
             return;
 
@@ -852,10 +849,10 @@ namespace pl::core {
 
         if (sectionId == ptrn::Pattern::MainSectionId) [[likely]] {
             if (!write) [[likely]] {
-                this->m_readerFunction(address, reinterpret_cast<u8*>(buffer), size);
+                this->m_readerFunction(address, static_cast<u8*>(buffer), size);
             } else {
                 if (address < this->m_dataBaseAddress + this->m_dataSize)
-                    this->m_writerFunction(address, reinterpret_cast<u8*>(buffer), size);
+                    this->m_writerFunction(address, static_cast<u8*>(buffer), size);
             }
         } else if (sectionId == ptrn::Pattern::HeapSectionId) {
             auto &heap = this->getHeap();
@@ -996,6 +993,7 @@ namespace pl::core {
         this->m_mainResult.reset();
         this->m_aborted = false;
         this->m_evaluated = false;
+        this->m_attributedPatterns.clear();
 
         this->setPatternColorPalette(DefaultPatternColorPalette);
 
@@ -1193,7 +1191,7 @@ namespace pl::core {
             return;
 
         // Don't pop scopes if an exception is currently being thrown so we can generate
-        // a stack tace
+        // a stack trace
         if (std::uncaught_exceptions() > 0)
             return;
 
@@ -1221,7 +1219,7 @@ namespace pl::core {
 
         if (this->m_patternLimit > 0 && this->m_currPatternCount > this->m_patternLimit && !this->m_evaluated)
             err::E0007.throwError(fmt::format("Pattern count exceeded set limit of '{}'.", this->getPatternLimit()), "If this is intended, try increasing the limit using '#pragma pattern_limit <new_limit>'.");
-        this->m_currPatternCount++;
+        this->m_currPatternCount += 1;
 
         // Make sure we don't throw an error if we're already in an error state
         if (std::uncaught_exceptions() != 0)
@@ -1239,11 +1237,18 @@ namespace pl::core {
     }
 
     void Evaluator::patternDestroyed(const ptrn::Pattern *pattern) {
-        this->m_currPatternCount--;
+        this->m_currPatternCount -= 1;
 
         // Make sure we don't throw an error if we're already in an error state
         if (std::uncaught_exceptions() != 0)
             return;
+
+        const auto &attributes = pattern->getAttributes();
+        if (attributes != nullptr) {
+            for (const auto &[attribute, args] : *attributes) {
+                this->removeAttributedPattern(attribute, pattern);
+            }
+        }
 
         if (pattern->isPatternLocal()) {
             if (auto it = this->m_patternLocalStorage.find(pattern->getHeapAddress()); it != this->m_patternLocalStorage.end()) {
