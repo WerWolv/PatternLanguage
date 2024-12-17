@@ -86,10 +86,7 @@ namespace pl::ptrn {
                 highlightTemplate->setVariableName(this->getVariableName());
                 highlightTemplate->setOffset(this->getOffset());
 
-                this->m_highlightTemplates.push_back(highlightTemplate);
-
-                auto children = highlightTemplate->getChildren();
-
+                const auto &children = this->m_highlightTemplates.emplace_back(std::move(highlightTemplate))->getChildren();
                 result.reserve(this->getEntryCount() * children.size());
 
                 auto templateSize = this->m_template->getSize();
