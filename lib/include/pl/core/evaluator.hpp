@@ -455,7 +455,8 @@ namespace pl::core {
         }
 
         void removeAttributedPattern(const std::string &attribute, const ptrn::Pattern *pattern) {
-            m_attributedPatterns[attribute].erase(pattern);
+            if (const auto it = m_attributedPatterns.find(attribute); it != m_attributedPatterns.end())
+                it->second.erase(pattern);
         }
 
     private:
@@ -506,6 +507,7 @@ namespace pl::core {
         ControlFlowStatement m_currControlFlowStatement = ControlFlowStatement::None;
         std::vector<std::unique_ptr<ast::ASTNode>> m_callStack;
 
+        std::map<std::string, std::set<const ptrn::Pattern*>> m_attributedPatterns;
         std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;
 
         std::set<std::string> m_stringPool;
@@ -529,8 +531,6 @@ namespace pl::core {
 
         std::atomic<u64> m_lastReadAddress, m_lastWriteAddress, m_lastPatternAddress;
         std::vector<u32> m_sourceLineLength;
-
-        std::map<std::string, std::set<const ptrn::Pattern*>> m_attributedPatterns;
 
         constexpr static std::array<u32, 9> DefaultPatternColorPalette = { 0x70B4771F, 0x700E7FFF, 0x702CA02C, 0x702827D6, 0x70BD6794, 0x704B568C, 0x70C277E3, 0x7022BDBC, 0x70CFBE17 };
         std::vector<u32> m_patternColorPalette = { DefaultPatternColorPalette.begin(), DefaultPatternColorPalette.end() };
