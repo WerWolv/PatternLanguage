@@ -9,7 +9,7 @@ on:
 jobs:
   tests:
     name: 🧪 Unit Tests
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       DISPATCH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -30,8 +30,8 @@ jobs:
         sudo apt install -y       \
             build-essential       \
             ccache                \
-            gcc-12                \
-            g++-12                \
+            gcc-14                \
+            g++-14                \
             lld                   \
             ${PKGCONF:-}          \
             cmake                 \
@@ -50,15 +50,17 @@ jobs:
       run: |
         mkdir -p build
         cd build
-        CC=gcc-12 CXX=g++-12 cmake                                                                                    \
+        CC=gcc-14 CXX=g++-14 cmake                                                                                    \
           -DCMAKE_BUILD_TYPE=Debug                                                                                    \
           -DCMAKE_C_FLAGS="-O0 -fuse-ld=lld --coverage -fsanitize=address,leak,undefined -fno-sanitize-recover=all"   \
           -DCMAKE_CXX_FLAGS="-O0 -fuse-ld=lld --coverage -fsanitize=address,leak,undefined -fno-sanitize-recover=all" \
           -DLIBPL_ENABLE_TESTS=ON                                                                                     \
           -DCMAKE_C_COMPILER_LAUNCHER=ccache                                                                          \
           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache                                                                        \
+          -G Ninja                                                                                                    \
           ..
-        make -j4 unit_tests plcli
+        ninja unit_tests 
+        ninja plcli
 
     - name: 🧪 Perform plcli Integration Tests
       run: |

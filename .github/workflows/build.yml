@@ -113,7 +113,7 @@ jobs:
 
   linux:
     name: 🐧 Linux
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
     - name: 🧰 Checkout
@@ -126,8 +126,8 @@ jobs:
         sudo apt update
         sudo apt install -y       \
             build-essential       \
-            gcc-12                \
-            g++-12                \
+            gcc-14                \
+            g++-14                \
             lld                   \
             cmake                 \
             make                  \
@@ -144,7 +144,7 @@ jobs:
       run: |
         mkdir -p build
         cd build
-        CC=gcc-12 CXX=g++-12 cmake                \
+        CC=gcc-14 CXX=g++-14 cmake                \
           -DCMAKE_BUILD_TYPE=Debug                \
           -DCMAKE_INSTALL_PREFIX="/usr"           \
           -DCMAKE_C_FLAGS="-fuse-ld=lld"          \
@@ -153,8 +153,10 @@ jobs:
           -DLIBPL_ENABLE_CLI=ON                   \
           -DCMAKE_C_COMPILER_LAUNCHER=ccache      \
           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache    \
+          -DCMAKE_INSTALL_PREFIX="./install"      \
+          -G Ninja                                \
           ..
-        make -j4 install DESTDIR=install
+        ninja install
 
     - name: ⬆️ Upload Artifact
       uses: actions/upload-artifact@v4
