@@ -28,7 +28,7 @@ jobs:
             gcc:p
             lld:p
             cmake:p
-            make:p
+            ninja:p
             ccache:p
 
       - name: 📜 Setup ccache
@@ -42,7 +42,7 @@ jobs:
         run: |
           mkdir -p build
           cd build
-          cmake -G "MinGW Makefiles"                \
+          cmake                                     \
             -DCMAKE_BUILD_TYPE=Release              \
             -DCMAKE_INSTALL_PREFIX="$PWD/install"   \
             -DCMAKE_C_FLAGS="-fuse-ld=lld"          \
@@ -51,8 +51,10 @@ jobs:
             -DLIBPL_ENABLE_CLI=ON                   \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache      \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache    \
+            -DCMAKE_INSTALL_PREFIX="./install"      \
+            -G Ninja                                \
             ..
-          mingw32-make -j4 install DESTDIR=install
+          ninja install
 
       - name: ⬆️ Upload Artifact
         uses: actions/upload-artifact@v4
@@ -77,7 +79,7 @@ jobs:
 
       - name: ⬇️ Install dependencies
         run: |
-          brew install llvm ccache
+          brew install llvm ccache ninja
 
       - name: 📜 Setup ccache
         uses: hendrikmuhs/ccache-action@v1
@@ -90,8 +92,8 @@ jobs:
         run: |
           mkdir -p build
           cd build
-          CC=$(brew --prefix gcc@12)/bin/gcc-12     \
-          CXX=$(brew --prefix gcc@12)/bin/g++-12    \
+          CC=$(brew --prefix llvm)/bin/clang        \
+          CXX=$(brew --prefix llvm)/bin/clang++     \
           OBJC=$(brew --prefix llvm)/bin/clang      \
           OBJCXX=$(brew --prefix llvm)/bin/clang++  \
           cmake                                     \
@@ -101,8 +103,10 @@ jobs:
             -DLIBPL_ENABLE_CLI=ON                   \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache      \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache    \
+            -DCMAKE_INSTALL_PREFIX="./install"      \
+            -G Ninja                                \
             ..
-          make -j4 install DESTDIR=install
+          ninja install
 
       - name: ⬆️ Upload Artifact
         uses: actions/upload-artifact@v4
