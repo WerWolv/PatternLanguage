@@ -35,7 +35,7 @@ jobs:
             lld                   \
             ${PKGCONF:-}          \
             cmake                 \
-            make                  \
+            ninja-build           \
             lcov                  \
             gcovr
 

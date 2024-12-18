@@ -130,7 +130,7 @@ jobs:
             g++-14                \
             lld                   \
             cmake                 \
-            make                  \
+            ninja-build           \
             ccache
 
     - name: 📜 Setup ccache
