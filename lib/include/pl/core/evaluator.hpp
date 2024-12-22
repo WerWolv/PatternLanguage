@@ -429,18 +429,18 @@ namespace pl::core {
             m_patternColorPaletteIndex = 0;
         }
 
-        const std::set<const ptrn::Pattern*>& getPatternsWithAttribute(const std::string &attribute) const {
+        const std::set<ptrn::Pattern*>& getPatternsWithAttribute(const std::string &attribute) const {
             if (const auto it = m_attributedPatterns.find(attribute); it != m_attributedPatterns.end()) {
                 return it->second;
             } else {
-                static const std::set<const ptrn::Pattern*> empty;
+                static const std::set<ptrn::Pattern*> empty;
                 return empty;
             }
         }
 
     private:
-        void patternCreated(const ptrn::Pattern *pattern);
-        void patternDestroyed(const ptrn::Pattern *pattern);
+        void patternCreated(ptrn::Pattern *pattern);
+        void patternDestroyed(ptrn::Pattern *pattern);
 
         api::FunctionCallback handleDangerousFunctionCall(const std::string &functionName, const api::FunctionCallback &function);
 
@@ -450,11 +450,11 @@ namespace pl::core {
 
         std::optional<std::string> findTypeName(const ast::ASTNodeTypeDecl *type);
 
-        void addAttributedPattern(const std::string &attribute, const ptrn::Pattern *pattern) {
+        void addAttributedPattern(const std::string &attribute, ptrn::Pattern *pattern) {
             m_attributedPatterns[attribute].insert(pattern);
         }
 
-        void removeAttributedPattern(const std::string &attribute, const ptrn::Pattern *pattern) {
+        void removeAttributedPattern(const std::string &attribute, ptrn::Pattern *pattern) {
             if (const auto it = m_attributedPatterns.find(attribute); it != m_attributedPatterns.end())
                 it->second.erase(pattern);
         }
@@ -507,7 +507,7 @@ namespace pl::core {
         ControlFlowStatement m_currControlFlowStatement = ControlFlowStatement::None;
         std::vector<std::unique_ptr<ast::ASTNode>> m_callStack;
 
-        std::map<std::string, std::set<const ptrn::Pattern*>> m_attributedPatterns;
+        std::map<std::string, std::set<ptrn::Pattern*>> m_attributedPatterns;
         std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;
 
         std::set<std::string> m_stringPool;

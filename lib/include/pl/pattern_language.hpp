@@ -401,7 +401,7 @@ namespace pl {
             return this->m_subRuntime;
         }
 
-        [[nodiscard]] const std::set<const ptrn::Pattern*>& getPatternsWithAttribute(const std::string &attribute) const;
+        [[nodiscard]] const std::set<ptrn::Pattern*>& getPatternsWithAttribute(const std::string &attribute) const;
 
     private:
         void flattenPatterns();

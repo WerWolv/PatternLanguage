@@ -530,7 +530,7 @@ namespace pl {
         return results;
     }
 
-    const std::set<const ptrn::Pattern*>& PatternLanguage::getPatternsWithAttribute(const std::string &attribute) const {
+    const std::set<ptrn::Pattern*>& PatternLanguage::getPatternsWithAttribute(const std::string &attribute) const {
         return m_internals.evaluator->getPatternsWithAttribute(attribute);
     }
 

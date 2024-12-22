@@ -1214,7 +1214,7 @@ namespace pl::core {
         return this->m_lastPauseLine;
     }
 
-    void Evaluator::patternCreated(const ptrn::Pattern *pattern) {
+    void Evaluator::patternCreated(ptrn::Pattern *pattern) {
         this->m_lastPatternAddress = pattern->getOffset();
 
         if (this->m_patternLimit > 0 && this->m_currPatternCount > this->m_patternLimit && !this->m_evaluated)
@@ -1236,7 +1236,7 @@ namespace pl::core {
         }
     }
 
-    void Evaluator::patternDestroyed(const ptrn::Pattern *pattern) {
+    void Evaluator::patternDestroyed(ptrn::Pattern *pattern) {
         this->m_currPatternCount -= 1;
 
         // Make sure we don't throw an error if we're already in an error state
