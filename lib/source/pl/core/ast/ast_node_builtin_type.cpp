@@ -42,8 +42,10 @@ namespace pl::core::ast {
             pattern = std::make_unique<ptrn::PatternString>(evaluator, offset, 0, getLocation().line);
         else if (this->m_type == Token::ValueType::CustomType) {
             std::vector<Token::Literal> params;
-            for (const auto &param : evaluator->getTemplateParameters()) {
-                params.emplace_back(param->getValue());
+
+            const auto &templateParams = evaluator->getTemplateParameters();
+            for (u32 i = templateParams.size() - m_parameterCount.min; i < templateParams.size(); i += 1) {
+                params.emplace_back(templateParams[i]->getValue());
             }
 
             pattern = m_customTypeCallback(evaluator, params);

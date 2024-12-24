@@ -2782,7 +2782,7 @@ namespace pl::core {
     ast::ASTNodeTypeDecl* Parser::addBuiltinType(const std::string &name, api::FunctionParameterCount parameterCount, const api::TypeCallback &func) {
         auto type = this->m_builtinTypes.emplace(name,
             hlp::safe_shared_ptr<ast::ASTNodeTypeDecl>(
-                new ast::ASTNodeTypeDecl(name, std::make_shared<ast::ASTNodeBuiltinType>(func))
+                new ast::ASTNodeTypeDecl(name, std::make_shared<ast::ASTNodeBuiltinType>(parameterCount, func))
             )
         ).first->second.get();
 
