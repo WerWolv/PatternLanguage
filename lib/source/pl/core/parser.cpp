@@ -215,6 +215,21 @@ namespace pl::core {
         return create<ast::ASTNodeRValue>(std::move(path));
     }
 
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseRValueAssignment() {
+        auto lhs = parseRValue();
+
+        if (!sequence(tkn::Operator::Assign)) {
+            errorHere("Expected value after '=' in variable assignment, got {}.", getFormattedToken(0));
+            return nullptr;
+        }
+
+        auto rhs = parseMathematicalExpression();
+        if (rhs == nullptr)
+            return nullptr;
+
+        return create<ast::ASTNodeRValueAssignment>(std::move(lhs), std::move(rhs));
+    }
+
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseUserDefinedLiteral(hlp::safe_unique_ptr<ast::ASTNode> &&literal) {
         std::vector<std::unique_ptr<ast::ASTNode>> params;
         params.emplace_back(std::move(literal.unwrap()));
@@ -940,18 +955,7 @@ namespace pl::core {
             statement      = parseFunctionForLoop();
             needsSemicolon = false;
         } else if (MATCHES(sequence(tkn::Literal::Identifier) && (peek(tkn::Separator::Dot) || peek(tkn::Separator::LeftBracket)))) {
-            auto lhs = parseRValue();
-
-            if (!sequence(tkn::Operator::Assign)) {
-                errorHere("Expected value after '=' in variable assignment, got {}.", getFormattedToken(0));
-                return nullptr;
-            }
-
-            auto rhs = parseMathematicalExpression();
-            if (rhs == nullptr)
-                return nullptr;
-
-            statement = create<ast::ASTNodeRValueAssignment>(std::move(lhs), std::move(rhs));
+            statement = parseRValueAssignment();
         } else if (sequence(tkn::Literal::Identifier)) {
             const auto originalPos = this->m_curr;
             parseNamespaceResolution();
@@ -1875,6 +1879,8 @@ namespace pl::core {
             member = parseFunctionVariableAssignment(getValue<Token::Identifier>(-2).get());
         } else if (const auto identifierOffset = parseCompoundAssignment(tkn::Literal::Identifier); identifierOffset.has_value())
             member = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(*identifierOffset).get());
+        else if (MATCHES(sequence(tkn::Literal::Identifier) && (peek(tkn::Separator::Dot) || peek(tkn::Separator::LeftBracket))))
+            member = parseRValueAssignment();
         else if (peek(tkn::Keyword::Const) || peek(tkn::Keyword::BigEndian) || peek(tkn::Keyword::LittleEndian) || peek(tkn::ValueType::Any) || peek(tkn::Literal::Identifier)) {
             // Some kind of variable definition
 

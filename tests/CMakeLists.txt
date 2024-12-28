@@ -31,6 +31,7 @@ set(AVAILABLE_TESTS
         Pragmas
         PragmasFail
         Format
+        RValuesAssignmentInStruct
 )
 
 
