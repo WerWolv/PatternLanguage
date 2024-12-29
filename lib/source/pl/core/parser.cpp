@@ -954,7 +954,7 @@ namespace pl::core {
         } else if (sequence(tkn::Keyword::For, tkn::Separator::LeftParenthesis)) {
             statement      = parseFunctionForLoop();
             needsSemicolon = false;
-        } else if (MATCHES(sequence(tkn::Literal::Identifier) && (peek(tkn::Separator::Dot) || peek(tkn::Separator::LeftBracket)))) {
+        } else if (MATCHES(sequence(tkn::Literal::Identifier) && (peek(tkn::Separator::Dot) || (peek(tkn::Separator::LeftBracket, 0) && !peek(tkn::Separator::LeftBracket, 1))))) {
             statement = parseRValueAssignment();
         } else if (sequence(tkn::Literal::Identifier)) {
             const auto originalPos = this->m_curr;
@@ -1879,7 +1879,7 @@ namespace pl::core {
             member = parseFunctionVariableAssignment(getValue<Token::Identifier>(-2).get());
         } else if (const auto identifierOffset = parseCompoundAssignment(tkn::Literal::Identifier); identifierOffset.has_value())
             member = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(*identifierOffset).get());
-        else if (MATCHES(sequence(tkn::Literal::Identifier) && (peek(tkn::Separator::Dot) || peek(tkn::Separator::LeftBracket))))
+        else if (MATCHES(sequence(tkn::Literal::Identifier) && (peek(tkn::Separator::Dot) || (peek(tkn::Separator::LeftBracket, 0) && !peek(tkn::Separator::LeftBracket, 1)))))
             member = parseRValueAssignment();
         else if (peek(tkn::Keyword::Const) || peek(tkn::Keyword::BigEndian) || peek(tkn::Keyword::LittleEndian) || peek(tkn::ValueType::Any) || peek(tkn::Literal::Identifier)) {
             // Some kind of variable definition
