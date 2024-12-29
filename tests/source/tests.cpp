@@ -26,6 +26,7 @@
 #include "test_patterns/test_pattern_pragmas.hpp"
 #include "test_patterns/test_pattern_pragmas_fail.hpp"
 #include "test_patterns/test_pattern_format.hpp"
+#include "test_patterns/test_pattern_rvalues_assignment_in_struct.hpp"
 
 static pl::core::Evaluator s_evaluator;
 
@@ -57,4 +58,5 @@ std::array Tests = {
     TEST(Pragmas),
     TEST(PragmasFail),
     TEST(Format),
+    TEST(RValuesAssignmentInStruct),
 };

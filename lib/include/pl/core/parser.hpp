@@ -145,6 +145,7 @@ namespace pl::core {
         hlp::safe_unique_ptr<ast::ASTNode> parseScopeResolution();
         hlp::safe_unique_ptr<ast::ASTNode> parseRValue();
         hlp::safe_unique_ptr<ast::ASTNode> parseRValue(ast::ASTNodeRValue::Path &path);
+        hlp::safe_unique_ptr<ast::ASTNode> parseRValueAssignment();
         hlp::safe_unique_ptr<ast::ASTNode> parseUserDefinedLiteral(hlp::safe_unique_ptr<ast::ASTNode> &&literal);
         hlp::safe_unique_ptr<ast::ASTNode> parseFactor();
         hlp::safe_unique_ptr<ast::ASTNode> parseCastExpression();
