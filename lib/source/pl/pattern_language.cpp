@@ -276,7 +276,12 @@ namespace pl {
 
         for (const auto &pattern : evaluator->getPatterns())
             this->m_patterns[pattern->getSection()].push_back(pattern);
-        this->m_patterns.erase(ptrn::Pattern::HeapSectionId);
+
+        for (const auto &pattern : this->m_patterns[ptrn::Pattern::HeapSectionId]) {
+            if (pattern->hasAttribute("export")) {
+                this->m_patterns[ptrn::Pattern::MainSectionId].emplace_back(pattern);
+            }
+        }
 
         this->flattenPatterns();
 
