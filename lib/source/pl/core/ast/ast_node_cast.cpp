@@ -119,6 +119,9 @@ namespace pl::core::ast {
         auto startOffset = evaluator->getBitwiseReadOffset();
         ON_SCOPE_EXIT { evaluator->setBitwiseReadOffset(startOffset); };
 
+        evaluator->pushSectionId(ptrn::Pattern::InstantiationSectionId);
+        ON_SCOPE_EXIT { evaluator->popSectionId(); };
+
         auto evaluatedValue = this->m_value->evaluate(evaluator);
         auto evaluatedType  = this->m_type->evaluate(evaluator);
 
