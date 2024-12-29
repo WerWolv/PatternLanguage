@@ -404,7 +404,7 @@ namespace pl::core {
                 err::E0003.throwError("Cannot determine type of 'auto' variable.", "Try initializing it directly with a literal.", type->getLocation());
         } else {
             if (builtinType != nullptr)
-                pattern = builtinType->createPatterns(this).front();
+                pattern = type->createPatterns(this).front();
             else {
                 pattern = std::make_shared<ptrn::PatternPadding>(this, 0, 0, 0);
 
