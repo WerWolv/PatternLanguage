@@ -1,3 +1,4 @@
+comment: false
 ignore:
   - "external" # Third party libraries should be ignored, and our own libraries should be checked in their own repositories
   - "fuzz"
