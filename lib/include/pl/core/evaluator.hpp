@@ -417,6 +417,10 @@ namespace pl::core {
             return m_subRuntimes.emplace_back(this->m_patternLanguage->cloneRuntime());
         }
 
+        PatternLanguage& getRuntime() {
+            return *m_patternLanguage;
+        }
+
         void setPatternColorPalette(std::span<const u32> palette) {
             m_patternColorPalette.clear();
             m_patternColorPalette.reserve(palette.size());

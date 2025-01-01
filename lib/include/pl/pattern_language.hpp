@@ -159,6 +159,7 @@ namespace pl {
          * @param address Initial cursor position
          */
         void setStartAddress(u64 address);
+        u64 getStartAddress() const;
 
 
         /**

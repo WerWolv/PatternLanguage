@@ -18,22 +18,31 @@ namespace pl::core::ast {
 
         auto source = resolver.unwrap();
 
-        runtime.setStartAddress(evaluator->getReadOffset());
+        const auto startAddress = evaluator->getReadOffset();
+        runtime.setStartAddress(startAddress);
         if (!runtime.executeString(source->content, source->source)) {
             err::E0005.throwError(fmt::format("Error while processing imported type '{}'.", m_importedTypeName), "Check the imported pattern for errors.", getLocation());
         }
 
         auto patterns = runtime.getPatterns();
+
+        std::shared_ptr<ptrn::Pattern> result;
         if (patterns.size() == 1) {
-            patterns.front()->setTypeName(m_importedTypeName);
-            return patterns;
+            auto &pattern = patterns.front();
+            pattern->setTypeName(m_importedTypeName);
+
+            result = std::move(pattern);
         } else {
             auto structPattern = std::make_shared<ptrn::PatternStruct>(evaluator, evaluator->getReadOffset(), 0, getLocation().line);
             structPattern->setEntries(patterns);
 
-            return { structPattern };
+            result = std::move(structPattern);
         }
 
+        result->setOffset(startAddress);
+        runtime.setStartAddress(evaluator->getRuntime().getStartAddress());
+
+        return { result };
     }
 
     std::unique_ptr<ASTNode> ASTNodeImportedType::evaluate(Evaluator *) const {

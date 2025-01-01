@@ -233,8 +233,21 @@ namespace pl {
             this->m_internals.evaluator->addBuiltinFunction(getFunctionName(ns, name), parameterCount, { }, callback, dangerous);
         }
 
-        evaluator->setReadOffset(this->m_startAddress.value_or(evaluator->getDataBaseAddress()));
-        evaluator->setDataSource(this->m_dataBaseAddress, this->m_dataSize, this->m_dataReadFunction, this->m_dataWriteFunction);
+        std::optional<std::function<void(u64, const u8*, size_t)>> writeFunction;
+        if (m_dataWriteFunction.has_value()) {
+            writeFunction = [this](u64 address, const u8 *buffer, size_t size) {
+                return (*this->m_dataWriteFunction)(address + this->getStartAddress(), buffer, size);
+            };
+        }
+
+        evaluator->setDataSource(this->m_dataBaseAddress, this->m_dataSize,
+            [this](u64 address, u8 *buffer, size_t size) {
+                return this->m_dataReadFunction(address + this->getStartAddress(), buffer, size);
+            },
+            writeFunction
+        );
+
+        evaluator->setReadOffset(evaluator->getDataBaseAddress());
         evaluator->setDangerousFunctionCallHandler(this->m_dangerousFunctionCallCallback);
         if (!evaluator->evaluate(this->m_currAST)) {
             auto &console = evaluator->getConsole();
@@ -379,6 +392,11 @@ namespace pl {
     void PatternLanguage::setStartAddress(u64 address) {
         this->m_startAddress = address;
     }
+
+    u64 PatternLanguage::getStartAddress() const {
+        return this->m_startAddress.value_or(0x00);
+    }
+
 
     void PatternLanguage::setDangerousFunctionCallHandler(std::function<bool()> callback) {
         this->m_dangerousFunctionCallCallback = std::move(callback);
