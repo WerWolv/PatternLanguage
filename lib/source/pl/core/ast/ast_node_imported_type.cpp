@@ -34,13 +34,25 @@ namespace pl::core::ast {
             result = std::move(pattern);
         } else {
             auto structPattern = std::make_shared<ptrn::PatternStruct>(evaluator, evaluator->getReadOffset(), 0, getLocation().line);
+
+            u64 minPos = std::numeric_limits<u64>::max();
+            u64 maxPos = std::numeric_limits<u64>::min();
+
+            for (const auto &pattern : patterns) {
+                minPos = std::min(minPos, pattern->getOffset());
+                maxPos = std::max(maxPos, pattern->getOffset() + pattern->getSize());
+            }
+
             structPattern->setEntries(patterns);
+            structPattern->setSize(maxPos - minPos);
 
             result = std::move(structPattern);
         }
 
         result->setOffset(startAddress);
         runtime.setStartAddress(evaluator->getRuntime().getStartAddress());
+
+        evaluator->setReadOffset(startAddress + result->getSize());
 
         return { result };
     }
