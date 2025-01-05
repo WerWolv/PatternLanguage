@@ -135,6 +135,7 @@ namespace pl::core {
         }
 
         if (m_sourceCode[m_cursor] == '\n') {
+            m_longestLineLength = compareCurrentWithLongest();
             m_line++;
             m_lineBegin = m_cursor;
             m_cursor++;
@@ -160,6 +161,7 @@ namespace pl::core {
         }
 
         if (m_sourceCode[m_cursor] == '\n') {
+            m_longestLineLength = compareCurrentWithLongest();
             m_line++;
             m_lineBegin = m_cursor;
             m_cursor++;
@@ -324,6 +326,7 @@ namespace pl::core {
         auto len = m_cursor - begin;
 
         if (m_sourceCode[m_cursor] == '\n') {
+            m_longestLineLength = compareCurrentWithLongest();
             m_line++;
             m_lineBegin = m_cursor;
             m_cursor++;
@@ -345,6 +348,7 @@ namespace pl::core {
         auto len = m_cursor - begin;
 
         if (m_sourceCode[m_cursor] == '\n') {
+            m_longestLineLength = compareCurrentWithLongest();
             m_line++;
             m_lineBegin = m_cursor;
             m_cursor++;
@@ -362,6 +366,7 @@ namespace pl::core {
         m_cursor += 3;
         while(true) {
             if(peek(0) == '\n') {
+                m_longestLineLength = compareCurrentWithLongest();
                 m_line++;
                 m_lineBegin = m_cursor;
             }
@@ -391,6 +396,7 @@ namespace pl::core {
         m_cursor += 2;
         while(true) {
             if(peek(0) == '\n') {
+                m_longestLineLength = compareCurrentWithLongest();
                 m_line++;
                 m_lineBegin = m_cursor;
             }
@@ -494,6 +500,7 @@ namespace pl::core {
         this->m_cursor = 0;
         this->m_line = 1;
         this->m_lineBegin = 0;
+        this->m_longestLineLength = 0;
 
         const size_t end = this->m_sourceCode.size();
 
@@ -502,11 +509,15 @@ namespace pl::core {
         while(this->m_cursor < end) {
             const char& c = this->m_sourceCode[this->m_cursor];
 
-            if (c == '\x00') break; // end of string
+            if (c == '\x00') {
+                m_longestLineLength = compareCurrentWithLongest();
+                break; // end of string
+            }
 
             if (std::isblank(c) || std::isspace(c)) {
                 if(c == '\n') {
                     m_line++;
+                    m_longestLineLength = compareCurrentWithLongest();
                     m_lineBegin = m_cursor;
                 }
                 m_cursor++;
@@ -611,6 +622,7 @@ namespace pl::core {
                          directive == Token::Directive::EndIf)
                         continue;
                     if (peek(0) == '\n') {
+                        m_longestLineLength = compareCurrentWithLongest();
                         m_line++;
                         m_lineBegin = m_cursor;
                         m_cursor++;
@@ -622,6 +634,7 @@ namespace pl::core {
                         if (m_line != line || peek(0) == 0)
                             continue;
                         if (peek(0) == '\n') {
+                            m_longestLineLength = compareCurrentWithLongest();
                             m_line++;
                             m_lineBegin = m_cursor;
                             m_cursor++;

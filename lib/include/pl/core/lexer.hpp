@@ -20,6 +20,8 @@ namespace pl::core {
         Lexer() = default;
 
         hlp::CompileResult<std::vector<Token>> lex(const api::Source *source);
+        size_t getLongestLineLength() const { return m_longestLineLength; }
+
 
     private:
         [[nodiscard]] char peek(size_t p = 1) const;
@@ -49,13 +51,16 @@ namespace pl::core {
         Token makeToken(const Token& token, size_t length = 1);
         static Token makeTokenAt(const Token& token, Location& location, size_t length = 1);
         void addToken(const Token& token);
-
+        size_t compareCurrentWithLongest() const {
+            return std::max(m_longestLineLength, m_cursor - m_lineBegin);
+        }
         std::string m_sourceCode;
         const api::Source* m_source = nullptr;
         std::vector<Token> m_tokens;
         size_t m_cursor = 0;
         u32 m_line = 0;
         u32 m_lineBegin = 0;
+        size_t m_longestLineLength = 0;
         u32 m_errorLength;
     };
 }
