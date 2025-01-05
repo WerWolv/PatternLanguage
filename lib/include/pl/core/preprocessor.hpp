@@ -134,6 +134,7 @@ namespace pl::core {
 
         void registerDirectiveHandler(const Token::Directive &name, auto memberFunction);
         void registerStatementHandler(const Token::Keyword &name, auto memberFunction);
+        void reportError(const std::string &message, const std::string &description);
 
         std::unordered_map<std::string, api::PragmaHandler> m_pragmaHandlers;
         std::unordered_map<Token::Directive, api::DirectiveHandler> m_directiveHandlers;

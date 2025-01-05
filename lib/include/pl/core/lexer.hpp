@@ -51,8 +51,14 @@ namespace pl::core {
         Token makeToken(const Token& token, size_t length = 1);
         static Token makeTokenAt(const Token& token, Location& location, size_t length = 1);
         void addToken(const Token& token);
-        size_t compareCurrentWithLongest() const {
-            return std::max(m_longestLineLength, m_cursor - m_lineBegin);
+        bool hasTheLineEnded(const char &ch) {
+            if(ch == '\n') {
+                m_longestLineLength = std::max(m_longestLineLength, m_cursor - m_lineBegin);
+                m_line++;
+                m_lineBegin = m_cursor;
+                return true;
+            }
+            return false;
         }
         std::string m_sourceCode;
         const api::Source* m_source = nullptr;

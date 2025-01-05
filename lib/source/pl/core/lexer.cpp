@@ -134,12 +134,8 @@ namespace pl::core {
             result += character.value();
         }
 
-        if (m_sourceCode[m_cursor] == '\n') {
-            m_longestLineLength = compareCurrentWithLongest();
-            m_line++;
-            m_lineBegin = m_cursor;
+        if (hasTheLineEnded(m_sourceCode[m_cursor]))
             m_cursor++;
-        }
 
         return makeTokenAt(Literal::makeString(result), location, result.size());
     }
@@ -160,12 +156,8 @@ namespace pl::core {
             result += character.value();
         }
 
-        if (m_sourceCode[m_cursor] == '\n') {
-            m_longestLineLength = compareCurrentWithLongest();
-            m_line++;
-            m_lineBegin = m_cursor;
+        if (hasTheLineEnded(m_sourceCode[m_cursor]))
             m_cursor++;
-        }
 
         return makeTokenAt(Literal::makeString(result), location, result.size());
     }
@@ -325,12 +317,8 @@ namespace pl::core {
         }
         auto len = m_cursor - begin;
 
-        if (m_sourceCode[m_cursor] == '\n') {
-            m_longestLineLength = compareCurrentWithLongest();
-            m_line++;
-            m_lineBegin = m_cursor;
+        if (hasTheLineEnded(m_sourceCode[m_cursor]))
             m_cursor++;
-        }
 
         return makeTokenAt(Literal::makeComment(true, result), location, len);
     }
@@ -347,12 +335,8 @@ namespace pl::core {
         }
         auto len = m_cursor - begin;
 
-        if (m_sourceCode[m_cursor] == '\n') {
-            m_longestLineLength = compareCurrentWithLongest();
-            m_line++;
-            m_lineBegin = m_cursor;
+        if (hasTheLineEnded(m_sourceCode[m_cursor]))
             m_cursor++;
-        }
 
         return makeTokenAt(Literal::makeDocComment(false, true, result), location, len);
     }
@@ -365,11 +349,7 @@ namespace pl::core {
 
         m_cursor += 3;
         while(true) {
-            if(peek(0) == '\n') {
-                m_longestLineLength = compareCurrentWithLongest();
-                m_line++;
-                m_lineBegin = m_cursor;
-            }
+            hasTheLineEnded(peek(0));
 
             if(peek(1) == '\x00') {
                 m_errorLength = 1;
@@ -395,11 +375,7 @@ namespace pl::core {
 
         m_cursor += 2;
         while(true) {
-            if(peek(0) == '\n') {
-                m_longestLineLength = compareCurrentWithLongest();
-                m_line++;
-                m_lineBegin = m_cursor;
-            }
+            hasTheLineEnded(peek(0));
 
             if(peek(1) == '\x00') {
                 m_errorLength = 2;
@@ -510,16 +486,12 @@ namespace pl::core {
             const char& c = this->m_sourceCode[this->m_cursor];
 
             if (c == '\x00') {
-                m_longestLineLength = compareCurrentWithLongest();
+                m_longestLineLength = std::max(m_longestLineLength, m_cursor - m_lineBegin);
                 break; // end of string
             }
 
             if (std::isblank(c) || std::isspace(c)) {
-                if(c == '\n') {
-                    m_line++;
-                    m_longestLineLength = compareCurrentWithLongest();
-                    m_lineBegin = m_cursor;
-                }
+                hasTheLineEnded(c);
                 m_cursor++;
                 continue;
             }
@@ -621,10 +593,7 @@ namespace pl::core {
                          peek(0) == 0  || directive == Token::Directive::IfDef  || directive == Token::Directive::IfNDef ||
                          directive == Token::Directive::EndIf)
                         continue;
-                    if (peek(0) == '\n') {
-                        m_longestLineLength = compareCurrentWithLongest();
-                        m_line++;
-                        m_lineBegin = m_cursor;
+                    if (hasTheLineEnded(peek(0))) {
                         m_cursor++;
                         continue;
                     }
@@ -633,10 +602,7 @@ namespace pl::core {
                         addToken(directiveValue.value());
                         if (m_line != line || peek(0) == 0)
                             continue;
-                        if (peek(0) == '\n') {
-                            m_longestLineLength = compareCurrentWithLongest();
-                            m_line++;
-                            m_lineBegin = m_cursor;
+                        if (hasTheLineEnded(peek(0))) {
                             m_cursor++;
                             continue;
                         }

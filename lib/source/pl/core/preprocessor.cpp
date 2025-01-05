@@ -231,20 +231,25 @@ namespace pl::core {
         }
     }
 
+    void Preprocessor::reportError(const std::string &message, const std::string &description) {
+        m_token--;
+        if (!description.empty())
+            errorDesc(message, description);
+        else
+            error(message);
+        m_token++;
+    }
+
     void Preprocessor::handleInclude(u32 line) {
         // get include name
         auto *tokenLiteral = std::get_if<Token::Literal>(&m_token->value);
         if (tokenLiteral == nullptr || m_token->location.line != line ||  m_token->type != Token::Type::String) {
-            m_token--;
-            errorDesc("No file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
-            m_token++;
+            reportError("No file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
             return;
         }
         auto path = tokenLiteral->toString(false);
         if (!(path.starts_with('"') && path.ends_with('"')) && !(path.starts_with('<') && path.ends_with('>'))) {
-            m_token--;
-            errorDesc("Invalid file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
-            m_token++;
+            reportError("Invalid file to include given in #include directive.", "A #include directive expects a path to a file: #include \"path/to/file\" or #include <path/to/file>.");
             return;
         }
 
@@ -323,9 +328,7 @@ namespace pl::core {
             m_token++;
 
             if (auto keyword = std::get_if<Token::Keyword>(&m_token->value); keyword != nullptr && *keyword != Token::Keyword::From) {
-                m_token--;
-                error("Expected 'from' after import *.");
-                m_token++;
+                reportError("Expected 'from' after import *.","");
                 return;
             }
             saveImport.push_back(*m_token);
@@ -346,9 +349,7 @@ namespace pl::core {
                 saveImport.push_back(*m_token);
                 m_token++;
                 if (m_token->type != Token::Type::Identifier) {
-                    m_token--;
-                    error("Expected identifier after '.' in import statement.");
-                    m_token++;
+                    reportError("Expected identifier after '.' in import statement.", "");
                     return;
                 }
                 path += "/" + std::get_if<Token::Identifier>(&m_token->value)->get();
@@ -357,9 +358,7 @@ namespace pl::core {
                 separator = std::get_if<Token::Separator>(&m_token->value);
             }
         } else {
-            m_token--;
-            errorDesc("No file to import given in import statement.", "An import statement expects a path to a file: import path.to.file; or import \"path/to/file\".");
-            m_token++;
+            reportError("No file to import given in import statement.", "An import statement expects a path to a file: import path.to.file; or import \"path/to/file\".");
             return;
         }
         std::string alias;
@@ -367,9 +366,7 @@ namespace pl::core {
             saveImport.push_back(*m_token);
             m_token++;
             if (m_token->type != Token::Type::Identifier) {
-                m_token--;
-                error("Expected identifier after 'as' in import statement.");
-                m_token++;
+                reportError("Expected identifier after 'as' in import statement.", "");
                 return;
             }
             alias = std::get_if<Token::Identifier>(&m_token->value)->get();
@@ -379,9 +376,7 @@ namespace pl::core {
 
         auto *separator = std::get_if<Token::Separator>(&m_token->value);
         if (separator == nullptr || *separator != Token::Separator::Semicolon) {
-            m_token--;
-            errorDesc("No semicolon found after import statement.", "An import statement expects a semicolon at the end: import path.to.file;");
-            m_token++;
+            reportError("No semicolon found after import statement.", "An import statement expects a semicolon at the end: import path.to.file;");
             return;
         }
         saveImport.push_back(*m_token);
