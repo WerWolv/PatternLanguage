@@ -523,9 +523,15 @@ namespace pl {
         std::transform(intervals.begin(), intervals.end(), std::back_inserter(results), [](const auto &interval) {
             ptrn::Pattern* value = interval.value;
 
+            auto parent = value->getParent();
+            while (parent != nullptr && dynamic_cast<const ptrn::PatternArrayStatic*>(parent->getParent()) == nullptr) {
+                parent = parent->getParent();
+            }
+
             // Handle static array members
-            if (dynamic_cast<const ptrn::PatternArrayStatic*>(value->getParent())) {
-                value->setOffset(interval.interval.start);
+            if (parent != nullptr) {
+                parent->setOffset(interval.interval.start);
+                parent->clearFormatCache();
                 value->clearFormatCache();
             }
 
