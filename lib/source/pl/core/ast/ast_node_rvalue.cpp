@@ -163,13 +163,13 @@ namespace pl::core::ast {
         }
 
         {
-            const auto &currScope = evaluator->getScope(0);
-            std::copy(currScope.scope->begin(), currScope.scope->end(), std::back_inserter(searchScope));
+            const auto &templateParameters = evaluator->getTemplateParameters();
+            std::copy(templateParameters.begin(), templateParameters.end(), std::back_inserter(searchScope));
         }
 
         {
-            const auto &templateParameters = evaluator->getTemplateParameters();
-            std::copy(templateParameters.begin(), templateParameters.end(), std::back_inserter(searchScope));
+            const auto &currScope = evaluator->getScope(0);
+            std::copy(currScope.scope->begin(), currScope.scope->end(), std::back_inserter(searchScope));
         }
 
         for (const auto &part : this->getPath()) {
