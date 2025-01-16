@@ -50,8 +50,15 @@ namespace pl::core {
         std::set<OnceIncludePair> & getOnceIncluded() { return m_onceIncluded; }
         std::set<OnceIncludePair> & getPreprocessorOnceIncluded() { return m_preprocessorOnceIncluded; }
         void setPreprocessorOnceIncluded(const std::set<OnceIncludePair>& onceIncluded) { m_preprocessorOnceIncluded = onceIncluded; }
+
+        ast::ASTNodeTypeDecl* addBuiltinType(const std::string &name, api::FunctionParameterCount parameterCount, const api::TypeCallback &func);
+        const std::map<std::string, hlp::safe_shared_ptr<ast::ASTNodeTypeDecl>>& getBuiltinTypes() const {
+            return m_builtinTypes;
+        }
+
 private:
-        std::map<OnceIncludePair, std::map<std::string, hlp::safe_shared_ptr<ast::ASTNodeTypeDecl>>> m_parsedTypes {};
+        std::map<OnceIncludePair, std::map<std::string, hlp::safe_shared_ptr<ast::ASTNodeTypeDecl>>> m_parsedTypes;
+        std::map<std::string, hlp::safe_shared_ptr<ast::ASTNodeTypeDecl>> m_builtinTypes;
         std::set<OnceIncludePair> m_onceIncluded {};
         std::set<OnceIncludePair> m_preprocessorOnceIncluded {};
         api::Resolver m_resolver = nullptr;

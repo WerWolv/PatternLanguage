@@ -2785,25 +2785,6 @@ namespace pl::core {
         return std::nullopt;
     }
 
-    ast::ASTNodeTypeDecl* Parser::addBuiltinType(const std::string &name, api::FunctionParameterCount parameterCount, const api::TypeCallback &func) {
-        auto type = this->m_builtinTypes.emplace(name,
-            hlp::safe_shared_ptr<ast::ASTNodeTypeDecl>(
-                new ast::ASTNodeTypeDecl(name, std::make_shared<ast::ASTNodeBuiltinType>(parameterCount, func))
-            )
-        ).first->second.get();
-
-        if (parameterCount.min != parameterCount.max)
-            throw std::runtime_error("Types cannot have a variable amount of parameters");
-
-        std::vector<std::shared_ptr<ast::ASTNode>> templateParameters;
-        for (u32 i = 0; i < parameterCount.max; i += 1) {
-            templateParameters.emplace_back(std::make_shared<ast::ASTNodeLValueAssignment>(fmt::format("$param{}$", i), nullptr));
-        }
-        type->setTemplateParameters(std::move(templateParameters));
-
-        return type;
-    }
-
     // <(parseNamespace)...> EndOfProgram
     hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> Parser::parse(std::vector<Token> &tokens) {
 
@@ -2820,7 +2801,7 @@ namespace pl::core {
         if (!this->m_aliasNamespace.empty())
             this->m_currNamespace.push_back(this->m_aliasNamespace);
 
-        for (const auto &[name, type] : m_builtinTypes)
+        for (const auto &[name, type] : m_parserManager->getBuiltinTypes())
             this->m_types.emplace(name, type);
 
         try {

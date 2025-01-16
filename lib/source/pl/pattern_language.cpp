@@ -494,7 +494,7 @@ namespace pl {
     }
 
     void PatternLanguage::addType(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::TypeCallback &func) {
-        this->m_internals.parser->addBuiltinType(getFunctionName(ns, name), parameterCount, func);
+        this->m_parserManager.addBuiltinType(getFunctionName(ns, name), parameterCount, func);
     }
 
     void PatternLanguage::flattenPatterns() {
