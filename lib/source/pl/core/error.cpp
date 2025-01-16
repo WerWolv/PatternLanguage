@@ -5,9 +5,12 @@
 
 namespace pl::core::err::impl {
 
-    std::string formatLocation(Location location) {
+    std::string formatLocation(Location location, std::optional<u64> address) {
         if (location.line > 0 && location.column > 0) {
-            return fmt::format("{}:{}:{}", location.source->source, location.line, location.column);
+            if (address.has_value())
+                return fmt::format("{}:{}:{} at address 0x{:04X}", location.source->source, location.line, location.column, address.value());
+            else
+                return fmt::format("{}:{}:{}", location.source->source, location.line, location.column);
         }
         return "";
     }
@@ -27,7 +30,7 @@ namespace pl::core::err::impl {
                 const auto column = location.column;
                 auto start = column > 20 ? column - 20 : 0;
                 auto end = column + 20 < errorLine.length() ? column + 20 : errorLine.length();
-                // Search for whitespaces on both sides until a maxium of 10 characters and change start/end accordingly
+                // Search for whitespaces on both sides until a maximum of 10 characters and change start/end accordingly
                 for(auto i = 0; i < 10; ++i) {
                     if(start > 0 && errorLine[start] != ' ') {
                         --start;
@@ -66,12 +69,13 @@ namespace pl::core::err::impl {
     std::string formatRuntimeError(
             const Location& location,
             const std::string &message,
-            const std::string &description)
+            const std::string &description,
+            std::optional<u64> address)
     {
         std::string errorMessage = "runtime error: " + message + "\n";
 
         if (location.line > 0) {
-            errorMessage += "  -->   in " + formatLocation(location) + "\n";
+            errorMessage += "  -->   in " + formatLocation(location, address) + "\n";
         }
 
         if (location.line > 0) {

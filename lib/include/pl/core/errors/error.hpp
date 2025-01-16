@@ -15,7 +15,8 @@ namespace pl::core::err {
         std::string formatRuntimeError(
                 const Location &location,
                 const std::string &message,
-                const std::string &description);
+                const std::string &description,
+                std::optional<u64> address = std::nullopt);
 
         std::string formatRuntimeErrorShort(
                 const std::string &message,
@@ -27,7 +28,7 @@ namespace pl::core::err {
             const std::string &description,
             const std::vector<Location> &trace);
 
-        std::string formatLocation(Location location);
+        std::string formatLocation(Location location, std::optional<u64> address = std::nullopt);
         std::string formatLines(Location location);
     }
 

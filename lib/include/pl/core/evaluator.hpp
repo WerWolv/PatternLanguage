@@ -101,6 +101,11 @@ namespace pl::core {
             Evaluator *evaluator;
         };
 
+        struct StackTrace {
+            std::unique_ptr<ast::ASTNode> node;
+            u64 cursorAddress;
+        };
+
         void pushScope(const std::shared_ptr<ptrn::Pattern> &parent, std::vector<std::shared_ptr<ptrn::Pattern>> &scope);
         void popScope();
 
@@ -128,7 +133,7 @@ namespace pl::core {
             return this->m_scopes.size() == 1;
         }
 
-        [[nodiscard]] const std::vector<std::unique_ptr<ast::ASTNode>>& getCallStack() const {
+        [[nodiscard]] const std::vector<StackTrace>& getCallStack() const {
             return this->m_callStack;
         }
 
@@ -509,7 +514,7 @@ namespace pl::core {
         std::function<void()> m_breakpointHitCallback = []{ };
         std::atomic<DangerousFunctionPermission> m_allowDangerousFunctions = DangerousFunctionPermission::Ask;
         ControlFlowStatement m_currControlFlowStatement = ControlFlowStatement::None;
-        std::vector<std::unique_ptr<ast::ASTNode>> m_callStack;
+        std::vector<StackTrace> m_callStack;
 
         std::map<std::string, std::set<ptrn::Pattern*>> m_attributedPatterns;
         std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;

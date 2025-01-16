@@ -1196,7 +1196,7 @@ namespace pl::core {
                         evaluator->m_lastPauseLine = std::nullopt;
                 }
             }
-            evaluator->m_callStack.push_back(node->clone());
+            evaluator->m_callStack.emplace_back(node->clone(), evaluator->getReadOffset());
         }
     }
 

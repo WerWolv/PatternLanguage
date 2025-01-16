@@ -261,14 +261,15 @@ namespace pl {
             const auto &callStack = evaluator->getCallStack();
             u32 lastLine = 0;
             for (const auto &entry : callStack | std::views::reverse) {
-                if (entry == nullptr)
+                const auto &[node, address] = entry;
+                if (node == nullptr)
                     continue;
 
-                auto location = entry->getLocation();
+                auto location = node->getLocation();
                 if (lastLine == location.line)
                     continue;
 
-                console.log(core::LogConsole::Level::Error, core::err::impl::formatLocation(location));
+                console.log(core::LogConsole::Level::Error, core::err::impl::formatLocation(location, address));
                 console.log(core::LogConsole::Level::Error, core::err::impl::formatLines(location));
                 lastLine = location.line;
             }
