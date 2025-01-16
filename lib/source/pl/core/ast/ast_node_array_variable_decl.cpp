@@ -102,8 +102,8 @@ namespace pl::core::ast {
             }
 
             if (this->m_placementSection != nullptr && !evaluator->isGlobalScope()) {
-                resultPatterns.clear();
                 evaluator->addPattern(std::move(pattern));
+                resultPatterns.pop_back();
             }
         }
     }
