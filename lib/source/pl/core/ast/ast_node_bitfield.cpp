@@ -27,9 +27,6 @@ namespace pl::core::ast {
 
         auto position = evaluator->getBitwiseReadOffset();
         auto bitfieldPattern = std::make_shared<ptrn::PatternBitfield>(evaluator, position.byteOffset, position.bitOffset, 0, getLocation().line);
-        ON_SCOPE_EXIT {
-            resultPatterns = hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(bitfieldPattern));
-        };
 
         bitfieldPattern->setSection(evaluator->getSectionId());
 
@@ -93,13 +90,24 @@ namespace pl::core::ast {
 
         std::vector<std::shared_ptr<ptrn::Pattern>> fields;
         std::vector<std::shared_ptr<ptrn::Pattern>> potentialPatterns;
+        auto initialPosition = evaluator->getBitwiseReadOffset();
 
         evaluator->pushScope(bitfieldPattern, potentialPatterns);
-        ON_SCOPE_EXIT {
-                          evaluator->popScope();
-                      };
 
-        auto initialPosition = evaluator->getBitwiseReadOffset();
+        ON_SCOPE_EXIT {
+            bitfieldPattern->setReversed(evaluator->isReadOrderReversed());
+            if (reversedChanged)
+                evaluator->setBitwiseReadOffset(initialPosition);
+            bitfieldPattern->setFields(fields);
+
+            applyTypeAttributes(evaluator, this, bitfieldPattern);
+
+            resultPatterns = hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(bitfieldPattern));
+
+            evaluator->setReadOrderReversed(prevReversed);
+            evaluator->popScope();
+        };
+
         auto setSize = [&](ASTNode *node) {
             auto endPosition = evaluator->getBitwiseReadOffset();
             auto startOffset = (initialPosition.byteOffset * 8) + initialPosition.bitOffset;
@@ -114,16 +122,17 @@ namespace pl::core::ast {
         };
 
         for (auto &entry : this->m_entries) {
-            entry->createPatterns(evaluator, potentialPatterns);
+            std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
+            entry->createPatterns(evaluator, patterns);
             setSize(entry.get());
 
-            if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
+            if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Continue) {
                 break;
+            }
 
-            if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Break) {
-                break;
-            } else if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Continue) {
-                potentialPatterns.clear();
+            std::move(patterns.begin(), patterns.end(), std::back_inserter(potentialPatterns));
+            
+            if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Return || evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Break) {
                 break;
             }
         }
@@ -137,15 +146,6 @@ namespace pl::core::ast {
                 fields.push_back(pattern);
             }
         }
-
-        bitfieldPattern->setReversed(evaluator->isReadOrderReversed());
-        if (reversedChanged)
-            evaluator->setBitwiseReadOffset(initialPosition);
-        bitfieldPattern->setFields(fields);
-
-        applyTypeAttributes(evaluator, this, bitfieldPattern);
-
-        evaluator->setReadOrderReversed(prevReversed);
     }
 
 }
