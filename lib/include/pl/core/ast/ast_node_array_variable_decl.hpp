@@ -17,7 +17,7 @@ namespace pl::core::ast {
             return std::unique_ptr<ASTNode>(new ASTNodeArrayVariableDecl(*this));
         }
 
-        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override;
+        void createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const override;
         FunctionResult execute(Evaluator *evaluator) const override;
 
         [[nodiscard]] const std::string &getName() const {
@@ -47,8 +47,8 @@ namespace pl::core::ast {
         std::unique_ptr<ASTNode> m_placementOffset, m_placementSection;
         bool m_constant;
 
-        std::unique_ptr<ptrn::Pattern> createStaticArray(Evaluator *evaluator) const;
-        std::unique_ptr<ptrn::Pattern> createDynamicArray(Evaluator *evaluator) const;
+        void createStaticArray(Evaluator *evaluator, std::shared_ptr<ptrn::Pattern> &resultPattern) const;
+        void createDynamicArray(Evaluator *evaluator, std::shared_ptr<ptrn::Pattern> &resultPattern) const;
     };
 
 }

@@ -22,7 +22,7 @@ namespace pl::core::ast {
             return this->m_params;
         }
 
-        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override;
+        void createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const override;
         [[nodiscard]] std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override;
         FunctionResult execute(Evaluator *evaluator) const override;
 

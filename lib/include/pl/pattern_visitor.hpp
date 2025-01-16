@@ -22,11 +22,11 @@ namespace pl {
         class PatternUnsigned;
         class PatternWideCharacter;
         class PatternWideString;
+        class PatternError;
 
     }
 
-    class PatternVisitor
-    {
+    class PatternVisitor {
     public:
         virtual void visit(ptrn::PatternArrayDynamic& pattern)  = 0;
         virtual void visit(ptrn::PatternArrayStatic& pattern)   = 0;
@@ -46,6 +46,7 @@ namespace pl {
         virtual void visit(ptrn::PatternUnsigned& pattern)      = 0;
         virtual void visit(ptrn::PatternWideCharacter& pattern) = 0;
         virtual void visit(ptrn::PatternWideString& pattern)    = 0;
+        virtual void visit(ptrn::PatternError& pattern)         = 0;
         virtual void visit(ptrn::Pattern& pattern)              = 0;
     };
 }

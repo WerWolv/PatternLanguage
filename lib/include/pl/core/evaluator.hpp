@@ -522,7 +522,7 @@ namespace pl::core {
             err::E0011.throwError("No memory has been attached. Reading is disabled.");
         };
         std::function<void(u64, const u8*, size_t)> m_writerFunction = [](u64, const u8*, size_t){
-            err::E0011.throwError("No memory has been attached. Reading is disabled.");
+            err::E0011.throwError("No memory has been attached. Writing is disabled.");
         };
 
         bool m_mainSectionEditsAllowed = false;
@@ -534,6 +534,7 @@ namespace pl::core {
         bool m_shouldPauseNextLine = false;
 
         std::atomic<u64> m_lastReadAddress, m_lastWriteAddress, m_lastPatternAddress;
+        std::atomic<ptrn::Pattern*> m_lastPattern = nullptr;
         std::vector<u32> m_sourceLineLength;
 
         constexpr static std::array<u32, 9> DefaultPatternColorPalette = { 0x70B4771F, 0x700E7FFF, 0x702CA02C, 0x702827D6, 0x70BD6794, 0x704B568C, 0x70C277E3, 0x7022BDBC, 0x70CFBE17 };

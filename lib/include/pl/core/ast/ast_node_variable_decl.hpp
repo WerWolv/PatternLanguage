@@ -25,7 +25,7 @@ namespace pl::core::ast {
         [[nodiscard]] constexpr bool isInVariable() const { return this->m_inVariable; }
         [[nodiscard]] constexpr bool isOutVariable() const { return this->m_outVariable; }
 
-        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override;
+        void createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const override;
 
         FunctionResult execute(Evaluator *evaluator) const override;
 

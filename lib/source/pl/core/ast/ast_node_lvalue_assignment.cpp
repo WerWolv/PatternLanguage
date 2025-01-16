@@ -17,10 +17,8 @@ namespace pl::core::ast {
             this->m_rvalue     = other.m_rvalue->clone();
     }
 
-    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeLValueAssignment::createPatterns(Evaluator *evaluator) const {
+    void ASTNodeLValueAssignment::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &) const {
         this->execute(evaluator);
-
-        return {};
     }
 
     ASTNode::FunctionResult ASTNodeLValueAssignment::execute(Evaluator *evaluator) const {

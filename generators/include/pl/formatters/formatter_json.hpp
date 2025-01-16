@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pl/formatters/formatter.hpp>
+#include <pl/patterns/pattern_error.hpp>
 
 namespace pl::gen::fmt {
 
@@ -27,6 +28,7 @@ namespace pl::gen::fmt {
         void visit(pl::ptrn::PatternUnsigned& pattern)      override { formatValue(&pattern);       }
         void visit(pl::ptrn::PatternWideCharacter& pattern) override { formatString(&pattern);      }
         void visit(pl::ptrn::PatternWideString& pattern)    override { formatString(&pattern);      }
+        void visit(pl::ptrn::PatternError& pattern)         override { formatString(&pattern);      }
         void visit(pl::ptrn::Pattern& pattern)              override { formatString(&pattern);      }
 
         [[nodiscard]] auto getResult() const {

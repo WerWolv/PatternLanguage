@@ -82,9 +82,10 @@ namespace pl::core::ast {
 
         std::shared_ptr<ptrn::Pattern> pattern;
         {
-            auto referencedPattern = std::move(this->createPatterns(evaluator).front());
+            std::vector<std::shared_ptr<ptrn::Pattern>> referencedPatterns;
+            this->createPatterns(evaluator, referencedPatterns);
 
-            pattern = referencedPattern;
+            pattern = std::move(referencedPatterns.front());
         }
 
         Token::Literal literal;
@@ -149,7 +150,7 @@ namespace pl::core::ast {
         return std::unique_ptr<ASTNode>(new ASTNodeLiteral(std::move(literal)));
     }
 
-    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeRValue::createPatterns(Evaluator *evaluator) const {
+    void ASTNodeRValue::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         std::vector<std::shared_ptr<ptrn::Pattern>> searchScope;
@@ -271,7 +272,7 @@ namespace pl::core::ast {
         if (currPattern == nullptr)
             err::E0003.throwError("Cannot reference global scope.", {}, this->getLocation());
         else
-            return hlp::moveToVector(std::move(currPattern));
+            resultPatterns = hlp::moveToVector(std::move(currPattern));
     }
 
 }

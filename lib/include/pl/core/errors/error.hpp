@@ -36,7 +36,10 @@ namespace pl::core::err {
     public:
         UserData() = default;
         UserData(const T &userData) : m_userData(userData) { }
-        UserData(const UserData& ) = default;
+        UserData(const UserData &) = default;
+        UserData(UserData &) = default;
+        UserData(UserData &&) = default;
+        UserData(auto && ... args) : m_userData(std::forward<decltype(args)>(args)...) { }
 
         const T& getUserData() const { return this->m_userData; }
 
@@ -45,10 +48,11 @@ namespace pl::core::err {
     };
 
     struct PatternLanguageError : std::exception {
-        PatternLanguageError(std::string message, u32 line, u32 column) : message(std::move(message)), line(line), column(column) { }
+        PatternLanguageError(std::string message, u32 line, u32 column, std::optional<u64> cursorAddress = std::nullopt) : message(std::move(message)), line(line), column(column), cursorAddress(cursorAddress) { }
 
         std::string message;
         u32 line, column;
+        std::optional<u64> cursorAddress;
 
         [[nodiscard]] const char *what() const noexcept override {
             return this->message.c_str();

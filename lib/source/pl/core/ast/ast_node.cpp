@@ -19,10 +19,9 @@ namespace pl::core::ast {
         return this->clone();
     }
 
-    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNode::createPatterns(Evaluator *evaluator) const {
+    void ASTNode::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
-
-        return {};
+        std::ignore = resultPatterns;
     }
 
     ASTNode::FunctionResult ASTNode::execute(Evaluator *evaluator) const {

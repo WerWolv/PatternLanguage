@@ -21,16 +21,17 @@ namespace pl::core::ast {
         }
     }
 
-    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeMatchStatement::createPatterns(Evaluator *evaluator) const {
+    void ASTNodeMatchStatement::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto &scope = *evaluator->getScope(0).scope;
-        auto body   = this->getCaseBody(evaluator);
+        const auto body   = this->getCaseBody(evaluator);
 
-        if (body == nullptr) return { };
+        if (body == nullptr) return;
 
         for (auto &node : *body) {
-            auto newPatterns = node->createPatterns(evaluator);
+            std::vector<std::shared_ptr<ptrn::Pattern>> newPatterns;
+            node->createPatterns(evaluator, newPatterns);
             for (auto &pattern : newPatterns) {
                 scope.push_back(std::move(pattern));
             }
@@ -38,8 +39,6 @@ namespace pl::core::ast {
             if (evaluator->getCurrentControlFlowStatement() != ControlFlowStatement::None)
                 break;
         }
-
-        return {};
     }
 
     ASTNode::FunctionResult ASTNodeMatchStatement::execute(Evaluator *evaluator) const {

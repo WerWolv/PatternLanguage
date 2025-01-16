@@ -28,7 +28,7 @@ namespace pl::core::ast {
         return std::make_shared<ptrn::PatternBitfieldField>(evaluator, byteOffset, bitOffset, bitSize, getLocation().line);
     }
 
-    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeBitfieldField::createPatterns(Evaluator *evaluator) const {
+    void ASTNodeBitfieldField::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto node = this->m_size->evaluate(evaluator);
@@ -42,9 +42,8 @@ namespace pl::core::ast {
                 [](auto &&offset) -> u8 { return static_cast<u8>(offset); }
         }, literal->getValue());
 
-        std::shared_ptr<ptrn::PatternBitfieldField> pattern;
         auto position = evaluator->getBitwiseReadOffsetAndIncrement(bitSize);
-        pattern = this->createBitfield(evaluator, position.byteOffset, position.bitOffset, bitSize);
+        auto pattern = this->createBitfield(evaluator, position.byteOffset, position.bitOffset, bitSize);
         pattern->setPadding(this->isPadding());
         pattern->setVariableName(this->getName());
 
@@ -53,7 +52,7 @@ namespace pl::core::ast {
 
         applyVariableAttributes(evaluator, this, pattern);
 
-        return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>({ std::move(pattern) });
+        resultPatterns = hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>({ std::move(pattern) });
     }
 
 
@@ -72,7 +71,9 @@ namespace pl::core::ast {
 [[nodiscard]] std::shared_ptr<ptrn::PatternBitfieldField> ASTNodeBitfieldFieldSizedType::createBitfield(Evaluator *evaluator, u64 byteOffset, u8 bitOffset, u8 bitSize) const {
     auto originalPosition = evaluator->getBitwiseReadOffset();
     evaluator->setBitwiseReadOffset(byteOffset, bitOffset);
-    auto patterns = this->m_type->createPatterns(evaluator);
+
+    std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
+    this->m_type->createPatterns(evaluator, patterns);
     auto &pattern = patterns[0];
     std::shared_ptr<ptrn::PatternBitfieldField> result = nullptr;
     evaluator->setBitwiseReadOffset(originalPosition);

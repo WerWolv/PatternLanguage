@@ -25,7 +25,7 @@ namespace pl::core::ast {
         this->m_constant    = other.m_constant;
     }
 
-    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeVariableDecl::createPatterns(Evaluator *evaluator) const {
+    void ASTNodeVariableDecl::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto startOffset = evaluator->getBitwiseReadOffset();
@@ -64,33 +64,36 @@ namespace pl::core::ast {
         if (evaluator->getSectionId() == ptrn::Pattern::PatternLocalSectionId || evaluator->getSectionId() == ptrn::Pattern::HeapSectionId) {
             evaluator->setBitwiseReadOffset(startOffset);
             this->execute(evaluator);
-            return { };
         } else {
-            auto patterns = this->m_type->createPatterns(evaluator);
+            std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
+            ON_SCOPE_EXIT {
+                if (!patterns.empty()) {
+                    auto &pattern = patterns.front();
+                    if (this->m_placementOffset != nullptr && dynamic_cast<ptrn::PatternString*>(pattern.get()) != nullptr)
+                        err::E0005.throwError(fmt::format("Variables of type 'str' cannot be placed in memory.", this->m_name), { }, this->getLocation());
+
+                    pattern->setVariableName(this->m_name);
+
+                    if (this->m_placementSection != nullptr)
+                        pattern->setSection(evaluator->getSectionId());
+
+                    applyVariableAttributes(evaluator, this, pattern);
+
+                    if (this->m_placementOffset != nullptr && !evaluator->isGlobalScope()) {
+                        evaluator->setBitwiseReadOffset(startOffset);
+                    }
+
+                    if (this->m_placementSection != nullptr && !evaluator->isGlobalScope()) {
+                        evaluator->addPattern(std::move(pattern));
+                    } else {
+                        resultPatterns = hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
+                    }
+                }
+            };
+
+            this->m_type->createPatterns(evaluator, patterns);
             if (patterns.empty())
                 err::E0005.throwError("'auto' can only be used with parameters.", { }, this->getLocation());
-
-            auto &pattern = patterns.front();
-            if (this->m_placementOffset != nullptr && dynamic_cast<ptrn::PatternString*>(pattern.get()) != nullptr)
-                err::E0005.throwError(fmt::format("Variables of type 'str' cannot be placed in memory.", this->m_name), { }, this->getLocation());
-
-            pattern->setVariableName(this->m_name);
-
-            if (this->m_placementSection != nullptr)
-                pattern->setSection(evaluator->getSectionId());
-
-            applyVariableAttributes(evaluator, this, pattern);
-
-            if (this->m_placementOffset != nullptr && !evaluator->isGlobalScope()) {
-                evaluator->setBitwiseReadOffset(startOffset);
-            }
-
-            if (this->m_placementSection != nullptr && !evaluator->isGlobalScope()) {
-                evaluator->addPattern(std::move(pattern));
-                return {};
-            }
-
-            return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
         }
     }
 
@@ -129,7 +132,7 @@ namespace pl::core::ast {
         std::vector<std::shared_ptr<ptrn::Pattern>> initValues;
         if (this->m_placementOffset == nullptr) {
             evaluator->pushSectionId(ptrn::Pattern::InstantiationSectionId);
-            initValues = this->getType()->createPatterns(evaluator);
+            this->getType()->createPatterns(evaluator, initValues);
             evaluator->popSectionId();
         } else {
             evaluator->pushSectionId(this->m_placementSection == nullptr ? ptrn::Pattern::MainSectionId : evaluator->getSectionId());
@@ -138,7 +141,7 @@ namespace pl::core::ast {
             ON_SCOPE_EXIT { evaluator->setBitwiseReadOffset(currOffset); };
 
             evaluator->setReadOffset(this->evaluatePlacementOffset(evaluator));
-            initValues = this->getType()->createPatterns(evaluator);
+            this->getType()->createPatterns(evaluator, initValues);
             evaluator->popSectionId();
         }
 

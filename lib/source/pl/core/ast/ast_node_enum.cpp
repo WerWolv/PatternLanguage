@@ -62,15 +62,16 @@ namespace pl::core::ast {
     }
 
 
-    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeEnum::createPatterns(Evaluator *evaluator) const {
+    void ASTNodeEnum::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         evaluator->alignToByte();
 
-        const auto nodes = this->m_underlyingType->createPatterns(evaluator);
-        if (nodes.empty())
+        std::vector<std::shared_ptr<ptrn::Pattern>> underlyingTypePatterns;
+        this->m_underlyingType->createPatterns(evaluator, underlyingTypePatterns);
+        if (underlyingTypePatterns.empty())
             err::E0005.throwError("'auto' can only be used with parameters.", { }, this->getLocation());
-        auto &underlying = nodes.front();
+        auto &underlying = underlyingTypePatterns.front();
 
         auto pattern = std::make_shared<ptrn::PatternEnum>(evaluator, underlying->getOffset(), 0, getLocation().line);
 
@@ -83,7 +84,7 @@ namespace pl::core::ast {
 
         applyTypeAttributes(evaluator, this, pattern);
 
-        return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
+        resultPatterns = hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
     }
 
     std::unique_ptr<ASTNode> ASTNodeEnum::evaluate(Evaluator *) const {

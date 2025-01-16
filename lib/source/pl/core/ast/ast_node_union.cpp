@@ -12,7 +12,7 @@ namespace pl::core::ast {
             this->m_members.push_back(otherMember->clone());
     }
 
-    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeUnion::createPatterns(Evaluator *evaluator) const {
+    void ASTNodeUnion::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         evaluator->alignToByte();
@@ -26,13 +26,24 @@ namespace pl::core::ast {
 
         evaluator->pushScope(pattern, memberPatterns);
         ON_SCOPE_EXIT {
+            evaluator->setReadOffset(startOffset + size);
+            if (evaluator->isReadOrderReversed())
+                pattern->setAbsoluteOffset(evaluator->getReadOffset());
+            pattern->setEntries(memberPatterns);
+
+            applyTypeAttributes(evaluator, this, pattern);
+
+            resultPatterns = hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
+
             evaluator->popScope();
         };
 
         for (auto &member : this->m_members) {
             evaluator->setReadOffset(startOffset);
 
-            for (auto &memberPattern : member->createPatterns(evaluator)) {
+            std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
+            member->createPatterns(evaluator, patterns);
+            for (auto &memberPattern : patterns) {
                 const auto &varName = memberPattern->getVariableName();
                 if (varName.starts_with("$") && varName.ends_with("$"))
                     continue;
@@ -60,15 +71,6 @@ namespace pl::core::ast {
                 break;
             }
         }
-
-        evaluator->setReadOffset(startOffset + size);
-        if (evaluator->isReadOrderReversed())
-            pattern->setAbsoluteOffset(evaluator->getReadOffset());
-        pattern->setEntries(memberPatterns);
-
-        applyTypeAttributes(evaluator, this, pattern);
-
-        return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
     }
 
 }

@@ -129,7 +129,8 @@ namespace pl::core::ast {
         if (literal == nullptr)
             err::E0004.throwError("Cannot use void expression in a cast.", {}, this->getLocation());
 
-        auto typePatterns = this->m_type->createPatterns(evaluator);
+        std::vector<std::shared_ptr<ptrn::Pattern>> typePatterns;
+        this->m_type->createPatterns(evaluator, typePatterns);
         if (typePatterns.empty())
             err::E0005.throwError("'auto' can only be used with parameters.", { }, this->getLocation());
 

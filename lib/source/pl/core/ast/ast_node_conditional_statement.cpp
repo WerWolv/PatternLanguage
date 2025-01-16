@@ -20,14 +20,15 @@ namespace pl::core::ast {
             this->m_falseBody.push_back(statement->clone());
     }
 
-    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeConditionalStatement::createPatterns(Evaluator *evaluator) const {
+    void ASTNodeConditionalStatement::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto &scope = *evaluator->getScope(0).scope;
         auto &body  = evaluateCondition(getCondition(), evaluator) ? this->m_trueBody : this->m_falseBody;
 
         for (auto &node : body) {
-            auto newPatterns = node->createPatterns(evaluator);
+            std::vector<std::shared_ptr<ptrn::Pattern>> newPatterns;
+            node->createPatterns(evaluator, newPatterns);
             for (auto &pattern : newPatterns) {
                 pattern->setSection(evaluator->getSectionId());
                 scope.push_back(std::move(pattern));
@@ -36,8 +37,6 @@ namespace pl::core::ast {
             if (evaluator->getCurrentControlFlowStatement() != ControlFlowStatement::None)
                 break;
         }
-
-        return {};
     }
 
     ASTNode::FunctionResult ASTNodeConditionalStatement::execute(Evaluator *evaluator) const {

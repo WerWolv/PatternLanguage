@@ -34,17 +34,14 @@ namespace pl::core::ast {
         return result;
     }
 
-    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeCompoundStatement::createPatterns(Evaluator *evaluator) const {
+    void ASTNodeCompoundStatement::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
-        std::vector<std::shared_ptr<ptrn::Pattern>> result;
-
         for (const auto &statement : this->m_statements) {
-            auto patterns = statement->createPatterns(evaluator);
-            std::move(patterns.begin(), patterns.end(), std::back_inserter(result));
+            std::vector<std::shared_ptr<ptrn::Pattern>> newPatterns;
+            statement->createPatterns(evaluator, newPatterns);
+            std::move(newPatterns.begin(), newPatterns.end(), std::back_inserter(resultPatterns));
         }
-
-        return result;
     }
 
     ASTNode::FunctionResult ASTNodeCompoundStatement::execute(Evaluator *evaluator) const {

@@ -249,7 +249,9 @@ namespace pl {
 
         evaluator->setReadOffset(evaluator->getDataBaseAddress());
         evaluator->setDangerousFunctionCallHandler(this->m_dangerousFunctionCallCallback);
-        if (!evaluator->evaluate(this->m_currAST)) {
+
+        bool evaluationResult = evaluator->evaluate(this->m_currAST);
+        if (!evaluationResult) {
             auto &console = evaluator->getConsole();
 
             this->m_currError = console.getLastHardError();
@@ -270,21 +272,23 @@ namespace pl {
                 console.log(core::LogConsole::Level::Error, core::err::impl::formatLines(location));
                 lastLine = location.line;
             }
+
+            if (auto cursor = this->m_currError->cursorAddress; cursor.has_value())
+                console.log(core::LogConsole::Level::Error, fmt::format("Error happened with cursor at address 0x{:04X}", *cursor));
+
             console.log(core::LogConsole::Level::Error, "\n");
+        } else {
+            auto returnCode = evaluator->getMainResult().value_or(0).toSigned();
 
-            return false;
-        }
+            if (!isSubRuntime()) {
+                evaluator->getConsole().log(core::LogConsole::Level::Info, fmt::format("Pattern exited with code: {}", returnCode));
+            }
 
-        auto returnCode = evaluator->getMainResult().value_or(0).toSigned();
+            if (checkResult && returnCode != 0) {
+                this->m_currError = core::err::PatternLanguageError(core::err::E0009.format(fmt::format("Pattern exited with non-zero result: {}", returnCode)), 0, 1);
 
-        if (!isSubRuntime()) {
-            evaluator->getConsole().log(core::LogConsole::Level::Info, fmt::format("Pattern exited with code: {}", returnCode));
-        }
-
-        if (checkResult && returnCode != 0) {
-            this->m_currError = core::err::PatternLanguageError(core::err::E0009.format(fmt::format("Pattern exited with non-zero result: {}", returnCode)), 0, 1);
-
-            return false;
+                evaluationResult = false;
+            }
         }
 
         for (const auto &pattern : evaluator->getPatterns())
@@ -304,7 +308,7 @@ namespace pl {
             this->m_patternsValid = true;
         }
 
-        return true;
+        return evaluationResult;
     }
 
     bool PatternLanguage::executeFile(const std::fs::path &path, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
@@ -462,7 +466,7 @@ namespace pl {
         this->m_internals.evaluator->setDefaultEndian(this->m_defaultEndian);
         this->m_internals.evaluator->setEvaluationDepth(32);
         this->m_internals.evaluator->setArrayLimit(0x10000);
-        this->m_internals.evaluator->setPatternLimit(0x20000);
+        this->m_internals.evaluator->setPatternLimit(0x100000);
         this->m_internals.evaluator->setLoopLimit(0x1000);
         this->m_internals.evaluator->setDebugMode(false);
         this->m_internals.parser->setParserManager(&m_parserManager);

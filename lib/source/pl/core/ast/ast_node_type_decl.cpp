@@ -63,7 +63,7 @@ namespace pl::core::ast {
         return type;
     }
 
-    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeTypeDecl::createPatterns(Evaluator *evaluator) const {
+    void ASTNodeTypeDecl::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         std::vector<std::unique_ptr<ASTNodeLiteral>> templateParamLiterals(this->m_templateParameters.size());
@@ -158,9 +158,9 @@ namespace pl::core::ast {
         ON_SCOPE_EXIT { evaluator->setDefaultEndian(currEndian); };
 
         evaluator->setDefaultEndian(this->m_endian.value_or(currEndian));
-        auto patterns = this->getType()->createPatterns(evaluator);
+        this->getType()->createPatterns(evaluator, resultPatterns);
 
-        for (auto &pattern : patterns) {
+        for (auto &pattern : resultPatterns) {
             if (pattern == nullptr)
                 continue;
 
@@ -190,8 +190,6 @@ namespace pl::core::ast {
             }
 
         }
-
-        return patterns;
     }
 
     void ASTNodeTypeDecl::addAttribute(std::unique_ptr<ASTNodeAttribute> &&attribute) {

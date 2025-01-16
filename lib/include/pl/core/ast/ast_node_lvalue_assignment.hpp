@@ -31,7 +31,7 @@ namespace pl::core::ast {
             this->m_rvalue = std::move(rvalue);
         }
 
-        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override;
+        void createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const override;
         FunctionResult execute(Evaluator *evaluator) const override;
 
     private:

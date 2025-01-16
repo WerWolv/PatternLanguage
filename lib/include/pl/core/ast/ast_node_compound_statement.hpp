@@ -21,7 +21,7 @@ namespace pl::core::ast {
         [[nodiscard]] const std::vector<std::shared_ptr<ASTNode>>& getStatements() const { return this->m_statements; }
 
         [[nodiscard]] std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override;
-        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override;
+        void createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const override;
         FunctionResult execute(Evaluator *evaluator) const override;
         void addAttribute(std::unique_ptr<ASTNodeAttribute> &&attribute) override;
 

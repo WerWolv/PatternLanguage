@@ -42,7 +42,8 @@ namespace pl::core::ast {
                 evaluator->popSectionId();
             };
 
-            auto patterns = this->m_expression->createPatterns(evaluator);
+            std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
+            this->m_expression->createPatterns(evaluator, patterns);
             if (patterns.empty())
                 err::E0005.throwError("'auto' can only be used with parameters.", { }, this->getLocation());
 

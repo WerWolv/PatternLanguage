@@ -40,7 +40,7 @@ namespace pl::core::ast {
         this->m_constant = other.m_constant;
     }
 
-    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeArrayVariableDecl::createPatterns(Evaluator *evaluator) const {
+    void ASTNodeArrayVariableDecl::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto startOffset = evaluator->getBitwiseReadOffset();
@@ -76,22 +76,21 @@ namespace pl::core::ast {
         if (evaluator->getSectionId() == ptrn::Pattern::PatternLocalSectionId || evaluator->getSectionId() == ptrn::Pattern::HeapSectionId) {
             evaluator->setBitwiseReadOffset(startOffset);
             this->execute(evaluator);
-            return { };
         } else {
             auto type = this->m_type->evaluate(evaluator);
 
-            std::shared_ptr<ptrn::Pattern> pattern;
+            auto &pattern = resultPatterns.emplace_back();
             if (auto builtinType = dynamic_cast<ASTNodeBuiltinType *>(type.get()); builtinType != nullptr && builtinType->getType() != Token::ValueType::CustomType)
-                pattern = createStaticArray(evaluator);
+                createStaticArray(evaluator, pattern);
             else {
                 bool isStaticType = false;
                 if (auto attributable = dynamic_cast<Attributable *>(type.get()))
                     isStaticType = attributable->hasAttribute("static", false);
 
                 if (isStaticType)
-                    pattern = createStaticArray(evaluator);
+                    createStaticArray(evaluator, pattern);
                 else
-                    pattern = createDynamicArray(evaluator);
+                    createDynamicArray(evaluator, pattern);
             }
 
             pattern->setSection(evaluator->getSectionId());
@@ -103,11 +102,9 @@ namespace pl::core::ast {
             }
 
             if (this->m_placementSection != nullptr && !evaluator->isGlobalScope()) {
+                resultPatterns.clear();
                 evaluator->addPattern(std::move(pattern));
-                return {};
             }
-
-            return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
         }
     }
 
@@ -155,11 +152,12 @@ namespace pl::core::ast {
     }
 
 
-    std::unique_ptr<ptrn::Pattern> ASTNodeArrayVariableDecl::createStaticArray(Evaluator *evaluator) const {
+    void ASTNodeArrayVariableDecl::createStaticArray(Evaluator *evaluator, std::shared_ptr<ptrn::Pattern> &outputPattern) const {
         evaluator->alignToByte();
         auto startOffset = evaluator->getReadOffset();
 
-        auto templatePatterns = this->m_type->createPatterns(evaluator);
+        std::vector<std::shared_ptr<ptrn::Pattern>> templatePatterns;
+        this->m_type->createPatterns(evaluator, templatePatterns);
         if (templatePatterns.empty())
             err::E0005.throwError("'auto' can only be used with parameters.", { }, this->getLocation());
 
@@ -219,7 +217,6 @@ namespace pl::core::ast {
             }
         }
 
-        std::unique_ptr<ptrn::Pattern> outputPattern;
         if (dynamic_cast<ptrn::PatternPadding *>(templatePattern.get())) {
             outputPattern = std::make_unique<ptrn::PatternPadding>(evaluator, startOffset, 0, getLocation().line);
         } else if (dynamic_cast<ptrn::PatternCharacter *>(templatePattern.get())) {
@@ -247,11 +244,9 @@ namespace pl::core::ast {
         if (outputPattern->getSection() == ptrn::Pattern::MainSectionId)
             if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
                 err::E0004.throwError("Array expanded past end of the data.", { }, this->getLocation());
-
-        return outputPattern;
     }
 
-    std::unique_ptr<ptrn::Pattern> ASTNodeArrayVariableDecl::createDynamicArray(Evaluator *evaluator) const {
+    void ASTNodeArrayVariableDecl::createDynamicArray(Evaluator *evaluator, std::shared_ptr<ptrn::Pattern> &resultPattern) const {
         auto startArrayIndex = evaluator->getCurrentArrayIndex();
         ON_SCOPE_EXIT {
         if (startArrayIndex.has_value())
@@ -269,6 +264,16 @@ namespace pl::core::ast {
 
         size_t size    = 0;
         u64 entryIndex = 0;
+
+        ON_SCOPE_EXIT {
+            if (arrayPattern->getEntryCount() > 0)
+                arrayPattern->setTypeName(arrayPattern->getEntry(0)->getTypeName());
+
+            arrayPattern->setEntries(entries);
+            arrayPattern->setSize(size);
+
+            resultPattern = std::move(arrayPattern);
+        };
 
         auto addEntries = [&](std::vector<std::shared_ptr<ptrn::Pattern>> &&patterns) {
             for (auto &pattern : patterns) {
@@ -312,7 +317,8 @@ namespace pl::core::ast {
 
                     evaluator->setCurrentArrayIndex(i);
 
-                    auto patterns = this->m_type->createPatterns(evaluator);
+                    std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
+                    this->m_type->createPatterns(evaluator, patterns);
                     size_t patternCount = patterns.size();
 
                     if (arrayPattern->getSection() == ptrn::Pattern::MainSectionId)
@@ -342,7 +348,8 @@ namespace pl::core::ast {
 
                     evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
 
-                    auto patterns       = this->m_type->createPatterns(evaluator);
+                    std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
+                    this->m_type->createPatterns(evaluator, patterns);
                     size_t patternCount = patterns.size();
 
                     if (arrayPattern->getSection() == ptrn::Pattern::MainSectionId)
@@ -374,7 +381,8 @@ namespace pl::core::ast {
 
                 evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
 
-                auto patterns = this->m_type->createPatterns(evaluator);
+                std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
+                this->m_type->createPatterns(evaluator, patterns);
 
                 for (auto &pattern : patterns) {
                     std::vector<u8> buffer(pattern->getSize());
@@ -415,14 +423,5 @@ namespace pl::core::ast {
                 if (reachedEnd) break;
             }
         }
-
-
-        if (arrayPattern->getEntryCount() > 0)
-            arrayPattern->setTypeName(arrayPattern->getEntry(0)->getTypeName());
-
-        arrayPattern->setEntries(entries);
-        arrayPattern->setSize(size);
-
-        return arrayPattern;
     }
 }

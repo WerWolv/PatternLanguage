@@ -15,17 +15,14 @@ namespace pl::core::ast {
     }
 
 
-    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeMultiVariableDecl::createPatterns(Evaluator *evaluator) const {
+    void ASTNodeMultiVariableDecl::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
-        std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
-
         for (auto &node : this->m_variables) {
-            auto newPatterns = node->createPatterns(evaluator);
-            std::move(newPatterns.begin(), newPatterns.end(), std::back_inserter(patterns));
+            std::vector<std::shared_ptr<ptrn::Pattern>> newPatterns;
+            node->createPatterns(evaluator, newPatterns);
+            std::move(newPatterns.begin(), newPatterns.end(), std::back_inserter(resultPatterns));
         }
-
-        return patterns;
     }
 
     ASTNode::FunctionResult ASTNodeMultiVariableDecl::execute(Evaluator *evaluator) const {

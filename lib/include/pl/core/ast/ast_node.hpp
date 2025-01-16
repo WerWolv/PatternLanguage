@@ -6,8 +6,10 @@
 #include <pl/core/errors/runtime_errors.hpp>
 #include <pl/helpers/concepts.hpp>
 
+#include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace pl::ptrn { class Pattern; }
 namespace pl::core { class Evaluator; }
@@ -26,7 +28,7 @@ namespace pl::core::ast {
         void setLocation(const Location &location);
 
         [[nodiscard]] virtual std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const;
-        [[nodiscard]] virtual std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const;
+        virtual void createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const;
         virtual FunctionResult execute(Evaluator *evaluator) const;
 
         void setDocComment(const std::string &comment);

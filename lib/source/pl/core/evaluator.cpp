@@ -23,6 +23,7 @@
 #include <pl/patterns/pattern_string.hpp>
 #include <pl/patterns/pattern_array_dynamic.hpp>
 #include <pl/patterns/pattern_padding.hpp>
+#include <pl/patterns/pattern_error.hpp>
 
 #include <exception>
 #include <utility>
@@ -203,7 +204,9 @@ namespace pl::core {
         }
 
         auto startOffset = this->getBitwiseReadOffset();
-        auto typePatterns = type->createPatterns(this);
+
+        std::vector<std::shared_ptr<ptrn::Pattern>> typePatterns;
+        type->createPatterns(this, typePatterns);
         auto typePattern = std::move(typePatterns.front());
 
         typePattern->setConstant(constant);
@@ -403,8 +406,11 @@ namespace pl::core {
             else
                 err::E0003.throwError("Cannot determine type of 'auto' variable.", "Try initializing it directly with a literal.", type->getLocation());
         } else {
-            if (builtinType != nullptr)
-                pattern = type->createPatterns(this).front();
+            if (builtinType != nullptr) {
+                std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
+                type->createPatterns(this, patterns);
+                pattern = std::move(patterns.front());
+            }
             else {
                 pattern = std::make_shared<ptrn::PatternPadding>(this, 0, 0, 0);
 
@@ -823,7 +829,6 @@ namespace pl::core {
         if (this->isDebugModeEnabled())
             this->getConsole().log(LogConsole::Level::Debug, fmt::format("Exiting scope #{}. Parent: '{}', Heap Size: {}.", this->m_scopes.size(), currScope.parent == nullptr ? "None" : currScope.parent->getVariableName(), heap.size()));
 
-
         this->m_scopes.pop_back();
     }
 
@@ -1057,55 +1062,73 @@ namespace pl::core {
                         if (localVariable)
                             this->pushSectionId(ptrn::Pattern::HeapSectionId);
 
+                        std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
 
-                        for (auto &pattern : varDeclNode->createPatterns(this)) {
-                            if (localVariable) {
-                                auto name = pattern->getVariableName();
-                                wolv::util::unused(varDeclNode->execute(this));
+                        ON_SCOPE_EXIT {
+                            for (auto &pattern : patterns) {
+                                if (localVariable) {
+                                    auto name = pattern->getVariableName();
+                                    wolv::util::unused(varDeclNode->execute(this));
 
-                                this->setBitwiseReadOffset(startOffset);
-                            } else {
-                                this->m_patterns.push_back(std::move(pattern));
+                                    this->setBitwiseReadOffset(startOffset);
+                                } else {
+                                    this->m_patterns.push_back(std::move(pattern));
+                                }
+
+                                if (this->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
+                                    break;
                             }
 
-                            if (this->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
-                                break;
-                        }
+                            {
+                                auto name = varDeclNode->getName();
+                                if (varDeclNode->isInVariable() && this->m_inVariables.contains(name))
+                                    this->setVariable(name, this->m_inVariables[name]);
+                            }
 
-                        {
-                            auto name = varDeclNode->getName();
-                            if (varDeclNode->isInVariable() && this->m_inVariables.contains(name))
-                                this->setVariable(name, this->m_inVariables[name]);
-                        }
+                            if (localVariable)
+                                this->popSectionId();
+                        };
 
-                        if (localVariable)
-                            this->popSectionId();
+                        varDeclNode->createPatterns(this, patterns);
+
                     } else if (auto arrayVarDeclNode = dynamic_cast<ast::ASTNodeArrayVariableDecl *>(node); arrayVarDeclNode != nullptr) {
                         bool localVariable = arrayVarDeclNode->getPlacementOffset() == nullptr;
 
                         if (localVariable)
                             this->pushSectionId(ptrn::Pattern::HeapSectionId);
 
-                        for (auto &pattern : arrayVarDeclNode->createPatterns(this)) {
-                            if (localVariable) {
-                                wolv::util::unused(arrayVarDeclNode->execute(this));
+                        std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
 
-                                this->setBitwiseReadOffset(startOffset);
-                            } else {
-                                this->m_patterns.push_back(std::move(pattern));
+                        ON_SCOPE_EXIT {
+                            for (auto &pattern : patterns) {
+                                if (localVariable) {
+                                    wolv::util::unused(arrayVarDeclNode->execute(this));
+
+                                    this->setBitwiseReadOffset(startOffset);
+                                } else {
+                                    this->m_patterns.push_back(std::move(pattern));
+                                }
                             }
-                        }
 
-                        if (localVariable)
-                            this->popSectionId();
+                            if (localVariable)
+                                this->popSectionId();
+                        };
+
+                        arrayVarDeclNode->createPatterns(this, patterns);
                     } else if (auto pointerVarDecl = dynamic_cast<ast::ASTNodePointerVariableDecl *>(node); pointerVarDecl != nullptr) {
-                        for (auto &pattern : pointerVarDecl->createPatterns(this)) {
-                            if (pointerVarDecl->getPlacementOffset() == nullptr) {
-                                err::E0003.throwError("Pointers cannot be used as local variables.");
-                            } else {
-                                this->m_patterns.push_back(std::move(pattern));
+                        std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
+
+                        ON_SCOPE_EXIT {
+                            for (auto &pattern : patterns) {
+                                if (pointerVarDecl->getPlacementOffset() == nullptr) {
+                                    err::E0003.throwError("Pointers cannot be used as local variables.");
+                                } else {
+                                    this->m_patterns.push_back(std::move(pattern));
+                                }
                             }
-                        }
+                        };
+
+                        pointerVarDecl->createPatterns(this, patterns);
                     } else if (auto controlFlowStatement = dynamic_cast<ast::ASTNodeControlFlowStatement *>(node); controlFlowStatement != nullptr) {
                         this->pushSectionId(ptrn::Pattern::HeapSectionId);
                         auto result = node->execute(this);
@@ -1141,18 +1164,9 @@ namespace pl::core {
             }
         } catch (err::EvaluatorError::Exception &e) {
 
-            auto location = e.getUserData();
+            const auto location = e.getUserData();
 
-            this->getConsole().setHardError(err::PatternLanguageError(e.format(location),
-                location.line, location.column));
-
-            // Don't clear patterns on error if debug mode is enabled
-            if (this->m_debugMode)
-                return false;
-
-            this->m_patterns.clear();
-
-            this->m_currPatternCount = 0;
+            this->getConsole().setHardError(err::PatternLanguageError(e.format(location), location.line, location.column, this->getReadOffset()));
 
             return false;
         }

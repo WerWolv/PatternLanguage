@@ -3,6 +3,7 @@
 #include <pl/core/errors/error.hpp>
 
 namespace pl::core::ast { class ASTNode; }
+namespace pl::ptrn { class Pattern; }
 
 namespace pl::core::err {
 

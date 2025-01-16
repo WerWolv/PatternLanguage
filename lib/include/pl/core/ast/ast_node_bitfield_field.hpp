@@ -26,7 +26,7 @@ namespace pl::core::ast {
         [[nodiscard]] bool isPadding() const;
 
         [[nodiscard]] virtual std::shared_ptr<ptrn::PatternBitfieldField> createBitfield(Evaluator *evaluator, u64 byteOffset, u8 bitOffset, u8 bitSize) const;
-        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override;
+        void createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const override;
 
     private:
         std::string m_name;

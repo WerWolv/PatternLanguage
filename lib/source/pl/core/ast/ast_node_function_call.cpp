@@ -19,10 +19,8 @@ namespace pl::core::ast {
             this->m_params.push_back(param->clone());
     }
 
-    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeFunctionCall::createPatterns(Evaluator *evaluator) const {
+    void ASTNodeFunctionCall::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &) const {
         this->execute(evaluator);
-
-        return {};
     }
 
     [[nodiscard]] std::unique_ptr<ASTNode> ASTNodeFunctionCall::evaluate(Evaluator *evaluator) const {

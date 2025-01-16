@@ -19,13 +19,11 @@ namespace pl::core::ast {
             this->m_rvalue = nullptr;
     }
 
-    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeControlFlowStatement::createPatterns(Evaluator *evaluator) const {
+    void ASTNodeControlFlowStatement::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         if (auto result = this->execute(evaluator); result.has_value())
             evaluator->setMainResult(*result);
-
-        return { };
     }
 
     ASTNode::FunctionResult ASTNodeControlFlowStatement::execute(Evaluator *evaluator) const {

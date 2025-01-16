@@ -26,7 +26,7 @@ namespace pl::core::ast {
         [[nodiscard]] const std::vector<std::shared_ptr<ASTNode>> &getEntries() const;
         void addEntry(std::unique_ptr<ASTNode> &&entry);
 
-        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override;
+        void createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const override;
 
     private:
         std::vector<std::shared_ptr<ASTNode>> m_entries;

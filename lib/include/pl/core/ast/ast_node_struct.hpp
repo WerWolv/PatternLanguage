@@ -15,7 +15,7 @@ namespace pl::core::ast {
             return std::unique_ptr<ASTNode>(new ASTNodeStruct(*this));
         }
 
-        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override;
+        void createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const override;
 
         [[nodiscard]] const std::vector<std::shared_ptr<ASTNode>> &getMembers() const { return this->m_members; }
         void addMember(std::shared_ptr<ASTNode> &&node) { this->m_members.push_back(std::move(node)); }

@@ -20,7 +20,7 @@ namespace pl::core::ast {
             return std::unique_ptr<ASTNode>(new ASTNodeBuiltinType(*this));
         }
 
-        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override;
+        void createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const override;
 
     private:
         Token::ValueType m_type;

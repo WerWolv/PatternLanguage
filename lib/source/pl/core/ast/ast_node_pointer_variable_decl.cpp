@@ -24,7 +24,7 @@ namespace pl::core::ast {
             this->m_placementSection = other.m_placementSection->clone();
     }
 
-    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodePointerVariableDecl::createPatterns(Evaluator *evaluator) const {
+    void ASTNodePointerVariableDecl::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto startOffset = evaluator->getBitwiseReadOffset();
@@ -59,7 +59,8 @@ namespace pl::core::ast {
 
         auto pointerStartOffset = evaluator->getReadOffset();
 
-        auto sizePatterns = this->m_sizeType->createPatterns(evaluator);
+        std::vector<std::shared_ptr<ptrn::Pattern>> sizePatterns;
+        this->m_sizeType->createPatterns(evaluator, sizePatterns);
         if (sizePatterns.empty())
             err::E0005.throwError("'auto' can only be used with parameters.", { }, this->getLocation());
 
@@ -69,6 +70,10 @@ namespace pl::core::ast {
         auto pattern = std::make_shared<ptrn::PatternPointer>(evaluator, pointerStartOffset, sizePattern->getSize(), getLocation().line);
         pattern->setVariableName(this->m_name);
         pattern->setPointerTypePattern(std::move(sizePattern));
+
+        ON_SCOPE_EXIT {
+            resultPatterns = hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
+        };
 
         auto pointerEndOffset = evaluator->getBitwiseReadOffset();
 
@@ -82,14 +87,17 @@ namespace pl::core::ast {
 
             evaluator->setReadOffset(pattern->getPointedAtAddress());
 
-            auto pointedAtPatterns = this->m_type->createPatterns(evaluator);
+            std::vector<std::shared_ptr<ptrn::Pattern>> pointedAtPatterns;
+            ON_SCOPE_EXIT {
+                auto &pointedAtPattern = pointedAtPatterns.front();
+
+                pattern->setPointedAtPattern(std::move(pointedAtPattern));
+                pattern->setSection(evaluator->getSectionId());
+            };
+
+            this->m_type->createPatterns(evaluator, pointedAtPatterns);
             if (pointedAtPatterns.empty())
                 err::E0005.throwError("'auto' can only be used with parameters.", { }, this->getLocation());
-
-            auto &pointedAtPattern = pointedAtPatterns.front();
-
-            pattern->setPointedAtPattern(std::move(pointedAtPattern));
-            pattern->setSection(evaluator->getSectionId());
         }
 
         if (this->m_placementSection != nullptr)
@@ -105,14 +113,12 @@ namespace pl::core::ast {
         if (evaluator->getSectionId() == ptrn::Pattern::PatternLocalSectionId) {
             evaluator->setBitwiseReadOffset(startOffset);
             this->execute(evaluator);
-            return { };
+            resultPatterns.clear();
         } else {
             if (this->m_placementSection != nullptr && !evaluator->isGlobalScope()) {
                 evaluator->addPattern(std::move(pattern));
-                return {};
+                resultPatterns.clear();
             }
-
-            return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
         }
     }
 

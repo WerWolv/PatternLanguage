@@ -8,7 +8,7 @@ namespace pl::core::ast {
 
     }
 
-    std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeImportedType::createPatterns(Evaluator *evaluator) const {
+    void ASTNodeImportedType::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const {
         auto &runtime = evaluator->createSubRuntime();
         auto resolver = runtime.getResolver().resolve(m_importedTypeName);
 
@@ -26,7 +26,7 @@ namespace pl::core::ast {
 
         auto patterns = runtime.getPatterns();
 
-        std::shared_ptr<ptrn::Pattern> result;
+        auto &result = resultPatterns.emplace_back();
         if (patterns.size() == 1) {
             auto &pattern = patterns.front();
             pattern->setTypeName(m_importedTypeName);
@@ -53,8 +53,6 @@ namespace pl::core::ast {
         runtime.setStartAddress(evaluator->getRuntime().getStartAddress());
 
         evaluator->setReadOffset(startAddress + result->getSize());
-
-        return { result };
     }
 
     std::unique_ptr<ASTNode> ASTNodeImportedType::evaluate(Evaluator *) const {

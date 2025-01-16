@@ -14,7 +14,7 @@ namespace pl::core::ast {
             this->m_inheritance.push_back(otherInheritance->clone());
     }
 
-    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeStruct::createPatterns(Evaluator *evaluator) const {
+    void ASTNodeStruct::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         evaluator->alignToByte();
@@ -27,6 +27,15 @@ namespace pl::core::ast {
 
         evaluator->pushScope(pattern, memberPatterns);
         ON_SCOPE_EXIT {
+            pattern->setEntries(memberPatterns);
+
+            if (evaluator->isReadOrderReversed())
+                pattern->setAbsoluteOffset(evaluator->getReadOffset());
+
+            applyTypeAttributes(evaluator, this, pattern);
+
+            resultPatterns = hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
+
             evaluator->popScope();
             evaluator->alignToByte();
         };
@@ -40,7 +49,8 @@ namespace pl::core::ast {
             if (evaluator->getCurrentControlFlowStatement() != ControlFlowStatement::None)
                 break;
 
-            auto inheritancePatterns = inheritance->createPatterns(evaluator);
+            std::vector<std::shared_ptr<ptrn::Pattern>> inheritancePatterns;
+            inheritance->createPatterns(evaluator, inheritancePatterns);
             auto &inheritancePattern = inheritancePatterns.front();
 
             if (auto structPattern = dynamic_cast<ptrn::PatternStruct *>(inheritancePattern.get())) {
@@ -59,7 +69,9 @@ namespace pl::core::ast {
 
         for (auto &member : this->m_members) {
             evaluator->alignToByte();
-            for (auto &memberPattern : member->createPatterns(evaluator)) {
+            std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
+            member->createPatterns(evaluator, patterns);
+            for (auto &memberPattern : patterns) {
                 const auto &varName = memberPattern->getVariableName();
                 if (varName.starts_with("$") && varName.ends_with("$"))
                     continue;
@@ -85,15 +97,6 @@ namespace pl::core::ast {
                 break;
             }
         }
-
-        pattern->setEntries(memberPatterns);
-
-        if (evaluator->isReadOrderReversed())
-            pattern->setAbsoluteOffset(evaluator->getReadOffset());
-
-        applyTypeAttributes(evaluator, this, pattern);
-
-        return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
     }
 
 }

@@ -22,7 +22,7 @@ namespace pl::core::ast {
             return std::unique_ptr<ASTNode>(new ASTNodeBitfieldArrayVariableDecl(*this));
         }
 
-        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override;
+        void createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const override;
 
         [[nodiscard]] const std::string &getName() const {
             return this->m_name;
@@ -41,7 +41,7 @@ namespace pl::core::ast {
         std::shared_ptr<ASTNodeTypeDecl> m_type;
         std::unique_ptr<ASTNode> m_size;
 
-        std::unique_ptr<ptrn::Pattern> createArray(Evaluator *evaluator) const;
+        void createArray(Evaluator *evaluator, std::shared_ptr<ptrn::Pattern> &resultPattern) const;
     };
 
 }

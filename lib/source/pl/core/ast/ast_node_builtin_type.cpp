@@ -17,7 +17,7 @@ namespace pl::core::ast {
     ASTNodeBuiltinType::ASTNodeBuiltinType(Token::ValueType type)
     : ASTNode(), m_type(type) { }
 
-    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeBuiltinType::createPatterns(Evaluator *evaluator) const {
+    void ASTNodeBuiltinType::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto size   = Token::getTypeSize(this->m_type);
@@ -54,13 +54,13 @@ namespace pl::core::ast {
             std::ignore = evaluator->getReadOffsetAndIncrement(pattern->getSize());
         }
         else if (this->m_type == Token::ValueType::Auto)
-            return { };
+            return;
         else
             err::E0001.throwError("Invalid builtin type.", {}, this->getLocation());
 
         pattern->setTypeName(Token::getTypeName(this->m_type));
 
-        return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
+        resultPatterns = hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
     }
 
 }

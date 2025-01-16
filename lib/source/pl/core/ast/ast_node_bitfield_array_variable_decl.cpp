@@ -19,17 +19,17 @@ namespace pl::core::ast {
             this->m_size = other.m_size->clone();
     }
 
-    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeBitfieldArrayVariableDecl::createPatterns(Evaluator *evaluator) const {
+    void ASTNodeBitfieldArrayVariableDecl::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto startOffset = evaluator->getBitwiseReadOffset();
 
         auto type = this->m_type->evaluate(evaluator);
 
-        std::shared_ptr<ptrn::Pattern> pattern;
+        auto &pattern = resultPatterns.emplace_back();
         if (dynamic_cast<ASTNodeBitfield *>(type.get()) != nullptr
             || dynamic_cast<ASTNodeBitfieldField *>(type.get()) != nullptr) {
-            pattern = createArray(evaluator);
+            createArray(evaluator, pattern);
         } else {
             err::E0001.throwError("Bitfield arrays may only contain bitwise fields.", { }, this->getLocation());
         }
@@ -39,13 +39,11 @@ namespace pl::core::ast {
         if (evaluator->getSectionId() == ptrn::Pattern::PatternLocalSectionId) {
             evaluator->setBitwiseReadOffset(startOffset);
             this->execute(evaluator);
-            return { };
-        } else {
-            return hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
+            resultPatterns.pop_back();
         }
     }
 
-    std::unique_ptr<ptrn::Pattern> ASTNodeBitfieldArrayVariableDecl::createArray(Evaluator *evaluator) const {
+    void ASTNodeBitfieldArrayVariableDecl::createArray(Evaluator *evaluator, std::shared_ptr<ptrn::Pattern> &resultPattern) const {
         auto startArrayIndex = evaluator->getCurrentArrayIndex();
         ON_SCOPE_EXIT {
         if (startArrayIndex.has_value())
@@ -120,12 +118,39 @@ namespace pl::core::ast {
 
         auto initialPosition = evaluator->getBitwiseReadOffset();
 
+        ON_SCOPE_EXIT {
+            auto endPosition = evaluator->getBitwiseReadOffset();
+            auto startOffset = (initialPosition.byteOffset * 8) + initialPosition.bitOffset;
+            auto endOffset = (endPosition.byteOffset * 8) + endPosition.bitOffset;
+
+            if (startOffset < endOffset) {
+                arrayPattern->setBitSize(endOffset - startOffset);
+            } else {
+                arrayPattern->setAbsoluteOffset(endPosition.byteOffset);
+                arrayPattern->setBitOffset(endPosition.bitOffset);
+                arrayPattern->setBitSize(startOffset - endOffset);
+            }
+
+            for (auto &pattern : entries) {
+                if (auto bitfieldMember = dynamic_cast<ptrn::PatternBitfieldMember*>(pattern.get()); bitfieldMember != nullptr)
+                    bitfieldMember->setParentBitfield(arrayPattern.get());
+            }
+
+            arrayPattern->setEntries(entries);
+
+            if (arrayPattern->getEntryCount() > 0)
+                arrayPattern->setTypeName(arrayPattern->getEntry(0)->getTypeName());
+
+            resultPattern = std::move(arrayPattern);
+        };
+
         while (checkCondition()) {
             evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
 
             evaluator->setCurrentArrayIndex(entryIndex);
 
-            auto patterns = this->m_type->createPatterns(evaluator);
+            std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
+            this->m_type->createPatterns(evaluator, patterns);
 
             if (arrayPattern->getSection() == ptrn::Pattern::MainSectionId)
                 if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
@@ -146,30 +171,6 @@ namespace pl::core::ast {
             if (ctrlFlow == ControlFlowStatement::Break || ctrlFlow == ControlFlowStatement::Return)
                 break;
         }
-
-        auto endPosition = evaluator->getBitwiseReadOffset();
-        auto startOffset = (initialPosition.byteOffset * 8) + initialPosition.bitOffset;
-        auto endOffset = (endPosition.byteOffset * 8) + endPosition.bitOffset;
-
-        if (startOffset < endOffset) {
-            arrayPattern->setBitSize(endOffset - startOffset);
-        } else {
-            arrayPattern->setAbsoluteOffset(endPosition.byteOffset);
-            arrayPattern->setBitOffset(endPosition.bitOffset);
-            arrayPattern->setBitSize(startOffset - endOffset);
-        }
-
-        for (auto &pattern : entries) {
-            if (auto bitfieldMember = dynamic_cast<ptrn::PatternBitfieldMember*>(pattern.get()); bitfieldMember != nullptr)
-                bitfieldMember->setParentBitfield(arrayPattern.get());
-        }
-
-        arrayPattern->setEntries(entries);
-
-        if (arrayPattern->getEntryCount() > 0)
-            arrayPattern->setTypeName(arrayPattern->getEntry(0)->getTypeName());
-
-        return arrayPattern;
     }
 
 }

@@ -16,7 +16,7 @@ namespace pl::core::ast {
             this->m_catchBody.push_back(statement->clone());
     }
 
-    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeTryCatchStatement::createPatterns(Evaluator *evaluator) const {
+    void ASTNodeTryCatchStatement::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto startOffset = evaluator->getReadOffset();
@@ -28,7 +28,8 @@ namespace pl::core::ast {
 
         try {
             for (auto &node : this->m_tryBody) {
-                auto newPatterns = node->createPatterns(evaluator);
+                std::vector<std::shared_ptr<ptrn::Pattern>> newPatterns;
+                node->createPatterns(evaluator, newPatterns);
                 for (auto &pattern : newPatterns) {
                     pattern->setSection(evaluator->getSectionId());
                     scope.scope->push_back(std::move(pattern));
@@ -37,14 +38,15 @@ namespace pl::core::ast {
                 if (evaluator->getCurrentControlFlowStatement() != ControlFlowStatement::None)
                     break;
             }
-        } catch (err::EvaluatorError::Exception &error) {
+        } catch (err::EvaluatorError::Exception &) {
             evaluator->setReadOffset(startOffset);
 
             scope.scope->resize(startScopeSize);
             scope.heapStartSize = startHeapSize;
 
             for (auto &node : this->m_catchBody) {
-                auto newPatterns = node->createPatterns(evaluator);
+                std::vector<std::shared_ptr<ptrn::Pattern>> newPatterns;
+                node->createPatterns(evaluator, newPatterns);
                 for (auto &pattern : newPatterns) {
                     pattern->setSection(evaluator->getSectionId());
                     scope.scope->push_back(std::move(pattern));
@@ -54,8 +56,6 @@ namespace pl::core::ast {
                     break;
             }
         }
-
-        return {};
     }
 
 

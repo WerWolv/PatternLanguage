@@ -19,7 +19,7 @@ namespace pl::core::ast {
             return std::unique_ptr<ASTNode>(new ASTNodeEnum(*this));
         }
 
-        [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> createPatterns(Evaluator *evaluator) const override;
+        void createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const override;
         std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override;
 
         [[nodiscard]] const std::map<std::string, std::pair<std::unique_ptr<ASTNode>, std::unique_ptr<ASTNode>>> &getEntries() const { return this->m_entries; }

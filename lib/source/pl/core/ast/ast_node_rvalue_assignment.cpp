@@ -16,16 +16,15 @@ namespace pl::core::ast {
     }
 
 
-    [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>> ASTNodeRValueAssignment::createPatterns(Evaluator *evaluator) const {
+    void ASTNodeRValueAssignment::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &) const {
         this->execute(evaluator);
-
-        return {};
     }
 
     ASTNode::FunctionResult ASTNodeRValueAssignment::execute(Evaluator *evaluator) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
-        auto lhs = this->getLValue()->createPatterns(evaluator);
+        std::vector<std::shared_ptr<ptrn::Pattern>> lhs;
+        this->getLValue()->createPatterns(evaluator, lhs);
         auto rhs = this->getRValue()->evaluate(evaluator);
 
         if (lhs.empty())
