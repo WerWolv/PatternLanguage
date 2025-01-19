@@ -1645,7 +1645,7 @@ namespace pl::core {
                 errorDesc("Cannot mark placed variable as 'const'.", "Variables placed in memory are always implicitly const.");
             }
 
-            auto variableName = getValue<Token::Identifier>(-2).get();
+            std::string variableName = memberIdentifier == nullptr ? "" : memberIdentifier->get();
 
             if (memberIdentifier != nullptr) {
                 if (m_currTemplateType.empty())
