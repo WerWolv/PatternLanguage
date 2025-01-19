@@ -314,8 +314,11 @@ namespace pl::core {
         }
 
         void handleAbort() const {
-            if (this->m_aborted) [[unlikely]]
-                err::E0007.throwError("Evaluation aborted by user.");
+            if (this->m_aborted) [[unlikely]] {
+                if (std::uncaught_exceptions() == 0) {
+                    err::E0007.throwError("Evaluation aborted by user.");
+                }
+            }
         }
 
         [[nodiscard]] std::optional<Token::Literal> getEnvVariable(const std::string &name) const {
