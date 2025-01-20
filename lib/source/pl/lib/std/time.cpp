@@ -49,12 +49,12 @@ namespace pl::lib::libstd::time {
             runtime.addFunction(nsStdTime, "epoch", FunctionParameterCount::exactly(0), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 wolv::util::unused(params);
 
-                return { std::time(nullptr) };
+                return { u128(std::time(nullptr)) };
             });
 
             /* to_local(time) */
             runtime.addFunction(nsStdTime, "to_local", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
-                time_t time = params[0].toUnsigned();
+                auto time = time_t(params[0].toUnsigned());
 
                 try {
                     auto localTime = fmt::localtime(time);
@@ -63,12 +63,11 @@ namespace pl::lib::libstd::time {
                 } catch (const fmt::format_error&) {
                     return u128(0);
                 }
-
             });
 
             /* to_utc(time) */
             runtime.addFunction(nsStdTime, "to_utc", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
-                time_t time = params[0].toUnsigned();
+                auto time = time_t(params[0].toUnsigned());
 
                 try {
                     auto gmTime = fmt::gmtime(time);
@@ -102,7 +101,7 @@ namespace pl::lib::libstd::time {
                     time.tm_mon  < 0 || time.tm_mon  > 11 ||
                     time.tm_wday < 0 || time.tm_wday > 6  ||
                     time.tm_yday < 0 || time.tm_yday > 365)
-                    return "Invalid";
+                    return std::string("Invalid");
 
                 return { fmt::format(fmt::runtime(fmt::format("{{:{}}}", formatString)), time) };
             });

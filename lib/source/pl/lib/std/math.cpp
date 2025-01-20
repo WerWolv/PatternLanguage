@@ -158,16 +158,16 @@ namespace pl::lib::libstd::math {
 
             /* accumulate(start, end, size, section, operation = Add, endian = Native) */
             runtime.addFunction(nsStdMath, "accumulate", FunctionParameterCount::between(4, 6), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto start      = params[0].toUnsigned();
+                auto start      = u64(params[0].toUnsigned());
                 auto end        = params[1].toUnsigned();
-                auto size       = params[2].toUnsigned();
-                auto section    = params[3].toUnsigned();
+                auto size       = size_t(params[2].toUnsigned());
+                auto section    = u64(params[3].toUnsigned());
 
                 AccumulationOperation op = AccumulationOperation::Add;
                 if (params.size() > 4)
-                    op = static_cast<AccumulationOperation>(params[4].toUnsigned());
+                    op = static_cast<AccumulationOperation>(i32(params[4].toUnsigned()));
                 
-                types::Endian endian = 0;
+                types::Endian endian = u128(0);
                 if (params.size() > 5)
                     endian = static_cast<types::Endian>(params[5].toUnsigned());
 
@@ -178,10 +178,10 @@ namespace pl::lib::libstd::math {
 
                 auto reader = hlp::MemoryReader(ctx, section);
                 reader.seek(start);
-                reader.setEndAddress(end);
+                reader.setEndAddress(u64(end));
 
                 for (u128 addr = start; addr < end; addr += size) {
-                    auto bytes = reader.read(addr, size);
+                    auto bytes = reader.read(u64(addr), size);
 
                     // Copy bytes to u128
                     u128 value = 0;

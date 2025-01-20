@@ -49,16 +49,17 @@ namespace pl::lib::libstd::random {
 
             /* set_seed(seed) */
             runtime.addFunction(nsStdRandom, "set_seed", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
-                random.seed(params[0].toUnsigned());
+                random.seed(u64(params[0].toUnsigned()));
                 return {};
             });
 
             /* random(type, param1, param2) */
             runtime.addFunction(nsStdRandom, "generate", FunctionParameterCount::exactly(3), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
-                auto type = RandomType(params[0].toUnsigned());
+                auto type = RandomType(i32(params[0].toUnsigned()));
 
                 switch (type) {
                     using enum RandomType;
+#if 0
                     case Uniform:
                         return generateNumber<std::uniform_int_distribution<i128>>(params[1].toUnsigned(), params[2].toUnsigned());
                     case Normal:
@@ -91,6 +92,7 @@ namespace pl::lib::libstd::random {
                         return generateNumber<std::geometric_distribution<i128>>(params[1].toFloatingPoint());
                     case Poisson:
                         return generateNumber<std::poisson_distribution<i128>>(params[1].toFloatingPoint());
+#endif
                     default:
                         err::E0003.throwError("Invalid random type");
                 }

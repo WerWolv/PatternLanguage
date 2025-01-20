@@ -27,7 +27,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string toString() const override {
             auto value = this->getValue();
-            char16_t character = value.toUnsigned();
+            char16_t character = char16_t(value.toUnsigned());
             character = hlp::changeEndianess(character, this->getEndian());
 
             auto result = wolv::util::utf16ToUtf8(std::u16string(&character, 1));

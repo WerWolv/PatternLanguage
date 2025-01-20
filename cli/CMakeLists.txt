@@ -30,7 +30,9 @@ else()
     find_package(CLI11 CONFIG QUIET)
 endif()
 
-target_compile_options(plcli PRIVATE -Wall -Wextra -Werror -Wno-unknown-pragmas -Wno-array-bounds)
+if(NOT MSVC)
+    target_compile_options(plcli PRIVATE -Wall -Wextra -Werror -Wno-unknown-pragmas -Wno-array-bounds)
+endif()
 target_include_directories(plcli PUBLIC include ${CLI11_INCLUDE_DIRS})
 target_link_libraries(plcli PRIVATE ${CLI11_LIBRARIES} ${NLOHMANN_JSON_LIBRARIES} libpl libpl-gen ${FMT_LIBRARIES})
 

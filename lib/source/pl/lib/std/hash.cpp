@@ -15,11 +15,11 @@ namespace pl::lib::libstd::hash {
             core::err::E0012.throwError("Only patterns and strings are supported for CRC hash functions.");
 
         auto bytes   = params[0].toBytes();
-        auto init    = params[1].toUnsigned();
-        auto poly    = params[2].toUnsigned();
-        auto xorout  = params[3].toUnsigned();
-        auto reflectIn  = params[4].toUnsigned();
-        auto reflectOut = params[5].toUnsigned();
+        auto init    = u64(params[1].toUnsigned());
+        auto poly    = u64(params[2].toUnsigned());
+        auto xorout  = u64(params[3].toUnsigned());
+        auto reflectIn  = params[4].toUnsigned() != 0;
+        auto reflectOut = params[5].toUnsigned() != 0;
 
         wolv::hash::Crc<Size> crc(poly, init, xorout, reflectIn, reflectOut);
         crc.process(bytes);

@@ -78,8 +78,8 @@ namespace pl::core {
         else
             readOffsets = getBitwiseReadOffset();
 
-        this->m_currOffset += bitSize >> 3;
-        this->m_currBitOffset += bitSize & 0x7;
+        this->m_currOffset += u64(bitSize >> 3);
+        this->m_currBitOffset += i8(bitSize & 0x7);
 
         this->m_currOffset += this->m_currBitOffset >> 3;
         this->m_currBitOffset &= 0x7;
@@ -107,7 +107,7 @@ namespace pl::core {
 
         size_t readSize = (bitOffset + bitSize + 7) / 8;
         readSize = std::min(readSize, sizeof(value));
-        this->readData(byteOffset, &value, readSize, section);
+        this->readData(u64(byteOffset), &value, readSize, section);
         value = hlp::changeEndianess(value, sizeof(value), endianness);
 
         size_t offset = endianness == std::endian::little ? bitOffset : (sizeof(value) * 8) - bitOffset - bitSize;
@@ -126,14 +126,14 @@ namespace pl::core {
         value = (value & mask) << offset;
 
         u128 oldValue = 0;
-        this->readData(byteOffset, &oldValue, writeSize, section);
+        this->readData(u64(byteOffset), &oldValue, writeSize, section);
         oldValue = hlp::changeEndianess(oldValue, sizeof(oldValue), endianness);
 
         oldValue &= ~(mask << offset);
         oldValue |= value;
 
         oldValue = hlp::changeEndianess(oldValue, sizeof(oldValue), endianness);
-        this->writeData(byteOffset, &oldValue, writeSize, section);
+        this->writeData(u64(byteOffset), &oldValue, writeSize, section);
     }
 
 
@@ -461,7 +461,7 @@ namespace pl::core {
         std::memcpy(&result, &value, std::min(sizeof(result), bytes));
 
         if (std::signed_integral<T>)
-            result = hlp::signExtend(bytes * 8, result);
+            result = hlp::signExtend(bytes * 8, i128(result));
 
         return result;
     }
