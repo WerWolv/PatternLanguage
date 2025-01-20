@@ -32,11 +32,12 @@ namespace pl::ptrn {
         }
 
         std::string formatDisplayValue() override {
-            switch (this->getValue().toUnsigned()) {
-                case 0: return "false";
-                case 1: return "true";
-                default: return "true*";
-            }
+            auto value = this->getValue().toUnsigned();
+            if (value == 0)
+                return "false";
+            if (value == 1)
+                return "true";
+            return "true*";
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override { return compareCommonProperties<decltype(*this)>(other); }

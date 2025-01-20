@@ -135,7 +135,7 @@ namespace pl::gen::fmt {
                 auto literal = pattern->getValue();
 
                 addLine(pattern->getVariableName(), std::visit(wolv::util::overloaded {
-                    [&](std::integral auto value)       -> std::string { return ::fmt::format("{}", value); },
+                    [&](integral auto value)            -> std::string { return ::fmt::format("{}", value); },
                     [&](std::floating_point auto value) -> std::string { return ::fmt::format("{}", value); },
                     [&](const std::string &value)       -> std::string { return ::fmt::format("\"{}\"", value); },
                     [&](bool value)                     -> std::string { return value ? "true" : "false"; },

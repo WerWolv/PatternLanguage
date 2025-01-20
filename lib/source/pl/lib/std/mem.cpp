@@ -74,18 +74,18 @@ namespace pl::lib::libstd::mem {
 
             /* find_sequence_in_range(occurrence_index, start_offset, end_offset, bytes...) */
             runtime.addFunction(nsStdMem, "find_sequence_in_range", FunctionParameterCount::moreThan(3), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto occurrenceIndex = params[0].toUnsigned();
-                auto offsetFrom      = params[1].toUnsigned();
-                auto offsetTo        = params[2].toUnsigned();
+                auto occurrenceIndex = u64(params[0].toUnsigned());
+                auto offsetFrom      = u64(params[1].toUnsigned());
+                auto offsetTo        = u64(params[2].toUnsigned());
 
                 std::vector<u8> sequence;
                 for (u32 i = 3; i < params.size(); i++) {
                     auto byte = params[i].toUnsigned();
 
                     if (byte > 0xFF)
-                        err::E0012.throwError(fmt::format("Invalid byte value {}.", byte), "Try a value between 0x00 and 0xFF.");
+                        err::E0012.throwError(fmt::format("Invalid byte value {:x}.", byte), "Try a value between 0x00 and 0xFF.");
 
-                    sequence.push_back(u8(byte & 0xFF));
+                    sequence.push_back(u8(byte));
                 }
 
                 return findSequence(ctx, occurrenceIndex, offsetFrom, offsetTo, sequence).value_or(-1);
@@ -93,9 +93,9 @@ namespace pl::lib::libstd::mem {
 
             /* find_string_in_range(occurrence_index, start_offset, end_offset, string) */
             runtime.addFunction(nsStdMem, "find_string_in_range", FunctionParameterCount::exactly(4), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto occurrenceIndex = params[0].toUnsigned();
-                auto offsetFrom      = params[1].toUnsigned();
-                auto offsetTo        = params[2].toUnsigned();
+                auto occurrenceIndex = u64(params[0].toUnsigned());
+                auto offsetFrom      = u64(params[1].toUnsigned());
+                auto offsetTo        = u64(params[2].toUnsigned());
                 auto string          = params[3].toString(false);
 
                 return findSequence(ctx, occurrenceIndex, offsetFrom, offsetTo, std::vector<u8>(string.data(), string.data() + string.size())).value_or(-1);
@@ -103,8 +103,8 @@ namespace pl::lib::libstd::mem {
 
             /* read_unsigned(address, size, endian) */
             runtime.addFunction(nsStdMem, "read_unsigned", FunctionParameterCount::exactly(3), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto address            = params[0].toUnsigned();
-                auto size               = params[1].toSigned();
+                auto address            = u64(params[0].toUnsigned());
+                auto size               = size_t(params[1].toSigned());
                 types::Endian endian    = params[2].toUnsigned();
 
                 if (size < 1 || size > 16)
@@ -119,8 +119,8 @@ namespace pl::lib::libstd::mem {
 
             /* read_signed(address, size, endian) */
             runtime.addFunction(nsStdMem, "read_signed", FunctionParameterCount::exactly(3), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto address            = params[0].toUnsigned();
-                auto size               = params[1].toSigned();
+                auto address            = u64(params[0].toUnsigned());
+                auto size               = size_t(params[1].toSigned());
                 types::Endian endian    = params[2].toUnsigned();
 
                 if (size < 1 || size > 16)
@@ -136,8 +136,8 @@ namespace pl::lib::libstd::mem {
 
             /* read_string(address, size, endian) */
             runtime.addFunction(nsStdMem, "read_string", FunctionParameterCount::exactly(2), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto address = params[0].toUnsigned();
-                auto size    = params[1].toUnsigned();
+                auto address = u64(params[0].toUnsigned());
+                auto size    = size_t(params[1].toUnsigned());
 
                 std::string result(size, '\x00');
                 ctx->readData(address, result.data(), size, ptrn::Pattern::MainSectionId);
@@ -155,8 +155,8 @@ namespace pl::lib::libstd::mem {
             /* read_bits(byteOffset, bitOffset, bitSize) */
             runtime.addFunction(nsStdMem, "read_bits", FunctionParameterCount::exactly(3), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 auto byteOffset = params[0].toUnsigned();
-                auto bitOffset = params[1].toUnsigned();
-                auto bitSize = params[2].toUnsigned();
+                auto bitOffset = u8(params[1].toUnsigned());
+                auto bitSize = u64(params[2].toUnsigned());
                 return ctx->readBits(byteOffset, bitOffset, bitSize, ptrn::Pattern::MainSectionId, ctx->getDefaultEndian());
             });
 
@@ -170,7 +170,7 @@ namespace pl::lib::libstd::mem {
 
             /* delete_section(id) */
             runtime.addFunction(nsStdMem, "delete_section", FunctionParameterCount::exactly(1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto id = params[0].toUnsigned();
+                auto id = u64(params[0].toUnsigned());
 
                 ctx->removeSection(id);
 
@@ -179,15 +179,15 @@ namespace pl::lib::libstd::mem {
 
             /* get_section_size(id) -> size */
             runtime.addFunction(nsStdMem, "get_section_size", FunctionParameterCount::exactly(1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto id = params[0].toUnsigned();
+                auto id = u64(params[0].toUnsigned());
 
                 return u128(ctx->getSection(id).size());
             });
 
             /* set_section_size(id, size) */
             runtime.addFunction(nsStdMem, "set_section_size", FunctionParameterCount::exactly(2), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto id   = params[0].toUnsigned();
-                auto size = params[1].toUnsigned();
+                auto id   = u64(params[0].toUnsigned());
+                auto size = size_t(params[1].toUnsigned());
 
                 ctx->getSection(id).resize(size);
 
@@ -196,11 +196,11 @@ namespace pl::lib::libstd::mem {
 
             /* copy_section_to_section(from_id, from_address, to_id, to_address, size) */
             runtime.addFunction(nsStdMem, "copy_to_section", FunctionParameterCount::exactly(5), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto fromId     = params[0].toUnsigned();
-                auto fromAddr   = params[1].toUnsigned();
-                auto toId       = params[2].toUnsigned();
-                auto toAddr     = params[3].toUnsigned();
-                auto size       = params[4].toUnsigned();
+                auto fromId     = u64(params[0].toUnsigned());
+                auto fromAddr   = u64(params[1].toUnsigned());
+                auto toId       = u64(params[2].toUnsigned());
+                auto toAddr     = u64(params[3].toUnsigned());
+                auto size       = size_t(params[4].toUnsigned());
 
                 std::vector<u8> data(size, 0x00);
                 ctx->readData(fromAddr, data.data(), size, fromId);
@@ -219,8 +219,8 @@ namespace pl::lib::libstd::mem {
 
             /* copy_value_to_section(value, section_id, to_address) */
             runtime.addFunction(nsStdMem, "copy_value_to_section", FunctionParameterCount::exactly(3), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto toId       = params[1].toUnsigned();
-                auto toAddr     = params[2].toUnsigned();
+                auto toId       = u64(params[1].toUnsigned());
+                auto toAddr     = u64(params[2].toUnsigned());
 
                 if (toId == ptrn::Pattern::MainSectionId)
                     err::E0012.throwError("Cannot write to main section.", "The main section represents the currently loaded data and is immutable.");

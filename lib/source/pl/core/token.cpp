@@ -21,7 +21,7 @@ namespace pl::core {
         return std::visit(wolv::util::overloaded {
                               [&](const std::shared_ptr<ptrn::Pattern>&) -> u128 { err::E0004.throwError("Cannot cast value to type 'integer'."); },
                               [&](const std::string &) -> u128 { err::E0004.throwError("Cannot cast value to type 'integer'."); },
-                              [](auto &&result) -> u128 { return result; }
+                              [](auto &&result) -> u128 { return u128(result); }
                           }, *this);
     }
 
@@ -29,7 +29,7 @@ namespace pl::core {
         return std::visit(wolv::util::overloaded {
                               [](const std::shared_ptr<ptrn::Pattern>&) -> i128 { err::E0004.throwError("Cannot cast value to type 'integer'."); },
                               [](const std::string &) -> i128 { err::E0004.throwError("Cannot cast value to type 'integer'."); },
-                              [](auto &&result) -> i128 { return result; }
+                              [](auto &&result) -> i128 { return i128(result); }
                           }, *this);
     }
 
@@ -37,7 +37,7 @@ namespace pl::core {
         return std::visit(wolv::util::overloaded {
                               [](const std::shared_ptr<ptrn::Pattern>&) -> double { err::E0004.throwError("Cannot cast value to type 'floating point'."); },
                               [](const std::string &) -> double { err::E0004.throwError("Cannot cast value to type 'floating point'."); },
-                              [](auto &&result) -> double { return result; }
+                              [](auto &&result) -> double { return double(result); }
                           }, *this);
     }
 
@@ -45,7 +45,7 @@ namespace pl::core {
         return std::visit(wolv::util::overloaded {
                               [&](const std::shared_ptr<ptrn::Pattern>&) -> char { err::E0004.throwError("Cannot cast value to type 'char'."); },
                               [&](const std::string &) -> char { err::E0004.throwError("Cannot cast value to type 'char'."); },
-                              [](auto &&result) -> char { return result; }
+                              [](auto &&result) -> char { return char(result); }
                           }, *this);
     }
 
@@ -123,9 +123,16 @@ namespace pl::core {
                 else if constexpr (std::same_as<decltype(lhs), bool> || std::same_as<decltype(rhs), bool>)
                     return bool(lhs) <=> bool(rhs);
                 else {
-                    if (std::cmp_equal(lhs, rhs)) return std::strong_ordering::equal;
-                    if (std::cmp_less(lhs, rhs)) return std::strong_ordering::less;
-                    return std::strong_ordering::greater;
+                    if constexpr (is_signed<decltype(lhs)>::value && is_signed<decltype(rhs)>::value)
+                    {
+                        if (i128(lhs) == i128(rhs)) return std::strong_ordering::equal;
+                        if (i128(lhs) < i128(rhs)) return std::strong_ordering::less;
+                        return std::strong_ordering::greater;
+                    } else {
+                        if (u128(lhs) == u128(rhs)) return std::strong_ordering::equal;
+                        if (u128(lhs) < u128(rhs)) return std::strong_ordering::less;
+                        return std::strong_ordering::greater;
+                    }
                 }
             },
             [](pl::integral auto lhs, pl::floating_point auto rhs) -> std::strong_ordering {

@@ -36,7 +36,7 @@ namespace pl::lib::libstd::file {
                 const auto modeEnum = params[1].toUnsigned();
 
                 wolv::io::File::Mode mode;
-                switch (modeEnum) {
+                switch (u32(modeEnum)) {
                     case 1:
                         mode = wolv::io::File::Mode::Read;
                         break;
@@ -63,7 +63,7 @@ namespace pl::lib::libstd::file {
 
             /* close(file) */
             runtime.addDangerousFunction(nsStdFile, "close", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
-                const auto file = params[0].toUnsigned();
+                const auto file = u32(params[0].toUnsigned());
 
                 if (!openFiles.contains(file))
                     throwInvalidFileError();
@@ -75,8 +75,8 @@ namespace pl::lib::libstd::file {
 
             /* read(file, size) */
             runtime.addDangerousFunction(nsStdFile, "read", FunctionParameterCount::exactly(2), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
-                const auto file = params[0].toUnsigned();
-                const auto size = params[1].toUnsigned();
+                const auto file = u32(params[0].toUnsigned());
+                const auto size = size_t(params[1].toUnsigned());
 
                 if (!openFiles.contains(file))
                     throwInvalidFileError();
@@ -88,7 +88,7 @@ namespace pl::lib::libstd::file {
 
             /* write(file, data) */
             runtime.addDangerousFunction(nsStdFile, "write", FunctionParameterCount::exactly(2), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
-                const auto fileHandle = params[0].toUnsigned();
+                const auto fileHandle = u32(params[0].toUnsigned());
                 auto &data = params[1];
 
                 if (!openFiles.contains(fileHandle))
@@ -115,8 +115,8 @@ namespace pl::lib::libstd::file {
 
             /* seek(file, offset) */
             runtime.addDangerousFunction(nsStdFile, "seek", FunctionParameterCount::exactly(2), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
-                const auto file = params[0].toUnsigned();
-                const auto offset = params[1].toUnsigned();
+                const auto file = u32(params[0].toUnsigned());
+                const auto offset = u64(params[1].toUnsigned());
 
                 if (!openFiles.contains(file))
                     throwInvalidFileError();
@@ -128,7 +128,7 @@ namespace pl::lib::libstd::file {
 
             /* size(file) */
             runtime.addDangerousFunction(nsStdFile, "size", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
-                const auto file = params[0].toUnsigned();
+                const auto file = u32(params[0].toUnsigned());
 
                 if (!openFiles.contains(file))
                     throwInvalidFileError();
@@ -138,8 +138,8 @@ namespace pl::lib::libstd::file {
 
             /* resize(file, size) */
             runtime.addDangerousFunction(nsStdFile, "resize", FunctionParameterCount::exactly(2), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
-                const auto file = params[0].toUnsigned();
-                const auto size = params[1].toUnsigned();
+                const auto file = u32(params[0].toUnsigned());
+                const auto size = u64(params[1].toUnsigned());
 
                 if (!openFiles.contains(file))
                     throwInvalidFileError();
@@ -151,7 +151,7 @@ namespace pl::lib::libstd::file {
 
             /* flush(file) */
             runtime.addDangerousFunction(nsStdFile, "flush", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
-                const auto file = params[0].toUnsigned();
+                const auto file = u32(params[0].toUnsigned());
 
                 if (!openFiles.contains(file))
                     throwInvalidFileError();
@@ -163,7 +163,7 @@ namespace pl::lib::libstd::file {
 
             /* remove(file) */
             runtime.addDangerousFunction(nsStdFile, "remove", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
-                const auto file = params[0].toUnsigned();
+                const auto file = u32(params[0].toUnsigned());
 
                 if (!openFiles.contains(file))
                     throwInvalidFileError();

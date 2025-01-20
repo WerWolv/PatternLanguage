@@ -69,7 +69,7 @@ namespace pl::core::ast {
                         auto offsetNode = (*arraySegment)->evaluate(evaluator);
                         auto offsetLiteral = dynamic_cast<ASTNodeLiteral*>(offsetNode.get());
                         if (offsetLiteral != nullptr) {
-                            auto offset = offsetLiteral->getValue().toUnsigned();
+                            auto offset = u64(offsetLiteral->getValue().toUnsigned());
 
                             u8 byte = 0x00;
                             evaluator->readData(offset, &byte, 1, ptrn::Pattern::MainSectionId);
@@ -242,8 +242,8 @@ namespace pl::core::ast {
                                        auto pattern = currPattern.get();
                                        if (auto indexablePattern = dynamic_cast<ptrn::IIndexable *>(pattern); indexablePattern != nullptr) {
                                            if (size_t(index) >= indexablePattern->getEntryCount())
-                                               core::err::E0006.throwError("Index out of bounds.", fmt::format("Tried to access index {} in array of size {}.", index, indexablePattern->getEntryCount()), this->getLocation());
-                                           currPattern = indexablePattern->getEntry(index);
+                                               core::err::E0006.throwError("Index out of bounds.", fmt::format("Tried to access index {} in array of size {}.", size_t(index), indexablePattern->getEntryCount()), this->getLocation());
+                                           currPattern = indexablePattern->getEntry(size_t(index));
                                        } else {
                                            err::E0006.throwError(fmt::format("Cannot access non-array type '{}'.", pattern->getTypeName()), {}, this->getLocation());
                                        }

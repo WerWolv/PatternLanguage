@@ -10,6 +10,12 @@
 
 namespace pl::core::ast {
 
+    template<typename L, typename R>
+    struct signed_result
+    {
+        constexpr static bool value = is_signed<L>::value && is_signed<R>::value;
+    };
+
     ASTNodeMathematicalExpression::ASTNodeMathematicalExpression(std::unique_ptr<ASTNode> &&left, std::unique_ptr<ASTNode> &&right, Token::Operator op)
     : m_left(std::move(left)), m_right(std::move(right)), m_operator(op) { }
 
@@ -146,17 +152,26 @@ namespace pl::core::ast {
             [&, this](auto left, auto right) -> ASTNode * {
                 switch (this->getOperator()) {
                    case Token::Operator::Plus:
-                       return new ASTNodeLiteral(left + right);
+                       if constexpr (signed_result<decltype(left), decltype(right)>::value)
+                           return new ASTNodeLiteral(i128(left) + i128(right));
+                       else
+                           return new ASTNodeLiteral(u128(left) + u128(right));
                    case Token::Operator::Minus:
                        if (left < static_cast<decltype(left)>(right) && std::unsigned_integral<decltype(left)> && std::unsigned_integral<decltype(right)>)
                            return new ASTNodeLiteral(i128(left) - i128(right));
                        else
-                           return new ASTNodeLiteral(left - right);
+                           return new ASTNodeLiteral(u128(left) - u128(right));
                    case Token::Operator::Star:
-                       return new ASTNodeLiteral(left * right);
+                       if constexpr (signed_result<decltype(left), decltype(right)>::value)
+                           return new ASTNodeLiteral(i128(left) * i128(right));
+                       else
+                           return new ASTNodeLiteral(u128(left) * u128(right));
                    case Token::Operator::Slash:
                        if (right == 0) err::E0002.throwError("Division by zero.", { }, this->getLocation());
-                       return new ASTNodeLiteral(left / right);
+                       if constexpr (signed_result<decltype(left), decltype(right)>::value)
+                           return new ASTNodeLiteral(i128(left) / i128(right));
+                       else
+                           return new ASTNodeLiteral(u128(left) / u128(right));
                    case Token::Operator::Percent:
                        if (right == 0) err::E0002.throwError("Division by zero.", { }, this->getLocation());
                        return new ASTNodeLiteral(modulus(left, right));

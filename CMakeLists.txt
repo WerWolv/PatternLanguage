@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 project(PatternLanguage)
 
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(LIBPL_SHARED_LIBRARY "Compile the library as a shared library" OFF)
 option(LIBPL_ENABLE_TESTS "Enable testing" OFF)
@@ -22,8 +23,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-stringop-overflow -Wno-dangling-reference -fexceptions -frtti")
+elseif (MSVC)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations -fexceptions -frtti")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations -fexceptions -frtti")
 elseif (NOT (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC"))
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-array-bounds")
 endif()
