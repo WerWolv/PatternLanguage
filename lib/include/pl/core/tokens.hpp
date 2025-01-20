@@ -5,8 +5,8 @@
 namespace pl::core::tkn {
 
     static const inline std::map<std::string_view, Token::Literal> constants = {
-            { "true", Token::Literal(1) },
-            { "false", Token::Literal(0) },
+            { "true", Token::Literal(true) },
+            { "false", Token::Literal(false) },
             { "nan", Token::Literal(std::numeric_limits<double>::quiet_NaN()) },
             { "inf", Token::Literal(std::numeric_limits<double>::infinity()) },
     };

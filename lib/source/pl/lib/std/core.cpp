@@ -41,7 +41,7 @@ namespace pl::lib::libstd::core {
             runtime.addFunction(nsStdCore, "get_attribute_argument", FunctionParameterCount::exactly(3), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 auto pattern = params[0].toPattern();
                 auto attributeName = params[1].toString(false);
-                auto index = params[2].toUnsigned();
+                auto index = size_t(params[2].toUnsigned());
 
                 auto &attributes = pattern->getAttributes();
                 if (attributes == nullptr || !attributes->contains(attributeName))
@@ -53,7 +53,7 @@ namespace pl::lib::libstd::core {
             /* set_pattern_color(pattern, color) */
             runtime.addFunction(nsStdCore, "set_pattern_color", FunctionParameterCount::exactly(2), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 auto pattern = params[0].toPattern();
-                auto color = params[1].toUnsigned();
+                auto color = u32(params[1].toUnsigned());
 
                 pattern->setColor(color);
 

@@ -76,7 +76,7 @@ namespace pl::ptrn {
         void setPointedAtPattern(std::shared_ptr<Pattern> &&pattern) {
             this->m_pointedAt = std::move(pattern);
             this->m_pointedAt->setVariableName(fmt::format("*({})", this->getVariableName()));
-            this->m_pointedAt->setOffset(this->m_pointedAtAddress);
+            this->m_pointedAt->setOffset(u64(this->m_pointedAtAddress));
 
             if (this->hasOverriddenColor())
                 this->m_pointedAt->setColor(this->getColor());
@@ -129,7 +129,7 @@ namespace pl::ptrn {
             this->m_pointerBase = base;
 
             if (this->m_pointedAt != nullptr) {
-                this->m_pointedAt->setOffset(this->m_pointedAtAddress);
+                this->m_pointedAt->setOffset(u64(this->m_pointedAtAddress));
             }
         }
 

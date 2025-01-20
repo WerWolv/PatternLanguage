@@ -56,7 +56,7 @@ namespace pl::core::ast {
             BitfieldOrder order = [&]() {
                 if (auto *literalNode = dynamic_cast<ASTNodeLiteral *>(directionNode.get()); literalNode != nullptr) {
                     auto value = literalNode->getValue().toUnsigned();
-                    switch (value) {
+                    switch (u32(value)) {
                         case u32(BitfieldOrder::MostToLeastSignificant):
                             return BitfieldOrder::MostToLeastSignificant;
                         case u32(BitfieldOrder::LeastToMostSignificant):
@@ -81,7 +81,7 @@ namespace pl::core::ast {
                                     || (order == BitfieldOrder::LeastToMostSignificant && bitfieldPattern->getEndian() == std::endian::big);
             if (prevReversed != shouldBeReversed) {
                 reversedChanged = true;
-                wolv::util::unused(evaluator->getBitwiseReadOffsetAndIncrement(size));
+                wolv::util::unused(evaluator->getBitwiseReadOffsetAndIncrement(i128(size)));
                 evaluator->setReadOrderReversed(shouldBeReversed);
             }
 
@@ -116,7 +116,7 @@ namespace pl::core::ast {
             if (fixedSize > 0) {
                 if (totalBitSize > fixedSize)
                     err::E0005.throwError("Bitfield's fields exceeded the attribute-allotted size.", {}, node->getLocation());
-                totalBitSize = fixedSize;
+                totalBitSize = u64(fixedSize);
             }
             bitfieldPattern->setBitSize(totalBitSize);
         };

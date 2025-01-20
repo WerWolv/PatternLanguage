@@ -279,7 +279,7 @@ namespace pl {
 
             console.log(core::LogConsole::Level::Error, "\n");
         } else {
-            auto returnCode = evaluator->getMainResult().value_or(0).toSigned();
+            auto returnCode = evaluator->getMainResult().value_or(i128(0)).toSigned();
 
             if (!isSubRuntime()) {
                 evaluator->getConsole().log(core::LogConsole::Level::Info, fmt::format("Pattern exited with code: {}", returnCode));

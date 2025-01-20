@@ -36,23 +36,38 @@ namespace pl::core::ast {
     class ASTNodeMathematicalExpression : public ASTNode {
 
         FLOAT_BIT_OPERATION(shiftLeft) {
-            return left << right;
+            if constexpr (is_signed<decltype(left)>::value && is_signed<decltype(right)>::value)
+                return i128(left) << u64(right);
+            else
+                return u128(left) << u64(right);
         }
 
         FLOAT_BIT_OPERATION(shiftRight) {
-            return left >> right;
+            if constexpr (is_signed<decltype(left)>::value)
+                return i128(left) >> u64(right);
+            else
+                return u128(left) >> u64(right);
         }
 
         FLOAT_BIT_OPERATION(bitAnd) {
-            return left & right;
+            if constexpr (is_signed<decltype(left)>::value && is_signed<decltype(right)>::value)
+                return i128(left) & i128(right);
+            else
+                return u128(left) & u128(right);
         }
 
         FLOAT_BIT_OPERATION(bitOr) {
-            return left | right;
+            if constexpr (is_signed<decltype(left)>::value && is_signed<decltype(right)>::value)
+                return i128(left) | i128(right);
+            else
+                return u128(left) | u128(right);
         }
 
         FLOAT_BIT_OPERATION(bitXor) {
-            return left ^ right;
+            if constexpr (is_signed<decltype(left)>::value && is_signed<decltype(right)>::value)
+                return i128(left) ^ i128(right);
+            else
+                return u128(left) ^ u128(right);
         }
 
         FLOAT_BIT_OPERATION(bitNot) {
@@ -62,7 +77,10 @@ namespace pl::core::ast {
         }
 
         FLOAT_BIT_OPERATION(modulus) {
-            return left % right;
+            if constexpr (is_signed<decltype(left)>::value && is_signed<decltype(right)>::value)
+                return i128(left) % i128(right);
+            else
+                return u128(left) % u128(right);
         }
 
 #undef FLOAT_BIT_OPERATION

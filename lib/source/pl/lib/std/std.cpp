@@ -33,6 +33,12 @@ namespace pl::lib::libstd::libstd {
                     [&](const std::string &value) {
                         formatArgs.push_back(value.c_str());
                     },
+                    [&](const u128 &value) {
+                        formatArgs.push_back(hlp::to_string(value));
+                    },
+                    [&](const i128 &value) {
+                        formatArgs.push_back(hlp::to_string(value));
+                    },
                     [&](auto &&value) {
                         formatArgs.push_back(value);
                     }
@@ -75,7 +81,7 @@ namespace pl::lib::libstd::libstd {
                     return env;
                 else {
                     ctx->getConsole().log(LogConsole::Level::Warning, fmt::format("environment variable '{}' does not exist", name));
-                    return "";
+                    return std::string();
                 }
             });
 
