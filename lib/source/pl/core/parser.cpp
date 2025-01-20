@@ -59,7 +59,7 @@ namespace pl::core {
         result.reserve(vec.size());
 
         for (auto &ptr : vec) {
-            result.emplace_back(std::move(ptr));
+            result.emplace_back(std::move(ptr.unwrap()));
         }
 
         return result;
