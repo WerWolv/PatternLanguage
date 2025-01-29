@@ -5,7 +5,7 @@
 
 namespace pl::hlp {
 
-#ifdef LIBWOLV_BUILTIN_UINT128
+#if defined(LIBWOLV_BUILTIN_UINT128)
     std::string to_string(u128 value) {
         return ::fmt::format("{}", value);
     }

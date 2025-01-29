@@ -7,8 +7,8 @@ namespace pl::core::ast {
     class ASTNodeLiteral : public ASTNode {
     public:
         explicit ASTNodeLiteral(Token::Literal literal);
-#ifndef LIBWOLV_BUILTIN_UINT128
-        explicit ASTNodeLiteral(int value)
+#if !defined(LIBWOLV_BUILTIN_UINT128)
+        explicit ASTNodeLiteral(i64 value)
                 : ASTNodeLiteral(i128(value)) { }
 #endif // LIBWOLV_BUILTIN_UINT128
         ASTNodeLiteral(const ASTNodeLiteral &) = default;

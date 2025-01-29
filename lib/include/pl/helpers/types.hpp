@@ -32,7 +32,7 @@ namespace pl {
 
 }
 
-#ifndef LIBWOLV_BUILTIN_UINT128
+#if !defined(LIBWOLV_BUILTIN_UINT128)
 
 #include <string>
 #include <fmt/format.h>
