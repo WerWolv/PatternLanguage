@@ -85,7 +85,8 @@ if (LIBPL_ENABLE_PRECOMPILED_HEADERS)
     )
 endif ()
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+if(MSVC)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(libpl PRIVATE -Wall -Wextra -Werror -Wpedantic -Wno-unknown-pragmas -Wno-array-bounds)
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         target_compile_options(libpl PRIVATE -Wno-stringop-overflow)
@@ -98,7 +99,7 @@ endif ()
 
 target_include_directories(libpl PUBLIC include ../external/throwing_ptr/include)
 target_link_libraries(libpl PRIVATE ${FMT_LIBRARIES})
-target_link_libraries(libpl PUBLIC wolv::io wolv::utils wolv::hash wolv::containers)
+target_link_libraries(libpl PUBLIC wolv::types wolv::io wolv::utils wolv::hash wolv::containers)
 
 set_target_properties(libpl PROPERTIES PREFIX "")
 

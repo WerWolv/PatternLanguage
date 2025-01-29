@@ -29,13 +29,13 @@ namespace pl::lib::libstd::string {
             /* at(string, index) */
             runtime.addFunction(nsStdString, "at", FunctionParameterCount::exactly(2), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 auto string = params[0].toString(false);
-                auto index  = params[1].toSigned();
+                auto index  = i64(params[1].toSigned());
 
                 // Calculate the absolute value of the index
                 const auto signIndex = index >> (sizeof(index) * 8 - 1);
                 const auto absIndex  = (index ^ signIndex) - signIndex;
 
-                if (absIndex >= string.length())
+                if (absIndex >= intptr_t(string.length()))
                     err::E0012.throwError(fmt::format("Character index {} out of range of string '{}' with length {}.", absIndex, string, string.length()));
 
                 if (index >= 0)
@@ -47,8 +47,8 @@ namespace pl::lib::libstd::string {
             /* substr(string, pos, count) */
             runtime.addFunction(nsStdString, "substr", FunctionParameterCount::exactly(3), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 auto string = params[0].toString(false);
-                auto pos    = params[1].toUnsigned();
-                auto size   = params[2].toUnsigned();
+                auto pos    = u64(params[1].toUnsigned());
+                auto size   = u64(params[2].toUnsigned());
 
                 if (pos > string.length())
                     err::E0012.throwError(fmt::format("The starting position {} out of range for string '{}' with length {}.", pos, string, string.length()));
@@ -61,7 +61,9 @@ namespace pl::lib::libstd::string {
             /* parse_int(string, base) */
             runtime.addFunction(nsStdString, "parse_int", FunctionParameterCount::exactly(2), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 auto string = params[0].toString(false);
-                auto base   = params[1].toUnsigned();
+                auto base   = u64(params[1].toUnsigned());
+
+                // TODO: support 128-bit integers
 
                 return i128(std::strtoll(string.c_str(), nullptr, base));
             });

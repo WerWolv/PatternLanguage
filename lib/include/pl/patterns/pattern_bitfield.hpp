@@ -178,7 +178,7 @@ namespace pl::ptrn {
 
         std::string formatDisplayValue() override {
             auto rawValue = this->readValue();
-            auto value = hlp::signExtend(this->getBitSize(), rawValue);
+            auto value = hlp::signExtend(this->getBitSize(), i128(rawValue));
             return Pattern::callUserFormatFunc(value).value_or(fmt::format("{}", value));
         }
 
@@ -205,11 +205,13 @@ namespace pl::ptrn {
         }
 
         std::string formatDisplayValue() override {
-            switch (this->getValue().toUnsigned()) {
-                case 0: return "false";
-                case 1: return "true";
-                default: return "true*";
-            }
+            auto value = this->getValue().toUnsigned();
+            if (value == 0)
+                return "false";
+            else if (value == 1)
+                return "true";
+            else
+                return "true*";
         }
 
         [[nodiscard]] std::string toString() const override {
@@ -273,7 +275,7 @@ namespace pl::ptrn {
                                  public IIndexable {
     public:
         PatternBitfieldArray(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize, u32 line)
-                : PatternBitfieldMember(evaluator, offset, (totalBitSize + 7) / 8, line), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
+                : PatternBitfieldMember(evaluator, offset, size_t((totalBitSize + 7) / 8), line), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
 
         PatternBitfieldArray(const PatternBitfieldArray &other) : PatternBitfieldMember(other) {
             std::vector<std::shared_ptr<Pattern>> entries;
@@ -308,11 +310,11 @@ namespace pl::ptrn {
 
         void setBitSize(u128 bitSize) {
             this->m_totalBitSize = bitSize;
-            this->setSize((bitSize + 7) / 8);
+            this->setSize(size_t((bitSize + 7) / 8));
         }
 
         [[nodiscard]] u64 getBitSize() const override {
-            return this->m_totalBitSize;
+            return u64(this->m_totalBitSize);
         }
 
         [[nodiscard]] bool isReversed() const {
@@ -557,7 +559,7 @@ namespace pl::ptrn {
                             public IIterable {
     public:
         PatternBitfield(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize, u32 line)
-                : PatternBitfieldMember(evaluator, offset, (totalBitSize + 7) / 8, line), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
+                : PatternBitfieldMember(evaluator, offset, size_t((totalBitSize + 7) / 8), line), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
 
         PatternBitfield(const PatternBitfield &other) : PatternBitfieldMember(other) {
             for (auto &field : other.m_fields)
@@ -589,8 +591,8 @@ namespace pl::ptrn {
         }
 
         void setBitSize(u128 bitSize) {
-            this->m_totalBitSize = bitSize;
-            this->setSize((bitSize + 7) / 8);
+            this->m_totalBitSize = u64(bitSize);
+            this->setSize(size_t((bitSize + 7) / 8));
         }
 
         [[nodiscard]] u64 getBitSize() const override {

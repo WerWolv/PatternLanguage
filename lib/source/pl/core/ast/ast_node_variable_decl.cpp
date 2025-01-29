@@ -40,7 +40,7 @@ namespace pl::core::ast {
             if (id == nullptr)
                 err::E0002.throwError("Cannot use void expression as section identifier.", {}, this->getLocation());
 
-            evaluator->pushSectionId(id->getValue().toUnsigned());
+            evaluator->pushSectionId((u64)id->getValue().toUnsigned());
         } else {
             scopeGuard.release();
         }
@@ -54,7 +54,7 @@ namespace pl::core::ast {
             evaluator->setReadOffset(std::visit(wolv::util::overloaded {
                 [this](const std::string &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this->getLocation()); },
                 [this](const std::shared_ptr<ptrn::Pattern> &) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this->getLocation()); },
-                [](auto &&offset) -> u64 { return offset; } },
+                [](auto &&offset) -> u64 { return u64(offset); } },
             offset->getValue()));
 
             if (evaluator->getReadOffset() < evaluator->getDataBaseAddress() || evaluator->getReadOffset() > evaluator->getDataBaseAddress() + evaluator->getDataSize())
@@ -115,7 +115,7 @@ namespace pl::core::ast {
                 err::E0002.throwError("Cannot use void expression as section identifier.", {}, this->getLocation());
 
             auto value = sectionLiteral->getValue();
-            section = value.toUnsigned();
+            section = u64(value.toUnsigned());
         }
 
         return section;
@@ -140,7 +140,7 @@ namespace pl::core::ast {
             auto currOffset = evaluator->getBitwiseReadOffset();
             ON_SCOPE_EXIT { evaluator->setBitwiseReadOffset(currOffset); };
 
-            evaluator->setReadOffset(this->evaluatePlacementOffset(evaluator));
+            evaluator->setReadOffset(u64(this->evaluatePlacementOffset(evaluator)));
             this->getType()->createPatterns(evaluator, initValues);
             evaluator->popSectionId();
         }
@@ -169,7 +169,7 @@ namespace pl::core::ast {
         if (this->m_placementOffset != nullptr) {
             auto section = this->evaluatePlacementSection(evaluator);
             auto offset = this->evaluatePlacementOffset(evaluator);
-            evaluator->setVariableAddress(this->getName(), offset, section);
+            evaluator->setVariableAddress(this->getName(), u64(offset), section);
         }
 
         return std::nullopt;

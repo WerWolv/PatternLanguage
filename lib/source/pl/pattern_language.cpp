@@ -279,14 +279,14 @@ namespace pl {
 
             console.log(core::LogConsole::Level::Error, "\n");
         } else {
-            auto returnCode = evaluator->getMainResult().value_or(0).toSigned();
+            auto returnCode = evaluator->getMainResult().value_or(i128(0)).toSigned();
 
             if (!isSubRuntime()) {
-                evaluator->getConsole().log(core::LogConsole::Level::Info, fmt::format("Pattern exited with code: {}", returnCode));
+                evaluator->getConsole().log(core::LogConsole::Level::Info, fmt::format("Pattern exited with code: {}", i64(returnCode)));
             }
 
             if (checkResult && returnCode != 0) {
-                this->m_currError = core::err::PatternLanguageError(core::err::E0009.format(fmt::format("Pattern exited with non-zero result: {}", returnCode)), 0, 1);
+                this->m_currError = core::err::PatternLanguageError(core::err::E0009.format(fmt::format("Pattern exited with non-zero result: {}", i64(returnCode))), 0, 1);
 
                 evaluationResult = false;
             }

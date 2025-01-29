@@ -5,13 +5,33 @@
 
 namespace pl::hlp {
 
+#if defined(LIBWOLV_BUILTIN_UINT128)
     std::string to_string(u128 value) {
-        return fmt::format("{}", value);
+        return ::fmt::format("{}", value);
     }
 
     std::string to_string(i128 value) {
-        return fmt::format("{}", value);
+        return ::fmt::format("{}", value);
     }
+#else
+    std::string to_string(u128 value) {
+        return math::wide_integer::to_string(value);
+    }
+
+    std::string to_string(i128 value) {
+        return math::wide_integer::to_string(value);
+    }
+
+    std::string to_hex_string(u128 value) {
+        (void)value;
+        return "TODO";
+    }
+
+    std::string to_hex_string(i128 value) {
+        (void)value;
+        return "TODO";
+    }
+#endif // LIBWOLV_BUILTIN_UINT128
 
     std::vector<u8> decodeByteString(const std::string &str) {
         std::vector<u8> result;

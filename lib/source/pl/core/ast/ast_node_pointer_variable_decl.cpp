@@ -39,7 +39,7 @@ namespace pl::core::ast {
             if (id == nullptr)
                 err::E0010.throwError("Cannot use void expression as section identifier.", {}, this->getLocation());
 
-            evaluator->pushSectionId(id->getValue().toUnsigned());
+            evaluator->pushSectionId(u64(id->getValue().toUnsigned()));
         } else {
             scopeGuard.release();
         }
@@ -85,7 +85,7 @@ namespace pl::core::ast {
             pattern->setPointedAtAddress(pointerAddress);
             applyVariableAttributes(evaluator, this, pattern);
 
-            evaluator->setReadOffset(pattern->getPointedAtAddress());
+            evaluator->setReadOffset(u64(pattern->getPointedAtAddress()));
 
             std::vector<std::shared_ptr<ptrn::Pattern>> pointedAtPatterns;
             ON_SCOPE_EXIT {

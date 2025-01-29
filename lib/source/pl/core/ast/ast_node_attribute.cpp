@@ -308,7 +308,7 @@ namespace pl::core::ast {
                 if (!result.has_value())
                     err::E0009.throwError(fmt::format("Pointer base function '{}' did not return a value.", functionName), "Try adding a 'return <value>;' statement in all code paths.", node->getLocation());
 
-                pointerPattern->rebase(result.value().toSigned());
+                pointerPattern->rebase(u64(result.value().toSigned()));
             } else {
                 err::E0009.throwError("The [[pointer_base]] attribute can only be applied to pointer types.", {}, node->getLocation());
             }
@@ -331,11 +331,11 @@ namespace pl::core::ast {
         }
 
         if (const auto &arguments = attributable->getAttributeArguments("fixed_size"); arguments.size() == 1) {
-            auto requestedSize = getAttributeValueAsInteger(arguments.front(), evaluator);
+            auto requestedSize = size_t(getAttributeValueAsInteger(arguments.front(), evaluator));
             auto actualSize = pattern->getSize();
             if (actualSize < requestedSize) {
                 pattern->setSize(requestedSize);
-                evaluator->setReadOffset(evaluator->getReadOffset() + (requestedSize - actualSize));
+                evaluator->setReadOffset(u64(evaluator->getReadOffset() + (requestedSize - actualSize)));
             }
             else if (actualSize > requestedSize)
                 err::E0004.throwError("Type size larger than expected", fmt::format("Pattern of type {} is larger than expected. Expected size {}, got {}", pattern->getTypeName(), requestedSize, actualSize), node->getLocation());

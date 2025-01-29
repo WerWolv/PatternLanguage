@@ -7,6 +7,10 @@ namespace pl::core::ast {
     class ASTNodeLiteral : public ASTNode {
     public:
         explicit ASTNodeLiteral(Token::Literal literal);
+#if !defined(LIBWOLV_BUILTIN_UINT128)
+        explicit ASTNodeLiteral(i64 value)
+                : ASTNodeLiteral(i128(value)) { }
+#endif // LIBWOLV_BUILTIN_UINT128
         ASTNodeLiteral(const ASTNodeLiteral &) = default;
 
         [[nodiscard]] std::unique_ptr<ASTNode> clone() const override {

@@ -59,7 +59,7 @@ namespace pl::core {
         result.reserve(vec.size());
 
         for (auto &ptr : vec) {
-            result.emplace_back(std::move(ptr));
+            result.emplace_back(std::move(ptr.unwrap()));
         }
 
         return result;
@@ -324,7 +324,7 @@ namespace pl::core {
             } else if (op == Token::Operator::TypeNameOf && sequence(tkn::ValueType::Any)) {
                 const auto type = getValue<Token::ValueType>(-1);
 
-                result = create<ast::ASTNodeLiteral>(Token::getTypeName(type));
+                result = create<ast::ASTNodeLiteral>(std::string(Token::getTypeName(type)));
             } else if (sequence(tkn::Operator::Dollar)) {
                 result = create<ast::ASTNodeTypeOperator>(op);
             } else {
