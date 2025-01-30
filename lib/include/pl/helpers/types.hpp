@@ -34,26 +34,17 @@ namespace pl {
 
 #if !defined(LIBWOLV_BUILTIN_UINT128)
 
-#include <string>
 #include <fmt/format.h>
-
-namespace pl::hlp
-{
-    [[nodiscard]] std::string to_string(u128 value);
-    [[nodiscard]] std::string to_string(i128 value);
-    [[nodiscard]] std::string to_hex_string(u128 value);
-    [[nodiscard]] std::string to_hex_string(i128 value);
-}
 
 template<>
 struct fmt::formatter<pl::u128>
 {
     constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
-        return fmt::formatter<uint64_t>().parse(ctx);
+        return fmt::formatter<pl::u64>().parse(ctx);
     }
 
     auto format(const pl::u128& v, format_context& ctx) const {
-        return format_to(ctx.out(), "u128({})", pl::hlp::to_string(v));
+        return fmt::formatter<pl::u64>().format(pl::u64(v), ctx);
     }
 };
 
@@ -61,11 +52,11 @@ template<>
 struct fmt::formatter<pl::i128>
 {
     constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
-        return fmt::formatter<int64_t>().parse(ctx);
+        return fmt::formatter<pl::u64>().parse(ctx);
     }
 
     auto format(const pl::i128& v, format_context& ctx) const {
-        return format_to(ctx.out(), "i128({})", pl::hlp::to_string(v));
+        return fmt::formatter<pl::u64>().format(pl::i64(v), ctx);
     }
 };
 #endif
