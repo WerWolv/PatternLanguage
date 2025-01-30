@@ -398,7 +398,7 @@ namespace pl::core {
             if (node == nullptr)
                 return nullptr;
 
-            return create<ast::ASTNodeMathematicalExpression>(create<ast::ASTNodeLiteral>(0), std::move(node), op);
+            return create<ast::ASTNodeMathematicalExpression>(create<ast::ASTNodeLiteral>(i128(0)), std::move(node), op);
         }
 
         if (sequence(tkn::Literal::String)) {

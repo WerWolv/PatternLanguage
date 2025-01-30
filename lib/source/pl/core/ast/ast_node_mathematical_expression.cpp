@@ -8,13 +8,43 @@
 
 #include <pl/patterns/pattern_enum.hpp>
 
+template<std::integral T>
+struct std::common_type<pl::u128, T> {
+    using type = pl::u128;
+};
+
+template<std::floating_point T>
+struct std::common_type<pl::u128, T> {
+    using type = double;
+};
+
+template<>
+struct std::common_type<pl::u128, pl::i128> {
+    using type = pl::u128;
+};
+
+template<>
+struct std::common_type<pl::i128, pl::u128> {
+    using type = pl::u128;
+};
+
+template<std::integral T>
+struct std::common_type<pl::i128, T> {
+    using type = pl::i128;
+};
+
+template<std::floating_point T>
+struct std::common_type<pl::i128, T> {
+    using type = double;
+};
+
 namespace pl::core::ast {
 
     template<typename L, typename R>
-    struct signed_result
-    {
+    struct signed_result {
         constexpr static bool value = is_signed<L>::value && is_signed<R>::value;
     };
+
 
     ASTNodeMathematicalExpression::ASTNodeMathematicalExpression(std::unique_ptr<ASTNode> &&left, std::unique_ptr<ASTNode> &&right, Token::Operator op)
     : m_left(std::move(left)), m_right(std::move(right)), m_operator(op) { }
@@ -151,43 +181,36 @@ namespace pl::core::ast {
                 }
             },
             [&, this](auto left, auto right) -> ASTNode * {
+                using RBase = std::common_type_t<decltype(left), decltype(right)>;
+                using R = std::conditional_t<std::same_as<RBase, int>, i128, RBase>;
+
                 switch (this->getOperator()) {
                    case Token::Operator::Plus:
-                       if constexpr (signed_result<decltype(left), decltype(right)>::value)
-                           return new ASTNodeLiteral(i128(left) + i128(right));
-                       else
-                           return new ASTNodeLiteral(u128(left) + u128(right));
+                        return new ASTNodeLiteral(R(R(left) + R(right)));
                    case Token::Operator::Minus:
-                       if (left < static_cast<decltype(left)>(right) && std::unsigned_integral<decltype(left)> && std::unsigned_integral<decltype(right)>)
-                           return new ASTNodeLiteral(i128(left) - i128(right));
-                       else
-                           return new ASTNodeLiteral(u128(left) - u128(right));
+                        return new ASTNodeLiteral(R(R(left) - R(right)));
                    case Token::Operator::Star:
-                       if constexpr (signed_result<decltype(left), decltype(right)>::value)
-                           return new ASTNodeLiteral(i128(left) * i128(right));
-                       else
-                           return new ASTNodeLiteral(u128(left) * u128(right));
+                        return new ASTNodeLiteral(R(R(left) * R(right)));
                    case Token::Operator::Slash:
-                       if (right == 0) err::E0002.throwError("Division by zero.", { }, this->getLocation());
-                       if constexpr (signed_result<decltype(left), decltype(right)>::value)
-                           return new ASTNodeLiteral(i128(left) / i128(right));
-                       else
-                           return new ASTNodeLiteral(u128(left) / u128(right));
+                       if (right == 0)
+                           err::E0002.throwError("Division by zero.", { }, this->getLocation());
+                       return new ASTNodeLiteral(R(R(left) / R(right)));
                    case Token::Operator::Percent:
-                       if (right == 0) err::E0002.throwError("Division by zero.", { }, this->getLocation());
-                       return new ASTNodeLiteral(modulus(left, right));
+                       if (right == 0)
+                           err::E0002.throwError("Division by zero.", { }, this->getLocation());
+                       return new ASTNodeLiteral(R(modulus(left, right)));
                    case Token::Operator::LeftShift:
-                       return new ASTNodeLiteral(shiftLeft(left, right));
+                       return new ASTNodeLiteral(R(shiftLeft(left, right)));
                    case Token::Operator::RightShift:
-                       return new ASTNodeLiteral(shiftRight(left, right));
+                       return new ASTNodeLiteral(R(shiftRight(left, right)));
                    case Token::Operator::BitAnd:
-                       return new ASTNodeLiteral(bitAnd(left, right));
+                       return new ASTNodeLiteral(R(bitAnd(left, right)));
                    case Token::Operator::BitXor:
-                       return new ASTNodeLiteral(bitXor(left, right));
+                       return new ASTNodeLiteral(R(bitXor(left, right)));
                    case Token::Operator::BitOr:
-                       return new ASTNodeLiteral(bitOr(left, right));
+                       return new ASTNodeLiteral(R(bitOr(left, right)));
                    case Token::Operator::BitNot:
-                       return new ASTNodeLiteral(bitNot(left, right));
+                       return new ASTNodeLiteral(R(bitNot(left, right)));
                    case Token::Operator::BoolEqual:
                        return new ASTNodeLiteral(bool(left == static_cast<decltype(left)>(right)));
                    case Token::Operator::BoolNotEqual:
