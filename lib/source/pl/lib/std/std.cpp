@@ -34,10 +34,10 @@ namespace pl::lib::libstd::libstd {
                         formatArgs.push_back(value.c_str());
                     },
                     [&](const u128 &value) {
-                        formatArgs.push_back(hlp::to_string(value));
+                        formatArgs.push_back(value);
                     },
                     [&](const i128 &value) {
-                        formatArgs.push_back(hlp::to_string(value));
+                        formatArgs.push_back(value);
                     },
                     [&](auto &&value) {
                         formatArgs.push_back(value);

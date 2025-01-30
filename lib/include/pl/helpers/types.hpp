@@ -37,26 +37,17 @@ namespace pl {
 #include <fmt/format.h>
 
 template<>
-struct fmt::formatter<pl::u128>
-{
-    constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
-        return fmt::formatter<pl::u64>().parse(ctx);
-    }
-
+struct fmt::formatter<pl::u128> : fmt::formatter<pl::u64> {
     auto format(const pl::u128& v, format_context& ctx) const {
-        return fmt::formatter<pl::u64>().format(pl::u64(v), ctx);
+        return formatter<pl::u64>::format(pl::u64(v), ctx);
     }
 };
 
 template<>
-struct fmt::formatter<pl::i128>
-{
-    constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
-        return fmt::formatter<pl::u64>().parse(ctx);
-    }
-
+struct fmt::formatter<pl::i128> : fmt::formatter<pl::i64> {
     auto format(const pl::i128& v, format_context& ctx) const {
-        return fmt::formatter<pl::u64>().format(pl::i64(v), ctx);
+        return formatter<pl::i64>::format(pl::i64(v), ctx);
     }
 };
+
 #endif
