@@ -30,7 +30,7 @@ else()
     find_package(CLI11 CONFIG QUIET)
 endif()
 
-if(NOT MSVC)
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(plcli PRIVATE -Wall -Wextra -Werror -Wno-unknown-pragmas -Wno-array-bounds)
 endif()
 target_include_directories(plcli PUBLIC include ${CLI11_INCLUDE_DIRS})
