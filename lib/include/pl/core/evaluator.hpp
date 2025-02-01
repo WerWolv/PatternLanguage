@@ -78,7 +78,7 @@ namespace pl::core {
         struct Scope {
             Scope(const std::shared_ptr<pl::ptrn::Pattern>& parentPattern,
                 std::vector<std::shared_ptr<pl::ptrn::Pattern>>* scopePatterns,
-                unsigned long heapSize)
+                size_t heapSize)
                 : parent(parentPattern),
                 scope(scopePatterns),
                 heapStartSize(heapSize) {}

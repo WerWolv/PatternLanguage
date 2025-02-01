@@ -194,11 +194,17 @@ namespace pl::core::ast {
                    case Token::Operator::Slash:
                        if (right == 0)
                            err::E0002.throwError("Division by zero.", { }, this->getLocation());
-                       return new ASTNodeLiteral(R(R(left) / R(right)));
+                       if constexpr (std::same_as<R, bool>)
+						   err::E0001.throwError("Cannot divide boolean values.", { }, this->getLocation());
+                       else
+                           return new ASTNodeLiteral(R(R(left) / R(right)));
                    case Token::Operator::Percent:
                        if (right == 0)
                            err::E0002.throwError("Division by zero.", { }, this->getLocation());
-                       return new ASTNodeLiteral(R(modulus(left, right)));
+                       if constexpr (std::same_as<R, bool>)
+                           err::E0001.throwError("Cannot divide boolean values.", { }, this->getLocation());
+                       else
+                           return new ASTNodeLiteral(R(modulus(left, right)));
                    case Token::Operator::LeftShift:
                        return new ASTNodeLiteral(R(shiftLeft(left, right)));
                    case Token::Operator::RightShift:
