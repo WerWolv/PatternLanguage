@@ -83,7 +83,12 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string toString() const override {
             auto value = this->getValue();
-            auto result = fmt::format("{}", value.toFloatingPoint());
+
+            std::string result;
+            if (this->getSize() == 4)
+                result = fmt::format("{}", static_cast<float>(value.toFloatingPoint()));
+            else
+                result = fmt::format("{}", static_cast<double>(value.toFloatingPoint()));
 
             return Pattern::callUserFormatFunc(value, true).value_or(result);
         }
