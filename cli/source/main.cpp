@@ -40,6 +40,9 @@ namespace pl::cli {
             if (subcommand == "-h" || subcommand == "--help") {
                 fmt::print("{}", app.help());
                 return EXIT_FAILURE;
+            } else if (subcommand == "--version") {
+                fmt::print("{}", "v1.0.0");
+                return EXIT_SUCCESS;
             }
 
             try {
