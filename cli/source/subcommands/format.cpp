@@ -26,7 +26,7 @@ namespace pl::cli::sub {
         auto subcommand = app->add_subcommand("format", "Executes the given pattern on the given file, and output the pattern data in the wanted format");
 
         // Add command line arguments
-        subcommand->add_option("-i,--input,INPUT_FILE", inputFilePath, "Input file to extract data from")->required()->check(CLI::ExistingFile);
+        subcommand->add_option("-i,--input,INPUT_FILE", inputFilePath, "Input file to extract data from")->check(CLI::ExistingFile);
         subcommand->add_option("-p,--pattern,PATTERN_FILE", patternFilePath, "Pattern file")->required()->check(CLI::ExistingFile);
         subcommand->add_option("-o,--output,OUTPUT_FILE", outputFilePath, "File to write the pattern data to")->check(CLI::NonexistentPath);
         subcommand->add_option("-I,--includes", includePaths, "Include file paths")->take_all()->check(CLI::ExistingDirectory);
@@ -61,13 +61,18 @@ namespace pl::cli::sub {
 
             // If no output path was given, use the input path with the formatter's file extension
             if (outputFilePath.empty()) {
+                if (inputFilePath.empty()) {
+                    ::fmt::print("Input file path is required if no output file path is specified!\n");
+                    std::exit(EXIT_FAILURE);
+                }
+
                 outputFilePath = inputFilePath;
                 outputFilePath.replace_extension("." + formatter->getFileExtension());
             }
 
             // Open input file
             wolv::io::File inputFile(inputFilePath, wolv::io::File::Mode::Read);
-            if (!inputFile.isValid()) {
+            if (!inputFilePath.empty() && !inputFile.isValid()) {
                 ::fmt::print("Failed to open file '{}'\n", inputFilePath.string());
                 std::exit(EXIT_FAILURE);
             }
@@ -120,7 +125,6 @@ namespace pl::cli::sub {
             }
 
             outputFile.writeVector(result);
-            ::fmt::print("Wrote pattern data to {}\n", outputFilePath.string());
         });
     }
 
