@@ -19,7 +19,7 @@ if (LIBPL_BUILD_CLI_AS_EXECUTABLE)
     add_executable(plcli ${PLCLI_SOURCES})
     target_compile_definitions(plcli PRIVATE LIBPL_CLI_AS_EXECUTABLE)
 else ()
-    add_library(plcli STATIC ${PLCLI_SOURCES})
+    add_library(plcli OBJECT ${PLCLI_SOURCES})
 endif ()
 
 if (NOT USE_SYSTEM_CLI11)
@@ -40,32 +40,35 @@ if (WIN32)
     set(CMAKE_INSTALL_BINDIR ".")
 
     install(CODE "set(CMAKE_INSTALL_BINDIR \"${CMAKE_INSTALL_BINDIR}\")")
-    install(CODE [[
-        file(GET_RUNTIME_DEPENDENCIES
-            EXECUTABLES $<TARGET_FILE:plcli>
-            RESOLVED_DEPENDENCIES_VAR _r_deps
-            UNRESOLVED_DEPENDENCIES_VAR _u_deps
-            CONFLICTING_DEPENDENCIES_PREFIX _c_deps
-            DIRECTORIES ${DEP_FOLDERS} $ENV{PATH}
-            POST_EXCLUDE_REGEXES ".*system32/.*\\.dll"
-        )
 
-        if(_u_deps)
-            message(WARNING "There were unresolved dependencies for binary: \"${_u_deps}\"!")
-        endif()
-        if(_c_deps_FILENAMES)
-            message(WARNING "There were conflicting dependencies for library: \"${_c_deps}\"!")
-        endif()
+    if (LIBPL_BUILD_CLI_AS_EXECUTABLE)
+        install(CODE [[
+            file(GET_RUNTIME_DEPENDENCIES
+                EXECUTABLES $<TARGET_FILE:plcli>
+                RESOLVED_DEPENDENCIES_VAR _r_deps
+                UNRESOLVED_DEPENDENCIES_VAR _u_deps
+                CONFLICTING_DEPENDENCIES_PREFIX _c_deps
+                DIRECTORIES ${DEP_FOLDERS} $ENV{PATH}
+                POST_EXCLUDE_REGEXES ".*system32/.*\\.dll"
+            )
 
-        foreach(_file ${_r_deps})
-            file(INSTALL
-                DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}"
-                TYPE SHARED_LIBRARY
-                FOLLOW_SYMLINK_CHAIN
-                FILES "${_file}"
-                )
-        endforeach()
-        ]])
+            if(_u_deps)
+                message(WARNING "There were unresolved dependencies for binary: \"${_u_deps}\"!")
+            endif()
+            if(_c_deps_FILENAMES)
+                message(WARNING "There were conflicting dependencies for library: \"${_c_deps}\"!")
+            endif()
+
+            foreach(_file ${_r_deps})
+                file(INSTALL
+                    DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}"
+                    TYPE SHARED_LIBRARY
+                    FOLLOW_SYMLINK_CHAIN
+                    FILES "${_file}"
+                    )
+            endforeach()
+            ]])
+    endif()
 
 else ()
     set(CMAKE_INSTALL_BINDIR "bin")
