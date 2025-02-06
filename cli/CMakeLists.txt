@@ -18,6 +18,7 @@ set(PLCLI_SOURCES
 if (LIBPL_BUILD_CLI_AS_EXECUTABLE)
     add_executable(plcli ${PLCLI_SOURCES})
     target_compile_definitions(plcli PRIVATE LIBPL_CLI_AS_EXECUTABLE)
+    target_link_libraries(plcli PRIVATE libpl libpl-gen)
 else ()
     add_library(plcli OBJECT ${PLCLI_SOURCES})
 endif ()
