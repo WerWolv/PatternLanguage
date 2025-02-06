@@ -34,7 +34,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(plcli PRIVATE -Wall -Wextra -Werror -Wno-unknown-pragmas -Wno-array-bounds)
 endif()
 target_include_directories(plcli PUBLIC include ${CLI11_INCLUDE_DIRS})
-target_link_libraries(plcli PRIVATE ${CLI11_LIBRARIES} ${NLOHMANN_JSON_LIBRARIES} libpl libpl-gen ${FMT_LIBRARIES})
+target_link_libraries(plcli PRIVATE ${CLI11_LIBRARIES} ${NLOHMANN_JSON_LIBRARIES} libwolv libpl_includes libpl-gen ${FMT_LIBRARIES})
 
 if (WIN32)
     set(CMAKE_INSTALL_BINDIR ".")

@@ -7,7 +7,7 @@ if (LIBPL_SHARED_LIBRARY)
     set(LIBRARY_TYPE SHARED)
     message(STATUS "libpl dynamic library is being created")
 else ()
-    set(LIBRARY_TYPE STATIC)
+    set(LIBRARY_TYPE OBJECT)
     message(STATUS "libpl static library is being created")
 endif ()
 
@@ -74,6 +74,8 @@ add_library(libpl ${LIBRARY_TYPE}
         source/pl/core/resolvers.cpp
 )
 
+add_library(libpl_includes INTERFACE)
+
 if (LIBPL_ENABLE_PRECOMPILED_HEADERS)
     file(GLOB_RECURSE TARGET_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/include/**/*.hpp")
     set(SYSTEM_INCLUDES "<algorithm>;<array>;<atomic>;<chrono>;<cmath>;<cstddef>;<cstdint>;<cstdio>;<cstdlib>;<cstring>;<exception>;<filesystem>;<functional>;<iterator>;<limits>;<list>;<map>;<memory>;<optional>;<ranges>;<set>;<stdexcept>;<string>;<string_view>;<thread>;<tuple>;<type_traits>;<unordered_map>;<unordered_set>;<utility>;<variant>;<vector>")
@@ -99,6 +101,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif ()
 
 target_include_directories(libpl PUBLIC include ../external/throwing_ptr/include)
+target_include_directories(libpl_includes INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include ../external/throwing_ptr/include)
 target_link_libraries(libpl PRIVATE ${FMT_LIBRARIES})
 target_link_libraries(libpl PUBLIC wolv::types wolv::io wolv::utils wolv::hash wolv::containers)
 
