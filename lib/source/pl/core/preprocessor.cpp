@@ -579,9 +579,11 @@ namespace pl::core {
             m_result = std::move(result.value());
         else
             return { std::nullopt, errors };
-        if (!errors.empty())
+        if (!errors.empty()) {
             for (auto &item: errors)
                 this->error(item);
+            return { m_output, collectErrors() };
+        }
 
         m_token = m_result.begin();
         m_initialized = true;

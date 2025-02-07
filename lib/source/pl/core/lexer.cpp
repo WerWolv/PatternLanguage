@@ -482,7 +482,7 @@ namespace pl::core {
 
         m_tokens.clear();
 
-        while(this->m_cursor < end) {
+        while (this->m_cursor < end) {
             const char& c = this->m_sourceCode[this->m_cursor];
 
             if (c == '\x00') {
@@ -644,6 +644,9 @@ namespace pl::core {
             } else {
                 m_errorLength = 1;
                 error("Unexpected character: {}", c);
+                m_cursor++;
+
+                break;
             }
 
             m_cursor++;
