@@ -46,8 +46,13 @@ namespace pl::lib::libstd::core {
                 auto &attributes = pattern->getAttributes();
                 if (attributes == nullptr || !attributes->contains(attributeName))
                     return std::string();
-                else
-                    return attributes->at(attributeName)[index];
+                else {
+                    const auto &attribute = attributes->at(attributeName);
+                    if (index >= attributes->size())
+                        err::E0012.throwError("Attribute argument index out of range");
+                    else
+                        return attribute[index];
+                }
             });
 
             /* set_pattern_color(pattern, color) */
