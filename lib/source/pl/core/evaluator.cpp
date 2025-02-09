@@ -173,6 +173,9 @@ namespace pl::core {
     }
 
     [[nodiscard]] std::optional<api::Function> Evaluator::findFunction(const std::string &name) const {
+        if (name.empty())
+            return std::nullopt;
+
         const auto &customFunctions     = this->getCustomFunctions();
         const auto &builtinFunctions    = this->getBuiltinFunctions();
 
