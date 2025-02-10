@@ -136,14 +136,26 @@ namespace pl::core {
                 }
             },
             [](pl::integral auto lhs, pl::floating_point auto rhs) -> std::strong_ordering {
-                if (lhs == rhs) return std::strong_ordering::equal;
-                if (lhs < rhs) return std::strong_ordering::less;
-                return std::strong_ordering::greater;
+                if constexpr (std::same_as<decltype(lhs), char> || std::same_as<decltype(rhs), char>)
+                    return char(lhs) <=> char(rhs);
+                else if constexpr (std::same_as<decltype(lhs), bool> || std::same_as<decltype(rhs), bool>)
+                    return bool(lhs) <=> bool(rhs);
+                else {
+                    if (lhs == rhs) return std::strong_ordering::equal;
+                    if (lhs < rhs) return std::strong_ordering::less;
+                    return std::strong_ordering::greater;
+                }
             },
             [](pl::floating_point auto lhs, pl::integral auto rhs) -> std::strong_ordering {
-                if (lhs == rhs) return std::strong_ordering::equal;
-                if (lhs < rhs) return std::strong_ordering::less;
-                return std::strong_ordering::greater;
+                if constexpr (std::same_as<decltype(lhs), char> || std::same_as<decltype(rhs), char>)
+                    return char(lhs) <=> char(rhs);
+                else if constexpr (std::same_as<decltype(lhs), bool> || std::same_as<decltype(rhs), bool>)
+                    return bool(lhs) <=> bool(rhs);
+                else {
+                    if (lhs == rhs) return std::strong_ordering::equal;
+                    if (lhs < rhs) return std::strong_ordering::less;
+                    return std::strong_ordering::greater;
+                }
             },
             [](auto, auto) -> std::strong_ordering {
                 return std::strong_ordering::less;
