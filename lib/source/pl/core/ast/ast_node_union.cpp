@@ -18,7 +18,6 @@ namespace pl::core::ast {
         evaluator->alignToByte();
         auto pattern = std::make_shared<ptrn::PatternUnion>(evaluator, evaluator->getReadOffset(), 0, getLocation().line);
 
-        size_t size = 0;
         std::vector<std::shared_ptr<ptrn::Pattern>> memberPatterns;
         u64 startOffset = evaluator->getReadOffset();
 
@@ -26,6 +25,12 @@ namespace pl::core::ast {
 
         evaluator->pushScope(pattern, memberPatterns);
         ON_SCOPE_EXIT {
+            size_t size = 0;
+            for (auto &memberPattern : memberPatterns) {
+                size = std::max(memberPattern->getSize(), size);
+            }
+            pattern->setSize(size);
+
             evaluator->setReadOffset(startOffset + size);
             if (evaluator->isReadOrderReversed())
                 pattern->setAbsoluteOffset(evaluator->getReadOffset());
@@ -54,11 +59,9 @@ namespace pl::core::ast {
                     }
                 }
 
-                size = std::max(memberPattern->getSize(), size);
                 memberPattern->setSection(evaluator->getSectionId());
                 memberPatterns.push_back(std::move(memberPattern));
             }
-            pattern->setSize(size);
 
             if (evaluator->getCurrentControlFlowStatement() == ControlFlowStatement::Return)
                 break;
