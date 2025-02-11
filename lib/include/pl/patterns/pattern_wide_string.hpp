@@ -31,7 +31,7 @@ namespace pl::ptrn {
                                      [](auto c) { return c == 0x00; });
             buffer.erase(it, buffer.end());
 
-            return wolv::util::utf16ToUtf8(buffer);
+            return wolv::util::utf16ToUtf8(buffer).value_or("???");
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
@@ -49,7 +49,7 @@ namespace pl::ptrn {
                 return c == 0x00;
             });
 
-            auto result = wolv::util::utf16ToUtf8(buffer);
+            auto result = wolv::util::utf16ToUtf8(buffer).value_or("???");
 
             return Pattern::callUserFormatFunc(this->getValue(), true).value_or(result);
         }
