@@ -22,7 +22,7 @@ namespace pl::test {
                     nestedFields.push_back(create<PatternBitfieldField>("", "nestedA", 0x25, 5, 4, 0, testBitfield.get()));
                     nestedFields.push_back(create<PatternBitfieldField>("", "nestedB", 0x26, 1, 4, 0, testBitfield.get()));
                 }
-                nestedBitfield->setParentBitfield(testBitfield.get());
+                nestedBitfield->setParent(testBitfield.get());
                 nestedBitfield->setFields(std::move(nestedFields));
                 nestedBitfield->setEndian(std::endian::big);
                 bitfieldFields.push_back(std::move(nestedBitfield));
@@ -39,7 +39,7 @@ namespace pl::test {
                         array0Fields.push_back(create<PatternBitfieldField>("", "nestedA", 0x27, 5, 4, 0, array0Bitfield.get()));
                         array0Fields.push_back(create<PatternBitfieldField>("", "nestedB", 0x28, 1, 4, 0, array0Bitfield.get()));
                     }
-                    array0Bitfield->setParentBitfield(array.get());
+                    array0Bitfield->setParent(array.get());
                     array0Bitfield->setFields(std::move(array0Fields));
                     array0Bitfield->setEndian(std::endian::big);
                     arrayEntries.push_back(std::move(array0Bitfield));
@@ -50,12 +50,12 @@ namespace pl::test {
                         array1Fields.push_back(create<PatternBitfieldField>("", "nestedA", 0x28, 5, 4, 0, array1Bitfield.get()));
                         array1Fields.push_back(create<PatternBitfieldField>("", "nestedB", 0x29, 1, 4, 0, array1Bitfield.get()));
                     }
-                    array1Bitfield->setParentBitfield(array.get());
+                    array1Bitfield->setParent(array.get());
                     array1Bitfield->setFields(std::move(array1Fields));
                     array1Bitfield->setEndian(std::endian::big);
                     arrayEntries.push_back(std::move(array1Bitfield));
                 }
-                array->setParentBitfield(testBitfield.get());
+                array->setParent(testBitfield.get());
                 array->setEntries(arrayEntries);
                 array->setEndian(std::endian::big);
                 bitfieldFields.push_back(std::move(array));

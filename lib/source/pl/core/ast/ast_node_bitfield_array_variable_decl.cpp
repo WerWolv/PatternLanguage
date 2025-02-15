@@ -133,7 +133,7 @@ namespace pl::core::ast {
 
             for (auto &pattern : entries) {
                 if (auto bitfieldMember = dynamic_cast<ptrn::PatternBitfieldMember*>(pattern.get()); bitfieldMember != nullptr)
-                    bitfieldMember->setParentBitfield(arrayPattern.get());
+                    bitfieldMember->setParent(arrayPattern.get());
             }
 
             arrayPattern->setEntries(entries);

@@ -9,14 +9,16 @@ namespace pl::ptrn {
     public:
         using Pattern::Pattern;
 
-        virtual void setParentBitfield(PatternBitfieldMember *parent) = 0;
-
-        [[nodiscard]] virtual const PatternBitfieldMember* getParentBitfield() const = 0;
-
         [[nodiscard]] const PatternBitfieldMember& getTopmostBitfield() const {
-            const pl::ptrn::PatternBitfieldMember* topBitfield = this;
-            while (auto parentBitfield = topBitfield->getParentBitfield())
+            const PatternBitfieldMember* topBitfield = this;
+            while (auto parent = topBitfield->getParent()) {
+                auto parentBitfield = dynamic_cast<const PatternBitfieldMember*>(parent);
+                if (parentBitfield == nullptr)
+                    break;
+
                 topBitfield = parentBitfield;
+            }
+
             return *topBitfield;
         }
 
@@ -52,13 +54,14 @@ namespace pl::ptrn {
     class PatternBitfieldField : public PatternBitfieldMember {
     public:
         PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, PatternBitfieldMember *parentBitfield = nullptr)
-                : PatternBitfieldMember(evaluator, offset, (bitOffset + bitSize + 7) / 8, line), m_parentBitfield(parentBitfield), m_bitOffset(bitOffset % 8), m_bitSize(bitSize) { }
+                : PatternBitfieldMember(evaluator, offset, (bitOffset + bitSize + 7) / 8, line), m_bitOffset(bitOffset % 8), m_bitSize(bitSize) {
+            this->setParent(parentBitfield);
+        }
 
         PatternBitfieldField(const PatternBitfieldField &other) : PatternBitfieldMember(other) {
             this->m_padding = other.m_padding;
             this->m_bitOffset = other.m_bitOffset;
             this->m_bitSize = other.m_bitSize;
-            this->m_parentBitfield = other.m_parentBitfield;
         }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
@@ -71,14 +74,6 @@ namespace pl::ptrn {
 
         [[nodiscard]] core::Token::Literal getValue() const override {
             return transformValue(this->readValue());
-        }
-
-        void setParentBitfield(PatternBitfieldMember *parentBitfield) override {
-            this->m_parentBitfield = parentBitfield;
-        }
-
-        const PatternBitfieldMember* getParentBitfield() const override {
-            return this->m_parentBitfield;
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
@@ -151,13 +146,11 @@ namespace pl::ptrn {
                 this->getEvaluator()->writeBits(this->getOffset(), this->getBitOffset(), this->getBitSize(), this->getSection(), this->getEndian(), writeValue);
 
                 this->clearFormatCache();
-                this->m_parentBitfield->clearFormatCache();
+                this->getParent()->clearFormatCache();
             }
         }
 
     private:
-        PatternBitfieldMember *m_parentBitfield = nullptr;
-
         u8 m_bitOffset;
         u8 m_bitSize;
 
@@ -290,14 +283,6 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
             return std::unique_ptr<Pattern>(new PatternBitfieldArray(*this));
-        }
-
-        void setParentBitfield(PatternBitfieldMember *parentBitfield) override {
-            this->m_parentBitfield = parentBitfield;
-        }
-
-        const PatternBitfieldMember* getParentBitfield() const override {
-            return this->m_parentBitfield;
         }
 
         [[nodiscard]] u8 getBitOffset() const override {
@@ -550,7 +535,6 @@ namespace pl::ptrn {
         std::vector<Pattern *> m_sortedEntries;
         u8 m_firstBitOffset = 0;
         u128 m_totalBitSize = 0;
-        PatternBitfieldMember *m_parentBitfield = nullptr;
         bool m_reversed = false;
     };
 
@@ -565,21 +549,12 @@ namespace pl::ptrn {
             for (auto &field : other.m_fields)
                 this->m_fields.push_back(field->clone());
 
-            this->m_parentBitfield = other.m_parentBitfield;
             this->m_firstBitOffset = other.m_firstBitOffset;
             this->m_totalBitSize = other.m_totalBitSize;
         }
 
         [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
             return std::unique_ptr<Pattern>(new PatternBitfield(*this));
-        }
-
-        void setParentBitfield(PatternBitfieldMember *parentBitfield) override {
-            this->m_parentBitfield = parentBitfield;
-        }
-
-        const PatternBitfieldMember* getParentBitfield() const override {
-            return this->m_parentBitfield;
         }
 
         [[nodiscard]] u8 getBitOffset() const override {
@@ -840,7 +815,6 @@ namespace pl::ptrn {
         std::vector<std::shared_ptr<Pattern>> m_fields;
         std::vector<Pattern *> m_sortedFields;
 
-        PatternBitfieldMember *m_parentBitfield = nullptr;
         u8 m_firstBitOffset = 0;
         u64 m_totalBitSize = 0;
         bool m_reversed = false;
