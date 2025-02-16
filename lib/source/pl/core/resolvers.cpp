@@ -42,7 +42,8 @@ namespace pl::core::resolvers {
                 return Result::err("Path " + utf8 + " is not a regular file");
             }
 
-            const auto content = file.readString();
+            auto content = file.readString();
+            content = wolv::util::replaceStrings(content, "\r\n", "\n");
 
             return Result::good(api::Source(content, utf8, false));
         }
