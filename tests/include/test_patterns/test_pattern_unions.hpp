@@ -34,7 +34,7 @@ namespace pl::test {
             return R"(
                 union TestUnion {
                     s32 array[2];
-                    u128 variable;
+                    if ( true ) { u128 variable; }
                 };
 
                 TestUnion testUnion @ 0x200;
