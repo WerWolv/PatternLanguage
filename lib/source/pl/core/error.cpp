@@ -109,7 +109,7 @@ namespace pl::core::err::impl {
         }
 
         if (!description.empty()) {
-            errorMessage += "\n\n" + description;
+            errorMessage += "\n" + description + "\n\n";
         }
 
         return errorMessage;
