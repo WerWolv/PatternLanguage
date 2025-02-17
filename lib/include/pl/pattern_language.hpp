@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <filesystem>
+#include <set>
 
 #include <pl/api.hpp>
 
@@ -21,10 +22,6 @@
 
 #include <wolv/io/fs.hpp>
 #include <wolv/container/interval_tree.hpp>
-
-namespace hex::prv {
-    class Provider;
-}
 
 namespace pl {
 
@@ -402,7 +399,7 @@ namespace pl {
             return this->m_subRuntime;
         }
 
-        [[nodiscard]] const std::set<ptrn::Pattern*>& getPatternsWithAttribute(const std::string &attribute) const;
+        [[nodiscard]] const std::set<pl::ptrn::Pattern*>& getPatternsWithAttribute(const std::string &attribute) const;
 
     private:
         void flattenPatterns();
