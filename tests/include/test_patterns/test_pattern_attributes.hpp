@@ -41,14 +41,31 @@ namespace pl::test {
                     return 1337;
                 };
 
+                struct FixedSizeTest1 {
+                    u8 x;
+                } [[fixed_size(4)]];
+
+                struct FixedSizeTest2 {
+                    u32 pos = $;
+                    u32 elem [[fixed_size(7)]];
+                    std::assert($ == pos + 7, "Fixed size variable attribute padding not working");
+
+                    pos = $;
+                    FixedSizeTest1 fixedSizeTest1;
+                    std::assert($ == pos + 4, "Fixed size pattern attribute padding not working");
+                };
+
                 FormatTransformTest formatTransformTest @ 0x00;
                 SealedTest sealedTest @ 0x10;
                 HiddenTest hiddenTest @ 0x20;
                 ColorTest colorTest @ 0x30;
                 NoUniqueAddressTest noUniqueAddressTest @ 0x40;
+                FixedSizeTest1 fixedSizeTest1 @ 0x50;
+                FixedSizeTest2 fixedSizeTest2 @ 0x60;
 
                 std::assert(formatTransformTest == 1337, "Transform attribute not working");
                 std::assert(sizeof(noUniqueAddressTest) == sizeof(u32), "No Unique Address attribute not working");
+                std::assert(sizeof(fixedSizeTest1) == 4, "Fixed size attribute not working");
             )test";
         }
 
