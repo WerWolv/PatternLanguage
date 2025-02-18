@@ -203,7 +203,8 @@ namespace pl::ptrn {
             else return this->m_endian.value_or(this->m_evaluator->getDefaultEndian());
         }
         virtual void setEndian(std::endian endian) {
-            if (this->isLocal()) return;
+            if (m_section == HeapSectionId || m_section == PatternLocalSectionId || m_section == InstantiationSectionId)
+                return;
 
             this->m_endian = endian;
         }
