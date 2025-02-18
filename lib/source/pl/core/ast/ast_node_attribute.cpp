@@ -335,7 +335,7 @@ namespace pl::core::ast {
             auto actualSize = pattern->getSize();
             if (actualSize < requestedSize) {
                 pattern->setSize(requestedSize);
-                evaluator->setReadOffset(u64(evaluator->getReadOffset() + (requestedSize - actualSize)));
+                evaluator->setReadOffset(pattern->getOffset() + requestedSize);
             }
             else if (actualSize > requestedSize)
                 err::E0004.throwError("Type size larger than expected", fmt::format("Pattern of type {} is larger than expected. Expected size {}, got {}", pattern->getTypeName(), requestedSize, actualSize), node->getLocation());
@@ -384,6 +384,8 @@ namespace pl::core::ast {
                         .bitOffset = bitfieldPattern->getBitOffset()
                     });
                 }
+            } else if (attributable->hasAttribute("fixed_size", true)) {
+                // read offset might be modified by fixed_size's padding. keep it as is.
             } else {
                 evaluator->setBitwiseReadOffset(endOffset);
             }
