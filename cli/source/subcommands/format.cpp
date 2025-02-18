@@ -59,17 +59,6 @@ namespace pl::cli::sub {
                                                       return formatter->getName() == formatterName;
                                                   });
 
-            // If no output path was given, use the input path with the formatter's file extension
-            if (outputFilePath.empty()) {
-                if (inputFilePath.empty()) {
-                    ::fmt::print("Input file path is required if no output file path is specified!\n");
-                    std::exit(EXIT_FAILURE);
-                }
-
-                outputFilePath = inputFilePath;
-                outputFilePath.replace_extension("." + formatter->getFileExtension());
-            }
-
             // Open input file
             wolv::io::File inputFile(inputFilePath, wolv::io::File::Mode::Read);
             if (!inputFilePath.empty() && !inputFile.isValid()) {
@@ -117,14 +106,18 @@ namespace pl::cli::sub {
             // Call selected formatter to format the results
             auto result = formatter->format(runtime);
 
-            // Write results to output file
-            wolv::io::File outputFile(outputFilePath, wolv::io::File::Mode::Create);
-            if (!outputFile.isValid()) {
-                ::fmt::print("Failed to create output file: {}\n", outputFilePath.string());
-                std::exit(EXIT_FAILURE);
-            }
+            if (outputFilePath.empty()) {
+                fwrite(result.data(), 1, result.size(), stdout);
+            } else {
+                // Write results to output file
+                wolv::io::File outputFile(outputFilePath, wolv::io::File::Mode::Create);
+                if (!outputFile.isValid()) {
+                    ::fmt::print("Failed to create output file: {}\n", outputFilePath.string());
+                    std::exit(EXIT_FAILURE);
+                }
 
-            outputFile.writeVector(result);
+                outputFile.writeVector(result);
+            }
         });
     }
 
