@@ -29,6 +29,19 @@ afl-fuzz -i inputs -o output -x ./dict/hexpat.dict -- ./plfuzz @@
 ```
 This will run a simple fuzzing session with the inputs in the `inputs` folder and outputting to the `output` folder.
 
+### Minimization
+
+To minimize the found crashes, you can simpy use the `afl-tmin` tool that comes with AFL++.
+Here is an example of how to minimize a crash:
+```bash
+afl-tmin -i output/crashes/<crash_file> -o output/minimized/<crash_file> -- ./plfuzz @@
+```
+
+We also provide a small script to minimize all crashes in the `output/crashes` folder:
+```bash
+python3 afl-pytmin.py output/crashes output/minimized ./plfuzz
+```
+
 ### Debugging
 During the session, if the fuzzer finds crashes or halts, it will output the crashing input to the
 `output/crashes` or `output/hangs` folder.   
