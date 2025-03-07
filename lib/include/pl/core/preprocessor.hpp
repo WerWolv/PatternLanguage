@@ -140,7 +140,12 @@ namespace pl::core {
         std::unordered_map<Token::Directive, api::DirectiveHandler> m_directiveHandlers;
         std::unordered_map<Token::Keyword, api::StatementHandler> m_statementHandlers;
 
-        std::unordered_map<std::string, std::vector<Token>> m_defines;
+        struct Define {
+            Token nameToken;
+            std::vector<Token> values;
+        };
+
+        std::unordered_map<std::string, Define> m_defines;
         std::unordered_map<std::string, std::vector<std::pair<std::string, u32>>> m_pragmas;
         std::vector<ExcludedLocation> m_excludedLocations;
 

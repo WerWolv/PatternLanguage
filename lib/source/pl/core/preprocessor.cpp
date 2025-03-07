@@ -178,17 +178,34 @@ namespace pl::core {
         }
 
         if (m_defines.contains(name)) {
-            bool isValueSame = m_defines[name] == values;
+            bool isValueSame = m_defines[name].values == values;
             if (!isValueSame) {
-                errorAt(values[0].location, "Previous definition occurs at line '{}'.", m_defines[name][0].location.line);
-                errorAt(m_defines[name][0].location, "Macro '{}' is redefined in line '{}'.", name, values[0].location.line);
-                m_defines[name].clear();
-                m_defines[name] = values;
+                auto& define = m_defines[name];
+                Location defineLocation{};
+
+                if (define.values.empty()) {
+                    defineLocation = define.nameToken.location;
+                } else {
+                    defineLocation = define.values[0].location;
+                }
+
+                Location ourLocation{};
+                if (values.empty()) {
+                    ourLocation = token.location;
+                } else {
+                    ourLocation = values[0].location;
+                }
+
+                errorAt(ourLocation, "Previous definition occurs at line '{}'.", defineLocation.line);
+                errorAt(defineLocation, "Macro '{}' is redefined in line '{}'.", name, defineLocation.line);
+
+                m_defines[name] = { token, values };
+
                 removeKey(token);
                 m_keys.emplace_back(token);
             }
         } else {
-            m_defines[name] = values;
+            m_defines[name] = { token, values };
             m_keys.emplace_back(token);
         }
     }
@@ -340,7 +357,7 @@ namespace pl::core {
         if (auto *tokenLiteral = std::get_if<Token::Literal>(&m_token->value); m_token->type == Token::Type::String && tokenLiteral != nullptr) {
             path = tokenLiteral->toString(false);
 
-        } else if (auto *identifier = std::get_if<Token::Identifier>(&m_token->value); m_token->type == Token::Type::Identifier) {
+        } else if (auto *identifier = std::get_if<Token::Identifier>(&m_token->value); m_token->type == Token::Type::Identifier && identifier != nullptr) {
             saveImport.push_back(*m_token);
             path = identifier->get();
             m_token++;
@@ -476,7 +493,7 @@ namespace pl::core {
                         Token::Identifier *tokenIdentifier = std::get_if<Token::Identifier>(&m_token->value);
                         if (tokenIdentifier != nullptr)
                             tokenIdentifier->setType(Token::Identifier::IdentifierType::Macro);
-                        for (const auto &newToken: m_defines[keyIdentifier->get()])
+                        for (const auto &newToken: m_defines[keyIdentifier->get()].values)
                             resultValues.push_back(newToken);
                     } else
                         resultValues.push_back(value);
@@ -614,7 +631,9 @@ namespace pl::core {
     }
 
     void Preprocessor::addDefine(const std::string &name, const std::string &value) {
-        m_defines[name] = {Token { Token::Type::String, value, {nullptr, 0, 0, 0 } } } ;
+        auto nameToken = Token { Token::Type::Identifier, name, Location::Empty() };
+        auto valueToken = Token { Token::Type::String, value, Location::Empty() };
+        m_defines[name] = { nameToken, { valueToken }};
     }
 
     void Preprocessor::addPragmaHandler(const std::string &pragmaType, const api::PragmaHandler &handler) {
