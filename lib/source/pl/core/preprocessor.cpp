@@ -357,7 +357,7 @@ namespace pl::core {
         if (auto *tokenLiteral = std::get_if<Token::Literal>(&m_token->value); m_token->type == Token::Type::String && tokenLiteral != nullptr) {
             path = tokenLiteral->toString(false);
 
-        } else if (auto *identifier = std::get_if<Token::Identifier>(&m_token->value); m_token->type == Token::Type::Identifier) {
+        } else if (auto *identifier = std::get_if<Token::Identifier>(&m_token->value); m_token->type == Token::Type::Identifier && identifier != nullptr) {
             saveImport.push_back(*m_token);
             path = identifier->get();
             m_token++;
