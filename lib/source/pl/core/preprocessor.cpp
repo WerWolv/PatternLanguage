@@ -189,7 +189,14 @@ namespace pl::core {
                     defineLocation = define.values[0].location;
                 }
 
-                errorAt(values[0].location, "Previous definition occurs at line '{}'.", defineLocation.line);
+                Location ourLocation{};
+                if (values.empty()) {
+                    ourLocation = token.location;
+                } else {
+                    ourLocation = values[0].location;
+                }
+
+                errorAt(ourLocation, "Previous definition occurs at line '{}'.", defineLocation.line);
                 errorAt(defineLocation, "Macro '{}' is redefined in line '{}'.", name, defineLocation.line);
 
                 m_defines[name] = { token, values };
