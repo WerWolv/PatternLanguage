@@ -601,7 +601,7 @@ namespace pl::core {
                 this->error(item);
             return { m_output, collectErrors() };
         }
-
+        setLongestLineLength(lexer->getLongestLineLength());
         m_token = m_result.begin();
         m_initialized = true;
         while (!eof())

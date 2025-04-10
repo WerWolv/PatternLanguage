@@ -49,7 +49,7 @@ namespace pl::core {
         std::optional<u128> parseInteger(std::string_view literal);
 
         Token makeToken(const Token& token, size_t length = 1);
-        static Token makeTokenAt(const Token& token, Location& location, size_t length = 1);
+        Token makeTokenAt(const Token& token, Location& location, size_t length = 1);
         void addToken(const Token& token);
         bool hasTheLineEnded(const char &ch) {
             if(ch == '\n') {
