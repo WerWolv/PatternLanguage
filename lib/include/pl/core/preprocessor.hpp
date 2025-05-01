@@ -36,7 +36,8 @@ namespace pl::core {
         void addStatementHandler(const Token::Keyword &statementType, const api::StatementHandler &handler);
         void removePragmaHandler(const std::string &pragmaType);
         void removeDirectiveHandler(const Token::Directive &directiveType);
-
+        size_t getLongestLineLength() const { return m_longestLineLength; }
+        void setLongestLineLength(size_t length) { m_longestLineLength = length; }
         void validateOutput();
 
         [[nodiscard]] const std::vector<ExcludedLocation>& getExcludedLocations() const {
@@ -140,7 +141,12 @@ namespace pl::core {
         std::unordered_map<Token::Directive, api::DirectiveHandler> m_directiveHandlers;
         std::unordered_map<Token::Keyword, api::StatementHandler> m_statementHandlers;
 
-        std::unordered_map<std::string, std::vector<Token>> m_defines;
+        struct Define {
+            Token nameToken;
+            std::vector<Token> values;
+        };
+
+        std::unordered_map<std::string, Define> m_defines;
         std::unordered_map<std::string, std::vector<std::pair<std::string, u32>>> m_pragmas;
         std::vector<ExcludedLocation> m_excludedLocations;
 
@@ -157,7 +163,7 @@ namespace pl::core {
         std::vector<Token> m_result;
         std::vector<Token> m_output;
         std::vector<std::string> m_namespaces;
-
+        size_t m_longestLineLength = 0;
         api::Source* m_source = nullptr;
 
         bool m_onlyIncludeOnce = false;
