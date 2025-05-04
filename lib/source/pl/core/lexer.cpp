@@ -458,13 +458,11 @@ namespace pl::core {
     Token Lexer::makeToken(const Token &token, const size_t length) {
         auto location = this->location();
         location.length = length;
-        m_longestLineLength = std::max(m_longestLineLength, location.column + location.length);
         return { token.type, token.value, location };
     }
 
     Token Lexer::makeTokenAt(const Token &token, Location& location, const size_t length) {
         location.length = length;
-        m_longestLineLength = std::max(m_longestLineLength, location.column + location.length);
         return { token.type, token.value, location };
     }
 
