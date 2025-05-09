@@ -158,6 +158,9 @@ namespace pl::core::ast {
     }
 
     void applyTypeAttributes(Evaluator *evaluator, const ASTNode *node, const std::shared_ptr<ptrn::Pattern> &pattern) {
+        if (std::uncaught_exceptions() > 0)
+            return;
+
         auto attributable = dynamic_cast<const Attributable *>(node);
         if (attributable == nullptr)
             err::E0008.throwError("Attributes cannot be applied to this statement.", {}, node->getLocation());
@@ -369,6 +372,8 @@ namespace pl::core::ast {
     }
 
     void applyVariableAttributes(Evaluator *evaluator, const ASTNode *node, const std::shared_ptr<ptrn::Pattern> &pattern) {
+        if (std::uncaught_exceptions() > 0)
+            return;
 
         auto attributable = dynamic_cast<const Attributable *>(node);
         if (attributable == nullptr)
