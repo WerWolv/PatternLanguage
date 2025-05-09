@@ -57,7 +57,7 @@ namespace pl::lib::libstd::time {
                 auto time = time_t(params[0].toUnsigned());
 
                 try {
-                    auto localTime = fmt::localtime(time);
+                    auto localTime = std::localtime(time);
 
                     return { packTMValue(localTime) };
                 } catch (const fmt::format_error&) {
