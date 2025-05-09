@@ -535,7 +535,7 @@ namespace pl {
 
             // Handle static array members
             if (parent != nullptr) {
-                parent->setOffset(interval.interval.start);
+                parent->setOffset(interval.interval.start - (value->getOffset() - parent->getOffset()));
                 parent->clearFormatCache();
                 value->clearFormatCache();
             }
