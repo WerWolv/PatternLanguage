@@ -58,6 +58,7 @@ namespace pl::lib::libstd::time {
 
                 try {
                     auto localTime = std::localtime(&time);
+                    if (localTime == nullptr) return u128(0);
 
                     return { packTMValue(*localTime) };
                 } catch (const fmt::format_error&) {
@@ -71,6 +72,7 @@ namespace pl::lib::libstd::time {
 
                 try {
                     auto gmTime = std::gmtime(&time);
+                    if (gmTime == nullptr) return u128(0);
 
                     return { packTMValue(*gmTime) };
                 } catch (const fmt::format_error&) {
