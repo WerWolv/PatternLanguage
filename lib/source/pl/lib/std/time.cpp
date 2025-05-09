@@ -11,7 +11,7 @@
 
 namespace pl::lib::libstd::time {
 
-    static u128 packTMValue(std::tm tm) {
+    static u128 packTMValue(const std::tm &tm) {
         return
             (u128(tm.tm_sec)   << 0)  |
             (u128(tm.tm_min)   << 8)  |
@@ -57,9 +57,9 @@ namespace pl::lib::libstd::time {
                 auto time = time_t(params[0].toUnsigned());
 
                 try {
-                    auto localTime = std::localtime(time);
+                    auto localTime = std::localtime(&time);
 
-                    return { packTMValue(localTime) };
+                    return { packTMValue(*localTime) };
                 } catch (const fmt::format_error&) {
                     return u128(0);
                 }
@@ -70,9 +70,9 @@ namespace pl::lib::libstd::time {
                 auto time = time_t(params[0].toUnsigned());
 
                 try {
-                    auto gmTime = fmt::gmtime(time);
+                    auto gmTime = std::gmtime(&time);
 
-                    return { packTMValue(gmTime) };
+                    return { packTMValue(*gmTime) };
                 } catch (const fmt::format_error&) {
                     return u128(0);
                 }
