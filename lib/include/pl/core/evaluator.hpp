@@ -497,9 +497,9 @@ namespace pl::core {
         std::map<u64, api::Section> m_sections;
         u64 m_sectionId = 0;
 
-        std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;
-        std::vector<std::unique_ptr<Scope>> m_scopes;
         std::map<std::string, std::set<ptrn::Pattern*>> m_attributedPatterns;
+        std::vector<std::unique_ptr<Scope>> m_scopes;
+        std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;
 
         std::unordered_map <std::string, api::Function> m_customFunctions;
         std::unordered_map <std::string, api::Function> m_builtinFunctions;
