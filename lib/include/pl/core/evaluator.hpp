@@ -497,6 +497,9 @@ namespace pl::core {
         std::map<u64, api::Section> m_sections;
         u64 m_sectionId = 0;
 
+        std::vector<std::vector<u8>> m_heap;
+        std::map<u32, PatternLocalData> m_patternLocalStorage;
+
         std::map<std::string, std::set<ptrn::Pattern*>> m_attributedPatterns;
         std::vector<std::unique_ptr<Scope>> m_scopes;
         std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;
@@ -512,9 +515,6 @@ namespace pl::core {
         std::map<std::string, std::shared_ptr<ptrn::Pattern>> m_outVariables;
         std::map<std::string, Token::Literal> m_outVariableValues;
         std::vector<std::vector<std::shared_ptr<ptrn::Pattern>>> m_templateParameters;
-
-        std::vector<std::vector<u8>> m_heap;
-        std::map<u32, PatternLocalData> m_patternLocalStorage;
 
         std::function<bool()> m_dangerousFunctionCalledCallback = []{ return false; };
         std::function<void()> m_breakpointHitCallback = []{ };
