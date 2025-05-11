@@ -34,7 +34,7 @@ namespace pl::ptrn {
             return Pattern::callUserFormatFunc(this->getValue()).value_or(fmt::format("{:d}", data));
         }
 
-        [[nodiscard]] std::string toString() const override {
+        [[nodiscard]] std::string toString() override {
             auto value = this->getValue();
             auto result = fmt::format("{:d}", value.toUnsigned());
 

@@ -31,7 +31,7 @@ namespace pl::ptrn {
             return m_errorMessage;
         }
 
-        [[nodiscard]] std::string toString() const override {
+        [[nodiscard]] std::string toString() override {
             return m_errorMessage;
         }
 

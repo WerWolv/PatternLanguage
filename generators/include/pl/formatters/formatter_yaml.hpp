@@ -100,7 +100,7 @@ namespace pl::gen::fmt {
             }
         }
 
-        void formatString(const pl::ptrn::Pattern *pattern) {
+        void formatString(pl::ptrn::Pattern *pattern) {
             if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
             if (pattern->getVisibility() == ptrn::Visibility::TreeHidden) return;
 
@@ -110,7 +110,7 @@ namespace pl::gen::fmt {
             addLine(pattern->getVariableName(), ::fmt::format("\"{}\"", hlp::encodeByteString({ result.begin(), result.end() })));
         }
 
-        void formatValue(const pl::ptrn::Pattern *pattern) {
+        void formatValue(pl::ptrn::Pattern *pattern) {
             if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
             if (pattern->getVisibility() == ptrn::Visibility::TreeHidden) return;
 

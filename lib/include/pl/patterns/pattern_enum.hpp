@@ -84,9 +84,9 @@ namespace pl::ptrn {
             return result;
         }
 
-        [[nodiscard]] std::string toString() const override {
+        [[nodiscard]] std::string toString() override {
             u128 value = this->getValue().toUnsigned();
-            return Pattern::callUserFormatFunc(this->clone(), true).value_or(getEnumName(this->getTypeName(), value, m_enumValues));
+            return Pattern::callUserFormatFunc(PatternRef::create(this), true).value_or(getEnumName(this->getTypeName(), value, m_enumValues));
         }
 
         std::vector<u8> getRawBytes() override {

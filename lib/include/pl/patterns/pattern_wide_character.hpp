@@ -25,7 +25,7 @@ namespace pl::ptrn {
             return "char16";
         }
 
-        [[nodiscard]] std::string toString() const override {
+        [[nodiscard]] std::string toString() override {
             auto value = this->getValue();
             char16_t character = char16_t(value.toUnsigned());
             character = hlp::changeEndianess(character, this->getEndian());

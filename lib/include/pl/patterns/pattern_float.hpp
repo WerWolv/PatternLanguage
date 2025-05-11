@@ -81,7 +81,7 @@ namespace pl::ptrn {
             }
         }
 
-        [[nodiscard]] std::string toString() const override {
+        [[nodiscard]] std::string toString() override {
             auto value = this->getValue();
 
             std::string result;

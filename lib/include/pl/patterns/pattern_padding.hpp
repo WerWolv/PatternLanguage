@@ -30,7 +30,7 @@ namespace pl::ptrn {
             return "";
         }
 
-        [[nodiscard]] std::string toString() const override {
+        [[nodiscard]] std::string toString() override {
             auto result = [this]{
                if (this->getSize() == 0)
                    return std::string("null");

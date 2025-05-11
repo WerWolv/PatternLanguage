@@ -60,7 +60,7 @@ namespace pl::gen::fmt {
             this->m_inArray = false;
         }
 
-        void formatString(const pl::ptrn::Pattern *pattern) {
+        void formatString(pl::ptrn::Pattern *pattern) {
             if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
             if (pattern->getVisibility() == ptrn::Visibility::TreeHidden) return;
 
@@ -125,7 +125,7 @@ namespace pl::gen::fmt {
             }
         }
 
-        void formatValue(const pl::ptrn::Pattern *pattern) {
+        void formatValue(pl::ptrn::Pattern *pattern) {
             if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
             if (pattern->getVisibility() == ptrn::Visibility::TreeHidden) return;
 

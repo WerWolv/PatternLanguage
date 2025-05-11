@@ -110,7 +110,7 @@ namespace pl::ptrn {
             return Pattern::callUserFormatFunc(literal).value_or(fmt::format("{}", value));
         }
 
-        [[nodiscard]] std::string toString() const override {
+        [[nodiscard]] std::string toString() override {
             auto value = this->readValue();
             return Pattern::callUserFormatFunc(value, true).value_or(fmt::format("{}", value));
         }
@@ -175,7 +175,7 @@ namespace pl::ptrn {
             return Pattern::callUserFormatFunc(value).value_or(fmt::format("{}", value));
         }
 
-        [[nodiscard]] std::string toString() const override {
+        [[nodiscard]] std::string toString() override {
             auto result = fmt::format("{}", this->getValue().toSigned());
             return Pattern::callUserFormatFunc(this->getValue(), true).value_or(result);
         }
@@ -207,7 +207,7 @@ namespace pl::ptrn {
                 return "true*";
         }
 
-        [[nodiscard]] std::string toString() const override {
+        [[nodiscard]] std::string toString() override {
             auto value = this->getValue();
             return Pattern::callUserFormatFunc(value, true).value_or(fmt::format("{}", value.toBoolean() ? "true" : "false"));
         }
@@ -254,7 +254,7 @@ namespace pl::ptrn {
             return Pattern::callUserFormatFunc(value).value_or(fmt::format("{}", enumName));
         }
 
-        [[nodiscard]] std::string toString() const override {
+        [[nodiscard]] std::string toString() override {
             auto enumName = PatternEnum::getEnumName(this->getTypeName(), this->readValue(), this->getEnumValues());
             return Pattern::callUserFormatFunc(this->getValue(), true).value_or(enumName);
         }
@@ -431,7 +431,7 @@ namespace pl::ptrn {
                 this->setBaseColor(this->m_entries.front()->getColor());
         }
 
-        [[nodiscard]] std::string toString() const override {
+        [[nodiscard]] std::string toString() override {
             std::string result;
 
             result += "[ ";
@@ -455,7 +455,7 @@ namespace pl::ptrn {
 
             result += " ]";
 
-            return Pattern::callUserFormatFunc(this->clone(), true).value_or(result);
+            return Pattern::callUserFormatFunc(PatternRef::create(this), true).value_or(result);
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override {
@@ -495,7 +495,7 @@ namespace pl::ptrn {
         }
 
         std::string formatDisplayValue() override {
-            return Pattern::callUserFormatFunc(this->clone()).value_or("[ ... ]");
+            return Pattern::callUserFormatFunc(PatternRef::create(this)).value_or("[ ... ]");
         }
 
         void sort(const std::function<bool (const Pattern *, const Pattern *)> &comparator) override {
@@ -673,7 +673,7 @@ namespace pl::ptrn {
             v.visit(*this);
         }
 
-        [[nodiscard]] std::string toString() const override {
+        [[nodiscard]] std::string toString() override {
             std::string result = this->getFormattedName();
 
             result += " { ";
@@ -691,7 +691,7 @@ namespace pl::ptrn {
 
             result += " }";
 
-            return Pattern::callUserFormatFunc(this->clone(), true).value_or(result);
+            return Pattern::callUserFormatFunc(PatternRef::create(this), true).value_or(result);
         }
 
         std::string formatDisplayValue() override {
@@ -725,9 +725,9 @@ namespace pl::ptrn {
             }
 
             if (valueString.size() > 64)
-                return Pattern::callUserFormatFunc(this->clone()).value_or(fmt::format("{{ ... }}", valueString));
+                return Pattern::callUserFormatFunc(PatternRef::create(this)).value_or(fmt::format("{{ ... }}", valueString));
             else
-                return Pattern::callUserFormatFunc(this->clone()).value_or(fmt::format("{{ {} }}", valueString));
+                return Pattern::callUserFormatFunc(PatternRef::create(this)).value_or(fmt::format("{{ {} }}", valueString));
         }
 
         void setEndian(std::endian endian) override {

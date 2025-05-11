@@ -18,12 +18,12 @@ namespace pl::gen::fmt {
         }
 
     private:
-        static std::string generateTooltip(const std::vector<ptrn::Pattern*> &patterns) {
+        static std::string generateTooltip(std::vector<ptrn::Pattern*> &patterns) {
             if (patterns.empty())
                 return "";
 
             std::string content;
-            for (const auto *pattern : patterns) {
+            for (auto *pattern : patterns) {
                 if (pattern->getVisibility() == ptrn::Visibility::Hidden) continue;
                 if (pattern->getVisibility() == ptrn::Visibility::TreeHidden) continue;
 
@@ -46,7 +46,7 @@ namespace pl::gen::fmt {
         }
 
         static std::string generateCell(u64 address, const PatternLanguage &runtime) {
-            const auto patterns = runtime.getPatternsAtAddress(address);
+            auto patterns = runtime.getPatternsAtAddress(address);
 
             u8 byte = 0;
             runtime.getInternals().evaluator->readData(address, &byte, sizeof(byte), ptrn::Pattern::MainSectionId);

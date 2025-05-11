@@ -8,6 +8,7 @@
 #include <vector>
 #include <filesystem>
 #include <set>
+#include <thread>
 
 #include <pl/api.hpp>
 
@@ -417,7 +418,9 @@ namespace pl {
         core::ParserManager m_parserManager;
 
         std::map<u64, std::vector<std::shared_ptr<ptrn::Pattern>>> m_patterns;
+        std::atomic<bool> m_flattenedPatternsValid = false;
         std::map<u64, wolv::container::IntervalTree<ptrn::Pattern*, u64, 5>> m_flattenedPatterns;
+        std::thread m_flattenThread;
         std::vector<std::function<void(PatternLanguage&)>> m_cleanupCallbacks;
         std::vector<std::shared_ptr<core::ast::ASTNode>> m_currAST;
 

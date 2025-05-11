@@ -38,7 +38,7 @@ namespace pl::ptrn {
             return "String16";
         }
 
-        [[nodiscard]] std::string toString() const override {
+        [[nodiscard]] std::string toString() override {
             std::u16string buffer(this->getSize() / sizeof(char16_t), 0x00);
             this->getEvaluator()->readData(this->getOffset(), buffer.data(), this->getSize(), this->getSection());
 

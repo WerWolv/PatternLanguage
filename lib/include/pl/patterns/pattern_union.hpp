@@ -133,7 +133,7 @@ namespace pl::ptrn {
             return "union " + Pattern::getTypeName();
         }
 
-        [[nodiscard]] std::string toString() const override {
+        [[nodiscard]] std::string toString() override {
             std::string result = this->getFormattedName();
             result += " { ";
 
@@ -152,7 +152,7 @@ namespace pl::ptrn {
 
             result += " }";
 
-            return Pattern::callUserFormatFunc(this->clone(), true).value_or(result);
+            return Pattern::callUserFormatFunc(PatternRef::create(this), true).value_or(result);
         }
 
         void sort(const std::function<bool (const Pattern *, const Pattern *)> &comparator) override {
@@ -198,7 +198,7 @@ namespace pl::ptrn {
         }
 
         std::string formatDisplayValue() override {
-            return Pattern::callUserFormatFunc(this->clone()).value_or("{ ... }");
+            return Pattern::callUserFormatFunc(PatternRef::create(this)).value_or("{ ... }");
         }
 
         std::vector<u8> getRawBytes() override {

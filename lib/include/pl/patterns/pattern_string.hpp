@@ -49,7 +49,7 @@ namespace pl::ptrn {
             return "String";
         }
 
-        [[nodiscard]] std::string toString() const override {
+        [[nodiscard]] std::string toString() override {
             auto value = this->getValue();
             auto result = value.toString(false);
 

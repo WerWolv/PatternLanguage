@@ -149,7 +149,7 @@ namespace pl::ptrn {
                 this->setBaseColor(this->m_entries.front()->getColor());
         }
 
-        [[nodiscard]] std::string toString() const override {
+        [[nodiscard]] std::string toString() override {
             std::string result;
 
             result += "[ ";
@@ -173,7 +173,7 @@ namespace pl::ptrn {
 
             result += " ]";
 
-            return Pattern::callUserFormatFunc(this->clone(), true).value_or(result);
+            return Pattern::callUserFormatFunc(PatternRef::create(this), true).value_or(result);
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override {
@@ -208,7 +208,7 @@ namespace pl::ptrn {
         }
 
         std::string formatDisplayValue() override {
-            return Pattern::callUserFormatFunc(this->clone()).value_or("[ ... ]");
+            return Pattern::callUserFormatFunc(PatternRef::create(this)).value_or("[ ... ]");
         }
 
         std::vector<u8> getRawBytes() override {

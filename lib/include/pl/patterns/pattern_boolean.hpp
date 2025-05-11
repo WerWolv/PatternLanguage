@@ -46,7 +46,7 @@ namespace pl::ptrn {
             v.visit(*this);
         }
 
-        [[nodiscard]] std::string toString() const override {
+        [[nodiscard]] std::string toString() override {
             auto value = this->getValue();
             auto result = fmt::format("{}", value.toBoolean() ? "true" : "false");
 

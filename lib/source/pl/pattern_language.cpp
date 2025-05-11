@@ -50,11 +50,17 @@ namespace pl {
     }
 
     PatternLanguage::~PatternLanguage() {
+        if (this->m_flattenThread.joinable())
+            this->m_flattenThread.join();
         this->m_patterns.clear();
         this->m_flattenedPatterns.clear();
+        this->m_flattenedPatternsValid = false;
     }
 
     PatternLanguage::PatternLanguage(PatternLanguage &&other) noexcept {
+        if (this->m_flattenThread.joinable())
+            this->m_flattenThread.join();
+
         this->m_internals           = std::move(other.m_internals);
         other.m_internals = { };
         this->m_internals.evaluator->setRuntime(this);
@@ -301,11 +307,11 @@ namespace pl {
             }
         }
 
-        this->flattenPatterns();
 
         if (this->m_aborted) {
             this->reset();
         } else {
+            this->flattenPatterns();
             this->m_patternsValid = true;
         }
 
@@ -455,8 +461,11 @@ namespace pl {
 
 
     void PatternLanguage::reset() {
+        if (this->m_flattenThread.joinable())
+            this->m_flattenThread.join();
         this->m_patterns.clear();
         this->m_flattenedPatterns.clear();
+        this->m_flattenedPatternsValid = false;
 
         this->m_currError.reset();
         this->m_compileErrors.clear();
@@ -499,26 +508,37 @@ namespace pl {
     }
 
     void PatternLanguage::flattenPatterns() {
+        m_flattenThread = std::thread([this] {
+            for (const auto &[section, patterns] : this->m_patterns) {
+                if (this->m_aborted)
+                    return;
 
-        for (const auto &[section, patterns] : this->m_patterns) {
-            auto &sectionTree = this->m_flattenedPatterns[section];
-            for (const auto &pattern : patterns) {
-                auto children = pattern->getChildren();
-
-                for (const auto &[address, child]: children) {
+                auto &sectionTree = this->m_flattenedPatterns[section];
+                for (const auto &pattern : patterns) {
                     if (this->m_aborted)
                         return;
 
-                    if (child->getSize() == 0)
-                        continue;
+                    auto children = pattern->getChildren();
+                    for (const auto &[address, child] : children) {
+                        if (this->m_aborted)
+                            return;
 
-                    sectionTree.insert({ address, address + child->getSize() - 1 }, child);
+                        if (child->getSize() == 0)
+                            continue;
+
+                        sectionTree.insert({ address, address + child->getSize() - 1 }, child);
+                    }
                 }
             }
-        }
+
+            this->m_flattenedPatternsValid = true;
+        });
     }
 
     std::vector<ptrn::Pattern *> PatternLanguage::getPatternsAtAddress(u64 address, u64 section) const {
+        if (!this->m_flattenedPatternsValid)
+            return { };
+
         if (this->m_flattenedPatterns.empty() || !this->m_flattenedPatterns.contains(section))
             return { };
 

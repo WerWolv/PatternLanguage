@@ -15,7 +15,6 @@
 #include <string>
 
 namespace pl::ptrn {
-
     using namespace ::std::literals::string_literals;
 
     class IInlinable {
@@ -264,7 +263,7 @@ namespace pl::ptrn {
             }
         }
 
-        [[nodiscard]] virtual std::string toString() const {
+        [[nodiscard]] virtual std::string toString() {
             auto result = fmt::format("{} {} @ 0x{:X}", this->getTypeName(), this->getVariableName(), this->getOffset());
 
             return this->callUserFormatFunc(this->getValue(), true).value_or(result);
@@ -544,6 +543,8 @@ namespace pl::ptrn {
             m_arrayIndex = index;
         }
 
+        [[nodiscard]] virtual std::string formatDisplayValue() = 0;
+
     protected:
         std::optional<std::endian> m_endian;
 
@@ -561,8 +562,6 @@ namespace pl::ptrn {
             return value;
         }
 
-        [[nodiscard]] virtual std::string formatDisplayValue() = 0;
-        
         /**
          * @brief Calls an user-defined PL function to format the given literal (pattern), if existing. Else, returns defaultValue
         */
@@ -634,6 +633,103 @@ namespace pl::ptrn {
         bool m_initialized = false;
 
         bool m_manualColor = false;
+    };
+
+    struct PatternRef {
+        class NoIIndexable {};
+        class NoIInlinable {};
+        class NoIIterable {
+        public:
+            NoIIterable(auto*){}
+        };
+
+        template<typename T>
+        class PatternRefIterable : public IIndexable {
+        public:
+            PatternRefIterable() = default;
+            PatternRefIterable(T *refPattern) : m_refPattern(refPattern) {}
+            PatternRefIterable(const PatternRefIterable &other) {
+                this->m_refPattern = other.m_refPattern;
+            }
+
+            std::vector<std::shared_ptr<Pattern>> getEntries() override {
+                return m_refPattern->getEntries();
+            }
+
+            void setEntries(const std::vector<std::shared_ptr<Pattern>> &entries) override {
+                m_refPattern->setEntries(entries);
+            }
+
+            [[nodiscard]] std::shared_ptr<Pattern> getEntry(size_t index) const override {
+                return m_refPattern->getEntry(index);
+            }
+
+            void forEachEntry(u64 start, u64 end, const std::function<void(u64, Pattern*)> &callback) override {
+                m_refPattern->forEachEntry(start, end, callback);
+            }
+
+            [[nodiscard]] size_t getEntryCount() const override {
+                return m_refPattern->getEntryCount();
+            }
+
+            void addEntry(const std::shared_ptr<Pattern> &entry) override {
+                return m_refPattern->addEntry(entry);
+            }
+
+        private:
+            T *m_refPattern;
+        };
+
+        template<typename T>
+        class PatternRefImpl
+            : public Pattern,
+              public std::conditional_t<std::derived_from<T, IInlinable>, IInlinable, NoIInlinable>,
+              public std::conditional_t<std::derived_from<T, IIterable> || std::derived_from<T, IIndexable>,  PatternRefIterable<T>,  NoIIterable> {
+        public:
+            PatternRefImpl() = default;
+            PatternRefImpl(T *refPattern)
+                : Pattern(refPattern->getEvaluator(), refPattern->getOffset(), refPattern->getSize(), refPattern->getLine()),
+                  std::conditional_t<std::derived_from<T, IIterable> || std::derived_from<T, IIndexable>,  PatternRefIterable<T>,  NoIIterable>(refPattern) {
+                this->m_refPattern = refPattern;
+            }
+
+            PatternRefImpl(const PatternRefImpl &other)
+                : Pattern(other),
+                  std::conditional_t<std::derived_from<T, IIterable> || std::derived_from<T, IIndexable>,  PatternRefIterable<T>,  NoIIterable>(other),
+                  m_refPattern(other.m_refPattern) {}
+
+            std::unique_ptr<Pattern> clone() const override {
+                return std::make_unique<PatternRefImpl>(*this);
+            }
+
+            void accept(PatternVisitor &v) override {
+                m_refPattern->accept(v);
+            }
+
+            std::string formatDisplayValue() override {
+                return m_refPattern->formatDisplayValue();
+            }
+
+            std::string getFormattedName() const override {
+                return m_refPattern->getFormattedName();
+            }
+
+            std::vector<u8> getRawBytes() override {
+                return m_refPattern->getRawBytes();
+            }
+
+            bool operator==(const Pattern &other) const override {
+                return *this->m_refPattern == other;
+            }
+
+        private:
+            T *m_refPattern;
+        };
+
+        template<typename PatternType>
+        static std::shared_ptr<Pattern> create(PatternType *pattern) {
+            return std::shared_ptr<Pattern>(new PatternRefImpl<std::remove_cvref_t<PatternType>>(pattern));
+        }
     };
 
 }
