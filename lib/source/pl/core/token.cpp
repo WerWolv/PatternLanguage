@@ -112,6 +112,9 @@ namespace pl::core {
 
     std::strong_ordering Token::Literal::operator<=>(const Literal &other) const {
         return std::visit(wolv::util::overloaded {
+            [](std::shared_ptr<ptrn::Pattern> lhs, std::shared_ptr<ptrn::Pattern> rhs) {
+                return lhs->getOffset() <=> rhs->getOffset();
+            },
             []<typename T>(T lhs, T rhs) -> std::strong_ordering {
                 if (lhs == rhs) return std::strong_ordering::equal;
                 if (lhs < rhs) return std::strong_ordering::less;
@@ -158,7 +161,7 @@ namespace pl::core {
                 }
             },
             [](auto, auto) -> std::strong_ordering {
-                return std::strong_ordering::less;
+                return std::strong_ordering::equal;
             }
         }, *this, other);
     }
