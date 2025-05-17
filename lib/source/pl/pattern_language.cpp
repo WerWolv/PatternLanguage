@@ -508,37 +508,39 @@ namespace pl {
     }
 
     void PatternLanguage::flattenPatterns() {
-        m_flattenThread = std::thread([this] {
-            for (const auto &[section, patterns] : this->m_patterns) {
+        for (const auto &[section, patterns] : this->m_patterns) {
+            if (this->m_aborted)
+                return;
+
+            auto &sectionTree = this->m_flattenedPatterns[section];
+            for (const auto &pattern : patterns) {
                 if (this->m_aborted)
                     return;
 
-                auto &sectionTree = this->m_flattenedPatterns[section];
-                for (const auto &pattern : patterns) {
+                if (auto staticArray = dynamic_cast<ptrn::PatternArrayStatic*>(pattern.get()); staticArray != nullptr) {
+                    if (staticArray->getEntryCount() > 0 && staticArray->getEntry(0)->getChildren().empty()) {
+                        const auto address = staticArray->getOffset();
+                        const auto size = staticArray->getSize();
+                        sectionTree.insert({ address, address + size - 1 }, staticArray);
+                        continue;
+                    }
+                }
+
+                auto children = pattern->getChildren();
+                for (const auto &[address, child] : children) {
                     if (this->m_aborted)
                         return;
 
-                    auto children = pattern->getChildren();
-                    for (const auto &[address, child] : children) {
-                        if (this->m_aborted)
-                            return;
+                    if (child->getSize() == 0)
+                        continue;
 
-                        if (child->getSize() == 0)
-                            continue;
-
-                        sectionTree.insert({ address, address + child->getSize() - 1 }, child);
-                    }
+                    sectionTree.insert({ address, address + child->getSize() - 1 }, child);
                 }
             }
-
-            this->m_flattenedPatternsValid = true;
-        });
+        }
     }
 
     std::vector<ptrn::Pattern *> PatternLanguage::getPatternsAtAddress(u64 address, u64 section) const {
-        if (!this->m_flattenedPatternsValid)
-            return { };
-
         if (this->m_flattenedPatterns.empty() || !this->m_flattenedPatterns.contains(section))
             return { };
 
