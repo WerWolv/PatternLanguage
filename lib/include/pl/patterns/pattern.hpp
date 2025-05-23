@@ -699,7 +699,8 @@ namespace pl::ptrn {
                   m_refPattern(other.m_refPattern) {}
 
             std::unique_ptr<Pattern> clone() const override {
-                return std::make_unique<PatternRefImpl>(*this);
+                //return std::make_unique<PatternRefImpl>(*this);
+                return std::make_unique<T>(*m_refPattern);
             }
 
             void accept(PatternVisitor &v) override {
