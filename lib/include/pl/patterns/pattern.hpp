@@ -61,6 +61,11 @@ namespace pl::ptrn {
         friend class core::Evaluator;
     };
 
+    inline std::shared_ptr<Pattern> make_shared_pattern_raw(Pattern  *p)
+    {
+        return std::shared_ptr<Pattern>(p, [](Pattern*){});
+    }
+
     class Pattern {
     public:
         constexpr static u64 MainSectionId          = 0x0000'0000'0000'0000;
