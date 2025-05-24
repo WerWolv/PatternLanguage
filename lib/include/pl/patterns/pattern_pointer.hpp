@@ -155,7 +155,7 @@ namespace pl::ptrn {
         [[nodiscard]] std::string toString() override {
             auto result = this->m_pointedAt->toString();
 
-            return Pattern::callUserFormatFunc(PatternRef::create(this), true).value_or(result);
+            return Pattern::callUserFormatFunc(make_shared_pattern_raw(this), true).value_or(result);
         }
 
         std::vector<u8> getRawBytes() override {

@@ -61,6 +61,11 @@ namespace pl::ptrn {
         friend class core::Evaluator;
     };
 
+    inline std::shared_ptr<Pattern> make_shared_pattern_raw(Pattern  *p)
+    {
+        return std::shared_ptr<Pattern>(p, [](Pattern*){});
+    }
+
     class Pattern {
     public:
         constexpr static u64 MainSectionId          = 0x0000'0000'0000'0000;
@@ -699,7 +704,7 @@ namespace pl::ptrn {
                   m_refPattern(other.m_refPattern) {}
 
             std::unique_ptr<Pattern> clone() const override {
-                return std::make_unique<T>(*m_refPattern);
+                return std::make_unique<PatternRefImpl>(*this);
             }
 
             void accept(PatternVisitor &v) override {
