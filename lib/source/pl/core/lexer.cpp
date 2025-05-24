@@ -651,7 +651,7 @@ namespace pl::core {
 
             m_cursor++;
         }
-
+        m_longestLineLength = std::max(m_longestLineLength, m_cursor - m_lineBegin);
         addToken(makeToken(Separator::EndOfProgram, 0));
 
         return { m_tokens, collectErrors() };
