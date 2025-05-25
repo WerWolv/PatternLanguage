@@ -17,6 +17,11 @@ namespace pl::core::resolvers {
             bool exists = false;
             // if the path has no extension
             if (!fullPath.has_extension()) {
+                // If the path points to a directory, check for a file called "pattern" inside of it
+                if (std::fs::is_directory(fullPath)) {
+                    fullPath /= "pattern";
+                }
+
                 for (const auto &ext : { "hexpat", "pat" }) {
                     fullPath.replace_extension(ext);
                     exists = std::fs::exists(fullPath);
