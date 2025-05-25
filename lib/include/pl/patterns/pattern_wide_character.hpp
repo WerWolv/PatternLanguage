@@ -11,7 +11,7 @@ namespace pl::ptrn {
         explicit PatternWideCharacter(core::Evaluator *evaluator, u64 offset, u32 line)
             : Pattern(evaluator, offset, 2, line) { }
 
-        [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
+        [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             return std::unique_ptr<Pattern>(new PatternWideCharacter(*this));
         }
 

@@ -20,7 +20,7 @@ namespace pl::ptrn {
             }
         }
 
-        [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
+        [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             return std::unique_ptr<Pattern>(new PatternPointer(*this));
         }
 
@@ -155,7 +155,7 @@ namespace pl::ptrn {
         [[nodiscard]] std::string toString() override {
             auto result = this->m_pointedAt->toString();
 
-            return Pattern::callUserFormatFunc(PatternRef::create(this), true).value_or(result);
+            return Pattern::callUserFormatFunc(this->reference(), true).value_or(result);
         }
 
         std::vector<u8> getRawBytes() override {

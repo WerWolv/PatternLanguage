@@ -20,7 +20,7 @@ namespace pl::ptrn {
             }
         }
 
-        [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
+        [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             return std::unique_ptr<Pattern>(new PatternUnion(*this));
         }
 
@@ -152,7 +152,7 @@ namespace pl::ptrn {
 
             result += " }";
 
-            return Pattern::callUserFormatFunc(PatternRef::create(this), true).value_or(result);
+            return Pattern::callUserFormatFunc(this->reference(), true).value_or(result);
         }
 
         void sort(const std::function<bool (const Pattern *, const Pattern *)> &comparator) override {
@@ -198,7 +198,7 @@ namespace pl::ptrn {
         }
 
         std::string formatDisplayValue() override {
-            return Pattern::callUserFormatFunc(PatternRef::create(this)).value_or("{ ... }");
+            return Pattern::callUserFormatFunc(this->reference()).value_or("{ ... }");
         }
 
         std::vector<u8> getRawBytes() override {

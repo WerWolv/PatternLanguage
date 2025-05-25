@@ -9,7 +9,7 @@ namespace pl::ptrn {
         explicit PatternBoolean(core::Evaluator *evaluator, u64 offset, u32 line)
             : Pattern(evaluator, offset, 1, line) { }
 
-        [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
+        [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             return std::unique_ptr<Pattern>(new PatternBoolean(*this));
         }
 

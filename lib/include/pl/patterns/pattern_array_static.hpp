@@ -15,7 +15,7 @@ namespace pl::ptrn {
             this->setEntries(other.getTemplate()->clone(), other.getEntryCount());
         }
 
-        [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
+        [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             return std::unique_ptr<Pattern>(new PatternArrayStatic(*this));
         }
 
@@ -151,7 +151,7 @@ namespace pl::ptrn {
             this->m_entryCount = count;
         }
 
-        void setEntries(std::unique_ptr<Pattern> &&templatePattern, size_t count) {
+        void setEntries(std::shared_ptr<Pattern> &&templatePattern, size_t count) {
             this->m_template          = std::move(templatePattern);
             this->m_template->setParent(this);
             this->m_highlightTemplates.push_back(this->m_template->clone());
@@ -191,7 +191,7 @@ namespace pl::ptrn {
         }
 
         std::string formatDisplayValue() override {
-            return Pattern::callUserFormatFunc(PatternRef::create(this)).value_or("[ ... ]");
+            return Pattern::callUserFormatFunc(this->reference()).value_or("[ ... ]");
         }
 
         [[nodiscard]] std::string toString() override {
@@ -220,7 +220,7 @@ namespace pl::ptrn {
 
             result += " ]";
 
-            return Pattern::callUserFormatFunc(PatternRef::create(this), true).value_or(result);
+            return Pattern::callUserFormatFunc(this->reference(), true).value_or(result);
         }
 
         std::vector<u8> getRawBytes() override {

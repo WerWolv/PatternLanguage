@@ -9,7 +9,7 @@ namespace pl::ptrn {
         PatternError(core::Evaluator *evaluator, u64 offset, size_t size, u32 line, std::string errorMessage)
             : Pattern(evaluator, offset, size, line), m_errorMessage(std::move(errorMessage)) { }
 
-        [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
+        [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             return std::unique_ptr<Pattern>(new PatternError(*this));
         }
 

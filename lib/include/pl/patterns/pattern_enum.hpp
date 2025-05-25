@@ -17,7 +17,7 @@ namespace pl::ptrn {
         PatternEnum(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
 
-        [[nodiscard]] std::unique_ptr<Pattern> clone() const override {
+        [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             return std::unique_ptr<Pattern>(new PatternEnum(*this));
         }
 
@@ -86,7 +86,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string toString() override {
             u128 value = this->getValue().toUnsigned();
-            return Pattern::callUserFormatFunc(PatternRef::create(this), true).value_or(getEnumName(this->getTypeName(), value, m_enumValues));
+            return Pattern::callUserFormatFunc(this->reference(), true).value_or(getEnumName(this->getTypeName(), value, m_enumValues));
         }
 
         std::vector<u8> getRawBytes() override {
