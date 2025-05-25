@@ -313,6 +313,9 @@ namespace pl::core {
 
         void abort() {
             this->m_aborted = true;
+            for (auto &subRuntime : m_subRuntimes) {
+                subRuntime.abort();
+            }
         }
 
         void handleAbort() const {
