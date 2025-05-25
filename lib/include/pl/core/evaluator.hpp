@@ -248,6 +248,8 @@ namespace pl::core {
         u64 getReadOffsetAndIncrement(u64 incrementSize);
 
         void setReadOffset(u64 offset);
+        void setStartAddress(u64 address);
+        u64 getStartAddress() const;
 
         void setReadOrderReversed(bool reversed) { this->m_readOrderReversed = reversed; }
 
@@ -478,6 +480,7 @@ namespace pl::core {
         u64 m_currOffset = 0x00;
         i8 m_currBitOffset = 0;
         bool m_readOrderReversed = false;
+        u64 m_startAddress = 0x00;
 
         bool m_evaluated = false;
         bool m_debugMode = false;

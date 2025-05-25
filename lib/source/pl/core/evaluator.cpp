@@ -70,6 +70,15 @@ namespace pl::core {
         this->m_currBitOffset = 0;
     }
 
+    void Evaluator::setStartAddress(u64 address) {
+        this->m_startAddress = address;
+    }
+
+    u64 Evaluator::getStartAddress() const {
+        return this->m_startAddress;
+    }
+
+
     [[nodiscard]] ByteAndBitOffset Evaluator::getBitwiseReadOffsetAndIncrement(i128 bitSize) {
         ByteAndBitOffset readOffsets = {};
 

@@ -253,6 +253,7 @@ namespace pl {
             writeFunction
         );
 
+        evaluator->setStartAddress(this->getStartAddress());
         evaluator->setReadOffset(evaluator->getDataBaseAddress());
         evaluator->setDangerousFunctionCallHandler(this->m_dangerousFunctionCallCallback);
 
@@ -281,7 +282,7 @@ namespace pl {
             }
 
             if (auto cursor = this->m_currError->cursorAddress; cursor.has_value())
-                console.log(core::LogConsole::Level::Error, fmt::format("Error happened with cursor at address 0x{:04X}", *cursor));
+                console.log(core::LogConsole::Level::Error, fmt::format("Error happened with cursor at address 0x{:04X}", *cursor + m_startAddress.value_or(0x00)));
 
             console.log(core::LogConsole::Level::Error, "\n");
         } else {
