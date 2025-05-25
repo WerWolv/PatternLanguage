@@ -256,18 +256,29 @@ namespace pl::ptrn {
 
                 auto result = this->formatDisplayValue();
                 this->m_cachedDisplayValue = std::make_unique<std::string>(result);
+                this->m_validDisplayValue = true;
 
                 return result;
             } catch(std::exception &e) {
                 this->m_cachedDisplayValue = std::make_unique<std::string>(e.what());
+                this->m_validDisplayValue = false;
+
                 return *this->m_cachedDisplayValue;
             }
+        }
+
+        [[nodiscard]] bool hasValidFormattedValue() const {
+            return this->m_validDisplayValue;
         }
 
         [[nodiscard]] virtual std::string toString() {
             auto result = fmt::format("{} {} @ 0x{:X}", this->getTypeName(), this->getVariableName(), this->getOffset());
 
-            return this->callUserFormatFunc(this->getValue(), true).value_or(result);
+            try {
+                return this->callUserFormatFunc(this->getValue(), true).value_or(result);
+            } catch (std::exception &e) {
+                return e.what();
+            }
         }
 
         [[nodiscard]] virtual core::Token::Literal getValue() const {
@@ -571,26 +582,21 @@ namespace pl::ptrn {
             if (formatterFunctionName.empty())
                 return {};
             else {
-                try {
-                    const auto function = this->m_evaluator->findFunction(formatterFunctionName);
-                    if (function.has_value()) {
-                        auto startHeap = this->m_evaluator->getHeap();
-                        ON_SCOPE_EXIT { this->m_evaluator->getHeap() = startHeap; };
+                const auto function = this->m_evaluator->findFunction(formatterFunctionName);
+                if (function.has_value()) {
+                    auto startHeap = this->m_evaluator->getHeap();
+                    ON_SCOPE_EXIT { this->m_evaluator->getHeap() = startHeap; };
 
-                        auto result = function->func(this->m_evaluator, { literal });
-                        if (result.has_value()) {
-                            if (fromCast && result->isPattern() && result->toPattern()->getTypeName() == this->getTypeName()) {
-                                return {};
-                            } else {
-                                return result->toString(true);
-                            }
+                    auto result = function->func(this->m_evaluator, { literal });
+                    if (result.has_value()) {
+                        if (fromCast && result->isPattern() && result->toPattern()->getTypeName() == this->getTypeName()) {
+                            return {};
+                        } else {
+                            return result->toString(true);
                         }
                     }
-                    return {};
-
-                } catch (core::err::EvaluatorError::Exception &error) {
-                    return error.what();
                 }
+                return {};
             }
         }
 
@@ -607,7 +613,8 @@ namespace pl::ptrn {
         }
 
     protected:
-        mutable std::unique_ptr<std::string> m_cachedDisplayValue;
+        std::unique_ptr<std::string> m_cachedDisplayValue;
+        bool m_validDisplayValue = false;
         std::unique_ptr<std::vector<u8>> m_cachedBytes;
 
     private:
