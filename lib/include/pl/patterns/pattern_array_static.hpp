@@ -191,7 +191,7 @@ namespace pl::ptrn {
         }
 
         std::string formatDisplayValue() override {
-            return Pattern::callUserFormatFunc(PatternRef::create(this)).value_or("[ ... ]");
+            return Pattern::callUserFormatFunc(get_shared()).value_or("[ ... ]");
         }
 
         [[nodiscard]] std::string toString() override {
@@ -220,7 +220,7 @@ namespace pl::ptrn {
 
             result += " ]";
 
-            return Pattern::callUserFormatFunc(PatternRef::create(this), true).value_or(result);
+            return Pattern::callUserFormatFunc(get_shared(), true).value_or(result);
         }
 
         std::vector<u8> getRawBytes() override {

@@ -61,7 +61,7 @@ namespace pl::ptrn {
         friend class core::Evaluator;
     };
 
-    class Pattern {
+    class Pattern : public std::enable_shared_from_this<Pattern> {
     public:
         constexpr static u64 MainSectionId          = 0x0000'0000'0000'0000;
         constexpr static u64 HeapSectionId          = 0xFFFF'FFFF'FFFF'FFFF;
@@ -82,7 +82,7 @@ namespace pl::ptrn {
 
         }
 
-        Pattern(const Pattern &other) {
+        Pattern(const Pattern &other) : std::enable_shared_from_this<Pattern>(other) {
             this->m_evaluator = other.m_evaluator;
             this->m_offset = other.m_offset;
             this->m_endian = other.m_endian;
@@ -114,6 +114,8 @@ namespace pl::ptrn {
                 this->m_evaluator->patternDestroyed(this);
             }
         }
+
+        std::shared_ptr<Pattern> get_shared() { return shared_from_this(); }
 
         virtual std::unique_ptr<Pattern> clone() const = 0;
 
@@ -635,101 +637,4 @@ namespace pl::ptrn {
         bool m_manualColor = false;
     };
 
-    struct PatternRef {
-        class NoIIndexable {};
-        class NoIInlinable {};
-        class NoIIterable {
-        public:
-            NoIIterable(auto*){}
-        };
-
-        template<typename T>
-        class PatternRefIterable : public IIndexable {
-        public:
-            PatternRefIterable() = default;
-            PatternRefIterable(T *refPattern) : m_refPattern(refPattern) {}
-            PatternRefIterable(const PatternRefIterable &other) {
-                this->m_refPattern = other.m_refPattern;
-            }
-
-            std::vector<std::shared_ptr<Pattern>> getEntries() override {
-                return m_refPattern->getEntries();
-            }
-
-            void setEntries(const std::vector<std::shared_ptr<Pattern>> &entries) override {
-                m_refPattern->setEntries(entries);
-            }
-
-            [[nodiscard]] std::shared_ptr<Pattern> getEntry(size_t index) const override {
-                return m_refPattern->getEntry(index);
-            }
-
-            void forEachEntry(u64 start, u64 end, const std::function<void(u64, Pattern*)> &callback) override {
-                m_refPattern->forEachEntry(start, end, callback);
-            }
-
-            [[nodiscard]] size_t getEntryCount() const override {
-                return m_refPattern->getEntryCount();
-            }
-
-            void addEntry(const std::shared_ptr<Pattern> &entry) override {
-                return m_refPattern->addEntry(entry);
-            }
-
-        private:
-            T *m_refPattern;
-        };
-
-        template<typename T>
-        class PatternRefImpl
-            : public Pattern,
-              public std::conditional_t<std::derived_from<T, IInlinable>, IInlinable, NoIInlinable>,
-              public std::conditional_t<std::derived_from<T, IIterable> || std::derived_from<T, IIndexable>,  PatternRefIterable<T>,  NoIIterable> {
-        public:
-            PatternRefImpl() = default;
-            PatternRefImpl(T *refPattern)
-                : Pattern(refPattern->getEvaluator(), refPattern->getOffset(), refPattern->getSize(), refPattern->getLine()),
-                  std::conditional_t<std::derived_from<T, IIterable> || std::derived_from<T, IIndexable>,  PatternRefIterable<T>,  NoIIterable>(refPattern) {
-                this->m_refPattern = refPattern;
-            }
-
-            PatternRefImpl(const PatternRefImpl &other)
-                : Pattern(other),
-                  std::conditional_t<std::derived_from<T, IIterable> || std::derived_from<T, IIndexable>,  PatternRefIterable<T>,  NoIIterable>(other),
-                  m_refPattern(other.m_refPattern) {}
-
-            std::unique_ptr<Pattern> clone() const override {
-                return std::make_unique<PatternRefImpl>(*this);
-            }
-
-            void accept(PatternVisitor &v) override {
-                m_refPattern->accept(v);
-            }
-
-            std::string formatDisplayValue() override {
-                return m_refPattern->formatDisplayValue();
-            }
-
-            std::string getFormattedName() const override {
-                return m_refPattern->getFormattedName();
-            }
-
-            std::vector<u8> getRawBytes() override {
-                return m_refPattern->getRawBytes();
-            }
-
-            bool operator==(const Pattern &other) const override {
-                return *this->m_refPattern == other;
-            }
-
-        private:
-            T *m_refPattern;
-        };
-
-        template<typename PatternType>
-        static std::shared_ptr<Pattern> create(PatternType *pattern) {
-            return std::shared_ptr<Pattern>(new PatternRefImpl<std::remove_cvref_t<PatternType>>(pattern));
-        }
-    };
-
-}
+} // namespace pl::ptrn
