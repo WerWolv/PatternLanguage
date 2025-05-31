@@ -225,7 +225,7 @@ namespace pl::core {
 
         this->setBitwiseReadOffset(startOffset);
 
-        auto pattern = new ptrn::PatternArrayDynamic(this, 0, typePattern->getSize() * entryCount, 0);
+        auto pattern = std::make_shared<ptrn::PatternArrayDynamic>(this, 0, typePattern->getSize() * entryCount, 0);
 
         if (section == ptrn::Pattern::PatternLocalSectionId) {
             typePattern->setSection(section);
@@ -277,7 +277,7 @@ namespace pl::core {
             this->getConsole().log(LogConsole::Level::Debug, fmt::format("Creating local array variable '{} {}[{}]' at heap address 0x{:X}.", pattern->getTypeName(), pattern->getVariableName(), entryCount, pattern->getOffset()));
 
         pattern->setConstant(constant);
-        variables.push_back(std::unique_ptr<ptrn::Pattern>(pattern));
+        variables.push_back(pattern);
     }
 
     std::optional<std::string> Evaluator::findTypeName(const ast::ASTNodeTypeDecl *type) {
