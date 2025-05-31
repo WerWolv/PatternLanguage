@@ -9,11 +9,6 @@ namespace pl::ptrn {
     public:
         using Pattern::Pattern;
 
-        /*virtual void setParent(Pattern *parent)
-        {
-            Pattern::setParent(parent);
-        }*/
-
         [[nodiscard]] const PatternBitfieldMember& getTopmostBitfield() const {
             const PatternBitfieldMember* topBitfield = this;
             while (auto parent = topBitfield->getParent()) {
