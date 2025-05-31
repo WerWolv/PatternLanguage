@@ -14,7 +14,7 @@ namespace pl::ptrn {
         PatternArrayDynamic(const PatternArrayDynamic &other) : Pattern(other) {
             std::vector<std::shared_ptr<Pattern>> entries;
             for (const auto &entry : other.m_entries)
-                entries.push_back(entry->clone());
+                entries.push_back(entry);
 
             this->setEntries(entries);
         }

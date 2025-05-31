@@ -13,10 +13,10 @@ namespace pl::ptrn {
 
         PatternUnion(const PatternUnion &other) : Pattern(other) {
             for (const auto &member : other.m_members) {
-                auto copy = member->clone();
+                //auto copy = member->clone();
 
-                this->m_sortedMembers.push_back(copy.get());
-                this->m_members.push_back(std::move(copy));
+                this->m_sortedMembers.push_back(member.get());
+                this->m_members.push_back(member);
             }
         }
 
