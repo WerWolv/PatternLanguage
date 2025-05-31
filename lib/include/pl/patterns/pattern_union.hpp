@@ -21,7 +21,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternUnion(*this));
+            return std::shared_ptr<Pattern>(new PatternUnion(*this));
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> getEntry(size_t index) const override {
@@ -35,7 +35,7 @@ namespace pl::ptrn {
         void addEntry(const std::shared_ptr<Pattern> &entry) override {
             if (entry == nullptr) return;
 
-            entry->setParent(this);
+            entry->setParent(this->reference());
             this->m_sortedMembers.push_back(entry.get());
             this->m_members.push_back(entry);
         }

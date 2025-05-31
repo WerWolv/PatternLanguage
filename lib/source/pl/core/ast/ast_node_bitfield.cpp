@@ -138,8 +138,8 @@ namespace pl::core::ast {
         }
 
         for (auto &pattern : potentialPatterns) {
-            if (auto bitfieldMember = dynamic_cast<ptrn::PatternBitfieldMember*>(pattern.get()); bitfieldMember != nullptr) {
-                bitfieldMember->setParent(bitfieldPattern.get());
+            if (auto bitfieldMember = std::dynamic_pointer_cast<ptrn::PatternBitfieldMember>(pattern); bitfieldMember != nullptr) {
+                bitfieldMember->setParent(bitfieldPattern);
                 if (!bitfieldMember->isPadding())
                     fields.push_back(pattern);
             } else {

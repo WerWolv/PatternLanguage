@@ -79,7 +79,7 @@ namespace pl::core::ast {
     evaluator->setBitwiseReadOffset(originalPosition);
 
     if (auto *patternEnum = dynamic_cast<ptrn::PatternEnum *>(pattern.get()); patternEnum != nullptr) {
-        auto bitfieldEnum = std::make_unique<ptrn::PatternBitfieldFieldEnum>(evaluator, byteOffset, bitOffset, bitSize, getLocation().line);
+        auto bitfieldEnum = std::make_shared<ptrn::PatternBitfieldFieldEnum>(evaluator, byteOffset, bitOffset, bitSize, getLocation().line);
         bitfieldEnum->setTypeName(patternEnum->getTypeName());
         bitfieldEnum->setEnumValues(patternEnum->getEnumValues());
         result = std::move(bitfieldEnum);

@@ -20,7 +20,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternArrayDynamic(*this));
+            return std::shared_ptr<Pattern>(new PatternArrayDynamic(*this));
         }
 
         void setColor(u32 color) override {
@@ -133,7 +133,7 @@ namespace pl::ptrn {
 
             if (!entry->hasOverriddenColor())
                 entry->setBaseColor(this->getColor());
-            entry->setParent(this);
+            entry->setParent(this->reference());
 
             this->m_entries.emplace_back(entry);
         }

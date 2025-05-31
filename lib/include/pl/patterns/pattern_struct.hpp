@@ -15,14 +15,14 @@ namespace pl::ptrn {
             for (const auto &member : other.m_members) {
                 auto copy = member->clone();
 
-                copy->setParent(this);
+                copy->setParent(this->reference());
                 this->m_sortedMembers.push_back(copy.get());
                 this->m_members.push_back(std::move(copy));
             }
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternStruct(*this));
+            return std::shared_ptr<Pattern>(new PatternStruct(*this));
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> getEntry(size_t index) const override {
@@ -36,7 +36,7 @@ namespace pl::ptrn {
         void addEntry(const std::shared_ptr<Pattern> &entry) override {
             if (entry == nullptr) return;
 
-            entry->setParent(this);
+            entry->setParent(this->reference());
             this->m_sortedMembers.push_back(entry.get());
             this->m_members.push_back(entry);
         }

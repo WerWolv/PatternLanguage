@@ -10,7 +10,7 @@ namespace pl::ptrn {
             : Pattern(evaluator, offset, 1, line) { }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternBoolean(*this));
+            return std::shared_ptr<Pattern>(new PatternBoolean(*this));
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
