@@ -402,7 +402,7 @@ namespace pl::core {
             else if (std::get_if<i128>(&value.value()) != nullptr)
                 pattern = std::make_shared<ptrn::PatternSigned>(this, 0, sizeof(i128), 0);
             else if (std::get_if<double>(&value.value()) != nullptr)
-                pattern = std::make_shared<ptrn::PatternFloat>(this, 0, sizeof(double), 0);
+                pattern = ptrn::PatternFloat::create(this, 0, sizeof(double), 0);
             else if (std::get_if<bool>(&value.value()) != nullptr)
                 pattern = ptrn::PatternBoolean::create(this, 0, 0);
             else if (std::get_if<char>(&value.value()) != nullptr)
@@ -750,7 +750,7 @@ namespace pl::core {
                     copyToStorage(adjustedValue);
                 },
                 [&](const double &value) {
-                    changePatternType(pattern, std::make_shared<ptrn::PatternFloat>(this, 0, 8, 0));
+                    changePatternType(pattern, ptrn::PatternFloat::create(this, 0, 8, 0));
 
                     if (pattern->getSize() == sizeof(float)) {
                         auto floatValue = float(value);

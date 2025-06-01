@@ -29,7 +29,7 @@ namespace pl::core::ast {
         else if (Token::isSigned(this->m_type))
             pattern = std::make_shared<ptrn::PatternSigned>(evaluator, offset, size, getLocation().line);
         else if (Token::isFloatingPoint(this->m_type))
-            pattern = std::make_shared<ptrn::PatternFloat>(evaluator, offset, size, getLocation().line);
+            pattern = ptrn::PatternFloat::create(evaluator, offset, size, getLocation().line);
         else if (this->m_type == Token::ValueType::Boolean)
             pattern = ptrn::PatternBoolean::create(evaluator, offset, getLocation().line);
         else if (this->m_type == Token::ValueType::Character)

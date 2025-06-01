@@ -5,12 +5,33 @@
 namespace pl::ptrn {
 
     class PatternFloat : public Pattern {
-    public:
+    protected:
+        void initialise(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
+            Pattern::initialise(evaluator, offset, size, line);
+        }
+
+        void initialise(const PatternFloat &other) {
+            Pattern::initialise(other);
+        }
+
         PatternFloat(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
+ 
+    public:
+        static std::shared_ptr<PatternFloat> create(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
+            auto p = std::shared_ptr<PatternFloat>(new PatternFloat(evaluator, offset, size, line));
+            p->initialise(evaluator, offset, size, line);
+            return p;
+        }
+
+        static std::shared_ptr<PatternFloat> create(const PatternFloat &other) {
+            auto p = std::shared_ptr<PatternFloat>(new PatternFloat(other));
+            p->initialise(other);
+            return p;
+        }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::shared_ptr<Pattern>(new PatternFloat(*this));
+            return create(*this);
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
