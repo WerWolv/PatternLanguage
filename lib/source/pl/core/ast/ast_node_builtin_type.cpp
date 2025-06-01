@@ -31,7 +31,7 @@ namespace pl::core::ast {
         else if (Token::isFloatingPoint(this->m_type))
             pattern = std::make_shared<ptrn::PatternFloat>(evaluator, offset, size, getLocation().line);
         else if (this->m_type == Token::ValueType::Boolean)
-            pattern = std::make_shared<ptrn::PatternBoolean>(evaluator, offset, getLocation().line);
+            pattern = ptrn::PatternBoolean::create(evaluator, offset, getLocation().line);
         else if (this->m_type == Token::ValueType::Character)
             pattern = std::make_shared<ptrn::PatternCharacter>(evaluator, offset, getLocation().line);
         else if (this->m_type == Token::ValueType::Character16)

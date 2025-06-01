@@ -225,7 +225,7 @@ namespace pl::core {
 
         this->setBitwiseReadOffset(startOffset);
 
-        auto pattern = std::make_shared<ptrn::PatternArrayDynamic>(this, 0, typePattern->getSize() * entryCount, 0);
+        auto pattern = ptrn::PatternArrayDynamic::create(this, 0, typePattern->getSize() * entryCount, 0);
 
         if (section == ptrn::Pattern::PatternLocalSectionId) {
             typePattern->setSection(section);
@@ -404,7 +404,7 @@ namespace pl::core {
             else if (std::get_if<double>(&value.value()) != nullptr)
                 pattern = std::make_shared<ptrn::PatternFloat>(this, 0, sizeof(double), 0);
             else if (std::get_if<bool>(&value.value()) != nullptr)
-                pattern = std::make_shared<ptrn::PatternBoolean>(this, 0, 0);
+                pattern = ptrn::PatternBoolean::create(this, 0, 0);
             else if (std::get_if<char>(&value.value()) != nullptr)
                 pattern = std::make_shared<ptrn::PatternCharacter>(this, 0, 0);
             else if (auto string = std::get_if<std::string>(&value.value()); string != nullptr)
@@ -738,7 +738,7 @@ namespace pl::core {
                     copyToStorage(adjustedValue);
                 },
                 [&](const bool &value) {
-                    changePatternType(pattern, std::make_shared<ptrn::PatternBoolean>(this, 0, 0));
+                    changePatternType(pattern, ptrn::PatternBoolean::create(this, 0, 0));
 
                     auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
                     copyToStorage(adjustedValue);
