@@ -76,7 +76,7 @@ namespace pl::ptrn {
         }
 
         std::shared_ptr<Pattern> getEntry(size_t index) const override {
-            auto result = std::make_shared<PatternCharacter>(this->getEvaluator(), this->getOffset() + index, getLine());
+            auto result = PatternCharacter::create(this->getEvaluator(), this->getOffset() + index, getLine());
             result->setSection(this->getSection());
 
             return result;

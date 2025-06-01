@@ -406,7 +406,7 @@ namespace pl::core {
             else if (std::get_if<bool>(&value.value()) != nullptr)
                 pattern = ptrn::PatternBoolean::create(this, 0, 0);
             else if (std::get_if<char>(&value.value()) != nullptr)
-                pattern = std::make_shared<ptrn::PatternCharacter>(this, 0, 0);
+                pattern = ptrn::PatternCharacter::create(this, 0, 0);
             else if (auto string = std::get_if<std::string>(&value.value()); string != nullptr)
                 pattern = std::make_shared<ptrn::PatternString>(this, 0, string->size(), 0);
             else if (auto patternValue = std::get_if<std::shared_ptr<ptrn::Pattern>>(&value.value()); patternValue != nullptr) {
@@ -744,7 +744,7 @@ namespace pl::core {
                     copyToStorage(adjustedValue);
                 },
                 [&](const char &value) {
-                    changePatternType(pattern, std::make_shared<ptrn::PatternCharacter>(this, 0, 0));
+                    changePatternType(pattern, ptrn::PatternCharacter::create(this, 0, 0));
 
                     auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
                     copyToStorage(adjustedValue);

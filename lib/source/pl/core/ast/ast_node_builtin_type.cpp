@@ -33,7 +33,7 @@ namespace pl::core::ast {
         else if (this->m_type == Token::ValueType::Boolean)
             pattern = ptrn::PatternBoolean::create(evaluator, offset, getLocation().line);
         else if (this->m_type == Token::ValueType::Character)
-            pattern = std::make_shared<ptrn::PatternCharacter>(evaluator, offset, getLocation().line);
+            pattern = ptrn::PatternCharacter::create(evaluator, offset, getLocation().line);
         else if (this->m_type == Token::ValueType::Character16)
             pattern = std::make_shared<ptrn::PatternWideCharacter>(evaluator, offset, getLocation().line);
         else if (this->m_type == Token::ValueType::Padding)
