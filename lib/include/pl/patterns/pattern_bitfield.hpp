@@ -684,11 +684,15 @@ namespace pl::ptrn {
     class PatternBitfield : public PatternBitfieldMember,
                             public IInlinable,
                             public IIterable {
-    public:
-        PatternBitfield(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize, u32 line)
-                : PatternBitfieldMember(evaluator, offset, size_t((totalBitSize + 7) / 8), line), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
+    protected:
+        void initialise(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize, u32 line) {
+            (void)firstBitOffset;
+            PatternBitfieldMember::initialise(evaluator, offset, size_t((totalBitSize + 7) / 8), line);
+        }
 
-        PatternBitfield(const PatternBitfield &other) : PatternBitfieldMember(other) {
+        void initialise(const PatternBitfield &other) {
+            PatternBitfieldMember::initialise(other);
+
             for (auto &field : other.m_fields)
                 this->m_fields.push_back(field->clone());
 
@@ -696,9 +700,29 @@ namespace pl::ptrn {
             this->m_totalBitSize = other.m_totalBitSize;
         }
 
-        [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::shared_ptr<Pattern>(new PatternBitfield(*this));
+        PatternBitfield(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize, u32 line)
+                : PatternBitfieldMember(evaluator, offset, size_t((totalBitSize + 7) / 8), line), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
+
+        PatternBitfield(const PatternBitfield &other) : PatternBitfieldMember(other) { }
+
+    public:
+        static std::shared_ptr<PatternBitfield> create(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize, u32 line) {
+            auto p = std::shared_ptr<PatternBitfield>(new PatternBitfield(evaluator, offset, firstBitOffset, totalBitSize, line));
+            p->initialise(evaluator, offset, firstBitOffset, totalBitSize, line);
+            return p;
         }
+
+        static std::shared_ptr<PatternBitfield> create(const PatternBitfield &other) {
+            auto p = std::shared_ptr<PatternBitfield>(new PatternBitfield(other));
+            p->initialise(other);
+            return p;
+        }
+
+        [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
+            return create(*this);
+        }
+
+    // --- //
 
         [[nodiscard]] u8 getBitOffset() const override {
             return m_firstBitOffset;
