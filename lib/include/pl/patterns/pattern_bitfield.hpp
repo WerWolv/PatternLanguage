@@ -722,8 +722,6 @@ namespace pl::ptrn {
             return create(*this);
         }
 
-    // --- //
-
         [[nodiscard]] u8 getBitOffset() const override {
             return m_firstBitOffset;
         }
