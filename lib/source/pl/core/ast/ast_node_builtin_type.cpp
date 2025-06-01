@@ -39,7 +39,7 @@ namespace pl::core::ast {
         else if (this->m_type == Token::ValueType::Padding)
             pattern = ptrn::PatternPadding::create(evaluator, offset, 1, getLocation().line);
         else if (this->m_type == Token::ValueType::String)
-            pattern = std::make_shared<ptrn::PatternString>(evaluator, offset, 0, getLocation().line);
+            pattern = ptrn::PatternString::create(evaluator, offset, 0, getLocation().line);
         else if (this->m_type == Token::ValueType::CustomType) {
             std::vector<Token::Literal> params;
 

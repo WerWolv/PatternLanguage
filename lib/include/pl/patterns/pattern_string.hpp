@@ -8,12 +8,34 @@ namespace pl::ptrn {
 
     class PatternString : public Pattern,
                           public IIndexable {
-    public:
+
+    protected:
+        void initialise(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
+            Pattern::initialise(evaluator, offset, size, line);
+        }
+
+        void initialise(const PatternString &other) {
+            Pattern::initialise(other);
+        }
+
         PatternString(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
+                            
+    public:
+        static std::shared_ptr<PatternString> create(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
+            auto p = std::shared_ptr<PatternString>(new PatternString(evaluator, offset, size, line));
+            p->initialise(evaluator, offset, size, line);
+            return p;
+        }
+
+        static std::shared_ptr<PatternString> create(const PatternString &other) {
+            auto p = std::shared_ptr<PatternString>(new PatternString(other));
+            p->initialise(other);
+            return p;
+        }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::shared_ptr<Pattern>(new PatternString(*this));
+            return create(*this);
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {

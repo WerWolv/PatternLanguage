@@ -408,7 +408,7 @@ namespace pl::core {
             else if (std::get_if<char>(&value.value()) != nullptr)
                 pattern = ptrn::PatternCharacter::create(this, 0, 0);
             else if (auto string = std::get_if<std::string>(&value.value()); string != nullptr)
-                pattern = std::make_shared<ptrn::PatternString>(this, 0, string->size(), 0);
+                pattern = ptrn::PatternString::create(this, 0, string->size(), 0);
             else if (auto patternValue = std::get_if<std::shared_ptr<ptrn::Pattern>>(&value.value()); patternValue != nullptr) {
                 if (reference && !templateVariable)
                     pattern = *patternValue;
@@ -768,7 +768,7 @@ namespace pl::core {
                     }
                 },
                 [&](const std::string &value) {
-                    changePatternType(pattern, std::make_shared<ptrn::PatternString>(this, 0, value.length(), 0));
+                    changePatternType(pattern, ptrn::PatternString::create(this, 0, value.length(), 0));
 
                     pattern->setSize(value.size());
 

@@ -220,7 +220,7 @@ namespace pl::core::ast {
         if (std::dynamic_pointer_cast<ptrn::PatternPadding>(templatePattern)) {
             outputPattern = ptrn::PatternPadding::create(evaluator, startOffset, 0, getLocation().line);
         } else if (std::dynamic_pointer_cast<ptrn::PatternCharacter>(templatePattern)) {
-            outputPattern = std::make_shared<ptrn::PatternString>(evaluator, startOffset, 0, getLocation().line);
+            outputPattern = ptrn::PatternString::create(evaluator, startOffset, 0, getLocation().line);
         } else if (std::dynamic_pointer_cast<ptrn::PatternWideCharacter>(templatePattern)) {
             outputPattern = std::make_shared<ptrn::PatternWideString>(evaluator, startOffset, 0, getLocation().line);
         } else {
