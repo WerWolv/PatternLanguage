@@ -396,7 +396,7 @@ namespace pl::core {
         if (auto builtinType = getBuiltinType(type); builtinType != nullptr && builtinType->getType() == Token::ValueType::Auto) {
             // Handle auto variables
             if (!value.has_value())
-                pattern = std::make_shared<ptrn::PatternPadding>(this, 0, 0, 0);
+                pattern = ptrn::PatternPadding::create(this, 0, 0, 0);
             else if (std::get_if<u128>(&value.value()) != nullptr)
                 pattern = std::make_shared<ptrn::PatternUnsigned>(this, 0, sizeof(u128), 0);
             else if (std::get_if<i128>(&value.value()) != nullptr)
@@ -424,7 +424,7 @@ namespace pl::core {
                 pattern = std::move(patterns.front());
             }
             else {
-                pattern = std::make_shared<ptrn::PatternPadding>(this, 0, 0, 0);
+                pattern = ptrn::PatternPadding::create(this, 0, 0, 0);
 
                 if (auto typeName = findTypeName(type); typeName.has_value())
                     pattern->setTypeName(typeName.value());
