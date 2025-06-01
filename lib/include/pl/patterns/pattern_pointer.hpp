@@ -44,8 +44,6 @@ namespace pl::ptrn {
             return create(*this);
         }
 
-        // --- //
-
         [[nodiscard]] core::Token::Literal getValue() const override {
             return transformValue(this->m_pointerType->getValue());
         }

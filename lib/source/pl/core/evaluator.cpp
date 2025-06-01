@@ -400,7 +400,7 @@ namespace pl::core {
             else if (std::get_if<u128>(&value.value()) != nullptr)
                 pattern = std::make_shared<ptrn::PatternUnsigned>(this, 0, sizeof(u128), 0);
             else if (std::get_if<i128>(&value.value()) != nullptr)
-                pattern = std::make_shared<ptrn::PatternSigned>(this, 0, sizeof(i128), 0);
+                pattern = ptrn::PatternSigned::create(this, 0, sizeof(i128), 0);
             else if (std::get_if<double>(&value.value()) != nullptr)
                 pattern = ptrn::PatternFloat::create(this, 0, sizeof(double), 0);
             else if (std::get_if<bool>(&value.value()) != nullptr)
@@ -731,7 +731,7 @@ namespace pl::core {
                     copyToStorage(adjustedValue);
                 },
                 [&](const i128 &value) {
-                    changePatternType(pattern, std::make_shared<ptrn::PatternSigned>(this, 0, 16, 0));
+                    changePatternType(pattern, ptrn::PatternSigned::create(this, 0, 16, 0));
 
                     auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
                     adjustedValue = hlp::signExtend(pattern->getSize() * 8, adjustedValue);
