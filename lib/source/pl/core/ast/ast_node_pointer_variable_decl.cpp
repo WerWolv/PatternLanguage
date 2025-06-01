@@ -67,7 +67,7 @@ namespace pl::core::ast {
         auto &sizePattern = sizePatterns.front();
         sizePattern->setSection(evaluator->getSectionId());
 
-        auto pattern = std::make_shared<ptrn::PatternPointer>(evaluator, pointerStartOffset, sizePattern->getSize(), getLocation().line);
+        auto pattern = ptrn::PatternPointer::create(evaluator, pointerStartOffset, sizePattern->getSize(), getLocation().line);
         pattern->setVariableName(this->m_name);
         pattern->setPointerTypePattern(std::move(sizePattern));
 

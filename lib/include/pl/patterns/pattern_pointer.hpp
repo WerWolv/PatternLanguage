@@ -7,12 +7,14 @@ namespace pl::ptrn {
 
     class PatternPointer : public Pattern,
                            public IInlinable {
-    public:
-        PatternPointer(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
-            : Pattern(evaluator, offset, size, line), m_pointedAt(nullptr), m_pointerType(nullptr) {
+    protected:
+        void initialise(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
+            Pattern::initialise(evaluator, offset, size, line);
         }
 
-        PatternPointer(const PatternPointer &other) : Pattern(other) {
+        void initialise(const PatternPointer &other) {
+            Pattern::initialise(other);
+
             this->m_pointedAt = std::shared_ptr(other.m_pointedAt->clone());
 
             if (other.m_pointerType) {
@@ -20,9 +22,29 @@ namespace pl::ptrn {
             }
         }
 
-        [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::shared_ptr<Pattern>(new PatternPointer(*this));
+        PatternPointer(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
+            : Pattern(evaluator, offset, size, line), m_pointedAt(nullptr), m_pointerType(nullptr) { }
+
+        PatternPointer(const PatternPointer &other) : Pattern(other) { }
+
+    public:
+        static std::shared_ptr<PatternPointer> create(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
+            auto p = std::shared_ptr<PatternPointer>(new PatternPointer(evaluator, offset, size, line));
+            p->initialise(evaluator, offset, size, line);
+            return p;
         }
+
+        static std::shared_ptr<PatternPointer> create(const PatternPointer &other) {
+            auto p = std::shared_ptr<PatternPointer>(new PatternPointer(other));
+            p->initialise(other);
+            return p;
+        }
+
+        [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
+            return create(*this);
+        }
+
+        // --- //
 
         [[nodiscard]] core::Token::Literal getValue() const override {
             return transformValue(this->m_pointerType->getValue());
