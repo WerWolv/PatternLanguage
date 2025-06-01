@@ -73,7 +73,7 @@ namespace pl::core::ast {
             err::E0005.throwError("'auto' can only be used with parameters.", { }, this->getLocation());
         auto &underlying = underlyingTypePatterns.front();
 
-        auto pattern = std::make_shared<ptrn::PatternEnum>(evaluator, underlying->getOffset(), 0, getLocation().line);
+        auto pattern = ptrn::PatternEnum::create(evaluator, underlying->getOffset(), 0, getLocation().line);
 
         pattern->setSection(evaluator->getSectionId());
 
