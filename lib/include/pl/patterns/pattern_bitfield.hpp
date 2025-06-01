@@ -6,8 +6,32 @@
 namespace pl::ptrn {
 
     class PatternBitfieldMember : public Pattern {
+    protected:
+        void initialise(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
+            Pattern::initialise(evaluator, offset, size, line);
+        }
+
+        void initialise(const PatternBitfieldMember &other) {
+            Pattern::initialise(other);
+        }
+
+        PatternBitfieldMember(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
+            : Pattern(evaluator, offset, size, line) { }
+
+        PatternBitfieldMember(const PatternBitfieldMember &other) : Pattern(other) { }
+
     public:
-        using Pattern::Pattern;
+        /*static std::shared_ptr<PatternBitfieldMember> create(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
+            auto p = std::shared_ptr<PatternBitfieldMember>(new PatternBitfieldMember(evaluator, offset, size, line));
+            p->initialise(evaluator, offset, size, line);
+            return p;
+        }
+
+        static std::shared_ptr<PatternBitfieldMember> create(const PatternBitfieldMember &other) {
+            auto p = std::shared_ptr<PatternBitfieldMember>(new PatternBitfieldMember(other));
+            p->initialise(other);
+            return p;
+        }*/
 
         [[nodiscard]] const PatternBitfieldMember& getTopmostBitfield() const {
             const PatternBitfieldMember* topBitfield = this;
@@ -52,20 +76,43 @@ namespace pl::ptrn {
     };
 
     class PatternBitfieldField : public PatternBitfieldMember {
-    public:
-        PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr)
-                : PatternBitfieldMember(evaluator, offset, (bitOffset + bitSize + 7) / 8, line), m_bitOffset(bitOffset % 8), m_bitSize(bitSize) {
+    protected:
+        void initialise(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr) {
+            PatternBitfieldMember::initialise(evaluator, offset, (bitOffset + bitSize + 7) / 8, line);
+
             this->setParent(parentBitfield);
         }
 
-        PatternBitfieldField(const PatternBitfieldField &other) : PatternBitfieldMember(other) {
+        void initialise(const PatternBitfieldField &other) {
+            PatternBitfieldMember::initialise(other);
+
             this->m_padding = other.m_padding;
             this->m_bitOffset = other.m_bitOffset;
             this->m_bitSize = other.m_bitSize;
         }
 
+        PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr)
+            : PatternBitfieldMember(evaluator, offset, (bitOffset + bitSize + 7) / 8, line), m_bitOffset(bitOffset % 8), m_bitSize(bitSize) {
+            (void)parentBitfield;
+        }
+
+        PatternBitfieldField(const PatternBitfieldField &other) : PatternBitfieldMember(other) { }
+
+    public:
+        static std::shared_ptr<PatternBitfieldField> create(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr) {
+            auto p = std::shared_ptr<PatternBitfieldField>(new PatternBitfieldField(evaluator, offset, bitOffset, bitSize, line, parentBitfield));
+            p->initialise(evaluator, offset, bitOffset, bitSize, line, parentBitfield);
+            return p;
+        }
+
+        static std::shared_ptr<PatternBitfieldField> create(const PatternBitfieldField &other) {
+            auto p = std::shared_ptr<PatternBitfieldField>(new PatternBitfieldField(other));
+            p->initialise(other);
+            return p;
+        }
+
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::shared_ptr<Pattern>(new PatternBitfieldField(*this));
+            return create(*this);
         }
 
         [[nodiscard]] u128 readValue() const {
@@ -158,11 +205,35 @@ namespace pl::ptrn {
     };
 
     class PatternBitfieldFieldSigned : public PatternBitfieldField {
+    protected:
+           void initialise(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr) {
+            PatternBitfieldField::initialise(evaluator, offset, bitOffset, bitSize, line, parentBitfield);
+        }
+
+        void initialise(const PatternBitfieldField &other) {
+            PatternBitfieldField::initialise(other);
+        }
+
+        PatternBitfieldFieldSigned(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr)
+            : PatternBitfieldField(evaluator, offset, bitOffset, bitSize, line, parentBitfield) {}
+
+        PatternBitfieldFieldSigned(const PatternBitfieldFieldSigned &other) : PatternBitfieldField(other) { }
+
     public:
-        using PatternBitfieldField::PatternBitfieldField;
+        static std::shared_ptr<PatternBitfieldFieldSigned> create(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr) {
+            auto p = std::shared_ptr<PatternBitfieldFieldSigned>(new PatternBitfieldFieldSigned(evaluator, offset, bitOffset, bitSize, line, parentBitfield));
+            p->initialise(evaluator, offset, bitOffset, bitSize, line, parentBitfield);
+            return p;
+        }
+
+        static std::shared_ptr<PatternBitfieldFieldSigned> create(const PatternBitfieldFieldSigned &other) {
+            auto p = std::shared_ptr<PatternBitfieldFieldSigned>(new PatternBitfieldFieldSigned(other));
+            p->initialise(other);
+            return p;
+        }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::shared_ptr<Pattern>(new PatternBitfieldFieldSigned(*this));
+            return create(*this);
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {

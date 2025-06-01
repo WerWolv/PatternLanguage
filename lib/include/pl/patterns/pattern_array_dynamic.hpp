@@ -7,20 +7,41 @@ namespace pl::ptrn {
     class PatternArrayDynamic : public Pattern,
                                 public IInlinable,
                                 public IIndexable {
-    public:
-        PatternArrayDynamic(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
-            : Pattern(evaluator, offset, size, line) { }
+    protected:
+        void initialise(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
+            Pattern::initialise(evaluator, offset, size, line);
+        }
 
-        PatternArrayDynamic(const PatternArrayDynamic &other) : Pattern(other) {
+        void initialise(const PatternArrayDynamic &other) {
+            Pattern::initialise(other);
+
             std::vector<std::shared_ptr<Pattern>> entries;
             for (const auto &entry : other.m_entries)
                 entries.push_back(entry);
 
             this->setEntries(entries);
+        }        
+
+        PatternArrayDynamic(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
+            : Pattern(evaluator, offset, size, line) { }
+
+        PatternArrayDynamic(const PatternArrayDynamic &other) : Pattern(other) { }
+
+    public:
+        static std::shared_ptr<PatternArrayDynamic> create(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
+            auto p = std::shared_ptr<PatternArrayDynamic>(new PatternArrayDynamic(evaluator, offset, size, line));
+            p->initialise(evaluator, offset, size, line);
+            return p;
+        }
+
+        static std::shared_ptr<PatternArrayDynamic> create(const PatternArrayDynamic &other) {
+            auto p = std::shared_ptr<PatternArrayDynamic>(new PatternArrayDynamic(other));
+            p->initialise(other);
+            return p;
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::shared_ptr<Pattern>(new PatternArrayDynamic(*this));
+            return create(*this);
         }
 
         void setColor(u32 color) override {

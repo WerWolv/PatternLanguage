@@ -7,16 +7,37 @@ namespace pl::ptrn {
     class PatternArrayStatic : public Pattern,
                                public IInlinable,
                                public IIndexable {
-    public:
-        PatternArrayStatic(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
-            : Pattern(evaluator, offset, size, line) { }
+    protected:
+        void initialise(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
+            Pattern::initialise(evaluator, offset, size, line);
+        }
 
-        PatternArrayStatic(const PatternArrayStatic &other) : Pattern(other) {
+        void initialise(const PatternArrayStatic &other) {
+            Pattern::initialise(other);
+
             this->setEntries(other.getTemplate()->clone(), other.getEntryCount());
         }
 
+        PatternArrayStatic(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
+            : Pattern(evaluator, offset, size, line) { }
+
+        PatternArrayStatic(const PatternArrayStatic &other) : Pattern(other) { }
+
+    public:
+        static std::shared_ptr<PatternArrayStatic> create(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
+            auto p = std::shared_ptr<PatternArrayStatic>(new PatternArrayStatic(evaluator, offset, size, line));
+            p->initialise(evaluator, offset, size, line);
+            return p;
+        }
+
+        static std::shared_ptr<PatternArrayStatic> create(const PatternArrayStatic &other) {
+            auto p = std::shared_ptr<PatternArrayStatic>(new PatternArrayStatic(other));
+            p->initialise(other);
+            return p;
+        }
+
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::shared_ptr<Pattern>(new PatternArrayStatic(*this));
+            return create(*this);
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> getEntry(size_t index) const override {

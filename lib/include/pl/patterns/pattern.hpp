@@ -68,21 +68,21 @@ namespace pl::ptrn {
         constexpr static u64 PatternLocalSectionId  = 0xFFFF'FFFF'FFFF'FFFE;
         constexpr static u64 InstantiationSectionId = 0xFFFF'FFFF'FFFF'FFFD;
 
-        Pattern(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
-            : m_evaluator(evaluator), m_line(line), m_offset(offset), m_size(size) {
+    protected:
+        void initialise(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) { 
+            (void)evaluator; (void)offset; (void)size; (void)line;
 
-            if (evaluator != nullptr) {
-                this->m_color       = evaluator->getNextPatternColor();
+            if (m_evaluator != nullptr) {
+                this->m_color       = m_evaluator->getNextPatternColor();
                 this->m_manualColor = false;
                 this->m_variableName = m_evaluator->getStringPool().end();
                 this->m_typeName = m_evaluator->getStringPool().end();
 
-                evaluator->patternCreated(this);
+                m_evaluator->patternCreated(this);
             }
-
         }
 
-        Pattern(const Pattern &other) : std::enable_shared_from_this<Pattern>(other) {
+        void initialise(const Pattern &other) {
             this->m_evaluator = other.m_evaluator;
             this->m_offset = other.m_offset;
             this->m_endian = other.m_endian;
@@ -109,6 +109,27 @@ namespace pl::ptrn {
             }
         }
 
+        Pattern(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
+            : m_evaluator(evaluator), m_line(line), m_offset(offset), m_size(size) {
+        }
+
+        Pattern(const Pattern &other) : std::enable_shared_from_this<Pattern>(other) {
+        }
+
+    /*public:
+        static std::shared_ptr<Pattern> create(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
+            auto p = std::make_shared<Pattern>(evaluator, offset, size, line);
+            p->initialise();
+            return p;
+        }
+
+        static std::shared_ptr<Pattern> create(const Pattern &other) {
+            auto p = std::make_shared<Pattern>(other);
+            p->initialise(other);
+            return p;
+        }*/
+
+    public:
         virtual ~Pattern() {
             if (this->m_evaluator != nullptr) {
                 this->m_evaluator->patternDestroyed(this);
