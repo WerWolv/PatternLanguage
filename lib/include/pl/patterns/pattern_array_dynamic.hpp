@@ -133,7 +133,7 @@ namespace pl::ptrn {
 
             if (!entry->hasOverriddenColor())
                 entry->setBaseColor(this->getColor());
-            entry->setParent(this);
+            entry->setParent(this->reference());
 
             this->m_entries.emplace_back(entry);
         }

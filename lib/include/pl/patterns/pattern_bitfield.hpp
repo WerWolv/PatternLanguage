@@ -12,7 +12,7 @@ namespace pl::ptrn {
         [[nodiscard]] const PatternBitfieldMember& getTopmostBitfield() const {
             const PatternBitfieldMember* topBitfield = this;
             while (auto parent = topBitfield->getParent()) {
-                auto parentBitfield = dynamic_cast<const PatternBitfieldMember*>(parent);
+                auto parentBitfield = dynamic_cast<const PatternBitfieldMember*>(parent.get());
                 if (parentBitfield == nullptr)
                     break;
 
@@ -53,7 +53,7 @@ namespace pl::ptrn {
 
     class PatternBitfieldField : public PatternBitfieldMember {
     public:
-        PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, PatternBitfieldMember *parentBitfield = nullptr)
+        PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr)
                 : PatternBitfieldMember(evaluator, offset, (bitOffset + bitSize + 7) / 8, line), m_bitOffset(bitOffset % 8), m_bitSize(bitSize) {
             this->setParent(parentBitfield);
         }
@@ -422,7 +422,7 @@ namespace pl::ptrn {
                 if (!entry->hasOverriddenColor())
                     entry->setBaseColor(this->getColor());
 
-                entry->setParent(this);
+                entry->setParent(this->reference());
 
                 this->m_sortedEntries.push_back(entry.get());
             }
@@ -643,7 +643,7 @@ namespace pl::ptrn {
                 this->setBaseColor(this->m_fields.front()->getColor());
 
             for (const auto &field : this->m_fields) {
-                field->setParent(this);
+                field->setParent(this->reference());
                 this->m_sortedFields.push_back(field.get());
             }
         }
@@ -715,7 +715,7 @@ namespace pl::ptrn {
                     }
                 } else if (auto *member = dynamic_cast<PatternBitfieldMember *>(pattern.get()); member != nullptr) {
                     valueString += fmt::format("{} = {} | ", member->getVariableName(), member->toString());
-                } else if (auto *bitfield = dynamic_cast<PatternBitfield *>(pattern.get()); bitfield != nullptr) {
+} else if (auto *bitfield = dynamic_cast<PatternBitfield *>(pattern.get()); bitfield != nullptr) {
                     valueString += fmt::format("{} = {} | ", bitfield->getVariableName(), bitfield->formatDisplayValue());
                 }
             }

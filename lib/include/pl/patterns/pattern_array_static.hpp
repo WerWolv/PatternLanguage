@@ -153,7 +153,7 @@ namespace pl::ptrn {
 
         void setEntries(std::shared_ptr<Pattern> &&templatePattern, size_t count) {
             this->m_template          = std::move(templatePattern);
-            this->m_template->setParent(this);
+            this->m_template->setParent(this->reference());
             this->m_highlightTemplates.push_back(this->m_template->clone());
             this->m_entryCount        = count;
 
