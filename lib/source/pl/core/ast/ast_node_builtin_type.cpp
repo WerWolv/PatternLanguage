@@ -27,19 +27,19 @@ namespace pl::core::ast {
         if (Token::isUnsigned(this->m_type))
             pattern = std::make_shared<ptrn::PatternUnsigned>(evaluator, offset, size, getLocation().line);
         else if (Token::isSigned(this->m_type))
-            pattern = construct_shared_object<PatternSigned>(evaluator, offset, size, getLocation().line);
+            pattern = construct_shared_object<pl::ptrn::PatternSigned>(evaluator, offset, size, getLocation().line);
         else if (Token::isFloatingPoint(this->m_type))
-            pattern = construct_shared_object<PatternFloat>(evaluator, offset, size, getLocation().line);
+            pattern = construct_shared_object<pl::ptrn::PatternFloat>(evaluator, offset, size, getLocation().line);
         else if (this->m_type == Token::ValueType::Boolean)
-            pattern = construct_shared_object<PatternBoolean>(evaluator, offset, getLocation().line);
+            pattern = construct_shared_object<pl::ptrn::PatternBoolean>(evaluator, offset, getLocation().line);
         else if (this->m_type == Token::ValueType::Character)
-            pattern = construct_shared_object<PatternCharacter>(evaluator, offset, getLocation().line);
+            pattern = construct_shared_object<pl::ptrn::PatternCharacter>(evaluator, offset, getLocation().line);
         else if (this->m_type == Token::ValueType::Character16)
             pattern = std::make_shared<ptrn::PatternWideCharacter>(evaluator, offset, getLocation().line);
         else if (this->m_type == Token::ValueType::Padding)
-            pattern = construct_shared_object<PatternPadding>(evaluator, offset, 1, getLocation().line);
+            pattern = construct_shared_object<pl::ptrn::PatternPadding>(evaluator, offset, 1, getLocation().line);
         else if (this->m_type == Token::ValueType::String)
-            pattern = construct_shared_object<PatternString>(evaluator, offset, 0, getLocation().line);
+            pattern = construct_shared_object<pl::ptrn::PatternString>(evaluator, offset, 0, getLocation().line);
         else if (this->m_type == Token::ValueType::CustomType) {
             std::vector<Token::Literal> params;
 

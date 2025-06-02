@@ -5,6 +5,7 @@
 #include <pl/pattern_visitor.hpp>
 #include <pl/helpers/types.hpp>
 #include <pl/helpers/utils.hpp>
+#include <pl/helpers/construct_shared_object.hpp>
 
 #include <fmt/core.h>
 
@@ -13,6 +14,8 @@
 
 #include <concepts>
 #include <string>
+
+using namespace shared_object_creator;
 
 namespace pl::ptrn {
     using namespace ::std::literals::string_literals;

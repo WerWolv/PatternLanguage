@@ -26,7 +26,7 @@ namespace pl::core::ast {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto position = evaluator->getBitwiseReadOffset();
-        auto bitfieldPattern = construct_shared_object<PatternBitfield>(evaluator, position.byteOffset, position.bitOffset, 0, getLocation().line);
+        auto bitfieldPattern = construct_shared_object<pl::ptrn::PatternBitfield>(evaluator, position.byteOffset, position.bitOffset, 0, getLocation().line);
 
         bitfieldPattern->setSection(evaluator->getSectionId());
 
