@@ -8,33 +8,12 @@ namespace pl::ptrn {
 
     class PatternString : public Pattern,
                           public IIndexable {
-    protected:
-        void initialise(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
-            Pattern::initialise(evaluator, offset, size, line);
-        }
-
-        void initialise(const PatternString &other) {
-            Pattern::initialise(other);
-        }
-
+    public:
         PatternString(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
-                            
-    public:
-        static std::shared_ptr<PatternString> create(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
-            auto p = std::shared_ptr<PatternString>(new PatternString(evaluator, offset, size, line));
-            p->initialise(evaluator, offset, size, line);
-            return p;
-        }
-
-        static std::shared_ptr<PatternString> create(const PatternString &other) {
-            auto p = std::shared_ptr<PatternString>(new PatternString(other));
-            p->initialise(other);
-            return p;
-        }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return create(*this);
+            return std::unique_ptr<Pattern>(new PatternString(*this));
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
@@ -97,7 +76,7 @@ namespace pl::ptrn {
         }
 
         std::shared_ptr<Pattern> getEntry(size_t index) const override {
-            auto result = PatternCharacter::create(this->getEvaluator(), this->getOffset() + index, getLine());
+            auto result = std::make_shared<PatternCharacter>(this->getEvaluator(), this->getOffset() + index, getLine());
             result->setSection(this->getSection());
 
             return result;

@@ -6,37 +6,13 @@
 namespace pl::ptrn {
 
     class PatternBitfieldMember : public Pattern {
-    protected:
-        void initialise(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
-            Pattern::initialise(evaluator, offset, size, line);
-        }
-
-        void initialise(const PatternBitfieldMember &other) {
-            Pattern::initialise(other);
-        }
-
-        PatternBitfieldMember(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
-            : Pattern(evaluator, offset, size, line) { }
-
-        PatternBitfieldMember(const PatternBitfieldMember &other) : Pattern(other) { }
-
     public:
-        /*static std::shared_ptr<PatternBitfieldMember> create(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
-            auto p = std::shared_ptr<PatternBitfieldMember>(new PatternBitfieldMember(evaluator, offset, size, line));
-            p->initialise(evaluator, offset, size, line);
-            return p;
-        }
-
-        static std::shared_ptr<PatternBitfieldMember> create(const PatternBitfieldMember &other) {
-            auto p = std::shared_ptr<PatternBitfieldMember>(new PatternBitfieldMember(other));
-            p->initialise(other);
-            return p;
-        }*/
+        using Pattern::Pattern;
 
         [[nodiscard]] const PatternBitfieldMember& getTopmostBitfield() const {
             const PatternBitfieldMember* topBitfield = this;
             while (auto parent = topBitfield->getParent()) {
-                auto parentBitfield = dynamic_cast<const PatternBitfieldMember*>(parent.get());
+                auto parentBitfield = dynamic_cast<const PatternBitfieldMember*>(parent);
                 if (parentBitfield == nullptr)
                     break;
 
@@ -76,43 +52,20 @@ namespace pl::ptrn {
     };
 
     class PatternBitfieldField : public PatternBitfieldMember {
-    protected:
-        void initialise(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr) {
-            PatternBitfieldMember::initialise(evaluator, offset, (bitOffset + bitSize + 7) / 8, line);
-
+    public:
+        PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, PatternBitfieldMember *parentBitfield = nullptr)
+                : PatternBitfieldMember(evaluator, offset, (bitOffset + bitSize + 7) / 8, line), m_bitOffset(bitOffset % 8), m_bitSize(bitSize) {
             this->setParent(parentBitfield);
         }
 
-        void initialise(const PatternBitfieldField &other) {
-            PatternBitfieldMember::initialise(other);
-
+        PatternBitfieldField(const PatternBitfieldField &other) : PatternBitfieldMember(other) {
             this->m_padding = other.m_padding;
             this->m_bitOffset = other.m_bitOffset;
             this->m_bitSize = other.m_bitSize;
         }
 
-        PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr)
-            : PatternBitfieldMember(evaluator, offset, (bitOffset + bitSize + 7) / 8, line), m_bitOffset(bitOffset % 8), m_bitSize(bitSize) {
-            (void)parentBitfield;
-        }
-
-        PatternBitfieldField(const PatternBitfieldField &other) : PatternBitfieldMember(other) { }
-
-    public:
-        static std::shared_ptr<PatternBitfieldField> create(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr) {
-            auto p = std::shared_ptr<PatternBitfieldField>(new PatternBitfieldField(evaluator, offset, bitOffset, bitSize, line, parentBitfield));
-            p->initialise(evaluator, offset, bitOffset, bitSize, line, parentBitfield);
-            return p;
-        }
-
-        static std::shared_ptr<PatternBitfieldField> create(const PatternBitfieldField &other) {
-            auto p = std::shared_ptr<PatternBitfieldField>(new PatternBitfieldField(other));
-            p->initialise(other);
-            return p;
-        }
-
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return create(*this);
+            return std::unique_ptr<Pattern>(new PatternBitfieldField(*this));
         }
 
         [[nodiscard]] u128 readValue() const {
@@ -205,35 +158,11 @@ namespace pl::ptrn {
     };
 
     class PatternBitfieldFieldSigned : public PatternBitfieldField {
-    protected:
-           void initialise(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr) {
-            PatternBitfieldField::initialise(evaluator, offset, bitOffset, bitSize, line, parentBitfield);
-        }
-
-        void initialise(const PatternBitfieldField &other) {
-            PatternBitfieldField::initialise(other);
-        }
-
-        PatternBitfieldFieldSigned(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr)
-            : PatternBitfieldField(evaluator, offset, bitOffset, bitSize, line, parentBitfield) {}
-
-        PatternBitfieldFieldSigned(const PatternBitfieldFieldSigned &other) : PatternBitfieldField(other) { }
-
     public:
-        static std::shared_ptr<PatternBitfieldFieldSigned> create(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr) {
-            auto p = std::shared_ptr<PatternBitfieldFieldSigned>(new PatternBitfieldFieldSigned(evaluator, offset, bitOffset, bitSize, line, parentBitfield));
-            p->initialise(evaluator, offset, bitOffset, bitSize, line, parentBitfield);
-            return p;
-        }
-
-        static std::shared_ptr<PatternBitfieldFieldSigned> create(const PatternBitfieldFieldSigned &other) {
-            auto p = std::shared_ptr<PatternBitfieldFieldSigned>(new PatternBitfieldFieldSigned(other));
-            p->initialise(other);
-            return p;
-        }
+        using PatternBitfieldField::PatternBitfieldField;
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return create(*this);
+            return std::unique_ptr<Pattern>(new PatternBitfieldFieldSigned(*this));
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
@@ -253,36 +182,11 @@ namespace pl::ptrn {
     };
 
     class PatternBitfieldFieldBoolean : public PatternBitfieldField {
-    protected:
-        void initialise(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr) {
-            PatternBitfieldField::initialise(evaluator, offset, bitOffset, bitSize, line, parentBitfield);
-        }
-
-        void initialise(const PatternBitfieldFieldBoolean &other) {
-            PatternBitfieldField::initialise(other);
-        }
-
-        PatternBitfieldFieldBoolean(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr)
-            : PatternBitfieldField(evaluator, offset, bitOffset, bitSize, line, parentBitfield) {
-        }
-
-        PatternBitfieldFieldBoolean(const PatternBitfieldFieldBoolean &other) : PatternBitfieldField(other) { }
-
     public:
-        static std::shared_ptr<PatternBitfieldFieldBoolean> create(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr) {
-            auto p = std::shared_ptr<PatternBitfieldFieldBoolean>(new PatternBitfieldFieldBoolean(evaluator, offset, bitOffset, bitSize, line, parentBitfield));
-            p->initialise(evaluator, offset, bitOffset, bitSize, line, parentBitfield);
-            return p;
-        }
-
-        static std::shared_ptr<PatternBitfieldFieldBoolean> create(const PatternBitfieldFieldBoolean &other) {
-            auto p = std::shared_ptr<PatternBitfieldFieldBoolean>(new PatternBitfieldFieldBoolean(other));
-            p->initialise(other);
-            return p;
-        }
+        using PatternBitfieldField::PatternBitfieldField;
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return create(*this);
+            return std::unique_ptr<Pattern>(new PatternBitfieldFieldBoolean(*this));
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
@@ -310,33 +214,8 @@ namespace pl::ptrn {
     };
 
     class PatternBitfieldFieldEnum : public PatternBitfieldField {
-    protected:
-        void initialise(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr) {
-            PatternBitfieldField::initialise(evaluator, offset, bitOffset, bitSize, line, parentBitfield);
-        }
-
-        void initialise(const PatternBitfieldFieldEnum &other) {
-            PatternBitfieldField::initialise(other);
-        }
-
-        PatternBitfieldFieldEnum(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr)
-            : PatternBitfieldField(evaluator, offset, bitOffset, bitSize, line, parentBitfield) {
-        }
-
-        PatternBitfieldFieldEnum(const PatternBitfieldFieldEnum &other) : PatternBitfieldField(other) { }
-    
     public:
-        static std::shared_ptr<PatternBitfieldFieldEnum> create(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr) {
-            auto p = std::shared_ptr<PatternBitfieldFieldEnum>(new PatternBitfieldFieldEnum(evaluator, offset, bitOffset, bitSize, line, parentBitfield));
-            p->initialise(evaluator, offset, bitOffset, bitSize, line, parentBitfield);
-            return p;
-        }
-
-        static std::shared_ptr<PatternBitfieldFieldEnum> create(const PatternBitfieldFieldEnum &other) {
-            auto p = std::shared_ptr<PatternBitfieldFieldEnum>(new PatternBitfieldFieldEnum(other));
-            p->initialise(other);
-            return p;
-        }
+        using PatternBitfieldField::PatternBitfieldField;
 
         [[nodiscard]] std::string getFormattedName() const override {
             return "enum " + Pattern::getTypeName();
@@ -366,7 +245,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return create(*this);
+            return std::unique_ptr<Pattern>(new PatternBitfieldFieldEnum(*this));
         }
 
         std::string formatDisplayValue() override {
@@ -387,15 +266,11 @@ namespace pl::ptrn {
     class PatternBitfieldArray : public PatternBitfieldMember,
                                  public IInlinable,
                                  public IIndexable {
-    protected:
-        void initialise(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize, u32 line) {
-            (void)firstBitOffset;
-            PatternBitfieldMember::initialise(evaluator, offset, size_t((totalBitSize + 7) / 8), line);
-        }
+    public:
+        PatternBitfieldArray(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize, u32 line)
+                : PatternBitfieldMember(evaluator, offset, size_t((totalBitSize + 7) / 8), line), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
 
-        void initialise(const PatternBitfieldArray &other) {
-            PatternBitfieldMember::initialise(other);
-
+        PatternBitfieldArray(const PatternBitfieldArray &other) : PatternBitfieldMember(other) {
             std::vector<std::shared_ptr<Pattern>> entries;
             for (const auto &entry : other.m_entries)
                 entries.push_back(entry->clone());
@@ -406,26 +281,8 @@ namespace pl::ptrn {
             this->m_totalBitSize = other.m_totalBitSize;
         }
 
-        PatternBitfieldArray(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize, u32 line)
-                : PatternBitfieldMember(evaluator, offset, size_t((totalBitSize + 7) / 8), line), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
-
-        PatternBitfieldArray(const PatternBitfieldArray &other) : PatternBitfieldMember(other) { }
-    
-    public:
-        static std::shared_ptr<PatternBitfieldArray> create(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize, u32 line) {
-            auto p = std::shared_ptr<PatternBitfieldArray>(new PatternBitfieldArray(evaluator, offset, firstBitOffset, totalBitSize, line));
-            p->initialise(evaluator, offset, firstBitOffset, totalBitSize, line);
-            return p;
-        }
-
-        static std::shared_ptr<PatternBitfieldArray> create(const PatternBitfieldArray &other) {
-            auto p = std::shared_ptr<PatternBitfieldArray>(new PatternBitfieldArray(other));
-            p->initialise(other);
-            return p;
-        }
-
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return create(*this);
+            return std::unique_ptr<Pattern>(new PatternBitfieldArray(*this));
         }
 
         [[nodiscard]] u8 getBitOffset() const override {
@@ -565,7 +422,7 @@ namespace pl::ptrn {
                 if (!entry->hasOverriddenColor())
                     entry->setBaseColor(this->getColor());
 
-                entry->setParent(this->reference());
+                entry->setParent(this);
 
                 this->m_sortedEntries.push_back(entry.get());
             }
@@ -684,15 +541,11 @@ namespace pl::ptrn {
     class PatternBitfield : public PatternBitfieldMember,
                             public IInlinable,
                             public IIterable {
-    protected:
-        void initialise(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize, u32 line) {
-            (void)firstBitOffset;
-            PatternBitfieldMember::initialise(evaluator, offset, size_t((totalBitSize + 7) / 8), line);
-        }
+    public:
+        PatternBitfield(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize, u32 line)
+                : PatternBitfieldMember(evaluator, offset, size_t((totalBitSize + 7) / 8), line), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
 
-        void initialise(const PatternBitfield &other) {
-            PatternBitfieldMember::initialise(other);
-
+        PatternBitfield(const PatternBitfield &other) : PatternBitfieldMember(other) {
             for (auto &field : other.m_fields)
                 this->m_fields.push_back(field->clone());
 
@@ -700,26 +553,8 @@ namespace pl::ptrn {
             this->m_totalBitSize = other.m_totalBitSize;
         }
 
-        PatternBitfield(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize, u32 line)
-                : PatternBitfieldMember(evaluator, offset, size_t((totalBitSize + 7) / 8), line), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
-
-        PatternBitfield(const PatternBitfield &other) : PatternBitfieldMember(other) { }
-
-    public:
-        static std::shared_ptr<PatternBitfield> create(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize, u32 line) {
-            auto p = std::shared_ptr<PatternBitfield>(new PatternBitfield(evaluator, offset, firstBitOffset, totalBitSize, line));
-            p->initialise(evaluator, offset, firstBitOffset, totalBitSize, line);
-            return p;
-        }
-
-        static std::shared_ptr<PatternBitfield> create(const PatternBitfield &other) {
-            auto p = std::shared_ptr<PatternBitfield>(new PatternBitfield(other));
-            p->initialise(other);
-            return p;
-        }
-
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return create(*this);
+            return std::unique_ptr<Pattern>(new PatternBitfield(*this));
         }
 
         [[nodiscard]] u8 getBitOffset() const override {
@@ -808,7 +643,7 @@ namespace pl::ptrn {
                 this->setBaseColor(this->m_fields.front()->getColor());
 
             for (const auto &field : this->m_fields) {
-                field->setParent(this->reference());
+                field->setParent(this);
                 this->m_sortedFields.push_back(field.get());
             }
         }

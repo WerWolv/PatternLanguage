@@ -5,33 +5,12 @@
 namespace pl::ptrn {
 
     class PatternSigned : public Pattern {
-    protected:
-        void initialise(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
-            Pattern::initialise(evaluator, offset, size, line);
-        }
-
-        void initialise(const PatternSigned &other) {
-            Pattern::initialise(other);
-        }
-
+    public:
         PatternSigned(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
 
-    public:
-        static std::shared_ptr<PatternSigned> create(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
-            auto p = std::shared_ptr<PatternSigned>(new PatternSigned(evaluator, offset, size, line));
-            p->initialise(evaluator, offset, size, line);
-            return p;
-        }
-
-        static std::shared_ptr<PatternSigned> create(const PatternSigned &other) {
-            auto p = std::shared_ptr<PatternSigned>(new PatternSigned(other));
-            p->initialise(other);
-            return p;
-        }
-
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return create(*this);
+            return std::unique_ptr<Pattern>(new PatternSigned(*this));
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {

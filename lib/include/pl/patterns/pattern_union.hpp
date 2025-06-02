@@ -13,15 +13,15 @@ namespace pl::ptrn {
 
         PatternUnion(const PatternUnion &other) : Pattern(other) {
             for (const auto &member : other.m_members) {
-                //auto copy = member->clone();
+                auto copy = member->clone();
 
-                this->m_sortedMembers.push_back(member.get());
-                this->m_members.push_back(member);
+                this->m_sortedMembers.push_back(copy.get());
+                this->m_members.push_back(std::move(copy));
             }
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::shared_ptr<Pattern>(new PatternUnion(*this));
+            return std::unique_ptr<Pattern>(new PatternUnion(*this));
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> getEntry(size_t index) const override {
@@ -35,7 +35,7 @@ namespace pl::ptrn {
         void addEntry(const std::shared_ptr<Pattern> &entry) override {
             if (entry == nullptr) return;
 
-            entry->setParent(this->reference());
+            entry->setParent(this);
             this->m_sortedMembers.push_back(entry.get());
             this->m_members.push_back(entry);
         }

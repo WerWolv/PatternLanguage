@@ -5,35 +5,12 @@
 namespace pl::ptrn {
 
     class PatternBoolean : public Pattern {
-    protected:
-        void initialise(core::Evaluator *evaluator, u64 offset, u32 line) {
-            Pattern::initialise(evaluator, offset, 1, line);
-        }
-
-        void initialise(const PatternBoolean &other) {
-            Pattern::initialise(other);
-        }
-
+    public:
         explicit PatternBoolean(core::Evaluator *evaluator, u64 offset, u32 line)
             : Pattern(evaluator, offset, 1, line) { }
 
-
-    public:
-        static std::shared_ptr<PatternBoolean> create(core::Evaluator *evaluator, u64 offset, u32 line) {
-            auto p = std::shared_ptr<PatternBoolean>(new PatternBoolean(evaluator, offset, line));
-            p->initialise(evaluator, offset, line);
-            return p;
-        }
-
-         static std::shared_ptr<PatternBoolean> create(const PatternBoolean &other) {
-            auto p = std::shared_ptr<PatternBoolean>(new PatternBoolean(other));
-            p->initialise(other);
-            return p;
-        }
-
-
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return create(*this);
+            return std::unique_ptr<Pattern>(new PatternBoolean(*this));
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {

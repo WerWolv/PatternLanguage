@@ -7,37 +7,16 @@ namespace pl::ptrn {
     class PatternArrayStatic : public Pattern,
                                public IInlinable,
                                public IIndexable {
-    protected:
-        void initialise(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
-            Pattern::initialise(evaluator, offset, size, line);
-        }
-
-        void initialise(const PatternArrayStatic &other) {
-            Pattern::initialise(other);
-
-            this->setEntries(other.getTemplate()->clone(), other.getEntryCount());
-        }
-
+    public:
         PatternArrayStatic(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
 
-        PatternArrayStatic(const PatternArrayStatic &other) : Pattern(other) { }
-
-    public:
-        static std::shared_ptr<PatternArrayStatic> create(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
-            auto p = std::shared_ptr<PatternArrayStatic>(new PatternArrayStatic(evaluator, offset, size, line));
-            p->initialise(evaluator, offset, size, line);
-            return p;
-        }
-
-        static std::shared_ptr<PatternArrayStatic> create(const PatternArrayStatic &other) {
-            auto p = std::shared_ptr<PatternArrayStatic>(new PatternArrayStatic(other));
-            p->initialise(other);
-            return p;
+        PatternArrayStatic(const PatternArrayStatic &other) : Pattern(other) {
+            this->setEntries(other.getTemplate()->clone(), other.getEntryCount());
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return create(*this);
+            return std::unique_ptr<Pattern>(new PatternArrayStatic(*this));
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> getEntry(size_t index) const override {
@@ -174,7 +153,7 @@ namespace pl::ptrn {
 
         void setEntries(std::shared_ptr<Pattern> &&templatePattern, size_t count) {
             this->m_template          = std::move(templatePattern);
-            this->m_template->setParent(this->reference());
+            this->m_template->setParent(this);
             this->m_highlightTemplates.push_back(this->m_template->clone());
             this->m_entryCount        = count;
 

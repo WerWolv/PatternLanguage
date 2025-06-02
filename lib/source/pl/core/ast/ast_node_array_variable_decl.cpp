@@ -218,13 +218,13 @@ namespace pl::core::ast {
         }
 
         if (std::dynamic_pointer_cast<ptrn::PatternPadding>(templatePattern)) {
-            outputPattern = ptrn::PatternPadding::create(evaluator, startOffset, 0, getLocation().line);
+            outputPattern = construct_shared_object<PatternPadding>(evaluator, startOffset, 0, getLocation().line);
         } else if (std::dynamic_pointer_cast<ptrn::PatternCharacter>(templatePattern)) {
-            outputPattern = ptrn::PatternString::create(evaluator, startOffset, 0, getLocation().line);
+            outputPattern = construct_shared_object<PatternString>(evaluator, startOffset, 0, getLocation().line);
         } else if (std::dynamic_pointer_cast<ptrn::PatternWideCharacter>(templatePattern)) {
             outputPattern = std::make_shared<ptrn::PatternWideString>(evaluator, startOffset, 0, getLocation().line);
         } else {
-            auto arrayPattern = ptrn::PatternArrayStatic::create(evaluator, startOffset, 0, getLocation().line);
+            auto arrayPattern = construct_shared_object<PatternArrayStatic>(evaluator, startOffset, 0, getLocation().line);
             arrayPattern->setEntries(templatePattern->clone(), size_t(entryCount));
             arrayPattern->setSection(templatePattern->getSection());
             outputPattern = std::move(arrayPattern);
@@ -256,7 +256,7 @@ namespace pl::core::ast {
         };
 
         evaluator->alignToByte();
-        auto arrayPattern = ptrn::PatternArrayDynamic::create(evaluator, evaluator->getReadOffset(), 0, getLocation().line);
+        auto arrayPattern = construct_shared_object<PatternArrayDynamic>(evaluator, evaluator->getReadOffset(), 0, getLocation().line);
         arrayPattern->setVariableName(this->m_name);
         arrayPattern->setSection(evaluator->getSectionId());
 

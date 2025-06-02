@@ -5,33 +5,11 @@
 namespace pl::ptrn {
 
     class PatternPadding : public Pattern {
-    protected:
-        void initialise(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
-            Pattern::initialise(evaluator, offset, size, line);
-        }
-
-        void initialise(const PatternPadding &other) {
-            Pattern::initialise(other);
-        }
-
-        PatternPadding(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
-            : Pattern(evaluator, offset, size, line) { }
-  
     public:
-        static std::shared_ptr<PatternPadding> create(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
-            auto p = std::shared_ptr<PatternPadding>(new PatternPadding(evaluator, offset, size, line));
-            p->initialise(evaluator, offset, size, line);
-            return p;
-        }
-
-        static std::shared_ptr<PatternPadding> create(const PatternPadding &other) {
-            auto p = std::shared_ptr<PatternPadding>(new PatternPadding(other));
-            p->initialise(other);
-            return p;
-        }
+        PatternPadding(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) : Pattern(evaluator, offset, size, line) { }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return create(*this);
+            return std::unique_ptr<Pattern>(new PatternPadding(*this));
         }
 
         [[nodiscard]] std::string getFormattedName() const override {

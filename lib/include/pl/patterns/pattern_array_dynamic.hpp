@@ -7,41 +7,20 @@ namespace pl::ptrn {
     class PatternArrayDynamic : public Pattern,
                                 public IInlinable,
                                 public IIndexable {
-    protected:
-        void initialise(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
-            Pattern::initialise(evaluator, offset, size, line);
-        }
-
-        void initialise(const PatternArrayDynamic &other) {
-            Pattern::initialise(other);
-
-            std::vector<std::shared_ptr<Pattern>> entries;
-            for (const auto &entry : other.m_entries)
-                entries.push_back(entry);
-
-            this->setEntries(entries);
-        }        
-
+    public:
         PatternArrayDynamic(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
 
-        PatternArrayDynamic(const PatternArrayDynamic &other) : Pattern(other) { }
+        PatternArrayDynamic(const PatternArrayDynamic &other) : Pattern(other) {
+            std::vector<std::shared_ptr<Pattern>> entries;
+            for (const auto &entry : other.m_entries)
+                entries.push_back(entry->clone());
 
-    public:
-        static std::shared_ptr<PatternArrayDynamic> create(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
-            auto p = std::shared_ptr<PatternArrayDynamic>(new PatternArrayDynamic(evaluator, offset, size, line));
-            p->initialise(evaluator, offset, size, line);
-            return p;
-        }
-
-        static std::shared_ptr<PatternArrayDynamic> create(const PatternArrayDynamic &other) {
-            auto p = std::shared_ptr<PatternArrayDynamic>(new PatternArrayDynamic(other));
-            p->initialise(other);
-            return p;
+            this->setEntries(entries);
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return create(*this);
+            return std::unique_ptr<Pattern>(new PatternArrayDynamic(*this));
         }
 
         void setColor(u32 color) override {
@@ -154,7 +133,7 @@ namespace pl::ptrn {
 
             if (!entry->hasOverriddenColor())
                 entry->setBaseColor(this->getColor());
-            entry->setParent(this->reference());
+            entry->setParent(this);
 
             this->m_entries.emplace_back(entry);
         }
