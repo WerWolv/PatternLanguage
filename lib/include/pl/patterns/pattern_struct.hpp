@@ -7,11 +7,14 @@ namespace pl::ptrn {
     class PatternStruct : public Pattern,
                           public IInlinable,
                           public IIterable {
-    public:
-        PatternStruct(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
-            : Pattern(evaluator, offset, size, line) { }
+    protected:
+        void initialise(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
+            Pattern::initialise(evaluator, offset, size, line);
+        }
 
-        PatternStruct(const PatternStruct &other) : Pattern(other) {
+        void initialise(const PatternStruct &other) {
+            Pattern::initialise(other);
+
             for (const auto &member : other.m_members) {
                 auto copy = member->clone();
 
@@ -21,8 +24,26 @@ namespace pl::ptrn {
             }
         }
 
-        [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::shared_ptr<Pattern>(new PatternStruct(*this));
+        PatternStruct(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
+            : Pattern(evaluator, offset, size, line) { }
+
+        PatternStruct(const PatternStruct &other) : Pattern(other) { }
+
+    public:
+        static std::shared_ptr<PatternStruct> create(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
+            auto p = std::shared_ptr<PatternStruct>(new PatternStruct(evaluator, offset, size, line));
+            p->initialise(evaluator, offset, size, line);
+            return p;
+        }
+
+        static std::shared_ptr<PatternStruct> create(const PatternStruct &other) {
+            auto p = std::shared_ptr<PatternStruct>(new PatternStruct(other));
+            p->initialise(other);
+            return p;
+        }
+
+           [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
+            return create(*this);
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> getEntry(size_t index) const override {

@@ -8,7 +8,6 @@ namespace pl::ptrn {
 
     class PatternString : public Pattern,
                           public IIndexable {
-
     protected:
         void initialise(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) {
             Pattern::initialise(evaluator, offset, size, line);
