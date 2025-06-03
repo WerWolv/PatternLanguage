@@ -41,7 +41,7 @@ namespace pl::test {
         [[nodiscard]] virtual std::string getSourceCode() const = 0;
 
         [[nodiscard]] virtual const std::vector<std::unique_ptr<ptrn::Pattern>> &getPatterns() const final { return this->m_patterns; }
-        virtual void addPattern(std::unique_ptr<ptrn::Pattern> &&pattern) final {
+        virtual void addPattern(std::shared_ptr<ptrn::Pattern> &&pattern) final {
             this->m_patterns.push_back(std::move(pattern));
         }
 
