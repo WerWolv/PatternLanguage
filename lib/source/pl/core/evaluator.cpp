@@ -352,7 +352,7 @@ namespace pl::core {
         }
     }
 
-    std::shared_ptr<pl::ptrn::Pattern> Evaluator>Variable(const std::string &name, const ast::ASTNodeTypeDecl *type, const std::optional<Token::Literal> &value, bool outVariable, bool reference, bool templateVariable, bool constant) {
+    std::shared_ptr<ptrn::Pattern> Evaluator::createVariable(const std::string &name, const ast::ASTNodeTypeDecl *type, const std::optional<Token::Literal> &value, bool outVariable, bool reference, bool templateVariable, bool constant) {
         auto startPos = this->getBitwiseReadOffset();
         ON_SCOPE_EXIT { this->setBitwiseReadOffset(startPos); };
 
