@@ -11,7 +11,9 @@ namespace pl::ptrn {
         PatternStruct(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
 
-        PatternStruct(const PatternStruct &other) : Pattern(other) {
+        PatternStruct(const PatternStruct &other) : Pattern(other) {}
+
+        void post_construct(const PatternStruct &other) {
             for (const auto &member : other.m_members) {
                 auto copy = member->clone();
 
@@ -22,7 +24,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternStruct(*this));
+            return construct_shared_object<PatternStruct>(*this);
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> getEntry(size_t index) const override {

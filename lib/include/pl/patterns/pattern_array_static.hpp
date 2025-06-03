@@ -11,12 +11,14 @@ namespace pl::ptrn {
         PatternArrayStatic(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
 
-        PatternArrayStatic(const PatternArrayStatic &other) : Pattern(other) {
+        PatternArrayStatic(const PatternArrayStatic &other) : Pattern(other) {}
+
+        void post_construct(const PatternArrayStatic &other) {
             this->setEntries(other.getTemplate()->clone(), other.getEntryCount());
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternArrayStatic(*this));
+            return construct_shared_object<PatternArrayStatic>(*this);
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> getEntry(size_t index) const override {

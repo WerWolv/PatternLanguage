@@ -55,6 +55,11 @@ namespace pl::ptrn {
     public:
         PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr)
                 : PatternBitfieldMember(evaluator, offset, (bitOffset + bitSize + 7) / 8, line), m_bitOffset(bitOffset % 8), m_bitSize(bitSize) {
+        (void)parentBitfield;
+        }
+
+        void post_construct(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr) {
+            (void)evaluator; (void)offset; (void)bitOffset; (void)bitSize; (void)line;
             this->setParent(parentBitfield);
         }
 
@@ -65,7 +70,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternBitfieldField(*this));
+            return construct_shared_object<PatternBitfieldField>(*this);
         }
 
         [[nodiscard]] u128 readValue() const {
@@ -162,7 +167,7 @@ namespace pl::ptrn {
         using PatternBitfieldField::PatternBitfieldField;
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternBitfieldFieldSigned(*this));
+            return construct_shared_object<PatternBitfieldFieldSigned>(*this);
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
@@ -186,7 +191,7 @@ namespace pl::ptrn {
         using PatternBitfieldField::PatternBitfieldField;
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternBitfieldFieldBoolean(*this));
+            return construct_shared_object<PatternBitfieldFieldBoolean>(*this);
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
@@ -245,7 +250,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternBitfieldFieldEnum(*this));
+            return construct_shared_object<PatternBitfieldFieldEnum>(*this);
         }
 
         std::string formatDisplayValue() override {
@@ -282,7 +287,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternBitfieldArray(*this));
+            return construct_shared_object<PatternBitfieldArray>(*this);
         }
 
         [[nodiscard]] u8 getBitOffset() const override {
@@ -554,7 +559,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternBitfield(*this));
+            return construct_shared_object<PatternBitfield>(*this);
         }
 
         [[nodiscard]] u8 getBitOffset() const override {

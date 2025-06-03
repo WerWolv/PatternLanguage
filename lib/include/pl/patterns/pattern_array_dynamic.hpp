@@ -11,7 +11,9 @@ namespace pl::ptrn {
         PatternArrayDynamic(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
 
-        PatternArrayDynamic(const PatternArrayDynamic &other) : Pattern(other) {
+        PatternArrayDynamic(const PatternArrayDynamic &other) : Pattern(other) {}
+
+        void post_construct(const PatternArrayDynamic &other) {
             std::vector<std::shared_ptr<Pattern>> entries;
             for (const auto &entry : other.m_entries)
                 entries.push_back(entry->clone());
@@ -20,7 +22,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternArrayDynamic(*this));
+            return construct_shared_object<PatternArrayDynamic>(*this);
         }
 
         void setColor(u32 color) override {
