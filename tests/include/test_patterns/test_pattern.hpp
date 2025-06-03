@@ -31,7 +31,7 @@ namespace pl::test {
 
         template<typename T>
         std::shared_ptr<T> create(const std::string &typeName, const std::string &varName, auto... args) {
-            auto pattern = create_shared_object<T>(m_evaluator, args...);
+            auto pattern = construct_shared_object<T>(m_evaluator, args...);
             pattern->setTypeName(typeName);
             pattern->setVariableName(varName);
 
