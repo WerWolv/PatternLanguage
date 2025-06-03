@@ -30,8 +30,8 @@ namespace pl::test {
         virtual ~TestPattern() = default;
 
         template<typename T>
-        std::unique_ptr<T> create(const std::string &typeName, const std::string &varName, auto... args) {
-            auto pattern = std::make_unique<T>(m_evaluator, args...);
+        std::shared_ptr<T> create(const std::string &typeName, const std::string &varName, auto... args) {
+            auto pattern = create_shared_object<T>(m_evaluator, args...);
             pattern->setTypeName(typeName);
             pattern->setVariableName(varName);
 
