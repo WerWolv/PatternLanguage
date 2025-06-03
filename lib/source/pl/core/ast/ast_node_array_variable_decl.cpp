@@ -222,7 +222,7 @@ namespace pl::core::ast {
         } else if (std::dynamic_pointer_cast<ptrn::PatternCharacter>(templatePattern)) {
             outputPattern = construct_shared_object<pl::ptrn::PatternString>(evaluator, startOffset, 0, getLocation().line);
         } else if (std::dynamic_pointer_cast<ptrn::PatternWideCharacter>(templatePattern)) {
-            outputPattern = std::make_shared<ptrn::PatternWideString>(evaluator, startOffset, 0, getLocation().line);
+            outputPattern = construct_shared_object<ptrn::PatternWideString>(evaluator, startOffset, 0, getLocation().line);
         } else {
             auto arrayPattern = construct_shared_object<pl::ptrn::PatternArrayStatic>(evaluator, startOffset, 0, getLocation().line);
             arrayPattern->setEntries(templatePattern->clone(), size_t(entryCount));

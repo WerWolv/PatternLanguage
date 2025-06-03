@@ -398,7 +398,7 @@ namespace pl::core {
             if (!value.has_value())
                 pattern = construct_shared_object<pl::ptrn::PatternPadding>(this, 0, 0, 0);
             else if (std::get_if<u128>(&value.value()) != nullptr)
-                pattern = std::make_shared<ptrn::PatternUnsigned>(this, 0, sizeof(u128), 0);
+                pattern = construct_shared_object<ptrn::PatternUnsigned>(this, 0, sizeof(u128), 0);
             else if (std::get_if<i128>(&value.value()) != nullptr)
                 pattern = construct_shared_object<pl::ptrn::PatternSigned>(this, 0, sizeof(i128), 0);
             else if (std::get_if<double>(&value.value()) != nullptr)
@@ -725,7 +725,7 @@ namespace pl::core {
 
             std::visit(wolv::util::overloaded {
                 [&](const u128 &value) {
-                    changePatternType(pattern, std::make_shared<ptrn::PatternUnsigned>(this, 0, 16, 0));
+                    changePatternType(pattern, construct_shared_object<ptrn::PatternUnsigned>(this, 0, 16, 0));
 
                     auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
                     copyToStorage(adjustedValue);

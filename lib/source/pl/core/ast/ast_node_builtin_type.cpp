@@ -25,7 +25,7 @@ namespace pl::core::ast {
 
         std::shared_ptr<ptrn::Pattern> pattern;
         if (Token::isUnsigned(this->m_type))
-            pattern = std::make_shared<ptrn::PatternUnsigned>(evaluator, offset, size, getLocation().line);
+            pattern = construct_shared_object<ptrn::PatternUnsigned>(evaluator, offset, size, getLocation().line);
         else if (Token::isSigned(this->m_type))
             pattern = construct_shared_object<pl::ptrn::PatternSigned>(evaluator, offset, size, getLocation().line);
         else if (Token::isFloatingPoint(this->m_type))
@@ -35,7 +35,7 @@ namespace pl::core::ast {
         else if (this->m_type == Token::ValueType::Character)
             pattern = construct_shared_object<pl::ptrn::PatternCharacter>(evaluator, offset, getLocation().line);
         else if (this->m_type == Token::ValueType::Character16)
-            pattern = std::make_shared<ptrn::PatternWideCharacter>(evaluator, offset, getLocation().line);
+            pattern = construct_shared_object<ptrn::PatternWideCharacter>(evaluator, offset, getLocation().line);
         else if (this->m_type == Token::ValueType::Padding)
             pattern = construct_shared_object<pl::ptrn::PatternPadding>(evaluator, offset, 1, getLocation().line);
         else if (this->m_type == Token::ValueType::String)
