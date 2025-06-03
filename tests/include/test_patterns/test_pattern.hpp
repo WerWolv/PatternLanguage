@@ -40,7 +40,7 @@ namespace pl::test {
 
         [[nodiscard]] virtual std::string getSourceCode() const = 0;
 
-        [[nodiscard]] virtual const std::vector<std::unique_ptr<ptrn::Pattern>> &getPatterns() const final { return this->m_patterns; }
+        [[nodiscard]] virtual const std::vector<std::shared_ptr<ptrn::Pattern>> &getPatterns() const final { return this->m_patterns; }
         virtual void addPattern(std::shared_ptr<ptrn::Pattern> &&pattern) final {
             this->m_patterns.push_back(std::move(pattern));
         }
@@ -60,7 +60,7 @@ namespace pl::test {
         }
 
     private:
-        std::vector<std::unique_ptr<ptrn::Pattern>> m_patterns;
+        std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;
         core::Evaluator *m_evaluator;
         Mode m_mode;
 
