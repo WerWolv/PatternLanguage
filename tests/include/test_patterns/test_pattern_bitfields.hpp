@@ -11,7 +11,7 @@ namespace pl::test {
         TestPatternBitfields(core::Evaluator *evaluator) : TestPattern(evaluator, "Bitfields") {
             auto testBitfield = create<PatternBitfield>("TestBitfield", "testBitfield", 0x25, 0, 2 + 3 + (4 * 8), 0);
 
-            std::vector<std::shared_ptr<Pattern>> bitfieldFields;
+            std::vector<std::shared_ptr<PatternBitfieldField >> bitfieldFields;
             {
                 bitfieldFields.push_back(create<PatternBitfieldField>("", "a", 0x25, 0, 2, 0, testBitfield->reference()));
                 bitfieldFields.push_back(create<PatternBitfieldField>("", "b", 0x25, 2, 3, 0, testBitfield->reference()));
