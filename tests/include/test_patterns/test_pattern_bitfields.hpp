@@ -11,7 +11,7 @@ namespace pl::test {
         TestPatternBitfields(core::Evaluator *evaluator) : TestPattern(evaluator, "Bitfields") {
             auto testBitfield = create<PatternBitfield>("TestBitfield", "testBitfield", 0x25, 0, 2 + 3 + (4 * 8), 0);
 
-            auto tbfRef = [&](){return std::static_pointer_cast<PatternBitfield>(testBitfield.reference());}
+            auto tbfRef = [&](){return std::static_pointer_cast<PatternBitfield>(testBitfield->reference());}
 
             std::vector<std::shared_ptr<Pattern>> bitfieldFields;
             {
