@@ -5,9 +5,11 @@
 namespace pl::ptrn {
 
     class PatternPadding : public Pattern {
-    public:
+        BEFRIEND_SHARED_OBJECT_CREATOR
+    protected:
         PatternPadding(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) : Pattern(evaluator, offset, size, line) { }
 
+    public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             return construct_shared_object<PatternPadding>(*this);
         }

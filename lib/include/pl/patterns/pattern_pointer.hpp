@@ -7,11 +7,13 @@ namespace pl::ptrn {
 
     class PatternPointer : public Pattern,
                            public IInlinable {
-    public:
+         BEFRIEND_SHARED_OBJECT_CREATOR
+    protected:
         PatternPointer(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line), m_pointedAt(nullptr), m_pointerType(nullptr) {
         }
 
+    public:
         PatternPointer(const PatternPointer &other) : Pattern(other) {
             this->m_pointedAt = std::shared_ptr(other.m_pointedAt->clone());
 

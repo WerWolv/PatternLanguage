@@ -7,7 +7,8 @@ namespace pl::ptrn {
     class PatternUnion : public Pattern,
                          public IInlinable,
                          public IIterable {
-    public:
+         BEFRIEND_SHARED_OBJECT_CREATOR
+    protected:
         PatternUnion(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
 
@@ -20,6 +21,7 @@ namespace pl::ptrn {
             }
         }
 
+    public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             return construct_shared_object<PatternUnion>(*this);
         }

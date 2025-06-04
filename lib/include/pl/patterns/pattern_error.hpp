@@ -5,10 +5,12 @@
 namespace pl::ptrn {
 
     class PatternError : public Pattern {
-    public:
+        BEFRIEND_SHARED_OBJECT_CREATOR
+    protected:
         PatternError(core::Evaluator *evaluator, u64 offset, size_t size, u32 line, std::string errorMessage)
             : Pattern(evaluator, offset, size, line), m_errorMessage(std::move(errorMessage)) { }
 
+    public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             return construct_shared_object<PatternError>(*this);
         }

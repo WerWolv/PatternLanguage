@@ -7,12 +7,14 @@ namespace pl::ptrn {
     class PatternStruct : public Pattern,
                           public IInlinable,
                           public IIterable {
-    public:
+         BEFRIEND_SHARED_OBJECT_CREATOR
+    protected:
         PatternStruct(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
 
         PatternStruct(const PatternStruct &other) : Pattern(other) {}
 
+    public:
         void post_construct(const PatternStruct &other) {
             for (const auto &member : other.m_members) {
                 auto copy = member->clone();

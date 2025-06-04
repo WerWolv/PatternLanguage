@@ -5,10 +5,12 @@
 namespace pl::ptrn {
 
     class PatternBoolean : public Pattern {
-    public:
+        BEFRIEND_SHARED_OBJECT_CREATOR
+    protected:
         explicit PatternBoolean(core::Evaluator *evaluator, u64 offset, u32 line)
             : Pattern(evaluator, offset, 1, line) { }
 
+    public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             return construct_shared_object<PatternBoolean>(*this);
         }

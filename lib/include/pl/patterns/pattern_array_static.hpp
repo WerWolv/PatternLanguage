@@ -7,12 +7,14 @@ namespace pl::ptrn {
     class PatternArrayStatic : public Pattern,
                                public IInlinable,
                                public IIndexable {
-    public:
+        BEFRIEND_SHARED_OBJECT_CREATOR
+    protected:
         PatternArrayStatic(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
 
         PatternArrayStatic(const PatternArrayStatic &other) : Pattern(other) {}
 
+    public:
         void post_construct(const PatternArrayStatic &other) {
             this->setEntries(other.getTemplate()->clone(), other.getEntryCount());
         }

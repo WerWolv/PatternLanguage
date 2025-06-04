@@ -7,12 +7,14 @@ namespace pl::ptrn {
     class PatternArrayDynamic : public Pattern,
                                 public IInlinable,
                                 public IIndexable {
-    public:
+        BEFRIEND_SHARED_OBJECT_CREATOR
+    protected:
         PatternArrayDynamic(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
 
         PatternArrayDynamic(const PatternArrayDynamic &other) : Pattern(other) {}
 
+    public:
         void post_construct(const PatternArrayDynamic &other) {
             std::vector<std::shared_ptr<Pattern>> entries;
             for (const auto &entry : other.m_entries)

@@ -8,10 +8,12 @@ namespace pl::ptrn {
 
     class PatternWideString : public Pattern,
                               public IIndexable {
-    public:
+         BEFRIEND_SHARED_OBJECT_CREATOR
+    protected:
         PatternWideString(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
 
+    public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             return construct_shared_object<PatternWideString>(*this); 
         }
