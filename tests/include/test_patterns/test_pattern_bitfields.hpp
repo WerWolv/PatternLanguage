@@ -9,7 +9,7 @@ namespace pl::test {
     template <typename T>
     std::shared_ptr<T> downcast_ref(std::shared_ptr<Pattern> pat)
     {
-        return std::static_pointer_cast<PatternBitfield>(pat->reference());
+        return std::dynamic_pointer_cast<PatternBitfield>(pat->reference());
     }
 
     class TestPatternBitfields : public TestPattern {
