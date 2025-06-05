@@ -8,7 +8,6 @@ namespace pl::ptrn {
 
     class PatternString : public Pattern,
                           public IIndexable {
-         BEFRIEND_SHARED_OBJECT_CREATOR
     protected:
         PatternString(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
@@ -104,6 +103,7 @@ namespace pl::ptrn {
             return result;
         }
 
+        BEFRIEND_SHARED_OBJECT_CREATOR
     };
 
 }

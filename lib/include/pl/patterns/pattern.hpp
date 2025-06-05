@@ -71,7 +71,6 @@ namespace pl::ptrn {
         constexpr static u64 PatternLocalSectionId  = 0xFFFF'FFFF'FFFF'FFFE;
         constexpr static u64 InstantiationSectionId = 0xFFFF'FFFF'FFFF'FFFD;
 
-        BEFRIEND_SHARED_OBJECT_CREATOR
     protected:
         Pattern(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : m_evaluator(evaluator), m_line(line), m_offset(offset), m_size(size) {
@@ -648,6 +647,8 @@ namespace pl::ptrn {
         bool m_initialized = false;
 
         bool m_manualColor = false;
+
+        BEFRIEND_SHARED_OBJECT_CREATOR
     };
 
 }

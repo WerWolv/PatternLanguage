@@ -5,7 +5,6 @@
 namespace pl::ptrn {
 
     class PatternError : public Pattern {
-        BEFRIEND_SHARED_OBJECT_CREATOR
     protected:
         PatternError(core::Evaluator *evaluator, u64 offset, size_t size, u32 line, std::string errorMessage)
             : Pattern(evaluator, offset, size, line), m_errorMessage(std::move(errorMessage)) { }
@@ -43,6 +42,8 @@ namespace pl::ptrn {
 
     private:
         std::string m_errorMessage;
+
+        BEFRIEND_SHARED_OBJECT_CREATOR
     };
 
 }

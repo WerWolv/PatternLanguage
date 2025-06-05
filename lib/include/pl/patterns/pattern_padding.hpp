@@ -5,7 +5,6 @@
 namespace pl::ptrn {
 
     class PatternPadding : public Pattern {
-        BEFRIEND_SHARED_OBJECT_CREATOR
     protected:
         PatternPadding(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) : Pattern(evaluator, offset, size, line) { }
 
@@ -46,6 +45,8 @@ namespace pl::ptrn {
         std::vector<u8> getRawBytes() override {
             return { };
         }
+
+        BEFRIEND_SHARED_OBJECT_CREATOR
     };
 
 }

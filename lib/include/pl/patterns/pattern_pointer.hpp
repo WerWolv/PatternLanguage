@@ -7,7 +7,6 @@ namespace pl::ptrn {
 
     class PatternPointer : public Pattern,
                            public IInlinable {
-         BEFRIEND_SHARED_OBJECT_CREATOR
     protected:
         PatternPointer(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line), m_pointedAt(nullptr), m_pointerType(nullptr) {
@@ -182,6 +181,8 @@ namespace pl::ptrn {
         std::shared_ptr<Pattern> m_pointerType;
         i128 m_pointedAtAddress = 0;
         u64 m_pointerBase = 0;
+
+        BEFRIEND_SHARED_OBJECT_CREATOR
     };
 
 }

@@ -5,7 +5,6 @@
 namespace pl::ptrn {
 
     class PatternUnsigned : public Pattern {
-         BEFRIEND_SHARED_OBJECT_CREATOR
     protected:
         PatternUnsigned(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
@@ -53,6 +52,8 @@ namespace pl::ptrn {
 
             return result;
         }
+
+        BEFRIEND_SHARED_OBJECT_CREATOR
     };
 
 }

@@ -7,7 +7,6 @@
 namespace pl::ptrn {
 
     class PatternWideCharacter : public Pattern {
-         BEFRIEND_SHARED_OBJECT_CREATOR
     protected:
         explicit PatternWideCharacter(core::Evaluator *evaluator, u64 offset, u32 line)
             : Pattern(evaluator, offset, 2, line) { }
@@ -57,6 +56,8 @@ namespace pl::ptrn {
 
             return result;
         }
+
+        BEFRIEND_SHARED_OBJECT_CREATOR
     };
 
 }

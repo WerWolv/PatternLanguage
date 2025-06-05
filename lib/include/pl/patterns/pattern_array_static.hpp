@@ -7,7 +7,6 @@ namespace pl::ptrn {
     class PatternArrayStatic : public Pattern,
                                public IInlinable,
                                public IIndexable {
-        BEFRIEND_SHARED_OBJECT_CREATOR
     protected:
         PatternArrayStatic(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
@@ -256,6 +255,8 @@ namespace pl::ptrn {
         std::shared_ptr<Pattern> m_template = nullptr;
         mutable std::vector<std::shared_ptr<Pattern>> m_highlightTemplates;
         size_t m_entryCount = 0;
+
+        BEFRIEND_SHARED_OBJECT_CREATOR
     };
 
 }

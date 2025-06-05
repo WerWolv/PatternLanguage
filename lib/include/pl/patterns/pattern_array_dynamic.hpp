@@ -7,7 +7,6 @@ namespace pl::ptrn {
     class PatternArrayDynamic : public Pattern,
                                 public IInlinable,
                                 public IIndexable {
-        BEFRIEND_SHARED_OBJECT_CREATOR
     protected:
         PatternArrayDynamic(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
@@ -241,6 +240,8 @@ namespace pl::ptrn {
 
     private:
         std::vector<std::shared_ptr<Pattern>> m_entries;
+
+        BEFRIEND_SHARED_OBJECT_CREATOR
     };
 
 }

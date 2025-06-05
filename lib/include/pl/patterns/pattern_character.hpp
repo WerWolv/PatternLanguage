@@ -5,7 +5,6 @@
 namespace pl::ptrn {
 
     class PatternCharacter : public Pattern {
-        BEFRIEND_SHARED_OBJECT_CREATOR
     protected:
         PatternCharacter(core::Evaluator *evaluator, u64 offset, u32 line)
             : Pattern(evaluator, offset, 1, line) { }
@@ -61,6 +60,8 @@ namespace pl::ptrn {
 
             return result;
         }
+
+        BEFRIEND_SHARED_OBJECT_CREATOR
     };
 
 }

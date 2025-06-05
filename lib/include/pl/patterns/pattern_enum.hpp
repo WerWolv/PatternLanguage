@@ -13,7 +13,6 @@ namespace pl::ptrn {
             [[nodiscard]] bool operator!=(const EnumValue &other) const = default;
         };
 
-        BEFRIEND_SHARED_OBJECT_CREATOR
     protected:
         PatternEnum(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
@@ -104,6 +103,8 @@ namespace pl::ptrn {
 
     private:
         std::map<std::string, EnumValue> m_enumValues;
+
+        BEFRIEND_SHARED_OBJECT_CREATOR
     };
 
 }

@@ -7,7 +7,6 @@ namespace pl::ptrn {
     class PatternStruct : public Pattern,
                           public IInlinable,
                           public IIterable {
-         BEFRIEND_SHARED_OBJECT_CREATOR
     protected:
         PatternStruct(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
@@ -233,6 +232,8 @@ namespace pl::ptrn {
     private:
         std::vector<std::shared_ptr<Pattern>> m_members;
         std::vector<Pattern *> m_sortedMembers;
+
+        BEFRIEND_SHARED_OBJECT_CREATOR
     };
 
 }

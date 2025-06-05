@@ -8,7 +8,6 @@ namespace pl::ptrn {
 
     class PatternWideString : public Pattern,
                               public IIndexable {
-         BEFRIEND_SHARED_OBJECT_CREATOR
     protected:
         PatternWideString(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
@@ -107,6 +106,8 @@ namespace pl::ptrn {
 
             return result;
         }
+
+        BEFRIEND_SHARED_OBJECT_CREATOR
     };
 
 }
