@@ -116,7 +116,13 @@ namespace pl::ptrn {
         }
 
         virtual std::shared_ptr<Pattern> clone() const = 0;
-        std::shared_ptr<Pattern> reference() { return shared_from_this(); }
+        std::shared_ptr<Pattern> reference() {
+            auto weakPtr = weak_from_this();
+            if (weakPtr.expired()) {
+                core::err::E0001.throwError("Cannot call shared_from_this if this is not shared.");
+            }
+            return shared_from_this();
+        }
 
         [[nodiscard]] u64 getOffset() const { return this->m_offset; }
         [[nodiscard]] virtual u128 getOffsetForSorting() const { return this->getOffset() << 3; }
@@ -537,15 +543,15 @@ namespace pl::ptrn {
             this->m_initialized = initialized;
         }
 
-        [[nodiscard]] const Pattern* getParent() const {
-            return m_parent;
+        [[nodiscard]] const std::shared_ptr<Pattern> getParent() const {
+            return m_parent.lock();
         }
 
-        [[nodiscard]] Pattern* getParent() {
-            return m_parent;
+        [[nodiscard]] std::shared_ptr<Pattern> getParent() {
+            return m_parent.lock();
         }
 
-        void setParent(Pattern *parent) {
+        void setParent(std::shared_ptr<Pattern> parent) {
             m_parent = parent;
         }
 
@@ -623,7 +629,7 @@ namespace pl::ptrn {
         core::Evaluator *m_evaluator;
 
         std::unique_ptr<std::map<std::string, std::vector<core::Token::Literal>>> m_attributes;
-        Pattern *m_parent = nullptr;
+        std::weak_ptr<Pattern> m_parent;
         u32 m_line = 0;
 
         std::set<std::string>::const_iterator m_variableName;

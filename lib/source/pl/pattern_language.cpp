@@ -518,11 +518,11 @@ namespace pl {
                 if (this->m_aborted)
                     return;
 
-                if (auto staticArray = dynamic_cast<ptrn::PatternArrayStatic*>(pattern.get()); staticArray != nullptr) {
+                if (auto staticArray = dynamic_pointer_cast<ptrn::PatternArrayStatic>(pattern); staticArray != nullptr) {
                     if (staticArray->getEntryCount() > 0 && staticArray->getEntry(0)->getChildren().empty()) {
                         const auto address = staticArray->getOffset();
                         const auto size = staticArray->getSize();
-                        sectionTree.insert({ address, address + size - 1 }, staticArray);
+                        sectionTree.insert({ address, address + size - 1 }, staticArray.get());
                         continue;
                     }
                 }
@@ -552,7 +552,7 @@ namespace pl {
             ptrn::Pattern* value = interval.value;
 
             auto parent = value->getParent();
-            while (parent != nullptr && dynamic_cast<const ptrn::PatternArrayStatic*>(parent->getParent()) == nullptr) {
+            while (parent != nullptr && dynamic_pointer_cast<const ptrn::PatternArrayStatic>(parent->getParent()) == nullptr) {
                 parent = parent->getParent();
             }
 

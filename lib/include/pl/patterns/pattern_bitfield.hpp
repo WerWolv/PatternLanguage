@@ -12,7 +12,7 @@ namespace pl::ptrn {
         [[nodiscard]] const PatternBitfieldMember& getTopmostBitfield() const {
             const PatternBitfieldMember* topBitfield = this;
             while (auto parent = topBitfield->getParent()) {
-                auto parentBitfield = dynamic_cast<const PatternBitfieldMember*>(parent);
+                auto parentBitfield = dynamic_cast<const PatternBitfieldMember*>(parent.get());
                 if (parentBitfield == nullptr)
                     break;
 
@@ -55,7 +55,8 @@ namespace pl::ptrn {
     public:
         PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, PatternBitfieldMember *parentBitfield = nullptr)
                 : PatternBitfieldMember(evaluator, offset, (bitOffset + bitSize + 7) / 8, line), m_bitOffset(bitOffset % 8), m_bitSize(bitSize) {
-            this->setParent(parentBitfield);
+            if (parentBitfield != nullptr)
+                this->setParent(parentBitfield->reference());
         }
 
         PatternBitfieldField(const PatternBitfieldField &other) : PatternBitfieldMember(other) {
@@ -65,7 +66,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternBitfieldField(*this));
+            return std::make_shared<PatternBitfieldField>(*this);
         }
 
         [[nodiscard]] u128 readValue() const {
@@ -162,7 +163,7 @@ namespace pl::ptrn {
         using PatternBitfieldField::PatternBitfieldField;
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternBitfieldFieldSigned(*this));
+            return std::make_shared<PatternBitfieldFieldSigned>(*this);
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
@@ -186,7 +187,7 @@ namespace pl::ptrn {
         using PatternBitfieldField::PatternBitfieldField;
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternBitfieldFieldBoolean(*this));
+            return std::make_shared<PatternBitfieldFieldBoolean>(*this);
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
@@ -245,7 +246,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternBitfieldFieldEnum(*this));
+            return std::make_shared<PatternBitfieldFieldEnum>(*this);
         }
 
         std::string formatDisplayValue() override {
@@ -282,7 +283,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternBitfieldArray(*this));
+            return std::make_shared<PatternBitfieldArray>(*this);
         }
 
         [[nodiscard]] u8 getBitOffset() const override {
@@ -422,7 +423,7 @@ namespace pl::ptrn {
                 if (!entry->hasOverriddenColor())
                     entry->setBaseColor(this->getColor());
 
-                entry->setParent(this);
+                entry->setParent(reference());
 
                 this->m_sortedEntries.push_back(entry.get());
             }
@@ -554,7 +555,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternBitfield(*this));
+            return std::make_shared<PatternBitfield>(*this);
         }
 
         [[nodiscard]] u8 getBitOffset() const override {
@@ -643,7 +644,7 @@ namespace pl::ptrn {
                 this->setBaseColor(this->m_fields.front()->getColor());
 
             for (const auto &field : this->m_fields) {
-                field->setParent(this);
+                field->setParent(reference());
                 this->m_sortedFields.push_back(field.get());
             }
         }
