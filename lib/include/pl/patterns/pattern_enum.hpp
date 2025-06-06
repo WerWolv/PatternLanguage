@@ -104,7 +104,7 @@ namespace pl::ptrn {
     private:
         std::map<std::string, EnumValue> m_enumValues;
 
-        BEFRIEND_SHARED_OBJECT_CREATOR
+        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternEnum)
     };
 
 }

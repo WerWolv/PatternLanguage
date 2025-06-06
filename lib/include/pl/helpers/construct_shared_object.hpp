@@ -36,51 +36,78 @@ instantiation.
 #include <memory>
 #include <utility>
 
-#define BEFRIEND_SHARED_OBJECT_CREATOR \
- template <typename T, typename... Args> \
- friend std::shared_ptr<T> shared_object_creator::impl::shared_ptr_creator(Args&&... args);
+#define BEFRIEND_CONSTRUCT_SHARED_OBJECT(T) friend struct safe_enable_shared_from_this::Allocator<T>;
 
 namespace shared_object_creator {
 
-    namespace impl {
+/*
+safe_enable_shared_from_this was found here:
+ https://stackoverflow.com/questions/8147027/how-do-i-call-stdmake-shared-on-a-class-with-only-protected-or-private-const
 
-        /*
-        shared_ptr_creator is responsible for actually creating the std::shared_ptr.
-        As described in this header's opening comment, it decides whether to use
-        std::make_shared's or std::shared_ptr's constructor and new based on the
-        accessibility the the class' constructor. If you wish to make the constructors
-        non-public make this a friend. The BEFRIEND_SHARED_OBJECT_CREATOR macro can be
-        used to do this tersely.
-        */
+Posted by stackoverflow member Carsten.
+He adapted old code from stackoverflow member Zsolt Rizsányi,
+who in turn says it was invented by Jonathan Wakely (GCC developer).
 
-        template <typename T, typename... Args>
-            requires std::constructible_from<T, Args...>
-        std::shared_ptr<T> shared_ptr_creator(Args&&... args) {
-            return std::make_shared<T>(std::forward<Args>(args)...);
-        }
+The only modification I have made is to enable copy-construction.
 
-        template <typename T, typename... Args>
-        std::shared_ptr<T> shared_ptr_creator(Args&&... args) {
-            return std::shared_ptr<T>(new T(std::forward<Args>(args)...));
-        }
+C++23
+*/
+class safe_enable_shared_from_this : public std::enable_shared_from_this<safe_enable_shared_from_this> {
+protected:
+	safe_enable_shared_from_this() noexcept = default;
+	safe_enable_shared_from_this(safe_enable_shared_from_this&&) noexcept = default;
+	safe_enable_shared_from_this(const safe_enable_shared_from_this&) noexcept = default;
+	safe_enable_shared_from_this& operator=(safe_enable_shared_from_this&&) noexcept = default;
+	safe_enable_shared_from_this& operator=(const safe_enable_shared_from_this&) noexcept = delete;
 
-    } // namespace impl
+public:
+	virtual ~safe_enable_shared_from_this() noexcept = default;
 
-    // The actual creation functions.
-
-    template<typename T, typename... Args>
-        requires requires(T t, Args&&... args) {
-            t.post_construct(std::forward<Args>(args)...);
+protected:
+    template <typename T>
+    struct Allocator : public std::allocator<T>
+    {  
+        template<typename TParent, typename... TArgs>
+        void construct(TParent* parent, TArgs&&... args)
+        { ::new((void *)parent) TParent(std::forward<TArgs>(args)...); }
+    };
+    
+public:
+    template <typename T, typename... TArgs>
+    static inline auto create(TArgs&&... args) -> ::std::shared_ptr<T> {
+        return std::allocate_shared<T>(Allocator<T>{}, std::forward<TArgs>(args)...);
     }
-    std::shared_ptr<T> construct_shared_object(Args&&... args) {
-        auto p = impl::shared_ptr_creator<T>(std::forward<Args>(args)...);
-        p->post_construct(std::forward<Args>(args)...);
-        return p;
-    }
 
-    template<typename T, typename... Args>
-    std::shared_ptr<T> construct_shared_object(Args&&... args) {
-        return impl::shared_ptr_creator<T>(std::forward<Args>(args)...);
-    }
+	template <typename TSelf>
+	auto inline shared_from_this(this TSelf&& self) noexcept
+	{
+		return std::static_pointer_cast<std::remove_reference_t<TSelf>>(
+			std::forward<TSelf>(self).std::template enable_shared_from_this<safe_enable_shared_from_this>::shared_from_this());
+	}
+	
+	template <typename TSelf>
+	auto inline weak_from_this(this TSelf&& self) noexcept -> ::std::weak_ptr<std::remove_reference_t<TSelf>>
+	{
+		return std::static_pointer_cast<std::remove_reference_t<TSelf>>(
+			std::forward<TSelf>(self).std::template enable_shared_from_this<safe_enable_shared_from_this>::weak_from_this().lock());
+	}
+};
+
+// The actual creation functions.
+
+template<typename T, typename... Args>
+    requires requires(T t, Args&&... args) {
+        t.post_construct(std::forward<Args>(args)...);
+}
+std::shared_ptr<T> construct_shared_object(Args&&... args) {
+    auto p = safe_enable_shared_from_this::create<T>(std::forward<Args>(args)...);
+    p->post_construct(std::forward<Args>(args)...);
+    return p;
+}
+
+template<typename T, typename... Args>
+std::shared_ptr<T> construct_shared_object(Args&&... args) {
+    return safe_enable_shared_from_this::create<T>(std::forward<Args>(args)...);
+}
 
 } // namespace shared_object_creator

@@ -241,7 +241,7 @@ namespace pl::ptrn {
     private:
         std::vector<std::shared_ptr<Pattern>> m_entries;
 
-        BEFRIEND_SHARED_OBJECT_CREATOR
+        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternArrayDynamic)
     };
 
 }

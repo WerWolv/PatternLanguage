@@ -223,7 +223,7 @@ namespace pl::ptrn {
         std::vector<std::shared_ptr<Pattern>> m_members;
         std::vector<Pattern *> m_sortedMembers;
 
-        BEFRIEND_SHARED_OBJECT_CREATOR
+        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternUnion)
     };
 
 }

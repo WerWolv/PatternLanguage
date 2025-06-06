@@ -51,7 +51,7 @@ namespace pl::ptrn {
             return { };
         }
 
-         BEFRIEND_SHARED_OBJECT_CREATOR 
+         BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternBitfieldMember)
     };
 
     class PatternBitfieldField : public PatternBitfieldMember {
@@ -165,7 +165,7 @@ namespace pl::ptrn {
 
         bool m_padding = false;
 
-        BEFRIEND_SHARED_OBJECT_CREATOR
+        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternBitfieldField)
     };
 
     class PatternBitfieldFieldSigned : public PatternBitfieldField {
@@ -192,7 +192,7 @@ namespace pl::ptrn {
             return Pattern::callUserFormatFunc(this->getValue(), true).value_or(result);
         }
 
-        BEFRIEND_SHARED_OBJECT_CREATOR
+        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternBitfieldFieldSigned)
     };
 
     class PatternBitfieldFieldBoolean : public PatternBitfieldField {
@@ -227,7 +227,7 @@ namespace pl::ptrn {
             return Pattern::callUserFormatFunc(value, true).value_or(fmt::format("{}", value.toBoolean() ? "true" : "false"));
         }
 
-        BEFRIEND_SHARED_OBJECT_CREATOR
+        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternBitfieldFieldBoolean)
     };
 
     class PatternBitfieldFieldEnum : public PatternBitfieldField {
@@ -280,7 +280,7 @@ namespace pl::ptrn {
     private:
         std::map<std::string, PatternEnum::EnumValue> m_enumValues;
 
-        BEFRIEND_SHARED_OBJECT_CREATOR
+        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternBitfieldFieldEnum)
     };
 
     class PatternBitfieldArray : public PatternBitfieldMember,
@@ -558,12 +558,12 @@ namespace pl::ptrn {
         u128 m_totalBitSize = 0;
         bool m_reversed = false;
 
-        BEFRIEND_SHARED_OBJECT_CREATOR
+        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternBitfieldArray)
     };
 
-    class PatternBitfield : public PatternBitfieldMember,
-                            public IInlinable,
-                            public IIterable {
+class PatternBitfield : public PatternBitfieldMember,
+                        public IInlinable,
+                        public IIterable {
     protected:
         PatternBitfield(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize, u32 line)
                 : PatternBitfieldMember(evaluator, offset, size_t((totalBitSize + 7) / 8), line), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
@@ -843,7 +843,7 @@ namespace pl::ptrn {
         u64 m_totalBitSize = 0;
         bool m_reversed = false;
 
-        BEFRIEND_SHARED_OBJECT_CREATOR
+        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternBitfield)
     };
 
 }
