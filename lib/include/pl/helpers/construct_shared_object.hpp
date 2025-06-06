@@ -50,6 +50,15 @@ namespace shared_object_creator {
 // C++23
 
 class safe_enable_shared_from_this : public std::enable_shared_from_this<safe_enable_shared_from_this> {
+    template<typename T, typename... Args>
+        requires requires(T t, Args&&... args) {
+          t.post_construct(std::forward<Args>(args)...);
+    }
+    friend std::shared_ptr<T> construct_shared_object(Args&&... args);
+
+    template<typename T, typename... Args>
+    friend std::shared_ptr<T> construct_shared_object(Args&&... args);
+    
 protected:
 	safe_enable_shared_from_this() noexcept = default;
 	safe_enable_shared_from_this(safe_enable_shared_from_this&&) noexcept = default;
@@ -69,7 +78,7 @@ protected:
         { ::new((void *)parent) TParent(std::forward<TArgs>(args)...); }
     };
     
-public:
+//public:
     template <typename T, typename... TArgs>
     static inline auto create(TArgs&&... args) -> std::shared_ptr<T> {
         return std::allocate_shared<T>(Allocator<T>{}, std::forward<TArgs>(args)...);
@@ -110,7 +119,5 @@ std::shared_ptr<T> construct_shared_object(Args&&... args) {
 
 } // namespace shared_object_creator
 
-#define BEFRIEND_CONSTRUCT_SHARED_OBJECT(T)                             \
-    friend struct shared_object_creator::safe_enable_shared_from_this::Allocator<T>; \
-    template<typename T, typename... Args> \
-    friend std::shared_ptr<T> shared_object_creator::construct_shared_object(Args&&... args);
+#define BEFRIEND_CONSTRUCT_SHARED_OBJECT(T) \
+    friend struct shared_object_creator::safe_enable_shared_from_this::Allocator<T>;
