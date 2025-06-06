@@ -36,22 +36,19 @@ instantiation.
 #include <memory>
 #include <utility>
 
-#define BEFRIEND_CONSTRUCT_SHARED_OBJECT(T) friend struct safe_enable_shared_from_this::Allocator<T>;
-
 namespace shared_object_creator {
 
-/*
-safe_enable_shared_from_this was found here:
- https://stackoverflow.com/questions/8147027/how-do-i-call-stdmake-shared-on-a-class-with-only-protected-or-private-const
+// safe_enable_shared_from_this was found here:
+//  https://stackoverflow.com/questions/8147027/how-do-i-call-stdmake-shared-on-a-class-with-only-protected-or-private-const
+// 
+// Posted by stackoverflow member Carsten.
+// He adapted old code from stackoverflow member Zsolt Rizsányi,
+// who in turn says it was invented by Jonathan Wakely (GCC developer).
+// 
+// The only modification I have made is to enable copy-construction.
+// 
+// C++23
 
-Posted by stackoverflow member Carsten.
-He adapted old code from stackoverflow member Zsolt Rizsányi,
-who in turn says it was invented by Jonathan Wakely (GCC developer).
-
-The only modification I have made is to enable copy-construction.
-
-C++23
-*/
 class safe_enable_shared_from_this : public std::enable_shared_from_this<safe_enable_shared_from_this> {
 protected:
 	safe_enable_shared_from_this() noexcept = default;
@@ -74,10 +71,11 @@ protected:
     
 public:
     template <typename T, typename... TArgs>
-    static inline auto create(TArgs&&... args) -> ::std::shared_ptr<T> {
+    static inline auto create(TArgs&&... args) -> std::shared_ptr<T> {
         return std::allocate_shared<T>(Allocator<T>{}, std::forward<TArgs>(args)...);
     }
 
+public:
 	template <typename TSelf>
 	auto inline shared_from_this(this TSelf&& self) noexcept
 	{
@@ -98,7 +96,7 @@ public:
 template<typename T, typename... Args>
     requires requires(T t, Args&&... args) {
         t.post_construct(std::forward<Args>(args)...);
-}
+    }
 std::shared_ptr<T> construct_shared_object(Args&&... args) {
     auto p = safe_enable_shared_from_this::create<T>(std::forward<Args>(args)...);
     p->post_construct(std::forward<Args>(args)...);
@@ -111,3 +109,8 @@ std::shared_ptr<T> construct_shared_object(Args&&... args) {
 }
 
 } // namespace shared_object_creator
+
+#define BEFRIEND_CONSTRUCT_SHARED_OBJECT(T)                             \
+    friend struct shared_object_creator::safe_enable_shared_from_this::Allocator<T>; \
+    template<typename T, typename... Args> \
+    friend std::shared_ptr<T> shared_object_creator::construct_shared_object(Args&&... args);
