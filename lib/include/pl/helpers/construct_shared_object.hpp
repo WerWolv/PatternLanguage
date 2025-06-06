@@ -50,6 +50,7 @@ namespace shared_object_creator {
 // C++23
 
 class safe_enable_shared_from_this : public std::enable_shared_from_this<safe_enable_shared_from_this> {
+    // Our friends. Somewhat verbose...
     template<typename T, typename... Args>
         requires requires(T t, Args&&... args) {
           t.post_construct(std::forward<Args>(args)...);
@@ -58,34 +59,11 @@ class safe_enable_shared_from_this : public std::enable_shared_from_this<safe_en
 
     template<typename T, typename... Args>
     friend std::shared_ptr<T> construct_shared_object(Args&&... args);
-    
-protected:
-	safe_enable_shared_from_this() noexcept = default;
-	safe_enable_shared_from_this(safe_enable_shared_from_this&&) noexcept = default;
-	safe_enable_shared_from_this(const safe_enable_shared_from_this&) noexcept = default;
-	safe_enable_shared_from_this& operator=(safe_enable_shared_from_this&&) noexcept = default;
-	safe_enable_shared_from_this& operator=(const safe_enable_shared_from_this&) noexcept = delete;
 
 public:
 	virtual ~safe_enable_shared_from_this() noexcept = default;
 
-protected:
-    template <typename T>
-    struct Allocator : public std::allocator<T>
-    {  
-        template<typename TParent, typename... TArgs>
-        void construct(TParent* parent, TArgs&&... args)
-        { ::new((void *)parent) TParent(std::forward<TArgs>(args)...); }
-    };
-    
-//public:
-    template <typename T, typename... TArgs>
-    static inline auto create(TArgs&&... args) -> std::shared_ptr<T> {
-        return std::allocate_shared<T>(Allocator<T>{}, std::forward<TArgs>(args)...);
-    }
-
-public:
-	template <typename TSelf>
+    template <typename TSelf>
 	auto inline shared_from_this(this TSelf&& self) noexcept
 	{
 		return std::static_pointer_cast<std::remove_reference_t<TSelf>>(
@@ -98,6 +76,27 @@ public:
 		return std::static_pointer_cast<std::remove_reference_t<TSelf>>(
 			std::forward<TSelf>(self).std::template enable_shared_from_this<safe_enable_shared_from_this>::weak_from_this().lock());
 	}
+
+protected:
+	safe_enable_shared_from_this() noexcept = default;
+	safe_enable_shared_from_this(safe_enable_shared_from_this&&) noexcept = default;
+	safe_enable_shared_from_this(const safe_enable_shared_from_this&) noexcept = default;
+	safe_enable_shared_from_this& operator=(safe_enable_shared_from_this&&) noexcept = default;
+	safe_enable_shared_from_this& operator=(const safe_enable_shared_from_this&) noexcept = delete;
+
+    template <typename T>
+    struct Allocator : public std::allocator<T>
+    {  
+        template<typename TParent, typename... TArgs>
+        void construct(TParent* parent, TArgs&&... args)
+        { ::new((void *)parent) TParent(std::forward<TArgs>(args)...); }
+    };
+    
+private:
+    template <typename T, typename... TArgs>
+    static inline auto create(TArgs&&... args) -> std::shared_ptr<T> {
+        return std::allocate_shared<T>(Allocator<T>{}, std::forward<TArgs>(args)...);
+    }
 };
 
 // The actual creation functions.
