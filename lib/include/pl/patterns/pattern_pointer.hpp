@@ -12,7 +12,6 @@ namespace pl::ptrn {
             : Pattern(evaluator, offset, size, line), m_pointedAt(nullptr), m_pointerType(nullptr) {
         }
 
-    public:
         PatternPointer(const PatternPointer &other) : Pattern(other) {
             this->m_pointedAt = std::shared_ptr(other.m_pointedAt->clone());
 
@@ -21,6 +20,7 @@ namespace pl::ptrn {
             }
         }
 
+    public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             return construct_shared_object<PatternPointer>(*this);
         }

@@ -8,12 +8,12 @@ namespace pl::ptrn {
     protected:
         PatternCharacter(core::Evaluator *evaluator, u64 offset, u32 line)
             : Pattern(evaluator, offset, 1, line) { }
-
+    
+    public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             return construct_shared_object<PatternCharacter>(*this);
         }
-    
-    public:
+
         [[nodiscard]] core::Token::Literal getValue() const override {
             char character = '\x00';
             this->getEvaluator()->readData(this->getOffset(), &character, 1, this->getSection());

@@ -58,7 +58,7 @@ namespace pl::ptrn {
     protected:
         PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr)
                 : PatternBitfieldMember(evaluator, offset, (bitOffset + bitSize + 7) / 8, line), m_bitOffset(bitOffset % 8), m_bitSize(bitSize) {
-        (void)parentBitfield;
+            this->setParent(parentBitfield);
         }
 
         PatternBitfieldField(const PatternBitfieldField &other) : PatternBitfieldMember(other) {
@@ -68,11 +68,6 @@ namespace pl::ptrn {
         }
 
     public:
-        void post_construct(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr) {
-            (void)evaluator; (void)offset; (void)bitOffset; (void)bitSize; (void)line;
-            this->setParent(parentBitfield);
-        }
-
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             return construct_shared_object<PatternBitfieldField>(*this);
         }

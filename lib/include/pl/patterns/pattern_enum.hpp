@@ -17,11 +17,11 @@ namespace pl::ptrn {
         PatternEnum(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
 
+    public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             return construct_shared_object<PatternEnum>(*this);
         }
 
-    public:    
         [[nodiscard]] core::Token::Literal getValue() const override {
             u128 value = 0;
             this->getEvaluator()->readData(this->getOffset(), &value, this->getSize(), this->getSection());
