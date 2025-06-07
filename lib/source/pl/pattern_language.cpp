@@ -552,7 +552,7 @@ namespace pl {
             ptrn::Pattern* value = interval.value;
 
             auto parent = value->getParent();
-            while (parent != nullptr && dynamic_cast<const ptrn::PatternArrayStatic*>(parent->getParent()) == nullptr) {
+            while (parent != nullptr && std::dynamic_pointer_cast<const ptrn::PatternArrayStatic>(parent->getParent()) == nullptr) {
                 parent = parent->getParent();
             }
 

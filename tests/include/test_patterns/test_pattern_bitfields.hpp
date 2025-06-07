@@ -6,6 +6,12 @@
 
 namespace pl::test {
 
+    template <typename T>
+    std::shared_ptr<T> downcast_ref(std::shared_ptr<Pattern> pat)
+    {
+        return std::dynamic_pointer_cast<PatternBitfield>(pat->reference());
+    }
+
     class TestPatternBitfields : public TestPattern {
     public:
         TestPatternBitfields(core::Evaluator *evaluator) : TestPattern(evaluator, "Bitfields") {
@@ -13,22 +19,22 @@ namespace pl::test {
 
             std::vector<std::shared_ptr<Pattern>> bitfieldFields;
             {
-                bitfieldFields.push_back(create<PatternBitfieldField>("", "a", 0x25, 0, 2, 0, testBitfield.get()));
-                bitfieldFields.push_back(create<PatternBitfieldField>("", "b", 0x25, 2, 3, 0, testBitfield.get()));
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "a", 0x25, 0, 2, 0, downcast_ref<PatternBitfield>(testBitfield)));
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "b", 0x25, 2, 3, 0, downcast_ref<PatternBitfield>(testBitfield)));
 
                 auto nestedBitfield = create<PatternBitfield>("NestedBitfield", "c", 0x25, 5, 4 * 2, 0);
                 std::vector<std::shared_ptr<Pattern>> nestedFields;
                 {
-                    nestedFields.push_back(create<PatternBitfieldField>("", "nestedA", 0x25, 5, 4, 0, testBitfield.get()));
-                    nestedFields.push_back(create<PatternBitfieldField>("", "nestedB", 0x26, 1, 4, 0, testBitfield.get()));
+                    nestedFields.push_back(create<PatternBitfieldField>("", "nestedA", 0x25, 5, 4, 0, downcast_ref<PatternBitfield>(testBitfield)));
+                    nestedFields.push_back(create<PatternBitfieldField>("", "nestedB", 0x26, 1, 4, 0, downcast_ref<PatternBitfield>(testBitfield)));
                 }
-                nestedBitfield->setParent(testBitfield.get());
+                nestedBitfield->setParent(downcast_ref<PatternBitfield>(testBitfield));
                 nestedBitfield->setFields(std::move(nestedFields));
                 nestedBitfield->setEndian(std::endian::big);
                 bitfieldFields.push_back(std::move(nestedBitfield));
 
-                bitfieldFields.push_back(create<PatternBitfieldField>("", "d", 0x26, 5, 4, 0, testBitfield.get()));
-                bitfieldFields.push_back(create<PatternBitfieldField>("", "e", 0x27, 1, 4, 0, testBitfield.get()));
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "d", 0x26, 5, 4, 0, downcast_ref<PatternBitfield>(testBitfield)));
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "e", 0x27, 1, 4, 0, downcast_ref<PatternBitfield>(testBitfield)));
 
                 auto array = create<PatternBitfieldArray>("NestedBitfield", "f", 0x27, 5, 4 * 4, 0);
                 std::vector<std::shared_ptr<Pattern>> arrayEntries;
@@ -36,10 +42,10 @@ namespace pl::test {
                     auto array0Bitfield = create<PatternBitfield>("NestedBitfield", "[0]", 0x27, 5, 4 * 2, 0);
                     std::vector<std::shared_ptr<Pattern>> array0Fields;
                     {
-                        array0Fields.push_back(create<PatternBitfieldField>("", "nestedA", 0x27, 5, 4, 0, array0Bitfield.get()));
-                        array0Fields.push_back(create<PatternBitfieldField>("", "nestedB", 0x28, 1, 4, 0, array0Bitfield.get()));
+                        array0Fields.push_back(create<PatternBitfieldField>("", "nestedA", 0x27, 5, 4, 0, downcast_ref<PatternBitfield>(array0Bitfield)));
+                        array0Fields.push_back(create<PatternBitfieldField>("", "nestedB", 0x28, 1, 4, 0, downcast_ref<PatternBitfield>(array0Bitfield)));
                     }
-                    array0Bitfield->setParent(array.get());
+                    array0Bitfield->setParent(array->reference());
                     array0Bitfield->setFields(std::move(array0Fields));
                     array0Bitfield->setEndian(std::endian::big);
                     arrayEntries.push_back(std::move(array0Bitfield));
@@ -47,15 +53,15 @@ namespace pl::test {
                     auto array1Bitfield = create<PatternBitfield>("NestedBitfield", "[1]", 0x28, 5, 4 * 2, 0);
                     std::vector<std::shared_ptr<Pattern>> array1Fields;
                     {
-                        array1Fields.push_back(create<PatternBitfieldField>("", "nestedA", 0x28, 5, 4, 0, array1Bitfield.get()));
-                        array1Fields.push_back(create<PatternBitfieldField>("", "nestedB", 0x29, 1, 4, 0, array1Bitfield.get()));
+                        array1Fields.push_back(create<PatternBitfieldField>("", "nestedA", 0x28, 5, 4, 0, downcast_ref<PatternBitfield>(array1Bitfield)));
+                        array1Fields.push_back(create<PatternBitfieldField>("", "nestedB", 0x29, 1, 4, 0, downcast_ref<PatternBitfield>(array1Bitfield)));
                     }
-                    array1Bitfield->setParent(array.get());
+                    array1Bitfield->setParent(array->reference());
                     array1Bitfield->setFields(std::move(array1Fields));
                     array1Bitfield->setEndian(std::endian::big);
                     arrayEntries.push_back(std::move(array1Bitfield));
                 }
-                array->setParent(testBitfield.get());
+                array->setParent(downcast_ref<PatternBitfield>(testBitfield));
                 array->setEntries(arrayEntries);
                 array->setEndian(std::endian::big);
                 bitfieldFields.push_back(std::move(array));
@@ -107,14 +113,14 @@ namespace pl::test {
 
             std::vector<std::shared_ptr<Pattern>> bitfieldFields;
             {
-                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag0", 0x03, 7, 1, 0, testBitfield.get()));
-                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag1", 0x03, 6, 1, 0, testBitfield.get()));
-                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag2", 0x03, 5, 1, 0, testBitfield.get()));
-                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag3", 0x03, 4, 1, 0, testBitfield.get()));
-                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag4", 0x03, 3, 1, 0, testBitfield.get()));
-                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag5", 0x03, 2, 1, 0, testBitfield.get()));
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag0", 0x03, 7, 1, 0, downcast_ref<PatternBitfield>(testBitfield)));
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag1", 0x03, 6, 1, 0, downcast_ref<PatternBitfield>(testBitfield)));
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag2", 0x03, 5, 1, 0, downcast_ref<PatternBitfield>(testBitfield)));
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag3", 0x03, 4, 1, 0, downcast_ref<PatternBitfield>(testBitfield)));
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag4", 0x03, 3, 1, 0, downcast_ref<PatternBitfield>(testBitfield)));
+                bitfieldFields.push_back(create<PatternBitfieldField>("", "flag5", 0x03, 2, 1, 0, downcast_ref<PatternBitfield>(testBitfield)));
 
-                auto enumField = create<PatternBitfieldFieldEnum>("Enum", "enumerated", 0x02, 4, 6, 0, testBitfield.get());
+                auto enumField = create<PatternBitfieldFieldEnum>("Enum", "enumerated", 0x02, 4, 6, 0, downcast_ref<PatternBitfield>(testBitfield));
                 std::map<std::string, PatternEnum::EnumValue> values;
                 {
                     values.insert({ "A", { 0x39, 0x39 } });
