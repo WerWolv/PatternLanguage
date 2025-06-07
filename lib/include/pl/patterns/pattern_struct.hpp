@@ -11,18 +11,17 @@ namespace pl::ptrn {
         PatternStruct(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
 
-        PatternStruct(const PatternStruct &other) : Pattern(other) {
-            for (const auto &member : other.m_members) {
-                auto copy = member->clone();
-
-                copy->setParent(this);
-                this->m_sortedMembers.push_back(copy.get());
-                this->m_members.push_back(std::move(copy));
-            }
-        }
+        PatternStruct(const PatternStruct &other) : Pattern(other) {}
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternStruct(*this));
+            auto other = std::make_shared<PatternStruct>(*this);
+            for (const auto &member : this->m_members) {
+                 auto copy = member->clone();
+                copy->setParent(other->reference());
+                other->m_sortedMembers.push_back(copy.get());
+                other->m_members.push_back(std::move(copy));
+            }
+            return other;
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> getEntry(size_t index) const override {
@@ -36,7 +35,7 @@ namespace pl::ptrn {
         void addEntry(const std::shared_ptr<Pattern> &entry) override {
             if (entry == nullptr) return;
 
-            entry->setParent(this);
+            entry->setParent(reference());
             this->m_sortedMembers.push_back(entry.get());
             this->m_members.push_back(entry);
         }

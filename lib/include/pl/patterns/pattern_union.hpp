@@ -11,17 +11,16 @@ namespace pl::ptrn {
         PatternUnion(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
 
-        PatternUnion(const PatternUnion &other) : Pattern(other) {
-            for (const auto &member : other.m_members) {
-                auto copy = member->clone();
-
-                this->m_sortedMembers.push_back(copy.get());
-                this->m_members.push_back(std::move(copy));
-            }
-        }
+        PatternUnion(const PatternUnion &other) : Pattern(other) {}
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternUnion(*this));
+            auto other = std::make_shared<PatternUnion>(*this);
+            for (const auto &member : this->m_members) {
+                auto copy = member->clone();
+                other->m_sortedMembers.push_back(copy.get());
+                other->m_members.push_back(std::move(copy));
+            }
+            return other;
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> getEntry(size_t index) const override {
@@ -35,7 +34,7 @@ namespace pl::ptrn {
         void addEntry(const std::shared_ptr<Pattern> &entry) override {
             if (entry == nullptr) return;
 
-            entry->setParent(this);
+            entry->setParent(reference());
             this->m_sortedMembers.push_back(entry.get());
             this->m_members.push_back(entry);
         }
