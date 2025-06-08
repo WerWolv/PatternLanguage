@@ -7,16 +7,19 @@ namespace pl::ptrn {
     class PatternArrayStatic : public Pattern,
                                public IInlinable,
                                public IIndexable {
-    public:
+    protected:
         PatternArrayStatic(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
 
-        PatternArrayStatic(const PatternArrayStatic &other) : Pattern(other) {
+        PatternArrayStatic(const PatternArrayStatic &other) : Pattern(other) {}
+
+    public:
+        void post_construct(const PatternArrayStatic &other) {
             this->setEntries(other.getTemplate()->clone(), other.getEntryCount());
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternArrayStatic(*this));
+            return create_shared_object<PatternArrayStatic>(*this);
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> getEntry(size_t index) const override {
@@ -153,7 +156,7 @@ namespace pl::ptrn {
 
         void setEntries(std::shared_ptr<Pattern> &&templatePattern, size_t count) {
             this->m_template          = std::move(templatePattern);
-            this->m_template->setParent(this);
+            this->m_template->setParent(this->reference());
             this->m_highlightTemplates.push_back(this->m_template->clone());
             this->m_entryCount        = count;
 
@@ -252,6 +255,8 @@ namespace pl::ptrn {
         std::shared_ptr<Pattern> m_template = nullptr;
         mutable std::vector<std::shared_ptr<Pattern>> m_highlightTemplates;
         size_t m_entryCount = 0;
+
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternArrayStatic)
     };
 
 }

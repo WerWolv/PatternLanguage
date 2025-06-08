@@ -7,7 +7,7 @@ namespace pl::ptrn {
     class PatternUnion : public Pattern,
                          public IInlinable,
                          public IIterable {
-    public:
+    protected:
         PatternUnion(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
 
@@ -20,8 +20,9 @@ namespace pl::ptrn {
             }
         }
 
+    public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternUnion(*this));
+            return create_shared_object<PatternUnion>(*this);
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> getEntry(size_t index) const override {
@@ -35,7 +36,7 @@ namespace pl::ptrn {
         void addEntry(const std::shared_ptr<Pattern> &entry) override {
             if (entry == nullptr) return;
 
-            entry->setParent(this);
+            entry->setParent(this->reference());
             this->m_sortedMembers.push_back(entry.get());
             this->m_members.push_back(entry);
         }
@@ -221,6 +222,8 @@ namespace pl::ptrn {
     private:
         std::vector<std::shared_ptr<Pattern>> m_members;
         std::vector<Pattern *> m_sortedMembers;
+
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternUnion)
     };
 
 }

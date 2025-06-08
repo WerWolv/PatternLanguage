@@ -5,12 +5,13 @@
 namespace pl::ptrn {
 
     class PatternError : public Pattern {
-    public:
+    protected:
         PatternError(core::Evaluator *evaluator, u64 offset, size_t size, u32 line, std::string errorMessage)
             : Pattern(evaluator, offset, size, line), m_errorMessage(std::move(errorMessage)) { }
 
+    public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternError(*this));
+            return create_shared_object<PatternError>(*this);
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
@@ -41,6 +42,8 @@ namespace pl::ptrn {
 
     private:
         std::string m_errorMessage;
+
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternError)
     };
 
 }

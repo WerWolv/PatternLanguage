@@ -23,23 +23,23 @@ namespace pl::core::ast {
         auto size   = Token::getTypeSize(this->m_type);
         auto offset = evaluator->getReadOffsetAndIncrement(size);
 
-        std::unique_ptr<ptrn::Pattern> pattern;
+        std::shared_ptr<ptrn::Pattern> pattern;
         if (Token::isUnsigned(this->m_type))
-            pattern = std::make_unique<ptrn::PatternUnsigned>(evaluator, offset, size, getLocation().line);
+            pattern = create_shared_object<ptrn::PatternUnsigned>(evaluator, offset, size, getLocation().line);
         else if (Token::isSigned(this->m_type))
-            pattern = std::make_unique<ptrn::PatternSigned>(evaluator, offset, size, getLocation().line);
+            pattern = create_shared_object<pl::ptrn::PatternSigned>(evaluator, offset, size, getLocation().line);
         else if (Token::isFloatingPoint(this->m_type))
-            pattern = std::make_unique<ptrn::PatternFloat>(evaluator, offset, size, getLocation().line);
+            pattern = create_shared_object<pl::ptrn::PatternFloat>(evaluator, offset, size, getLocation().line);
         else if (this->m_type == Token::ValueType::Boolean)
-            pattern = std::make_unique<ptrn::PatternBoolean>(evaluator, offset, getLocation().line);
+            pattern = create_shared_object<pl::ptrn::PatternBoolean>(evaluator, offset, getLocation().line);
         else if (this->m_type == Token::ValueType::Character)
-            pattern = std::make_unique<ptrn::PatternCharacter>(evaluator, offset, getLocation().line);
+            pattern = create_shared_object<pl::ptrn::PatternCharacter>(evaluator, offset, getLocation().line);
         else if (this->m_type == Token::ValueType::Character16)
-            pattern = std::make_unique<ptrn::PatternWideCharacter>(evaluator, offset, getLocation().line);
+            pattern = create_shared_object<ptrn::PatternWideCharacter>(evaluator, offset, getLocation().line);
         else if (this->m_type == Token::ValueType::Padding)
-            pattern = std::make_unique<ptrn::PatternPadding>(evaluator, offset, 1, getLocation().line);
+            pattern = create_shared_object<pl::ptrn::PatternPadding>(evaluator, offset, 1, getLocation().line);
         else if (this->m_type == Token::ValueType::String)
-            pattern = std::make_unique<ptrn::PatternString>(evaluator, offset, 0, getLocation().line);
+            pattern = create_shared_object<pl::ptrn::PatternString>(evaluator, offset, 0, getLocation().line);
         else if (this->m_type == Token::ValueType::CustomType) {
             std::vector<Token::Literal> params;
 

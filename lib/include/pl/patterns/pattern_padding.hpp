@@ -5,11 +5,12 @@
 namespace pl::ptrn {
 
     class PatternPadding : public Pattern {
-    public:
+    protected:
         PatternPadding(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) : Pattern(evaluator, offset, size, line) { }
 
+    public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternPadding(*this));
+            return create_shared_object<PatternPadding>(*this);
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
@@ -44,6 +45,8 @@ namespace pl::ptrn {
         std::vector<u8> getRawBytes() override {
             return { };
         }
+
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternPadding)
     };
 
 }

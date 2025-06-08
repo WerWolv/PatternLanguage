@@ -7,12 +7,13 @@
 namespace pl::ptrn {
 
     class PatternWideCharacter : public Pattern {
-    public:
+    protected:
         explicit PatternWideCharacter(core::Evaluator *evaluator, u64 offset, u32 line)
             : Pattern(evaluator, offset, 2, line) { }
 
+    public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternWideCharacter(*this));
+            return create_shared_object<PatternWideCharacter>(*this); 
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
@@ -55,6 +56,8 @@ namespace pl::ptrn {
 
             return result;
         }
+
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternWideCharacter)
     };
 
 }

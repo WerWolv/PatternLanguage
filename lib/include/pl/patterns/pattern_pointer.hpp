@@ -7,7 +7,7 @@ namespace pl::ptrn {
 
     class PatternPointer : public Pattern,
                            public IInlinable {
-    public:
+    protected:
         PatternPointer(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line), m_pointedAt(nullptr), m_pointerType(nullptr) {
         }
@@ -20,8 +20,9 @@ namespace pl::ptrn {
             }
         }
 
+    public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternPointer(*this));
+            return create_shared_object<PatternPointer>(*this);
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
@@ -180,6 +181,8 @@ namespace pl::ptrn {
         std::shared_ptr<Pattern> m_pointerType;
         i128 m_pointedAtAddress = 0;
         u64 m_pointerBase = 0;
+
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternPointer)
     };
 
 }

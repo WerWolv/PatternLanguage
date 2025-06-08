@@ -6,13 +6,14 @@
 namespace pl::ptrn {
 
     class PatternBitfieldMember : public Pattern {
-    public:
+    protected:
         using Pattern::Pattern;
 
+    public:
         [[nodiscard]] const PatternBitfieldMember& getTopmostBitfield() const {
             const PatternBitfieldMember* topBitfield = this;
             while (auto parent = topBitfield->getParent()) {
-                auto parentBitfield = dynamic_cast<const PatternBitfieldMember*>(parent);
+                auto parentBitfield = dynamic_cast<const PatternBitfieldMember*>(parent.get());
                 if (parentBitfield == nullptr)
                     break;
 
@@ -49,11 +50,13 @@ namespace pl::ptrn {
         std::vector<u8> getRawBytes() override {
             return { };
         }
+
+         BEFRIEND_CREATE_SHARED_OBJECT(PatternBitfieldMember)
     };
 
     class PatternBitfieldField : public PatternBitfieldMember {
-    public:
-        PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, PatternBitfieldMember *parentBitfield = nullptr)
+    protected:
+        PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, std::shared_ptr<PatternBitfieldMember> parentBitfield = nullptr)
                 : PatternBitfieldMember(evaluator, offset, (bitOffset + bitSize + 7) / 8, line), m_bitOffset(bitOffset % 8), m_bitSize(bitSize) {
             this->setParent(parentBitfield);
         }
@@ -64,8 +67,9 @@ namespace pl::ptrn {
             this->m_bitSize = other.m_bitSize;
         }
 
+    public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternBitfieldField(*this));
+            return create_shared_object<PatternBitfieldField>(*this);
         }
 
         [[nodiscard]] u128 readValue() const {
@@ -155,14 +159,17 @@ namespace pl::ptrn {
         u8 m_bitSize;
 
         bool m_padding = false;
+
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternBitfieldField)
     };
 
     class PatternBitfieldFieldSigned : public PatternBitfieldField {
-    public:
+    protected:
         using PatternBitfieldField::PatternBitfieldField;
 
+    public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternBitfieldFieldSigned(*this));
+            return create_shared_object<PatternBitfieldFieldSigned>(*this);
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
@@ -179,14 +186,17 @@ namespace pl::ptrn {
             auto result = fmt::format("{}", this->getValue().toSigned());
             return Pattern::callUserFormatFunc(this->getValue(), true).value_or(result);
         }
+
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternBitfieldFieldSigned)
     };
 
     class PatternBitfieldFieldBoolean : public PatternBitfieldField {
-    public:
+    protected:
         using PatternBitfieldField::PatternBitfieldField;
 
+    public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternBitfieldFieldBoolean(*this));
+            return create_shared_object<PatternBitfieldFieldBoolean>(*this);
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
@@ -211,12 +221,15 @@ namespace pl::ptrn {
             auto value = this->getValue();
             return Pattern::callUserFormatFunc(value, true).value_or(fmt::format("{}", value.toBoolean() ? "true" : "false"));
         }
+
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternBitfieldFieldBoolean)
     };
 
     class PatternBitfieldFieldEnum : public PatternBitfieldField {
-    public:
+    protected:
         using PatternBitfieldField::PatternBitfieldField;
 
+    public:
         [[nodiscard]] std::string getFormattedName() const override {
             return "enum " + Pattern::getTypeName();
         }
@@ -245,7 +258,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternBitfieldFieldEnum(*this));
+            return create_shared_object<PatternBitfieldFieldEnum>(*this);
         }
 
         std::string formatDisplayValue() override {
@@ -261,12 +274,14 @@ namespace pl::ptrn {
 
     private:
         std::map<std::string, PatternEnum::EnumValue> m_enumValues;
+
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternBitfieldFieldEnum)
     };
 
     class PatternBitfieldArray : public PatternBitfieldMember,
                                  public IInlinable,
                                  public IIndexable {
-    public:
+    protected:
         PatternBitfieldArray(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize, u32 line)
                 : PatternBitfieldMember(evaluator, offset, size_t((totalBitSize + 7) / 8), line), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
 
@@ -280,9 +295,10 @@ namespace pl::ptrn {
             this->m_firstBitOffset = other.m_firstBitOffset;
             this->m_totalBitSize = other.m_totalBitSize;
         }
-
+    
+    public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternBitfieldArray(*this));
+            return create_shared_object<PatternBitfieldArray>(*this);
         }
 
         [[nodiscard]] u8 getBitOffset() const override {
@@ -422,7 +438,7 @@ namespace pl::ptrn {
                 if (!entry->hasOverriddenColor())
                     entry->setBaseColor(this->getColor());
 
-                entry->setParent(this);
+                entry->setParent(this->reference());
 
                 this->m_sortedEntries.push_back(entry.get());
             }
@@ -536,12 +552,14 @@ namespace pl::ptrn {
         u8 m_firstBitOffset = 0;
         u128 m_totalBitSize = 0;
         bool m_reversed = false;
+
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternBitfieldArray)
     };
 
-    class PatternBitfield : public PatternBitfieldMember,
-                            public IInlinable,
-                            public IIterable {
-    public:
+class PatternBitfield : public PatternBitfieldMember,
+                        public IInlinable,
+                        public IIterable {
+    protected:
         PatternBitfield(core::Evaluator *evaluator, u64 offset, u8 firstBitOffset, u128 totalBitSize, u32 line)
                 : PatternBitfieldMember(evaluator, offset, size_t((totalBitSize + 7) / 8), line), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
 
@@ -553,8 +571,9 @@ namespace pl::ptrn {
             this->m_totalBitSize = other.m_totalBitSize;
         }
 
+    public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternBitfield(*this));
+            return create_shared_object<PatternBitfield>(*this);
         }
 
         [[nodiscard]] u8 getBitOffset() const override {
@@ -643,7 +662,7 @@ namespace pl::ptrn {
                 this->setBaseColor(this->m_fields.front()->getColor());
 
             for (const auto &field : this->m_fields) {
-                field->setParent(this);
+                field->setParent(this->reference());
                 this->m_sortedFields.push_back(field.get());
             }
         }
@@ -715,7 +734,7 @@ namespace pl::ptrn {
                     }
                 } else if (auto *member = dynamic_cast<PatternBitfieldMember *>(pattern.get()); member != nullptr) {
                     valueString += fmt::format("{} = {} | ", member->getVariableName(), member->toString());
-                } else if (auto *bitfield = dynamic_cast<PatternBitfield *>(pattern.get()); bitfield != nullptr) {
+} else if (auto *bitfield = dynamic_cast<PatternBitfield *>(pattern.get()); bitfield != nullptr) {
                     valueString += fmt::format("{} = {} | ", bitfield->getVariableName(), bitfield->formatDisplayValue());
                 }
             }
@@ -818,6 +837,8 @@ namespace pl::ptrn {
         u8 m_firstBitOffset = 0;
         u64 m_totalBitSize = 0;
         bool m_reversed = false;
+
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternBitfield)
     };
 
 }

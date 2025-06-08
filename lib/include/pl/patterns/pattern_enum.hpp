@@ -13,12 +13,13 @@ namespace pl::ptrn {
             [[nodiscard]] bool operator!=(const EnumValue &other) const = default;
         };
 
-    public:
+    protected:
         PatternEnum(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
 
+    public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternEnum(*this));
+            return create_shared_object<PatternEnum>(*this);
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
@@ -102,6 +103,8 @@ namespace pl::ptrn {
 
     private:
         std::map<std::string, EnumValue> m_enumValues;
+
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternEnum)
     };
 
 }

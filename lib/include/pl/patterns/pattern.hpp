@@ -5,6 +5,7 @@
 #include <pl/pattern_visitor.hpp>
 #include <pl/helpers/types.hpp>
 #include <pl/helpers/utils.hpp>
+#include <pl/helpers/create_shared_object.hpp>
 
 #include <fmt/core.h>
 
@@ -13,6 +14,8 @@
 
 #include <concepts>
 #include <string>
+
+using namespace shared_object_creator;
 
 namespace pl::ptrn {
     using namespace ::std::literals::string_literals;
@@ -61,13 +64,14 @@ namespace pl::ptrn {
         friend class core::Evaluator;
     };
 
-    class Pattern : public std::enable_shared_from_this<Pattern> {
+    class Pattern : public enable_shared_with_nonpublic_constructor {
     public:
         constexpr static u64 MainSectionId          = 0x0000'0000'0000'0000;
         constexpr static u64 HeapSectionId          = 0xFFFF'FFFF'FFFF'FFFF;
         constexpr static u64 PatternLocalSectionId  = 0xFFFF'FFFF'FFFF'FFFE;
         constexpr static u64 InstantiationSectionId = 0xFFFF'FFFF'FFFF'FFFD;
 
+    protected:
         Pattern(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : m_evaluator(evaluator), m_line(line), m_offset(offset), m_size(size) {
 
@@ -82,7 +86,7 @@ namespace pl::ptrn {
 
         }
 
-        Pattern(const Pattern &other) : std::enable_shared_from_this<Pattern>(other) {
+        Pattern(const Pattern &other) : enable_shared_with_nonpublic_constructor(other) {
             this->m_evaluator = other.m_evaluator;
             this->m_offset = other.m_offset;
             this->m_endian = other.m_endian;
@@ -109,6 +113,7 @@ namespace pl::ptrn {
             }
         }
 
+    public:
         virtual ~Pattern() {
             if (this->m_evaluator != nullptr) {
                 this->m_evaluator->patternDestroyed(this);
@@ -116,6 +121,7 @@ namespace pl::ptrn {
         }
 
         virtual std::shared_ptr<Pattern> clone() const = 0;
+        std::shared_ptr<const Pattern> reference() const { return shared_from_this(); }
         std::shared_ptr<Pattern> reference() { return shared_from_this(); }
 
         [[nodiscard]] u64 getOffset() const { return this->m_offset; }
@@ -537,15 +543,15 @@ namespace pl::ptrn {
             this->m_initialized = initialized;
         }
 
-        [[nodiscard]] const Pattern* getParent() const {
-            return m_parent;
+        [[nodiscard]] const std::shared_ptr<Pattern> getParent() const {
+            return m_parent.lock();
         }
 
-        [[nodiscard]] Pattern* getParent() {
-            return m_parent;
+        [[nodiscard]] std::shared_ptr<Pattern> getParent() {
+            return m_parent.lock();
         }
 
-        void setParent(Pattern *parent) {
+        void setParent(std::shared_ptr<Pattern> parent) {
             m_parent = parent;
         }
 
@@ -623,7 +629,7 @@ namespace pl::ptrn {
         core::Evaluator *m_evaluator;
 
         std::unique_ptr<std::map<std::string, std::vector<core::Token::Literal>>> m_attributes;
-        Pattern *m_parent = nullptr;
+        std::weak_ptr<Pattern> m_parent;
         u32 m_line = 0;
 
         std::set<std::string>::const_iterator m_variableName;
@@ -641,6 +647,8 @@ namespace pl::ptrn {
         bool m_initialized = false;
 
         bool m_manualColor = false;
+
+        BEFRIEND_CREATE_SHARED_OBJECT(Pattern)
     };
 
 }

@@ -33,7 +33,7 @@ namespace pl::core::ast {
 
             result = std::move(pattern);
         } else {
-            auto structPattern = std::make_shared<ptrn::PatternStruct>(evaluator, 0x00, 0, getLocation().line);
+            auto structPattern = create_shared_object<pl::ptrn::PatternStruct>(evaluator, 0x00, 0, getLocation().line);
 
             u64 minPos = std::numeric_limits<u64>::max();
             u64 maxPos = std::numeric_limits<u64>::min();

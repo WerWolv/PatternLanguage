@@ -26,7 +26,7 @@ namespace pl::core::ast {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         auto position = evaluator->getBitwiseReadOffset();
-        auto bitfieldPattern = std::make_shared<ptrn::PatternBitfield>(evaluator, position.byteOffset, position.bitOffset, 0, getLocation().line);
+        auto bitfieldPattern = create_shared_object<pl::ptrn::PatternBitfield>(evaluator, position.byteOffset, position.bitOffset, 0, getLocation().line);
 
         bitfieldPattern->setSection(evaluator->getSectionId());
 
@@ -138,8 +138,8 @@ namespace pl::core::ast {
         }
 
         for (auto &pattern : potentialPatterns) {
-            if (auto bitfieldMember = dynamic_cast<ptrn::PatternBitfieldMember*>(pattern.get()); bitfieldMember != nullptr) {
-                bitfieldMember->setParent(bitfieldPattern.get());
+            if (auto bitfieldMember = std::dynamic_pointer_cast<ptrn::PatternBitfieldMember>(pattern); bitfieldMember != nullptr) {
+                bitfieldMember->setParent(bitfieldPattern);
                 if (!bitfieldMember->isPadding())
                     fields.push_back(pattern);
             } else {

@@ -5,12 +5,13 @@
 namespace pl::ptrn {
 
     class PatternCharacter : public Pattern {
-    public:
+    protected:
         PatternCharacter(core::Evaluator *evaluator, u64 offset, u32 line)
             : Pattern(evaluator, offset, 1, line) { }
-
+    
+    public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::make_unique<PatternCharacter>(*this);
+            return create_shared_object<PatternCharacter>(*this);
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
@@ -59,6 +60,8 @@ namespace pl::ptrn {
 
             return result;
         }
+
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternCharacter)
     };
 
 }

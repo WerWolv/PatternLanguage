@@ -8,12 +8,13 @@ namespace pl::ptrn {
 
     class PatternString : public Pattern,
                           public IIndexable {
-    public:
+    protected:
         PatternString(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : Pattern(evaluator, offset, size, line) { }
 
+    public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternString(*this));
+            return create_shared_object<PatternString>(*this);
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
@@ -76,7 +77,7 @@ namespace pl::ptrn {
         }
 
         std::shared_ptr<Pattern> getEntry(size_t index) const override {
-            auto result = std::make_shared<PatternCharacter>(this->getEvaluator(), this->getOffset() + index, getLine());
+            auto result = create_shared_object<PatternCharacter>(this->getEvaluator(), this->getOffset() + index, getLine());
             result->setSection(this->getSection());
 
             return result;
@@ -102,6 +103,7 @@ namespace pl::ptrn {
             return result;
         }
 
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternString)
     };
 
 }

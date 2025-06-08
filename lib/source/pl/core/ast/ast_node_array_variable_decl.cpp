@@ -217,14 +217,14 @@ namespace pl::core::ast {
             }
         }
 
-        if (dynamic_cast<ptrn::PatternPadding *>(templatePattern.get())) {
-            outputPattern = std::make_unique<ptrn::PatternPadding>(evaluator, startOffset, 0, getLocation().line);
-        } else if (dynamic_cast<ptrn::PatternCharacter *>(templatePattern.get())) {
-            outputPattern = std::make_unique<ptrn::PatternString>(evaluator, startOffset, 0, getLocation().line);
-        } else if (dynamic_cast<ptrn::PatternWideCharacter *>(templatePattern.get())) {
-            outputPattern = std::make_unique<ptrn::PatternWideString>(evaluator, startOffset, 0, getLocation().line);
+        if (std::dynamic_pointer_cast<ptrn::PatternPadding>(templatePattern)) {
+            outputPattern = create_shared_object<pl::ptrn::PatternPadding>(evaluator, startOffset, 0, getLocation().line);
+        } else if (std::dynamic_pointer_cast<ptrn::PatternCharacter>(templatePattern)) {
+            outputPattern = create_shared_object<pl::ptrn::PatternString>(evaluator, startOffset, 0, getLocation().line);
+        } else if (std::dynamic_pointer_cast<ptrn::PatternWideCharacter>(templatePattern)) {
+            outputPattern = create_shared_object<ptrn::PatternWideString>(evaluator, startOffset, 0, getLocation().line);
         } else {
-            auto arrayPattern = std::make_unique<ptrn::PatternArrayStatic>(evaluator, startOffset, 0, getLocation().line);
+            auto arrayPattern = create_shared_object<pl::ptrn::PatternArrayStatic>(evaluator, startOffset, 0, getLocation().line);
             arrayPattern->setEntries(templatePattern->clone(), size_t(entryCount));
             arrayPattern->setSection(templatePattern->getSection());
             outputPattern = std::move(arrayPattern);
@@ -256,7 +256,7 @@ namespace pl::core::ast {
         };
 
         evaluator->alignToByte();
-        auto arrayPattern = std::make_unique<ptrn::PatternArrayDynamic>(evaluator, evaluator->getReadOffset(), 0, getLocation().line);
+        auto arrayPattern = create_shared_object<pl::ptrn::PatternArrayDynamic>(evaluator, evaluator->getReadOffset(), 0, getLocation().line);
         arrayPattern->setVariableName(this->m_name);
         arrayPattern->setSection(evaluator->getSectionId());
 

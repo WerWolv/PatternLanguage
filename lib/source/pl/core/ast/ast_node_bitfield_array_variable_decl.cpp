@@ -53,7 +53,7 @@ namespace pl::core::ast {
         };
 
         auto position = evaluator->getBitwiseReadOffset();
-        auto arrayPattern = std::make_unique<ptrn::PatternBitfieldArray>(evaluator, position.byteOffset, position.bitOffset, 0, getLocation().line);
+        auto arrayPattern = create_shared_object<pl::ptrn::PatternBitfieldArray>(evaluator, position.byteOffset, position.bitOffset, 0, getLocation().line);
         arrayPattern->setVariableName(this->m_name);
         arrayPattern->setSection(evaluator->getSectionId());
         arrayPattern->setReversed(evaluator->isReadOrderReversed());
@@ -132,8 +132,8 @@ namespace pl::core::ast {
             }
 
             for (auto &pattern : entries) {
-                if (auto bitfieldMember = dynamic_cast<ptrn::PatternBitfieldMember*>(pattern.get()); bitfieldMember != nullptr)
-                    bitfieldMember->setParent(arrayPattern.get());
+                if (auto bitfieldMember = std::dynamic_pointer_cast<ptrn::PatternBitfieldMember>(pattern); bitfieldMember != nullptr)
+                    bitfieldMember->setParent(arrayPattern);
             }
 
             arrayPattern->setEntries(entries);
