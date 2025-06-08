@@ -22,7 +22,7 @@ namespace pl::ptrn {
 
     public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return construct_shared_object<PatternPointer>(*this);
+            return create_shared_object<PatternPointer>(*this);
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
@@ -182,7 +182,7 @@ namespace pl::ptrn {
         i128 m_pointedAtAddress = 0;
         u64 m_pointerBase = 0;
 
-        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternPointer)
+        BEFRIEND_create_shared_object(PatternPointer)
     };
 
 }

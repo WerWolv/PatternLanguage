@@ -19,7 +19,7 @@ namespace pl::ptrn {
 
     public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return construct_shared_object<PatternEnum>(*this);
+            return create_shared_object<PatternEnum>(*this);
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
@@ -104,7 +104,7 @@ namespace pl::ptrn {
     private:
         std::map<std::string, EnumValue> m_enumValues;
 
-        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternEnum)
+        BEFRIEND_create_shared_object(PatternEnum)
     };
 
 }

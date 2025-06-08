@@ -14,7 +14,7 @@ namespace pl::ptrn {
 
     public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return construct_shared_object<PatternString>(*this);
+            return create_shared_object<PatternString>(*this);
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
@@ -77,7 +77,7 @@ namespace pl::ptrn {
         }
 
         std::shared_ptr<Pattern> getEntry(size_t index) const override {
-            auto result = construct_shared_object<PatternCharacter>(this->getEvaluator(), this->getOffset() + index, getLine());
+            auto result = create_shared_object<PatternCharacter>(this->getEvaluator(), this->getOffset() + index, getLine());
             result->setSection(this->getSection());
 
             return result;
@@ -103,7 +103,7 @@ namespace pl::ptrn {
             return result;
         }
 
-        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternString)
+        BEFRIEND_create_shared_object(PatternString)
     };
 
 }

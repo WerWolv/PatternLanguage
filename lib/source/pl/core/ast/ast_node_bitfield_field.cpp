@@ -25,7 +25,7 @@ namespace pl::core::ast {
     [[nodiscard]] bool ASTNodeBitfieldField::isPadding() const { return this->getName() == "$padding$"; }
 
     [[nodiscard]] std::shared_ptr<ptrn::PatternBitfieldField> ASTNodeBitfieldField::createBitfield(Evaluator *evaluator, u64 byteOffset, u8 bitOffset, u8 bitSize) const {
-        return construct_shared_object<pl::ptrn::PatternBitfieldField>(evaluator, byteOffset, bitOffset, bitSize, getLocation().line);
+        return create_shared_object<pl::ptrn::PatternBitfieldField>(evaluator, byteOffset, bitOffset, bitSize, getLocation().line);
     }
 
     void ASTNodeBitfieldField::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const {
@@ -57,7 +57,7 @@ namespace pl::core::ast {
 
 
     [[nodiscard]] std::shared_ptr<ptrn::PatternBitfieldField> ASTNodeBitfieldFieldSigned::createBitfield(Evaluator *evaluator, u64 byteOffset, u8 bitOffset, u8 bitSize) const {
-        return construct_shared_object<pl::ptrn::PatternBitfieldFieldSigned>(evaluator, byteOffset, bitOffset, bitSize, getLocation().line);
+        return create_shared_object<pl::ptrn::PatternBitfieldFieldSigned>(evaluator, byteOffset, bitOffset, bitSize, getLocation().line);
     }
 
 
@@ -79,12 +79,12 @@ namespace pl::core::ast {
         evaluator->setBitwiseReadOffset(originalPosition);
 
         if (auto *patternEnum = dynamic_cast<ptrn::PatternEnum *>(pattern.get()); patternEnum != nullptr) {
-            auto bitfieldEnum = construct_shared_object<pl::ptrn::PatternBitfieldFieldEnum>(evaluator, byteOffset, bitOffset, bitSize, getLocation().line);
+            auto bitfieldEnum = create_shared_object<pl::ptrn::PatternBitfieldFieldEnum>(evaluator, byteOffset, bitOffset, bitSize, getLocation().line);
             bitfieldEnum->setTypeName(patternEnum->getTypeName());
             bitfieldEnum->setEnumValues(patternEnum->getEnumValues());
             result = std::move(bitfieldEnum);
         } else if (dynamic_cast<ptrn::PatternBoolean *>(pattern.get()) != nullptr) {
-            result = construct_shared_object<pl::ptrn::PatternBitfieldFieldBoolean>(evaluator, byteOffset, bitOffset, bitSize, getLocation().line);
+            result = create_shared_object<pl::ptrn::PatternBitfieldFieldBoolean>(evaluator, byteOffset, bitOffset, bitSize, getLocation().line);
         } else {
             err::E0004.throwError("Bit size specifiers may only be used with unsigned, signed, bool or enum types.", {}, this->getLocation());
         }

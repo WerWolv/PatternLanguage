@@ -218,13 +218,13 @@ namespace pl::core::ast {
         }
 
         if (std::dynamic_pointer_cast<ptrn::PatternPadding>(templatePattern)) {
-            outputPattern = construct_shared_object<pl::ptrn::PatternPadding>(evaluator, startOffset, 0, getLocation().line);
+            outputPattern = create_shared_object<pl::ptrn::PatternPadding>(evaluator, startOffset, 0, getLocation().line);
         } else if (std::dynamic_pointer_cast<ptrn::PatternCharacter>(templatePattern)) {
-            outputPattern = construct_shared_object<pl::ptrn::PatternString>(evaluator, startOffset, 0, getLocation().line);
+            outputPattern = create_shared_object<pl::ptrn::PatternString>(evaluator, startOffset, 0, getLocation().line);
         } else if (std::dynamic_pointer_cast<ptrn::PatternWideCharacter>(templatePattern)) {
-            outputPattern = construct_shared_object<ptrn::PatternWideString>(evaluator, startOffset, 0, getLocation().line);
+            outputPattern = create_shared_object<ptrn::PatternWideString>(evaluator, startOffset, 0, getLocation().line);
         } else {
-            auto arrayPattern = construct_shared_object<pl::ptrn::PatternArrayStatic>(evaluator, startOffset, 0, getLocation().line);
+            auto arrayPattern = create_shared_object<pl::ptrn::PatternArrayStatic>(evaluator, startOffset, 0, getLocation().line);
             arrayPattern->setEntries(templatePattern->clone(), size_t(entryCount));
             arrayPattern->setSection(templatePattern->getSection());
             outputPattern = std::move(arrayPattern);
@@ -256,7 +256,7 @@ namespace pl::core::ast {
         };
 
         evaluator->alignToByte();
-        auto arrayPattern = construct_shared_object<pl::ptrn::PatternArrayDynamic>(evaluator, evaluator->getReadOffset(), 0, getLocation().line);
+        auto arrayPattern = create_shared_object<pl::ptrn::PatternArrayDynamic>(evaluator, evaluator->getReadOffset(), 0, getLocation().line);
         arrayPattern->setVariableName(this->m_name);
         arrayPattern->setSection(evaluator->getSectionId());
 

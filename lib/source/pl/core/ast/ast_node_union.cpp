@@ -16,7 +16,7 @@ namespace pl::core::ast {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         evaluator->alignToByte();
-        auto pattern = construct_shared_object<ptrn::PatternUnion>(evaluator, evaluator->getReadOffset(), 0, getLocation().line);
+        auto pattern = create_shared_object<ptrn::PatternUnion>(evaluator, evaluator->getReadOffset(), 0, getLocation().line);
 
         std::vector<std::shared_ptr<ptrn::Pattern>> memberPatterns;
         u64 startOffset = evaluator->getReadOffset();

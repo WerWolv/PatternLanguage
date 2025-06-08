@@ -23,7 +23,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return construct_shared_object<PatternArrayDynamic>(*this);
+            return create_shared_object<PatternArrayDynamic>(*this);
         }
 
         void setColor(u32 color) override {
@@ -241,7 +241,7 @@ namespace pl::ptrn {
     private:
         std::vector<std::shared_ptr<Pattern>> m_entries;
 
-        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternArrayDynamic)
+        BEFRIEND_create_shared_object(PatternArrayDynamic)
     };
 
 }

@@ -13,7 +13,7 @@ namespace pl::ptrn {
 
     public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return construct_shared_object<PatternWideCharacter>(*this); 
+            return create_shared_object<PatternWideCharacter>(*this); 
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
@@ -57,7 +57,7 @@ namespace pl::ptrn {
             return result;
         }
 
-        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternWideCharacter)
+        BEFRIEND_create_shared_object(PatternWideCharacter)
     };
 
 }

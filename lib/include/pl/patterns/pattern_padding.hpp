@@ -10,7 +10,7 @@ namespace pl::ptrn {
 
     public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return construct_shared_object<PatternPadding>(*this);
+            return create_shared_object<PatternPadding>(*this);
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
@@ -46,7 +46,7 @@ namespace pl::ptrn {
             return { };
         }
 
-        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternPadding)
+        BEFRIEND_create_shared_object(PatternPadding)
     };
 
 }

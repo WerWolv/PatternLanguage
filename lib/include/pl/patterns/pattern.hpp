@@ -5,7 +5,7 @@
 #include <pl/pattern_visitor.hpp>
 #include <pl/helpers/types.hpp>
 #include <pl/helpers/utils.hpp>
-#include <pl/helpers/construct_shared_object.hpp>
+#include <pl/helpers/create_shared_object.hpp>
 
 #include <fmt/core.h>
 
@@ -64,7 +64,7 @@ namespace pl::ptrn {
         friend class core::Evaluator;
     };
 
-    class Pattern : public safe_enable_shared_from_this {
+    class Pattern : public enable_shared_from_nonpublic_constructor {
     public:
         constexpr static u64 MainSectionId          = 0x0000'0000'0000'0000;
         constexpr static u64 HeapSectionId          = 0xFFFF'FFFF'FFFF'FFFF;
@@ -86,7 +86,7 @@ namespace pl::ptrn {
 
         }
 
-        Pattern(const Pattern &other) : safe_enable_shared_from_this(other) {
+        Pattern(const Pattern &other) : enable_shared_from_nonpublic_constructor(other) {
             this->m_evaluator = other.m_evaluator;
             this->m_offset = other.m_offset;
             this->m_endian = other.m_endian;
@@ -648,7 +648,7 @@ namespace pl::ptrn {
 
         bool m_manualColor = false;
 
-        BEFRIEND_CONSTRUCT_SHARED_OBJECT(Pattern)
+        BEFRIEND_create_shared_object(Pattern)
     };
 
 }

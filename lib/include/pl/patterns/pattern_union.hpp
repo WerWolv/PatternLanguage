@@ -22,7 +22,7 @@ namespace pl::ptrn {
 
     public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return construct_shared_object<PatternUnion>(*this);
+            return create_shared_object<PatternUnion>(*this);
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> getEntry(size_t index) const override {
@@ -223,7 +223,7 @@ namespace pl::ptrn {
         std::vector<std::shared_ptr<Pattern>> m_members;
         std::vector<Pattern *> m_sortedMembers;
 
-        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternUnion)
+        BEFRIEND_create_shared_object(PatternUnion)
     };
 
 }

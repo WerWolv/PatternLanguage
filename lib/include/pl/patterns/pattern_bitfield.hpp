@@ -51,7 +51,7 @@ namespace pl::ptrn {
             return { };
         }
 
-         BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternBitfieldMember)
+         BEFRIEND_create_shared_object(PatternBitfieldMember)
     };
 
     class PatternBitfieldField : public PatternBitfieldMember {
@@ -69,7 +69,7 @@ namespace pl::ptrn {
 
     public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return construct_shared_object<PatternBitfieldField>(*this);
+            return create_shared_object<PatternBitfieldField>(*this);
         }
 
         [[nodiscard]] u128 readValue() const {
@@ -160,7 +160,7 @@ namespace pl::ptrn {
 
         bool m_padding = false;
 
-        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternBitfieldField)
+        BEFRIEND_create_shared_object(PatternBitfieldField)
     };
 
     class PatternBitfieldFieldSigned : public PatternBitfieldField {
@@ -169,7 +169,7 @@ namespace pl::ptrn {
 
     public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return construct_shared_object<PatternBitfieldFieldSigned>(*this);
+            return create_shared_object<PatternBitfieldFieldSigned>(*this);
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
@@ -187,7 +187,7 @@ namespace pl::ptrn {
             return Pattern::callUserFormatFunc(this->getValue(), true).value_or(result);
         }
 
-        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternBitfieldFieldSigned)
+        BEFRIEND_create_shared_object(PatternBitfieldFieldSigned)
     };
 
     class PatternBitfieldFieldBoolean : public PatternBitfieldField {
@@ -196,7 +196,7 @@ namespace pl::ptrn {
 
     public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return construct_shared_object<PatternBitfieldFieldBoolean>(*this);
+            return create_shared_object<PatternBitfieldFieldBoolean>(*this);
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {
@@ -222,7 +222,7 @@ namespace pl::ptrn {
             return Pattern::callUserFormatFunc(value, true).value_or(fmt::format("{}", value.toBoolean() ? "true" : "false"));
         }
 
-        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternBitfieldFieldBoolean)
+        BEFRIEND_create_shared_object(PatternBitfieldFieldBoolean)
     };
 
     class PatternBitfieldFieldEnum : public PatternBitfieldField {
@@ -258,7 +258,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return construct_shared_object<PatternBitfieldFieldEnum>(*this);
+            return create_shared_object<PatternBitfieldFieldEnum>(*this);
         }
 
         std::string formatDisplayValue() override {
@@ -275,7 +275,7 @@ namespace pl::ptrn {
     private:
         std::map<std::string, PatternEnum::EnumValue> m_enumValues;
 
-        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternBitfieldFieldEnum)
+        BEFRIEND_create_shared_object(PatternBitfieldFieldEnum)
     };
 
     class PatternBitfieldArray : public PatternBitfieldMember,
@@ -298,7 +298,7 @@ namespace pl::ptrn {
     
     public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return construct_shared_object<PatternBitfieldArray>(*this);
+            return create_shared_object<PatternBitfieldArray>(*this);
         }
 
         [[nodiscard]] u8 getBitOffset() const override {
@@ -553,7 +553,7 @@ namespace pl::ptrn {
         u128 m_totalBitSize = 0;
         bool m_reversed = false;
 
-        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternBitfieldArray)
+        BEFRIEND_create_shared_object(PatternBitfieldArray)
     };
 
 class PatternBitfield : public PatternBitfieldMember,
@@ -573,7 +573,7 @@ class PatternBitfield : public PatternBitfieldMember,
 
     public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return construct_shared_object<PatternBitfield>(*this);
+            return create_shared_object<PatternBitfield>(*this);
         }
 
         [[nodiscard]] u8 getBitOffset() const override {
@@ -838,7 +838,7 @@ class PatternBitfield : public PatternBitfieldMember,
         u64 m_totalBitSize = 0;
         bool m_reversed = false;
 
-        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternBitfield)
+        BEFRIEND_create_shared_object(PatternBitfield)
     };
 
 }

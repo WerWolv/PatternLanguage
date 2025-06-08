@@ -25,21 +25,21 @@ namespace pl::core::ast {
 
         std::shared_ptr<ptrn::Pattern> pattern;
         if (Token::isUnsigned(this->m_type))
-            pattern = construct_shared_object<ptrn::PatternUnsigned>(evaluator, offset, size, getLocation().line);
+            pattern = create_shared_object<ptrn::PatternUnsigned>(evaluator, offset, size, getLocation().line);
         else if (Token::isSigned(this->m_type))
-            pattern = construct_shared_object<pl::ptrn::PatternSigned>(evaluator, offset, size, getLocation().line);
+            pattern = create_shared_object<pl::ptrn::PatternSigned>(evaluator, offset, size, getLocation().line);
         else if (Token::isFloatingPoint(this->m_type))
-            pattern = construct_shared_object<pl::ptrn::PatternFloat>(evaluator, offset, size, getLocation().line);
+            pattern = create_shared_object<pl::ptrn::PatternFloat>(evaluator, offset, size, getLocation().line);
         else if (this->m_type == Token::ValueType::Boolean)
-            pattern = construct_shared_object<pl::ptrn::PatternBoolean>(evaluator, offset, getLocation().line);
+            pattern = create_shared_object<pl::ptrn::PatternBoolean>(evaluator, offset, getLocation().line);
         else if (this->m_type == Token::ValueType::Character)
-            pattern = construct_shared_object<pl::ptrn::PatternCharacter>(evaluator, offset, getLocation().line);
+            pattern = create_shared_object<pl::ptrn::PatternCharacter>(evaluator, offset, getLocation().line);
         else if (this->m_type == Token::ValueType::Character16)
-            pattern = construct_shared_object<ptrn::PatternWideCharacter>(evaluator, offset, getLocation().line);
+            pattern = create_shared_object<ptrn::PatternWideCharacter>(evaluator, offset, getLocation().line);
         else if (this->m_type == Token::ValueType::Padding)
-            pattern = construct_shared_object<pl::ptrn::PatternPadding>(evaluator, offset, 1, getLocation().line);
+            pattern = create_shared_object<pl::ptrn::PatternPadding>(evaluator, offset, 1, getLocation().line);
         else if (this->m_type == Token::ValueType::String)
-            pattern = construct_shared_object<pl::ptrn::PatternString>(evaluator, offset, 0, getLocation().line);
+            pattern = create_shared_object<pl::ptrn::PatternString>(evaluator, offset, 0, getLocation().line);
         else if (this->m_type == Token::ValueType::CustomType) {
             std::vector<Token::Literal> params;
 

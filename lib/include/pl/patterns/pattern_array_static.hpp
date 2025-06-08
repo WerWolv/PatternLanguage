@@ -19,7 +19,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return construct_shared_object<PatternArrayStatic>(*this);
+            return create_shared_object<PatternArrayStatic>(*this);
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> getEntry(size_t index) const override {
@@ -256,7 +256,7 @@ namespace pl::ptrn {
         mutable std::vector<std::shared_ptr<Pattern>> m_highlightTemplates;
         size_t m_entryCount = 0;
 
-        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternArrayStatic)
+        BEFRIEND_create_shared_object(PatternArrayStatic)
     };
 
 }

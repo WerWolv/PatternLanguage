@@ -56,7 +56,7 @@ namespace pl::core::ast {
             if (auto name = std::get_if<std::string>(&this->getPath().front()); name != nullptr) {
                 if (*name == "$") return std::make_unique<ASTNodeLiteral>(u128(evaluator->getReadOffset()));
                 else if (*name == "null") return std::make_unique<ASTNodeLiteral>(
-                    construct_shared_object<pl::ptrn::PatternPadding>(evaluator, 0, 0, getLocation().line)); // Why?
+                    create_shared_object<pl::ptrn::PatternPadding>(evaluator, 0, 0, getLocation().line)); // Why?
 
                 auto parameterPack = evaluator->getScope(0).parameterPack;
                 if (parameterPack && *name == parameterPack->name)

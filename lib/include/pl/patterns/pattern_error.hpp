@@ -11,7 +11,7 @@ namespace pl::ptrn {
 
     public:
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return construct_shared_object<PatternError>(*this);
+            return create_shared_object<PatternError>(*this);
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
@@ -43,7 +43,7 @@ namespace pl::ptrn {
     private:
         std::string m_errorMessage;
 
-        BEFRIEND_CONSTRUCT_SHARED_OBJECT(PatternError)
+        BEFRIEND_create_shared_object(PatternError)
     };
 
 }
