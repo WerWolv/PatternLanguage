@@ -43,7 +43,7 @@ namespace pl::ptrn {
     private:
         std::string m_errorMessage;
 
-        BEFRIEND_create_shared_object(PatternError)
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternError)
     };
 
 }

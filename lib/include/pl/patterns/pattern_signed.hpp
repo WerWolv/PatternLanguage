@@ -56,7 +56,7 @@ namespace pl::ptrn {
             return result;
         }
 
-        BEFRIEND_create_shared_object(PatternSigned)
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternSigned)
     };
 
 }

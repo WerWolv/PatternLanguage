@@ -46,7 +46,7 @@ namespace pl::ptrn {
             return { };
         }
 
-        BEFRIEND_create_shared_object(PatternPadding)
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternPadding)
     };
 
 }

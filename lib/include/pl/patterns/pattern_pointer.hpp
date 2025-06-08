@@ -182,7 +182,7 @@ namespace pl::ptrn {
         i128 m_pointedAtAddress = 0;
         u64 m_pointerBase = 0;
 
-        BEFRIEND_create_shared_object(PatternPointer)
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternPointer)
     };
 
 }

@@ -51,7 +51,7 @@ namespace pl::ptrn {
             return { };
         }
 
-         BEFRIEND_create_shared_object(PatternBitfieldMember)
+         BEFRIEND_CREATE_SHARED_OBJECT(PatternBitfieldMember)
     };
 
     class PatternBitfieldField : public PatternBitfieldMember {
@@ -160,7 +160,7 @@ namespace pl::ptrn {
 
         bool m_padding = false;
 
-        BEFRIEND_create_shared_object(PatternBitfieldField)
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternBitfieldField)
     };
 
     class PatternBitfieldFieldSigned : public PatternBitfieldField {
@@ -187,7 +187,7 @@ namespace pl::ptrn {
             return Pattern::callUserFormatFunc(this->getValue(), true).value_or(result);
         }
 
-        BEFRIEND_create_shared_object(PatternBitfieldFieldSigned)
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternBitfieldFieldSigned)
     };
 
     class PatternBitfieldFieldBoolean : public PatternBitfieldField {
@@ -222,7 +222,7 @@ namespace pl::ptrn {
             return Pattern::callUserFormatFunc(value, true).value_or(fmt::format("{}", value.toBoolean() ? "true" : "false"));
         }
 
-        BEFRIEND_create_shared_object(PatternBitfieldFieldBoolean)
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternBitfieldFieldBoolean)
     };
 
     class PatternBitfieldFieldEnum : public PatternBitfieldField {
@@ -275,7 +275,7 @@ namespace pl::ptrn {
     private:
         std::map<std::string, PatternEnum::EnumValue> m_enumValues;
 
-        BEFRIEND_create_shared_object(PatternBitfieldFieldEnum)
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternBitfieldFieldEnum)
     };
 
     class PatternBitfieldArray : public PatternBitfieldMember,
@@ -553,7 +553,7 @@ namespace pl::ptrn {
         u128 m_totalBitSize = 0;
         bool m_reversed = false;
 
-        BEFRIEND_create_shared_object(PatternBitfieldArray)
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternBitfieldArray)
     };
 
 class PatternBitfield : public PatternBitfieldMember,
@@ -838,7 +838,7 @@ class PatternBitfield : public PatternBitfieldMember,
         u64 m_totalBitSize = 0;
         bool m_reversed = false;
 
-        BEFRIEND_create_shared_object(PatternBitfield)
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternBitfield)
     };
 
 }

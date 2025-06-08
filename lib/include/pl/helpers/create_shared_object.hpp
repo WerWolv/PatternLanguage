@@ -28,7 +28,7 @@ the constructor be public. If we're making factory methods for creation, we may
 want to make the constructors non-public to stop misuse. The solution to this
 problem I can't take credit for. 
 
-The code for enable_shared_from_nonpublic_constructor is based on code found here
+The code for enable_shared_with_nonpublic_constructor is based on code found here
 (called safe_enable_shared_from_this):
     https://stackoverflow.com/questions/8147027/how-do-i-call-stdmake-shared-on-a-class-with-only-protected-or-private-const
 Posted by stackoverflow member Carsten.
@@ -44,18 +44,18 @@ Requires C++23
 #include <utility>
 
 // Used to enable create_shared_object to access non-public constructors.
-#define BEFRIEND_create_shared_object(T) \
-    friend struct shared_object_creator::enable_shared_from_nonpublic_constructor::Allocator<T>;
+#define BEFRIEND_CREATE_SHARED_OBJECT(T) \
+    friend struct shared_object_creator::enable_shared_with_nonpublic_constructor::Allocator<T>;
 
 namespace shared_object_creator {
 
-// enable_shared_from_nonpublic_constructor was found here:
+// enable_shared_with_nonpublic_constructor was found here:
 //  https://stackoverflow.com/questions/8147027/how-do-i-call-stdmake-shared-on-a-class-with-only-protected-or-private-const
 // 
 // Posted by stackoverflow member Carsten.
 // He adapted old code from stackoverflow member Zsolt Rizsányi,
 // who in turn says it was invented by Jonathan Wakely (GCC developer).
-class enable_shared_from_nonpublic_constructor : public std::enable_shared_from_this<enable_shared_from_nonpublic_constructor> {
+class enable_shared_with_nonpublic_constructor : public std::enable_shared_from_this<enable_shared_with_nonpublic_constructor> {
     // Our friends. They're not from around here and have long hard to pronounce names.
     template<typename T, typename... Args>
         requires requires(T t, Args&&... args) {
@@ -67,7 +67,7 @@ class enable_shared_from_nonpublic_constructor : public std::enable_shared_from_
     friend std::shared_ptr<T> create_shared_object(Args&&... args);
 
 public:
-	virtual ~enable_shared_from_nonpublic_constructor() noexcept = default;
+	virtual ~enable_shared_with_nonpublic_constructor() noexcept = default;
 
     // The next two functions use C++23's "explicit object parameter"
     // syntax to make shared_from_this and weak_from_this, when called
@@ -77,22 +77,22 @@ public:
 	auto inline shared_from_this(this TSelf&& self) noexcept
 	{
 		return std::static_pointer_cast<std::remove_reference_t<TSelf>>(
-			std::forward<TSelf>(self).std::template enable_shared_from_this<enable_shared_from_nonpublic_constructor>::shared_from_this());
+			std::forward<TSelf>(self).std::template enable_shared_from_this<enable_shared_with_nonpublic_constructor>::shared_from_this());
 	}
 	
 	template <typename TSelf>
 	auto inline weak_from_this(this TSelf&& self) noexcept -> ::std::weak_ptr<std::remove_reference_t<TSelf>>
 	{
 		return std::static_pointer_cast<std::remove_reference_t<TSelf>>(
-			std::forward<TSelf>(self).std::template enable_shared_from_this<enable_shared_from_nonpublic_constructor>::weak_from_this().lock());
+			std::forward<TSelf>(self).std::template enable_shared_from_this<enable_shared_with_nonpublic_constructor>::weak_from_this().lock());
 	}
 
 protected:
-	enable_shared_from_nonpublic_constructor() noexcept = default;
-	enable_shared_from_nonpublic_constructor(enable_shared_from_nonpublic_constructor&&) noexcept = default;
-	enable_shared_from_nonpublic_constructor(const enable_shared_from_nonpublic_constructor&) noexcept = default;
-	enable_shared_from_nonpublic_constructor& operator=(enable_shared_from_nonpublic_constructor&&) noexcept = default;
-	enable_shared_from_nonpublic_constructor& operator=(const enable_shared_from_nonpublic_constructor&) noexcept = delete;
+	enable_shared_with_nonpublic_constructor() noexcept = default;
+	enable_shared_with_nonpublic_constructor(enable_shared_with_nonpublic_constructor&&) noexcept = default;
+	enable_shared_with_nonpublic_constructor(const enable_shared_with_nonpublic_constructor&) noexcept = default;
+	enable_shared_with_nonpublic_constructor& operator=(enable_shared_with_nonpublic_constructor&&) noexcept = default;
+	enable_shared_with_nonpublic_constructor& operator=(const enable_shared_with_nonpublic_constructor&) noexcept = delete;
 
     template <typename T>
     struct Allocator : public std::allocator<T>
@@ -118,14 +118,14 @@ template<typename T, typename... Args>
         t.post_construct(std::forward<Args>(args)...);
     }
 std::shared_ptr<T> create_shared_object(Args&&... args) {
-    auto p = enable_shared_from_nonpublic_constructor::create<T>(std::forward<Args>(args)...);
+    auto p = enable_shared_with_nonpublic_constructor::create<T>(std::forward<Args>(args)...);
     p->post_construct(std::forward<Args>(args)...);
     return p;
 }
 
 template<typename T, typename... Args>
 std::shared_ptr<T> create_shared_object(Args&&... args) {
-    return enable_shared_from_nonpublic_constructor::create<T>(std::forward<Args>(args)...);
+    return enable_shared_with_nonpublic_constructor::create<T>(std::forward<Args>(args)...);
 }
  
 } // namespace shared_object_creator

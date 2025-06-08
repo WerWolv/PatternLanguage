@@ -103,7 +103,7 @@ namespace pl::ptrn {
             return result;
         }
 
-        BEFRIEND_create_shared_object(PatternString)
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternString)
     };
 
 }

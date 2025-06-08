@@ -64,7 +64,7 @@ namespace pl::ptrn {
         friend class core::Evaluator;
     };
 
-    class Pattern : public enable_shared_from_nonpublic_constructor {
+    class Pattern : public enable_shared_with_nonpublic_constructor {
     public:
         constexpr static u64 MainSectionId          = 0x0000'0000'0000'0000;
         constexpr static u64 HeapSectionId          = 0xFFFF'FFFF'FFFF'FFFF;
@@ -86,7 +86,7 @@ namespace pl::ptrn {
 
         }
 
-        Pattern(const Pattern &other) : enable_shared_from_nonpublic_constructor(other) {
+        Pattern(const Pattern &other) : enable_shared_with_nonpublic_constructor(other) {
             this->m_evaluator = other.m_evaluator;
             this->m_offset = other.m_offset;
             this->m_endian = other.m_endian;
@@ -648,7 +648,7 @@ namespace pl::ptrn {
 
         bool m_manualColor = false;
 
-        BEFRIEND_create_shared_object(Pattern)
+        BEFRIEND_CREATE_SHARED_OBJECT(Pattern)
     };
 
 }

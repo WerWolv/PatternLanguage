@@ -57,7 +57,7 @@ namespace pl::ptrn {
             return result;
         }
 
-        BEFRIEND_create_shared_object(PatternWideCharacter)
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternWideCharacter)
     };
 
 }

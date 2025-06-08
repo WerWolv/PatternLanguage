@@ -256,7 +256,7 @@ namespace pl::ptrn {
         mutable std::vector<std::shared_ptr<Pattern>> m_highlightTemplates;
         size_t m_entryCount = 0;
 
-        BEFRIEND_create_shared_object(PatternArrayStatic)
+        BEFRIEND_CREATE_SHARED_OBJECT(PatternArrayStatic)
     };
 
 }
