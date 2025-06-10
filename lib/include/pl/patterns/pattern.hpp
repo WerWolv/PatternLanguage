@@ -116,7 +116,13 @@ namespace pl::ptrn {
         }
 
         virtual std::shared_ptr<Pattern> clone() const = 0;
-        std::shared_ptr<Pattern> reference() { return shared_from_this(); }
+        std::shared_ptr<Pattern> reference() {
+            auto weakPtr = weak_from_this();
+            if (weakPtr.expired()) {
+                core::err::E0001.throwError("Cannot call shared_from_this if this is not shared.");
+            }
+            return shared_from_this();
+        }
 
         [[nodiscard]] u64 getOffset() const { return this->m_offset; }
         [[nodiscard]] virtual u128 getOffsetForSorting() const { return this->getOffset() << 3; }
