@@ -10,7 +10,7 @@ namespace pl::ptrn {
             : Pattern(evaluator, offset, size, line), m_errorMessage(std::move(errorMessage)) { }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::make_shared<PatternError>(*this);
+            return std::unique_ptr<Pattern>(new PatternError(*this));
         }
 
         [[nodiscard]] std::string getFormattedName() const override {

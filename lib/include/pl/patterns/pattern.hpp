@@ -543,15 +543,15 @@ namespace pl::ptrn {
             this->m_initialized = initialized;
         }
 
-        [[nodiscard]] const std::shared_ptr<Pattern> getParent() const {
-            return m_parent.lock();
+        [[nodiscard]] const Pattern* getParent() const {
+            return m_parent;
         }
 
-        [[nodiscard]] std::shared_ptr<Pattern> getParent() {
-            return m_parent.lock();
+        [[nodiscard]] Pattern* getParent() {
+            return m_parent;
         }
 
-        void setParent(std::shared_ptr<Pattern> parent) {
+        void setParent(Pattern *parent) {
             m_parent = parent;
         }
 
@@ -629,7 +629,7 @@ namespace pl::ptrn {
         core::Evaluator *m_evaluator;
 
         std::unique_ptr<std::map<std::string, std::vector<core::Token::Literal>>> m_attributes;
-        std::weak_ptr<Pattern> m_parent;
+        Pattern *m_parent = nullptr;
         u32 m_line = 0;
 
         std::set<std::string>::const_iterator m_variableName;

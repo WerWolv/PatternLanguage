@@ -21,7 +21,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::make_shared<PatternPointer>(*this);
+            return std::unique_ptr<Pattern>(new PatternPointer(*this));
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {

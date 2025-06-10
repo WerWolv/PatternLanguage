@@ -9,7 +9,7 @@ namespace pl::ptrn {
         PatternPadding(core::Evaluator *evaluator, u64 offset, size_t size, u32 line) : Pattern(evaluator, offset, size, line) { }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::make_shared<PatternPadding>(*this);
+            return std::unique_ptr<Pattern>(new PatternPadding(*this));
         }
 
         [[nodiscard]] std::string getFormattedName() const override {

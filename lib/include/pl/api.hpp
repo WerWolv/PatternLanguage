@@ -126,7 +126,7 @@ namespace pl::api {
     /**
      * @brief A function callback called when a custom built-in type is being instantiated
      */
-    using TypeCallback = std::function<std::shared_ptr<ptrn::Pattern>(core::Evaluator *, const std::vector<core::Token::Literal> &)>;
+    using TypeCallback = std::function<std::unique_ptr<ptrn::Pattern>(core::Evaluator *, const std::vector<core::Token::Literal> &)>;
 
     /**
      * @brief A type representing a function.

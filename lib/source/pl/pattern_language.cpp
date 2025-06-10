@@ -518,11 +518,11 @@ namespace pl {
                 if (this->m_aborted)
                     return;
 
-                if (auto staticArray = dynamic_pointer_cast<ptrn::PatternArrayStatic>(pattern); staticArray != nullptr) {
+                if (auto staticArray = dynamic_cast<ptrn::PatternArrayStatic*>(pattern.get()); staticArray != nullptr) {
                     if (staticArray->getEntryCount() > 0 && staticArray->getEntry(0)->getChildren().empty()) {
                         const auto address = staticArray->getOffset();
                         const auto size = staticArray->getSize();
-                        sectionTree.insert({ address, address + size - 1 }, staticArray.get());
+                        sectionTree.insert({ address, address + size - 1 }, staticArray);
                         continue;
                     }
                 }
@@ -551,9 +551,17 @@ namespace pl {
         std::transform(intervals.begin(), intervals.end(), std::back_inserter(results), [](const auto &interval) {
             ptrn::Pattern* value = interval.value;
 
-            auto parent = value->getParent();
-            while (parent != nullptr && dynamic_pointer_cast<const ptrn::PatternArrayStatic>(parent->getParent()) == nullptr) {
-                parent = parent->getParent();
+            auto *parent = value->getParent();
+            while (parent != nullptr) {
+                if (auto weakPtr = parent->weak_from_this(); weakPtr.expired()) {
+                    // If the parent is no longer valid, we can stop traversing
+                    parent = nullptr;
+                    break;
+                }
+                if (dynamic_cast<const ptrn::PatternArrayStatic*>(parent->getParent()) == nullptr)
+                    parent = parent->getParent();
+                else
+                    break;
             }
 
             // Handle static array members

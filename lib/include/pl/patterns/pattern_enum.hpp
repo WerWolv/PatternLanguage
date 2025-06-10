@@ -18,7 +18,7 @@ namespace pl::ptrn {
             : Pattern(evaluator, offset, size, line) { }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::make_shared<PatternEnum>(*this);
+            return std::unique_ptr<Pattern>(new PatternEnum(*this));
         }
 
         [[nodiscard]] core::Token::Literal getValue() const override {

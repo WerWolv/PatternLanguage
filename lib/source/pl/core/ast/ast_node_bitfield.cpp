@@ -139,7 +139,7 @@ namespace pl::core::ast {
 
         for (auto &pattern : potentialPatterns) {
             if (auto bitfieldMember = dynamic_cast<ptrn::PatternBitfieldMember*>(pattern.get()); bitfieldMember != nullptr) {
-                bitfieldMember->setParent(bitfieldPattern.get()->reference());
+                bitfieldMember->setParent(bitfieldPattern.get());
                 if (!bitfieldMember->isPadding())
                     fields.push_back(pattern);
             } else {
