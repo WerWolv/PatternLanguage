@@ -55,7 +55,8 @@ namespace pl::ptrn {
     public:
         PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, PatternBitfieldMember *parentBitfield = nullptr)
                 : PatternBitfieldMember(evaluator, offset, (bitOffset + bitSize + 7) / 8, line), m_bitOffset(bitOffset % 8), m_bitSize(bitSize) {
-            this->setParent(parentBitfield);
+            if (parentBitfield != nullptr)
+                this->setParent(parentBitfield->reference());
         }
 
         PatternBitfieldField(const PatternBitfieldField &other) : PatternBitfieldMember(other) {
@@ -282,7 +283,10 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternBitfieldArray(*this));
+            auto other =  std::make_shared<PatternBitfieldArray>(*this);
+            for (const auto &entry : other->m_entries)
+                entry->setParent(other->reference());
+            return other;
         }
 
         [[nodiscard]] u8 getBitOffset() const override {
@@ -421,8 +425,6 @@ namespace pl::ptrn {
             for (auto &entry : this->m_entries) {
                 if (!entry->hasOverriddenColor())
                     entry->setBaseColor(this->getColor());
-
-                entry->setParent(this);
 
                 this->m_sortedEntries.push_back(entry.get());
             }
@@ -643,7 +645,7 @@ namespace pl::ptrn {
                 this->setBaseColor(this->m_fields.front()->getColor());
 
             for (const auto &field : this->m_fields) {
-                field->setParent(this);
+                field->setParent(this->reference());
                 this->m_sortedFields.push_back(field.get());
             }
         }

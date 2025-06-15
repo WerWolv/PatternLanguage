@@ -16,7 +16,9 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternArrayStatic(*this));
+            auto other = std::make_shared<PatternArrayStatic>(*this);
+            other->m_template->setParent(other->reference());
+            return other;
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> getEntry(size_t index) const override {
@@ -153,7 +155,6 @@ namespace pl::ptrn {
 
         void setEntries(std::shared_ptr<Pattern> &&templatePattern, size_t count) {
             this->m_template          = std::move(templatePattern);
-            this->m_template->setParent(this);
             this->m_highlightTemplates.push_back(this->m_template->clone());
             this->m_entryCount        = count;
 
