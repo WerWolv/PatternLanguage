@@ -16,7 +16,7 @@ namespace pl::ptrn {
             for (const auto &entry : other.m_entries)
                 entries.push_back(entry->clone());
 
-            this->setEntries(std::move(entries));
+            this->setEntries(entries);
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
