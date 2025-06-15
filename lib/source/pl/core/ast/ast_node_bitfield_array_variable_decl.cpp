@@ -53,7 +53,7 @@ namespace pl::core::ast {
         };
 
         auto position = evaluator->getBitwiseReadOffset();
-        auto arrayPattern = std::make_unique<ptrn::PatternBitfieldArray>(evaluator, position.byteOffset, position.bitOffset, 0, getLocation().line);
+        auto arrayPattern = std::make_shared<ptrn::PatternBitfieldArray>(evaluator, position.byteOffset, position.bitOffset, 0, getLocation().line);
         arrayPattern->setVariableName(this->m_name);
         arrayPattern->setSection(evaluator->getSectionId());
         arrayPattern->setReversed(evaluator->isReadOrderReversed());
