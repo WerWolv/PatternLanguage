@@ -35,7 +35,7 @@ namespace pl::test {
             pattern->setTypeName(typeName);
             pattern->setVariableName(varName);
 
-            return std::move(pattern);
+            return pattern;
         }
 
         [[nodiscard]] virtual std::string getSourceCode() const = 0;
