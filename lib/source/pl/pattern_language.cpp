@@ -2,6 +2,7 @@
 
 #include <pl/core/preprocessor.hpp>
 #include <pl/core/lexer.hpp>
+#include <pl/core/new_lexer.hpp>
 #include <pl/core/parser.hpp>
 #include <pl/core/validator.hpp>
 #include <pl/core/evaluator.hpp>
@@ -36,6 +37,7 @@ namespace pl {
         this->m_internals = {
             .preprocessor   = std::make_unique<core::Preprocessor>(),
             .lexer          = std::make_unique<core::Lexer>(),
+            .new_lexer      = std::make_unique<core::New_Lexer>(),
             .parser         = std::make_unique<core::Parser>(),
             .validator      = std::make_unique<core::Validator>(),
             .evaluator      = std::make_unique<core::Evaluator>()

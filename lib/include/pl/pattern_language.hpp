@@ -29,6 +29,7 @@ namespace pl {
     namespace core {
         class Preprocessor;
         class Lexer;
+        class New_Lexer;
         class Parser;
         class Validator;
         class Evaluator;
@@ -62,6 +63,7 @@ namespace pl {
         struct Internals {
             std::unique_ptr<core::Preprocessor> preprocessor;
             std::unique_ptr<core::Lexer>        lexer;
+            std::unique_ptr<core::New_Lexer>    new_lexer;
             std::unique_ptr<core::Parser>       parser;
             std::unique_ptr<core::Validator>    validator;
             std::unique_ptr<core::Evaluator>    evaluator;

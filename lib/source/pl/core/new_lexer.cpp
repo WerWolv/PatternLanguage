@@ -1,6 +1,8 @@
 // lexertl_test.cpp
 //
 
+#include <pl/core/new_lexer.hpp>
+
 #include <lexertl/lookup.hpp>
 
 //#include "out.cpp"
@@ -382,3 +384,13 @@ string read_text_file(const string& path) {
 
     return 0;
 }*/
+
+namespace pl::core {
+
+hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
+{
+    (void)source;
+    return {};
+}
+
+} // namespace pl::core
