@@ -551,17 +551,9 @@ namespace pl {
         std::transform(intervals.begin(), intervals.end(), std::back_inserter(results), [](const auto &interval) {
             ptrn::Pattern* value = interval.value;
 
-            auto *parent = value->getParent();
-            while (parent != nullptr) {
-                if (auto weakPtr = parent->weak_from_this(); weakPtr.expired()) {
-                    // If the parent is no longer valid, we can stop traversing
-                    parent = nullptr;
-                    break;
-                }
-                if (dynamic_cast<const ptrn::PatternArrayStatic*>(parent->getParent()) == nullptr)
-                    parent = parent->getParent();
-                else
-                    break;
+            auto parent = value->getParent();
+            while (parent != nullptr && dynamic_cast<const ptrn::PatternArrayStatic*>(parent->getParent()) == nullptr) {
+                parent = parent->getParent();
             }
 
             // Handle static array members

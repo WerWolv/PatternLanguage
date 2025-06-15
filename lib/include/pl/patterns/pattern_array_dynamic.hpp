@@ -22,7 +22,7 @@ namespace pl::ptrn {
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             auto other = std::make_shared<PatternArrayDynamic>(*this);
             for (const auto &entry : other->m_entries)
-                entry->setParent(other->reference().get());
+                entry->setParent(other->reference());
 
             return other;
         }

@@ -23,7 +23,7 @@ namespace pl::ptrn {
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             auto other = std::make_shared<PatternStruct>(*this);
             for (const auto &member : other->m_members)
-                member->setParent(other->reference().get());
+                member->setParent(other->reference());
 
             return other;
         }
@@ -39,7 +39,7 @@ namespace pl::ptrn {
         void addEntry(const std::shared_ptr<Pattern> &entry) override {
             if (entry == nullptr) return;
 
-            entry->setParent(this);
+            entry->setParent(this->reference());
             this->m_sortedMembers.push_back(entry.get());
             this->m_members.push_back(entry);
         }

@@ -68,6 +68,8 @@ namespace pl::ptrn {
         constexpr static u64 PatternLocalSectionId  = 0xFFFF'FFFF'FFFF'FFFE;
         constexpr static u64 InstantiationSectionId = 0xFFFF'FFFF'FFFF'FFFD;
 
+        Pattern() = default;
+
         Pattern(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : m_evaluator(evaluator), m_line(line), m_offset(offset), m_size(size) {
 
@@ -543,15 +545,15 @@ namespace pl::ptrn {
             this->m_initialized = initialized;
         }
 
-        [[nodiscard]] const Pattern* getParent() const {
-            return m_parent;
+        [[nodiscard]] const Pattern *getParent() const {
+            return m_parent.lock().get();
         }
 
-        [[nodiscard]] Pattern* getParent() {
-            return m_parent;
+        [[nodiscard]] Pattern *getParent() {
+            return m_parent.lock().get();
         }
 
-        void setParent(Pattern *parent) {
+        void setParent(std::shared_ptr<Pattern> parent) {
             m_parent = parent;
         }
 
@@ -626,10 +628,10 @@ namespace pl::ptrn {
     private:
         friend pl::core::Evaluator;
 
-        core::Evaluator *m_evaluator;
+        core::Evaluator *m_evaluator = nullptr;
 
         std::unique_ptr<std::map<std::string, std::vector<core::Token::Literal>>> m_attributes;
-        Pattern *m_parent = nullptr;
+        std::weak_ptr<Pattern> m_parent;
         u32 m_line = 0;
 
         std::set<std::string>::const_iterator m_variableName;

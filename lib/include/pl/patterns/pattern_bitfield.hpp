@@ -11,16 +11,12 @@ namespace pl::ptrn {
 
         [[nodiscard]] const PatternBitfieldMember& getTopmostBitfield() const {
             const PatternBitfieldMember* topBitfield = this;
-            while (auto *parent = topBitfield->getParent()) {
-                if ( parent == nullptr || parent->getParent() ==nullptr )
+            while (auto parent = topBitfield->getParent()) {
+                auto parentBitfield = dynamic_cast<const PatternBitfieldMember*>(parent);
+                if (parentBitfield == nullptr)
                     break;
-                else if (auto weakPtr = parent->weak_from_this(); !weakPtr.expired()) {
-                    const auto *parentBitfield = dynamic_cast<const PatternBitfieldMember *>(parent);
-                    if (parentBitfield == nullptr)
-                        break;
-                    topBitfield = parentBitfield;
-                } else
-                    break;
+
+                topBitfield = parentBitfield;
             }
 
             return *topBitfield;
@@ -60,7 +56,7 @@ namespace pl::ptrn {
         PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, PatternBitfieldMember *parentBitfield = nullptr)
                 : PatternBitfieldMember(evaluator, offset, (bitOffset + bitSize + 7) / 8, line), m_bitOffset(bitOffset % 8), m_bitSize(bitSize) {
             if (parentBitfield != nullptr)
-                this->setParent(parentBitfield->reference().get());
+                this->setParent(parentBitfield->reference());
         }
 
         PatternBitfieldField(const PatternBitfieldField &other) : PatternBitfieldMember(other) {
@@ -289,7 +285,7 @@ namespace pl::ptrn {
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             auto other =  std::make_shared<PatternBitfieldArray>(*this);
             for (const auto &entry : other->m_entries)
-                entry->setParent(other->reference().get());
+                entry->setParent(other->reference());
             return other;
         }
 
@@ -649,7 +645,7 @@ namespace pl::ptrn {
                 this->setBaseColor(this->m_fields.front()->getColor());
 
             for (const auto &field : this->m_fields) {
-                field->setParent(this);
+                field->setParent(this->reference());
                 this->m_sortedFields.push_back(field.get());
             }
         }

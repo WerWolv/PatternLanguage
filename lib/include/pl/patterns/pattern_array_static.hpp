@@ -17,7 +17,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             auto other = std::make_shared<PatternArrayStatic>(*this);
-            other->m_template->setParent(other->reference().get());
+            other->m_template->setParent(other->reference());
             return other;
         }
 

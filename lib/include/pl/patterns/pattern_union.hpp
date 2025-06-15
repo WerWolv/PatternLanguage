@@ -23,7 +23,7 @@ namespace pl::ptrn {
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             auto other = std::make_shared<PatternUnion>(*this);
             for (const auto &member : other->m_members)
-                member->setParent(other->reference().get());
+                member->setParent(other->reference());
 
             return other;
         }
