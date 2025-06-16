@@ -103,7 +103,7 @@ endif ()
 
 target_include_directories(libpl PUBLIC include ../external/throwing_ptr/include)
 target_include_directories(libpl_includes INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include ../external/throwing_ptr/include)
-target_include_directories(libpl PRIVATE include ../lexertl17/include)
+target_include_directories(libpl PRIVATE include ../external/lexertl17/include)
 target_link_libraries(libpl PRIVATE ${FMT_LIBRARIES})
 target_link_libraries(libpl PUBLIC wolv::types wolv::io wolv::utils wolv::hash wolv::containers)
 
