@@ -28,7 +28,7 @@ namespace pl::core {
 
         Token() = default;
 
-        enum class Type : u64 {
+        enum class Type /*: u64*/ { // Why so big?
             Keyword,
             ValueType,
             Operator,
