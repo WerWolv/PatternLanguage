@@ -2,6 +2,7 @@
 //
 
 #include <pl/api.hpp>
+#include <pl/core/token.hpp>
 #include <pl/core/new_lexer.hpp>
 
 #include <lexertl/lookup.hpp>
@@ -395,6 +396,13 @@ namespace pl::core {
 
 hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
 {
+    auto key_words = Token::Keywords();
+    for (const auto& [key, value] : key_words)
+        cout << key << " : " << /*(int)value.type <<*/ " : "
+            << value.value.index() << " : " 
+            << (int)std::get<Token::Keyword>(value.value) << " : "
+            << endl;
+
     cout << "***New lexer: " << source->source << endl;
     cout << dynamic(source->content) << endl << endl;
     return {};
