@@ -1,6 +1,7 @@
 // lexertl_test.cpp
 //
 
+#include <pl/api.hpp>
 #include <pl/core/new_lexer.hpp>
 
 #include <lexertl/lookup.hpp>
@@ -11,6 +12,7 @@
 #include <lexertl/generate_cpp.hpp>
 
 #include <string>
+#include <sstream>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -263,31 +265,33 @@ void compile(lexertl::state_machine &sm, lexertl::rules &rules)
     lexertl::generator::build(rules, sm);
 }
 
-void dynamic(const string& input)
+string dynamic(const string& input)
 {
+    std::ostringstream oss;
+
     lexertl::state_machine sm;
     lexertl::rules rules;
     compile(sm, rules);
 
     lexertl::smatch results(input.begin(), input.end());
-    auto line_start = results.first;
-    std::vector<lexertl::smatch::iter_type::difference_type> lengths;
+    //auto line_start = results.first;
+    //std::vector<lexertl::smatch::iter_type::difference_type> lengths;
 
     // Read ahead
     lexertl::lookup(sm, results);
 
     while (results.id!=0)
     {
-        if (results.id == eNewLine)
+        /*if (results.id == eNewLine)
         {
             auto len = results.first - line_start;
             line_start = results.second;
             lengths.push_back(len);
-        }
+        }*/
 
         if (results.id != lexertl::smatch::npos())
         {
-            cout << "Id: " << results.id << ", Token: '" <<
+            oss << "Id: " << results.id << ", Token: '" <<
                 results.str() << "'\n";
         }
 
@@ -299,11 +303,13 @@ void dynamic(const string& input)
         lexertl::lookup(sm, results);
     }
 
-    int line = 1;
+    /*int line = 1;
     for (auto l : lengths) {
-        cout << line << ": " << l << endl;
+        oss << line << ": " << l << endl;
         ++line;
-    }
+    }*/
+
+    return oss.str();
 }
 
 /*void generate()
@@ -389,7 +395,8 @@ namespace pl::core {
 
 hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
 {
-    (void)source;
+    cout << "***New lexer: " << source->source << endl;
+    cout << dynamic(source->content) << endl << endl;
     return {};
 }
 
