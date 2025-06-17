@@ -394,6 +394,11 @@ string read_text_file(const string& path) {
 
 namespace pl::core {
 
+void init_new_lexer()
+{
+    int a=1; (void)a;
+}
+
 hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
 {
     auto key_words = Token::Keywords();

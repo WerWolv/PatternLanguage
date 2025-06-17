@@ -21,6 +21,11 @@
 
 namespace pl {
 
+    void pl_init()
+    {
+        core::init_new_lexer();
+    }
+
     static std::string getFunctionName(const api::Namespace &ns, const std::string &name) {
         std::string functionName;
 

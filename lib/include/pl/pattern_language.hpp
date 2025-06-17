@@ -26,6 +26,8 @@
 
 namespace pl {
 
+    void pl_init();
+
     namespace core {
         class Preprocessor;
         class Lexer;

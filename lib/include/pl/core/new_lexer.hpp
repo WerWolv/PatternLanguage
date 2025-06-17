@@ -7,6 +7,8 @@
 
 namespace pl::core {
 
+void init_new_lexer();
+
 class New_Lexer
 {
 public:
