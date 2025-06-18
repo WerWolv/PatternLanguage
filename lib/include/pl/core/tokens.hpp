@@ -14,7 +14,7 @@ namespace pl::core::tkn {
     inline Token makeToken(const core::Token::Type type, const core::Token::ValueTypes &value) {
         return { type, value, Location::Empty() };
     }
-
+    
     namespace Keyword {
 
         inline Token makeKeyword(const Token::Keyword& keyword, const std::string_view& name) {

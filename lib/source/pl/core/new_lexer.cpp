@@ -394,20 +394,85 @@ string read_text_file(const string& path) {
 
 namespace pl::core {
 
+struct LexTokenInfo
+{
+    Token::Type type;
+    union sub_types
+    {
+        int raw;
+        Token::Keyword keyword;
+        Token::Operator oper;
+        Token::ValueType value;
+        Token::Separator separator;
+        Token::Directive directive;
+        Token::Identifier::IdentifierType identifier;
+    } sub_type;
+};
+
+std::vector<LexTokenInfo> g_lexId2Info;
+
 void init_new_lexer()
 {
-    int a=1; (void)a;
+    int lexerid = 1;
+
+    auto keywords = Token::Keywords();
+    for (const auto& [key, value] : keywords) {
+        g_lexId2Info.push_back(
+            LexTokenInfo{           
+                value.type,
+                (int)std::get<Token::Keyword>(value.value)}
+        );
+        ++lexerid;
+    }
+
+    auto opeators = Token::Operators();
+    for (const auto& [key, value] : opeators) {
+        g_lexId2Info.push_back(
+            LexTokenInfo{
+                value.type,
+                (int)std::get<Token::Operator>(value.value)}
+        );
+        ++lexerid; 
+    }
+
+    auto types = Token::Types();
+    for (const auto& [key, value] : types) {
+        g_lexId2Info.push_back(
+            LexTokenInfo{
+                value.type,
+                (int)std::get<Token::ValueType>(value.value)}
+        );
+        ++lexerid; 
+    }
+
+    auto separators = Token::Separators();
+    for (const auto& [key, value] : separators) {
+        g_lexId2Info.push_back(
+            LexTokenInfo{
+                value.type,
+                (int)std::get<Token::Separator>(value.value)}
+        );
+        ++lexerid; 
+    }
+
+    auto directives = Token::Directives();
+    for (const auto& [key, value] : directives) {
+        g_lexId2Info.push_back(
+            LexTokenInfo{
+                value.type,
+                (int)std::get<Token::Directive>(value.value)}
+        );
+        ++lexerid;
+    }
+
+    lexerid = 0;
+    for (const auto &val : g_lexId2Info) {
+        cout << lexerid++ << ": " << (int)val.type << " -> " << val.sub_type.raw << endl;
+    }
 }
 
 hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
 {
-    auto key_words = Token::Keywords();
-    for (const auto& [key, value] : key_words)
-        cout << key << " : " << /*(int)value.type <<*/ " : "
-            << value.value.index() << " : " 
-            << (int)std::get<Token::Keyword>(value.value) << " : "
-            << endl;
-
     cout << "***New lexer: " << source->source << endl;
     cout << dynamic(source->content) << endl << endl;
     return {};
