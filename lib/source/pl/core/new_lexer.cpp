@@ -18,6 +18,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <type_traits>
 
 using std::string;
 using std::cin;
@@ -394,12 +395,14 @@ string read_text_file(const string& path) {
 
 namespace pl::core {
 
+lexertl::state_machine New_Lexer::s_sm;
+
 struct LexTokenInfo
 {
     Token::Type type;
     union sub_types
     {
-        int raw;
+        std::underlying_type_t<Token::Keyword> raw;
         Token::Keyword keyword;
         Token::Operator oper;
         Token::ValueType value;
@@ -411,21 +414,27 @@ struct LexTokenInfo
 
 std::vector<LexTokenInfo> g_lexId2Info;
 
-void init_new_lexer()
+/*static*/
+void New_Lexer::static_construct()
 {
+    lexertl::rules rules;
+
     int lexerid = 1;
 
     auto keywords = Token::Keywords();
     for (const auto& [key, value] : keywords) {
+        rules.push(std::string(key).c_str(), lexerid);
+
         g_lexId2Info.push_back(
             LexTokenInfo{           
                 value.type,
                 (int)std::get<Token::Keyword>(value.value)}
         );
+
         ++lexerid;
     }
 
-    auto opeators = Token::Operators();
+    /*auto opeators = Token::Operators();
     for (const auto& [key, value] : opeators) {
         g_lexId2Info.push_back(
             LexTokenInfo{
@@ -463,18 +472,69 @@ void init_new_lexer()
                 (int)std::get<Token::Directive>(value.value)}
         );
         ++lexerid;
-    }
+    }*/
 
-    lexerid = 0;
+    lexertl::generator::build(rules, s_sm);
+
+    lexerid = 1;
     for (const auto &val : g_lexId2Info) {
         cout << lexerid++ << ": " << (int)val.type << " -> " << val.sub_type.raw << endl;
     }
+}
+
+void init_new_lexer()
+{
+    New_Lexer::static_construct();
 }
 
 hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
 {
     cout << "***New lexer: " << source->source << endl;
     cout << dynamic(source->content) << endl << endl;
+
+    std::ostringstream oss;
+
+    lexertl::smatch results(source->content.begin(), source->content.end());
+    //auto line_start = results.first;
+    //std::vector<lexertl::smatch::iter_type::difference_type> lengths;
+
+    // Read ahead
+    lexertl::lookup(s_sm, results);
+
+    while (results.id!=0)
+    {
+        /*if (results.id == eNewLine)
+        {
+            auto len = results.first - line_start;
+            line_start = results.second;
+            lengths.push_back(len);
+        }*/
+
+        if (results.id != lexertl::smatch::npos())
+        {
+            oss << "Id: " << results.id << ", Token: '" << results.str() << "'";
+            oss << " (" << (int)g_lexId2Info[results.id-1].type << " : "
+                << g_lexId2Info[results.id-1].sub_type.raw 
+                << ")" << endl;
+                
+        }
+
+        if (results.id == eBreakPoint)
+        {
+            int a = 0; (void)a;
+        }
+
+        lexertl::lookup(s_sm, results);
+    }
+
+    cout << oss.str() << endl;
+
+    /*int line = 1;
+    for (auto l : lengths) {
+        oss << line << ": " << l << endl;
+        ++line;
+    }*/
+
     return {};
 }
 
