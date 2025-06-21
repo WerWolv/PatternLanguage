@@ -419,6 +419,8 @@ void New_Lexer::static_construct()
 {
     lexertl::rules rules;
 
+    rules.push("*", "\n", eNewLine, ".");
+
     int lexerid = 1;
 
     auto keywords = Token::Keywords();
@@ -489,33 +491,32 @@ void init_new_lexer()
 
 hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
 {
+    m_tokens.clear();
+
     cout << "***New lexer: " << source->source << endl;
     cout << dynamic(source->content) << endl << endl;
 
     std::ostringstream oss;
 
     lexertl::smatch results(source->content.begin(), source->content.end());
-    //auto line_start = results.first;
-    //std::vector<lexertl::smatch::iter_type::difference_type> lengths;
+    auto line_start = results.first;
+    u32 line = 1;
 
-    // Read ahead
     lexertl::lookup(s_sm, results);
-
     while (results.id!=0)
     {
-        /*if (results.id == eNewLine)
+        if (results.id == eNewLine)
         {
-            auto len = results.first - line_start;
+            ++line;
+            auto len = results.first - line_start; (void)len;
             line_start = results.second;
-            lengths.push_back(len);
-        }*/
+        }
 
         if (results.id != lexertl::smatch::npos())
         {
+            const auto &ti = g_lexId2Info[results.id-1];
             oss << "Id: " << results.id << ", Token: '" << results.str() << "'";
-            oss << " (" << (int)g_lexId2Info[results.id-1].type << " : "
-                << g_lexId2Info[results.id-1].sub_type.raw 
-                << ")" << endl;
+            oss << " (" << (int)ti.type << " : " << ti.sub_type.raw << ")" << endl;
                 
         }
 
@@ -528,12 +529,6 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
     }
 
     cout << oss.str() << endl;
-
-    /*int line = 1;
-    for (auto l : lengths) {
-        oss << line << ": " << l << endl;
-        ++line;
-    }*/
 
     return {};
 }
