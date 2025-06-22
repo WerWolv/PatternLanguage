@@ -5,10 +5,10 @@
 #include <pl/core/token.hpp>
 #include <pl/core/new_lexer.hpp>
 
-#include <lexertl/lookup.hpp>
-
 //#include "out.cpp"
 
+#include <lexertl/lookup.hpp>
+#include <lexertl/state_machine.hpp>
 #include <lexertl/generator.hpp>
 #include <lexertl/generate_cpp.hpp>
 
@@ -395,8 +395,6 @@ string read_text_file(const string& path) {
 
 namespace pl::core {
 
-lexertl::state_machine New_Lexer::s_sm;
-
 struct LexTokenInfo
 {
     Token::Type type;
@@ -412,10 +410,14 @@ struct LexTokenInfo
     } sub_type;
 };
 
-std::vector<LexTokenInfo> g_lexId2Info;
+namespace {
 
-/*static*/
-void New_Lexer::static_construct()
+std::vector<LexTokenInfo> g_lexId2Info;
+lexertl::state_machine g_sm;
+
+} // anon namespace
+
+void init_new_lexer()
 {
     lexertl::rules rules;
 
@@ -476,17 +478,12 @@ void New_Lexer::static_construct()
         ++lexerid;
     }*/
 
-    lexertl::generator::build(rules, s_sm);
+    lexertl::generator::build(rules, g_sm);
 
     lexerid = 1;
     for (const auto &val : g_lexId2Info) {
         cout << lexerid++ << ": " << (int)val.type << " -> " << val.sub_type.raw << endl;
     }
-}
-
-void init_new_lexer()
-{
-    New_Lexer::static_construct();
 }
 
 hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
@@ -502,7 +499,14 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
     auto line_start = results.first;
     u32 line = 1;
 
-    lexertl::lookup(s_sm, results);
+    auto location = [&]() -> Location {
+        u32 column = results.first-line_start;
+        size_t errorLength = results.second-results.first;
+        return Location { source, line, column, errorLength };
+    };
+    (void)location;
+
+    lexertl::lookup(g_sm, results);
     while (results.id!=0)
     {
         if (results.id == eNewLine)
@@ -525,7 +529,7 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
             int a = 0; (void)a;
         }
 
-        lexertl::lookup(s_sm, results);
+        lexertl::lookup(g_sm, results);
     }
 
     cout << oss.str() << endl;
