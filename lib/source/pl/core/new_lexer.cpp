@@ -483,8 +483,6 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
 {
     m_tokens.clear();
 
-    cout << "***New lexer: " << source->source << endl;
-
     lexertl::smatch results(source->content.begin(), source->content.end());
     auto line_start = results.first;
     u32 line = 1;
@@ -508,8 +506,6 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
         if (isAutoID(results.id))
         {
             const ID2TokenInfo &inf = g_lexID2Token.at(results.id-eFirstAutoLexToken);
-            cout << (int)inf.type << " : " << endl;
-
             m_tokens.emplace_back(inf.type, inf.value, location()); 
                 
         }
