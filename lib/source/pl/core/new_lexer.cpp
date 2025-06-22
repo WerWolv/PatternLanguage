@@ -226,93 +226,91 @@ string rx_esc_strings(const T(&array)[N])
 }
 
 enum {
-    eEOF, eKeyword, eNamedOperator, eType, eConstant, eIdentifier, eNumber,
-    eSingleLineComment, eMultiLineComment, eOperator, eSeperator, eDirective,
-    ePragma, ePragmaType, ePragmaParam, eString, eNewLine, eBreakPoint
+    eEOF, eNewLine , eFirstAutoLexToken
 };
 
-void compile(lexertl::state_machine &sm, lexertl::rules &rules)
-{
-    rules.push_state("MLCOMMENT");
-    rules.push_state("PRAGMA1");
-    rules.push_state("PRAGMA2");
+// void compile(lexertl::state_machine &sm, lexertl::rules &rules)
+// {
+//     rules.push_state("MLCOMMENT");
+//     rules.push_state("PRAGMA1");
+//     rules.push_state("PRAGMA2");
 
-    rules.push("*", "\n", eNewLine, ".");
+//     rules.push("*", "\n", eNewLine, ".");
 
-    rules.push(R"(\*\*\*)", eBreakPoint);
+//     rules.push(R"(\*\*\*)", eBreakPoint);
 
-    rules.push("INITIAL", "\"/*\"", eMultiLineComment, "MLCOMMENT");
-    rules.push("MLCOMMENT", R"([^*\n]+|.)", eMultiLineComment, ".");
-    rules.push("MLCOMMENT", "\"*/\"", eMultiLineComment, "INITIAL");
+//     rules.push("INITIAL", "\"/*\"", eMultiLineComment, "MLCOMMENT");
+//     rules.push("MLCOMMENT", R"([^*\n]+|.)", eMultiLineComment, ".");
+//     rules.push("MLCOMMENT", "\"*/\"", eMultiLineComment, "INITIAL");
 
-    rules.push(rx_strings(g_keywords), eKeyword);
-    rules.push(rx_strings(g_namedOperators), eNamedOperator);
-    rules.push(rx_strings(g_types), eType);
-    rules.push(rx_strings(g_constants), eConstant);
-    rules.push(R"([_a-zA-Z][_a-zA-Z0-9]*)", eIdentifier);
-    rules.push(
-        R"((?:0[xX][0-9a-fA-F]+|0[bB][01]+|0[0-7]*|\d+\.\d*([eE][+-]?\d+)?|\.\d+([eE][+-]?\d+)?|\d+[eE][+-]?\d+|\d+)(?:[uU]?[lL]{0,2}|[lL]{1,2}[uU]?)?[fFlL]?)",
-        eNumber
-    );
-    rules.push(R"(\/\/.*$)", eSingleLineComment);
-    rules.push(rx_esc_strings(g_operators), eOperator);
-    rules.push(rx_esc_strings(g_seperators), eSeperator);
-    rules.push("INITIAL", R"(#\s*pragma)", ePragma, "PRAGMA1");
-    rules.push("PRAGMA1", R"([_a-zA-Z][_a-zA-Z0-9]*)", ePragmaType, "PRAGMA2");
-    rules.push("PRAGMA2", R"([a-zA-Z].*)", ePragmaParam, "INITIAL");
-    rules.push(rx_directives(), eDirective);
+//     rules.push(rx_strings(g_keywords), eKeyword);
+//     rules.push(rx_strings(g_namedOperators), eNamedOperator);
+//     rules.push(rx_strings(g_types), eType);
+//     rules.push(rx_strings(g_constants), eConstant);
+//     rules.push(R"([_a-zA-Z][_a-zA-Z0-9]*)", eIdentifier);
+//     rules.push(
+//         R"((?:0[xX][0-9a-fA-F]+|0[bB][01]+|0[0-7]*|\d+\.\d*([eE][+-]?\d+)?|\.\d+([eE][+-]?\d+)?|\d+[eE][+-]?\d+|\d+)(?:[uU]?[lL]{0,2}|[lL]{1,2}[uU]?)?[fFlL]?)",
+//         eNumber
+//     );
+//     rules.push(R"(\/\/.*$)", eSingleLineComment);
+//     rules.push(rx_esc_strings(g_operators), eOperator);
+//     rules.push(rx_esc_strings(g_seperators), eSeperator);
+//     rules.push("INITIAL", R"(#\s*pragma)", ePragma, "PRAGMA1");
+//     rules.push("PRAGMA1", R"([_a-zA-Z][_a-zA-Z0-9]*)", ePragmaType, "PRAGMA2");
+//     rules.push("PRAGMA2", R"([a-zA-Z].*)", ePragmaParam, "INITIAL");
+//     rules.push(rx_directives(), eDirective);
 
-    rules.push(R"(["]([^"\\\n]|\\.|\\\n)*["])", eString);
+//     rules.push(R"(["]([^"\\\n]|\\.|\\\n)*["])", eString);
 
-    lexertl::generator::build(rules, sm);
-}
+//     lexertl::generator::build(rules, sm);
+// }
 
-string dynamic(const string& input)
-{
-    std::ostringstream oss;
+// string dynamic(const string& input)
+// {
+//     std::ostringstream oss;
 
-    lexertl::state_machine sm;
-    lexertl::rules rules;
-    compile(sm, rules);
+//     lexertl::state_machine sm;
+//     lexertl::rules rules;
+//     compile(sm, rules);
 
-    lexertl::smatch results(input.begin(), input.end());
-    //auto line_start = results.first;
-    //std::vector<lexertl::smatch::iter_type::difference_type> lengths;
+//     lexertl::smatch results(input.begin(), input.end());
+//     //auto line_start = results.first;
+//     //std::vector<lexertl::smatch::iter_type::difference_type> lengths;
 
-    // Read ahead
-    lexertl::lookup(sm, results);
+//     // Read ahead
+//     lexertl::lookup(sm, results);
 
-    while (results.id!=0)
-    {
-        /*if (results.id == eNewLine)
-        {
-            auto len = results.first - line_start;
-            line_start = results.second;
-            lengths.push_back(len);
-        }*/
+//     while (results.id!=0)
+//     {
+//         /*if (results.id == eNewLine)
+//         {
+//             auto len = results.first - line_start;
+//             line_start = results.second;
+//             lengths.push_back(len);
+//         }*/
 
-        if (results.id != lexertl::smatch::npos())
-        {
-            oss << "Id: " << results.id << ", Token: '" <<
-                results.str() << "'\n";
-        }
+//         if (results.id != lexertl::smatch::npos())
+//         {
+//             oss << "Id: " << results.id << ", Token: '" <<
+//                 results.str() << "'\n";
+//         }
 
-        if (results.id == eBreakPoint)
-        {
-            int a = 0; (void)a;
-        }
+//         if (results.id == eBreakPoint)
+//         {
+//             int a = 0; (void)a;
+//         }
 
-        lexertl::lookup(sm, results);
-    }
+//         lexertl::lookup(sm, results);
+//     }
 
-    /*int line = 1;
-    for (auto l : lengths) {
-        oss << line << ": " << l << endl;
-        ++line;
-    }*/
+//     /*int line = 1;
+//     for (auto l : lengths) {
+//         oss << line << ": " << l << endl;
+//         ++line;
+//     }*/
 
-    return oss.str();
-}
+//     return oss.str();
+// }
 
 /*void generate()
 {
@@ -395,24 +393,9 @@ string read_text_file(const string& path) {
 
 namespace pl::core {
 
-struct LexTokenInfo
-{
-    Token::Type type;
-    union sub_types
-    {
-        std::underlying_type_t<Token::Keyword> raw;
-        Token::Keyword keyword;
-        Token::Operator oper;
-        Token::ValueType value;
-        Token::Separator separator;
-        Token::Directive directive;
-        Token::Identifier::IdentifierType identifier;
-    } sub_type;
-};
-
 namespace {
 
-std::vector<LexTokenInfo> g_lexId2Info;
+std::vector<const Token*> g_lexId2Token;
 lexertl::state_machine g_sm;
 
 } // anon namespace
@@ -422,25 +405,20 @@ void init_new_lexer()
     lexertl::rules rules;
 
     rules.push("*", "\n", eNewLine, ".");
+    rules.push("[ \t]", lexertl::rules::skip());
 
-    int lexerid = 1;
+    int lexerid = eFirstAutoLexToken;
 
     auto keywords = Token::Keywords();
     for (const auto& [key, value] : keywords) {
         rules.push(std::string(key).c_str(), lexerid);
-
-        g_lexId2Info.push_back(
-            LexTokenInfo{           
-                value.type,
-                (int)std::get<Token::Keyword>(value.value)}
-        );
-
+        g_lexId2Token.push_back(&value);
         ++lexerid;
     }
 
     /*auto opeators = Token::Operators();
     for (const auto& [key, value] : opeators) {
-        g_lexId2Info.push_back(
+        g_lexId2Token.push_back(
             LexTokenInfo{
                 value.type,
                 (int)std::get<Token::Operator>(value.value)}
@@ -450,7 +428,7 @@ void init_new_lexer()
 
     auto types = Token::Types();
     for (const auto& [key, value] : types) {
-        g_lexId2Info.push_back(
+        g_lexId2Token.push_back(
             LexTokenInfo{
                 value.type,
                 (int)std::get<Token::ValueType>(value.value)}
@@ -460,7 +438,7 @@ void init_new_lexer()
 
     auto separators = Token::Separators();
     for (const auto& [key, value] : separators) {
-        g_lexId2Info.push_back(
+        g_lexId2Token.push_back(
             LexTokenInfo{
                 value.type,
                 (int)std::get<Token::Separator>(value.value)}
@@ -470,7 +448,7 @@ void init_new_lexer()
 
     auto directives = Token::Directives();
     for (const auto& [key, value] : directives) {
-        g_lexId2Info.push_back(
+        g_lexId2Token.push_back(
             LexTokenInfo{
                 value.type,
                 (int)std::get<Token::Directive>(value.value)}
@@ -480,10 +458,10 @@ void init_new_lexer()
 
     lexertl::generator::build(rules, g_sm);
 
-    lexerid = 1;
-    for (const auto &val : g_lexId2Info) {
-        cout << lexerid++ << ": " << (int)val.type << " -> " << val.sub_type.raw << endl;
-    }
+    /*lexerid = 1;
+    for (const auto &val : g_lexId2Token) {
+        cout << lexerid++ << ": " << (int)val->type << " -> " << val->value << endl;
+    }*/
 }
 
 hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
@@ -491,7 +469,7 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
     m_tokens.clear();
 
     cout << "***New lexer: " << source->source << endl;
-    cout << dynamic(source->content) << endl << endl;
+    //cout << dynamic(source->content) << endl << endl;
 
     std::ostringstream oss;
 
@@ -504,7 +482,7 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
         size_t errorLength = results.second-results.first;
         return Location { source, line, column, errorLength };
     };
-    (void)location;
+    (void)location; //////////////////
 
     lexertl::lookup(g_sm, results);
     while (results.id!=0)
@@ -516,18 +494,25 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
             line_start = results.second;
         }
 
-        if (results.id != lexertl::smatch::npos())
+        if (results.id!=lexertl::smatch::npos() && results.id!=eNewLine)
         {
-            const auto &ti = g_lexId2Info[results.id-1];
-            oss << "Id: " << results.id << ", Token: '" << results.str() << "'";
-            oss << " (" << (int)ti.type << " : " << ti.sub_type.raw << ")" << endl;
+            const Token *ptok = g_lexId2Token[results.id-eFirstAutoLexToken];
+            (void)ptok; ////////////////
+
+            int a = 1+1; (void)a;
+            cout << (int)ptok->type << " : " << endl;
+
+            
+            /*Token {ti.type, }
+            
+            tk = makeToken(keywordToken->second, identifier.length());*/
                 
         }
 
-        if (results.id == eBreakPoint)
+        /*if (results.id == eBreakPoint)
         {
             int a = 0; (void)a;
-        }
+        }*/
 
         lexertl::lookup(g_sm, results);
     }
