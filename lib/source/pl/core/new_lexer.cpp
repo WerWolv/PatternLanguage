@@ -13,10 +13,8 @@
 #include <lexertl/generate_cpp.hpp>
 
 #include <string>
-#include <sstream>
 #include <iostream>
 #include <fstream>
-#include <sstream>
 #include <vector>
 #include <type_traits>
 
@@ -395,8 +393,22 @@ namespace pl::core {
 
 namespace {
 
-std::vector<const Token*> g_lexId2Token;
+struct ID2TokenInfo {
+    Token::Type type;
+    Token::ValueTypes value;
+};
+
+typedef std::vector<ID2TokenInfo> ID2Tok;
+ID2Tok g_lexID2Token;
+ID2Tok::size_type g_firstAutoID = 0;
+ID2Tok::size_type g_OnePastLastAutoID = 0;
+
 lexertl::state_machine g_sm;
+
+inline bool isAutoID(ID2Tok::size_type id)
+{
+    return id>=g_firstAutoID && id<g_OnePastLastAutoID;
+}
 
 } // anon namespace
 
@@ -408,17 +420,18 @@ void init_new_lexer()
     rules.push("[ \t]", lexertl::rules::skip());
 
     int lexerid = eFirstAutoLexToken;
+    g_firstAutoID = eFirstAutoLexToken;
 
     auto keywords = Token::Keywords();
     for (const auto& [key, value] : keywords) {
         rules.push(std::string(key).c_str(), lexerid);
-        g_lexId2Token.push_back(&value);
+        g_lexID2Token.emplace_back(value.type, value.value);
         ++lexerid;
     }
 
     /*auto opeators = Token::Operators();
     for (const auto& [key, value] : opeators) {
-        g_lexId2Token.push_back(
+        g_lexID2Token.push_back(
             LexTokenInfo{
                 value.type,
                 (int)std::get<Token::Operator>(value.value)}
@@ -428,7 +441,7 @@ void init_new_lexer()
 
     auto types = Token::Types();
     for (const auto& [key, value] : types) {
-        g_lexId2Token.push_back(
+        g_lexID2Token.push_back(
             LexTokenInfo{
                 value.type,
                 (int)std::get<Token::ValueType>(value.value)}
@@ -438,7 +451,7 @@ void init_new_lexer()
 
     auto separators = Token::Separators();
     for (const auto& [key, value] : separators) {
-        g_lexId2Token.push_back(
+        g_lexID2Token.push_back(
             LexTokenInfo{
                 value.type,
                 (int)std::get<Token::Separator>(value.value)}
@@ -448,7 +461,7 @@ void init_new_lexer()
 
     auto directives = Token::Directives();
     for (const auto& [key, value] : directives) {
-        g_lexId2Token.push_back(
+        g_lexID2Token.push_back(
             LexTokenInfo{
                 value.type,
                 (int)std::get<Token::Directive>(value.value)}
@@ -456,10 +469,12 @@ void init_new_lexer()
         ++lexerid;
     }*/
 
+    g_OnePastLastAutoID = lexerid;
+
     lexertl::generator::build(rules, g_sm);
 
     /*lexerid = 1;
-    for (const auto &val : g_lexId2Token) {
+    for (const auto &val : g_lexID2Token) {
         cout << lexerid++ << ": " << (int)val->type << " -> " << val->value << endl;
     }*/
 }
@@ -469,20 +484,16 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
     m_tokens.clear();
 
     cout << "***New lexer: " << source->source << endl;
-    //cout << dynamic(source->content) << endl << endl;
-
-    std::ostringstream oss;
 
     lexertl::smatch results(source->content.begin(), source->content.end());
     auto line_start = results.first;
     u32 line = 1;
 
     auto location = [&]() -> Location {
-        u32 column = results.first-line_start;
+        u32 column = results.first-line_start+1;
         size_t errorLength = results.second-results.first;
         return Location { source, line, column, errorLength };
     };
-    (void)location; //////////////////
 
     lexertl::lookup(g_sm, results);
     while (results.id!=0)
@@ -494,18 +505,12 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
             line_start = results.second;
         }
 
-        if (results.id!=lexertl::smatch::npos() && results.id!=eNewLine)
+        if (isAutoID(results.id))
         {
-            const Token *ptok = g_lexId2Token[results.id-eFirstAutoLexToken];
-            (void)ptok; ////////////////
+            const ID2TokenInfo &inf = g_lexID2Token.at(results.id-eFirstAutoLexToken);
+            cout << (int)inf.type << " : " << endl;
 
-            int a = 1+1; (void)a;
-            cout << (int)ptok->type << " : " << endl;
-
-            
-            /*Token {ti.type, }
-            
-            tk = makeToken(keywordToken->second, identifier.length());*/
+            m_tokens.emplace_back(inf.type, inf.value, location()); 
                 
         }
 
@@ -516,8 +521,6 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
 
         lexertl::lookup(g_sm, results);
     }
-
-    cout << oss.str() << endl;
 
     return {};
 }
