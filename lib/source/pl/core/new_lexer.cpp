@@ -201,11 +201,9 @@ std::unordered_map<std::string, KWOpTypeInfo, TransHash, TransEqual> g_KWOpTypeT
 
 lexertl::state_machine g_sm;
 
-unsigned int g_firstAutoID = 0;
-
 enum {
     eEOF, eNewLine, eKWNamedOpTypeConst, eSingleLineComment,
-    eMultiLineCommentOpen, eMultiLineComment, eFirstAutoLexToken
+    eMultiLineCommentOpen, eMultiLineComment, eMultiLineCommentClose
 };
 
 } // anon namespace
@@ -216,19 +214,19 @@ void init_new_lexer()
 
     rules.push_state("MLCOMMENT");
 
-    rules.push("\n", eNewLine);
+    rules.push("*", "\n", eNewLine, ".");
 
     rules.push(R"(\/\/.*$)", eSingleLineComment);
 
-    rules.push("INITIAL", R"(\/\*.*$)", eMultiLineCommentOpen, "MLCOMMENT");
+    rules.push("INITIAL", R"(\/\*.*)", eMultiLineCommentOpen, "MLCOMMENT");
     rules.push("MLCOMMENT", R"([^*\n]+|.)", eMultiLineComment, "MLCOMMENT");
-    rules.push("MLCOMMENT", R"(\/\*)", lexertl::rules::skip(), "INITIAL");
+    rules.push("MLCOMMENT", R"(\*\/)", eMultiLineCommentClose, "INITIAL");
 
     rules.push(R"([a-zA-Z_]\w*)", eKWNamedOpTypeConst);
 
     auto keywords = Token::Keywords();
     for (const auto& [key, value] : keywords)
-        g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
+        g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value   .type, value.value}));
 
     auto opeators = Token::Operators();
     for (const auto& [key, value] : opeators)
@@ -237,11 +235,6 @@ void init_new_lexer()
     auto types = Token::Types();
     for (const auto& [key, value] : opeators)
         g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
-
-    g_firstAutoID = eFirstAutoLexToken;
-    int lexerid = eFirstAutoLexToken;
-    
-    ++lexerid;
 
     /*for (const auto& [key, value] : pl::core::tkn::constants)
         g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));*/
@@ -266,7 +259,6 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
     };
 
     string::const_iterator mlcoment_start = content_end;
-    (void)mlcoment_start;
 
     lexertl::lookup(g_sm, results);
     while (results.id!=0)
@@ -293,9 +285,12 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
             }
             break;
         case eMultiLineCommentOpen:
-        case eMultiLineComment: {
-                auto start = (results.id==eMultiLineCommentOpen) ? results.first+2 : results.first;
-                const string_view comment(start, results.second);
+            mlcoment_start = results.first+2;
+            break;
+        case eMultiLineComment:
+            break;
+        case eMultiLineCommentClose: {
+                const string_view comment(mlcoment_start, results.second-2);
                 auto ctok = pl::core::tkn::Literal::makeComment(true, string(comment));
                 m_tokens.emplace_back(ctok.type, ctok.value, location());
             }
