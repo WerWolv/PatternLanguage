@@ -160,9 +160,9 @@ namespace pl::core {
 
 namespace {
 
-// Much of the stuff in this anonymous namespace are conceptually private
-// static members of the Lexer class. They’re here to stop pulling in stuff
-// we don't need into every file that includes our header.
+// Much of the contents of this anonymous namespace serve as conceptually
+// private static members of the Lexer class. They're placed here to avoid
+// pulling in unnecessary symbols into every file that includes our header.
 
 struct KWOpTypeInfo {
     Token::Type type;
