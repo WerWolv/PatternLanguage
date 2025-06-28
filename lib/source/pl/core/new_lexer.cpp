@@ -203,7 +203,7 @@ lexertl::state_machine g_sm;
 
 enum {
     eEOF, eNewLine, eKWNamedOpTypeConst, eSingleLineComment,
-    eMultiLineCommentOpen, eMultiLineComment, eMultiLineCommentClose
+    eMultiLineCommentOpen, eMultiLineCommentClose
 };
 
 } // anon namespace
@@ -219,7 +219,7 @@ void init_new_lexer()
     rules.push(R"(\/\/.*$)", eSingleLineComment);
 
     rules.push("INITIAL", R"(\/\*.*)", eMultiLineCommentOpen, "MLCOMMENT");
-    rules.push("MLCOMMENT", R"([^*\n]+|.)", eMultiLineComment, "MLCOMMENT");
+    rules.push("MLCOMMENT", R"([^*\n]+|.)", lexertl::rules::skip(), "MLCOMMENT");
     rules.push("MLCOMMENT", R"(\*\/)", eMultiLineCommentClose, "INITIAL");
 
     rules.push(R"([a-zA-Z_]\w*)", eKWNamedOpTypeConst);
@@ -286,8 +286,6 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
             break;
         case eMultiLineCommentOpen:
             mlcoment_start = results.first+2;
-            break;
-        case eMultiLineComment:
             break;
         case eMultiLineCommentClose: {
                 const string_view comment(mlcoment_start, results.second-2);
