@@ -15,10 +15,14 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-#include <vector>
+//#include <vector>
+#include <string>
+#include <string_view>
+#include <unordered_map>
 #include <type_traits>
 
 using std::string;
+using std::string_view;
 using std::cin;
 using std::cout;
 using std::endl;
@@ -223,10 +227,6 @@ string rx_esc_strings(const T(&array)[N])
     return result;
 }
 
-enum {
-    eEOF, eNewLine , eFirstAutoLexToken
-};
-
 // void compile(lexertl::state_machine &sm, lexertl::rules &rules)
 // {
 //     rules.push_state("MLCOMMENT");
@@ -393,22 +393,60 @@ namespace pl::core {
 
 namespace {
 
-struct ID2TokenInfo {
+struct KWTokenInfo {
     Token::Type type;
     Token::ValueTypes value;
 };
 
-typedef std::vector<ID2TokenInfo> ID2Tok;
+struct TransHash {
+    using is_transparent = void;
+
+    std::size_t operator()(const std::string &s) const noexcept {
+        return std::hash<string>{}(s);
+    }
+
+    std::size_t operator()(std::string_view s) const noexcept {
+        return std::hash<string_view>{}(s);
+    }
+};
+
+struct TransEqual {
+    using is_transparent = void;
+
+    bool operator()(const string &lhs, const string &rhs) const noexcept {
+        return lhs == rhs;
+    }
+
+    bool operator()(const string &lhs, string_view rhs) const noexcept {
+        return lhs == rhs;
+    }
+
+    bool operator()(std::string_view lhs, const std::string& rhs) const noexcept {
+        return lhs == rhs;
+    }
+
+    bool operator()(string_view lhs, std::string_view rhs) const noexcept {
+        return lhs == rhs;
+    }
+};
+
+std::unordered_map<std::string, KWTokenInfo, TransHash, TransEqual> g_KW2TokenInfo;
+
+/*typedef std::vector<KWTokenInfo> ID2Tok;
 ID2Tok g_lexID2Token;
 ID2Tok::size_type g_firstAutoID = 0;
-ID2Tok::size_type g_OnePastLastAutoID = 0;
+ID2Tok::size_type g_OnePastLastAutoID = 0;*/
 
 lexertl::state_machine g_sm;
 
-inline bool isAutoID(ID2Tok::size_type id)
+/*inline bool isAutoID(ID2Tok::size_type id)
 {
     return id>=g_firstAutoID && id<g_OnePastLastAutoID;
-}
+}*/
+
+enum {
+    eEOF, eNewLine, eKWNamedOpTypeConst, eFirstAutoLexToken
+};
 
 } // anon namespace
 
@@ -416,30 +454,22 @@ void init_new_lexer()
 {
     lexertl::rules rules;
 
-    rules.push("*", "\n", eNewLine, ".");
-    rules.push("[ \t]", lexertl::rules::skip());
+    rules.push("\n", eNewLine);
+    rules.push(R"((\s)+)", lexertl::rules::skip());
+    rules.push(R"([a-zA-Z_]\w*)", eKWNamedOpTypeConst);
 
-    int lexerid = eFirstAutoLexToken;
-    g_firstAutoID = eFirstAutoLexToken;
+    /*int lexerid = eFirstAutoLexToken;
+    g_firstAutoID = eFirstAutoLexToken;*/
 
     auto keywords = Token::Keywords();
-    for (const auto& [key, value] : keywords) {
-        rules.push(std::string(key).c_str(), lexerid);
-        g_lexID2Token.emplace_back(value.type, value.value);
-        ++lexerid;
-    }
+    for (const auto& [key, value] : keywords)
+        g_KW2TokenInfo.insert(std::make_pair(key, KWTokenInfo{value.type, value.value}));
 
-    /*auto opeators = Token::Operators();
-    for (const auto& [key, value] : opeators) {
-        g_lexID2Token.push_back(
-            LexTokenInfo{
-                value.type,
-                (int)std::get<Token::Operator>(value.value)}
-        );
-        ++lexerid; 
-    }
+    auto opeators = Token::Operators();
+    for (const auto& [key, value] : opeators)
+        g_KW2TokenInfo.insert(std::make_pair(key, KWTokenInfo{value.type, value.value}));
 
-    auto types = Token::Types();
+    /*auto types = Token::Types();
     for (const auto& [key, value] : types) {
         g_lexID2Token.push_back(
             LexTokenInfo{
@@ -469,7 +499,7 @@ void init_new_lexer()
         ++lexerid;
     }*/
 
-    g_OnePastLastAutoID = lexerid;
+    //g_OnePastLastAutoID = lexerid;
 
     lexertl::generator::build(rules, g_sm);
 
@@ -492,6 +522,7 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
         size_t errorLength = results.second-results.first;
         return Location { source, line, column, errorLength };
     };
+    (void)location;
 
     lexertl::lookup(g_sm, results);
     while (results.id!=0)
@@ -503,11 +534,18 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
             line_start = results.second;
         }
 
-        if (isAutoID(results.id))
+        //if (isAutoID(results.id))
+        if (results.id == eKWNamedOpTypeConst)
         {
-            const ID2TokenInfo &inf = g_lexID2Token.at(results.id-eFirstAutoLexToken);
-            m_tokens.emplace_back(inf.type, inf.value, location()); 
-                
+            const string_view kw(results.first, results.second);
+            auto it = g_KW2TokenInfo.find(kw);
+            if (it != g_KW2TokenInfo.end()) {
+                m_tokens.emplace_back(it->second.type, it->second.value, location()); 
+            }
+
+            int a = 0; (void)a;
+            //const ID2TokenInfo &inf = g_lexID2Token.at(results.id-eFirstAutoLexToken);
+            //m_tokens.emplace_back(inf.type, inf.value, location()); 
         }
 
         /*if (results.id == eBreakPoint)
