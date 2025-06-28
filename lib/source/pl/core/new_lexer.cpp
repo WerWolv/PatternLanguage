@@ -160,19 +160,25 @@ namespace pl::core {
 
 namespace {
 
+// Much of the stuff in this anonymous namespace are conceptually private
+// static members of the Lexer class. They’re here to stop pulling in stuff
+// we don't need into every file that includes our header.
+
 struct KWOpTypeInfo {
     Token::Type type;
     Token::ValueTypes value;
 };
 
+// This "Trans" stuff is to allow us to use std::string_view to lookup stuff
+// so we don't have to construct a std::string.
 struct TransHash {
     using is_transparent = void;
 
-    std::size_t operator()(const std::string &s) const noexcept {
+    std::size_t operator()(const string &s) const noexcept {
         return std::hash<string>{}(s);
     }
 
-    std::size_t operator()(std::string_view s) const noexcept {
+    std::size_t operator()(string_view s) const noexcept {
         return std::hash<string_view>{}(s);
     }
 };
@@ -188,11 +194,11 @@ struct TransEqual {
         return lhs == rhs;
     }
 
-    bool operator()(std::string_view lhs, const std::string& rhs) const noexcept {
+    bool operator()(string_view lhs, const string& rhs) const noexcept {
         return lhs == rhs;
     }
 
-    bool operator()(string_view lhs, std::string_view rhs) const noexcept {
+    bool operator()(string_view lhs, string_view rhs) const noexcept {
         return lhs == rhs;
     }
 };
@@ -206,7 +212,7 @@ enum {
     eMultiLineCommentOpen, eMultiLineCommentClose
 };
 
-} // anon namespace
+} // anonymous namespace
 
 void init_new_lexer()
 {
