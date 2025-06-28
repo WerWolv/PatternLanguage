@@ -455,7 +455,7 @@ void init_new_lexer()
     lexertl::rules rules;
 
     rules.push("\n", eNewLine);
-    rules.push(R"((\s)+)", lexertl::rules::skip());
+    //rules.push(R"((\s)+)", lexertl::rules::skip());
     rules.push(R"([a-zA-Z_]\w*)", eKWNamedOpTypeConst);
 
     /*int lexerid = eFirstAutoLexToken;
@@ -527,8 +527,12 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
     lexertl::lookup(g_sm, results);
     while (results.id!=0)
     {
+        //cout << "#" << results.id << " : " << string_view(results.first, results.second) << endl;
+        
         if (results.id == eNewLine)
         {
+            //cout << "#" << line << " : " << string_view(line_start, results.first) << endl;
+
             ++line;
             auto len = results.first - line_start; (void)len;
             line_start = results.second;
