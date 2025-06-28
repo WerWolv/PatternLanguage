@@ -155,13 +155,6 @@ void usegen(const string &input)
     }
 }*/
 
-string read_text_file(const string& path) {
-    std::ifstream in(path);
-    std::ostringstream ss;
-    ss << in.rdbuf();
-    return ss.str();
-}
-
 namespace pl::core {
 
 namespace {
@@ -205,20 +198,10 @@ struct TransEqual {
 
 std::unordered_map<std::string, KWTokenInfo, TransHash, TransEqual> g_KW2TokenInfo;
 
-/*typedef std::vector<KWTokenInfo> ID2Tok;
-ID2Tok g_lexID2Token;
-ID2Tok::size_type g_firstAutoID = 0;
-ID2Tok::size_type g_OnePastLastAutoID = 0;*/
-
 lexertl::state_machine g_sm;
 
-/*inline bool isAutoID(ID2Tok::size_type id)
-{
-    return id>=g_firstAutoID && id<g_OnePastLastAutoID;
-}*/
-
 enum {
-    eEOF, eNewLine, eKWNamedOpTypeConst, eFirstAutoLexToken
+    eEOF, eNewLine, eKWNamedOpTypeConst
 };
 
 } // anon namespace
@@ -228,11 +211,7 @@ void init_new_lexer()
     lexertl::rules rules;
 
     rules.push("\n", eNewLine);
-    //rules.push(R"((\s)+)", lexertl::rules::skip());
     rules.push(R"([a-zA-Z_]\w*)", eKWNamedOpTypeConst);
-
-    /*int lexerid = eFirstAutoLexToken;
-    g_firstAutoID = eFirstAutoLexToken;*/
 
     auto keywords = Token::Keywords();
     for (const auto& [key, value] : keywords)
@@ -242,44 +221,7 @@ void init_new_lexer()
     for (const auto& [key, value] : opeators)
         g_KW2TokenInfo.insert(std::make_pair(key, KWTokenInfo{value.type, value.value}));
 
-    /*auto types = Token::Types();
-    for (const auto& [key, value] : types) {
-        g_lexID2Token.push_back(
-            LexTokenInfo{
-                value.type,
-                (int)std::get<Token::ValueType>(value.value)}
-        );
-        ++lexerid; 
-    }
-
-    auto separators = Token::Separators();
-    for (const auto& [key, value] : separators) {
-        g_lexID2Token.push_back(
-            LexTokenInfo{
-                value.type,
-                (int)std::get<Token::Separator>(value.value)}
-        );
-        ++lexerid; 
-    }
-
-    auto directives = Token::Directives();
-    for (const auto& [key, value] : directives) {
-        g_lexID2Token.push_back(
-            LexTokenInfo{
-                value.type,
-                (int)std::get<Token::Directive>(value.value)}
-        );
-        ++lexerid;
-    }*/
-
-    //g_OnePastLastAutoID = lexerid;
-
     lexertl::generator::build(rules, g_sm);
-
-    /*lexerid = 1;
-    for (const auto &val : g_lexID2Token) {
-        cout << lexerid++ << ": " << (int)val->type << " -> " << val->value << endl;
-    }*/
 }
 
 hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
@@ -319,16 +261,7 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
             if (it != g_KW2TokenInfo.end()) {
                 m_tokens.emplace_back(it->second.type, it->second.value, location()); 
             }
-
-            int a = 0; (void)a;
-            //const ID2TokenInfo &inf = g_lexID2Token.at(results.id-eFirstAutoLexToken);
-            //m_tokens.emplace_back(inf.type, inf.value, location()); 
         }
-
-        /*if (results.id == eBreakPoint)
-        {
-            int a = 0; (void)a;
-        }*/
 
         lexertl::lookup(g_sm, results);
     }
