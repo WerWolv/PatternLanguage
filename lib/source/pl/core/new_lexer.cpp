@@ -3,6 +3,7 @@
 
 #include <pl/api.hpp>
 #include <pl/core/token.hpp>
+#include <pl/core/tokens.hpp>
 #include <pl/core/new_lexer.hpp>
 
 //#include "out.cpp"
@@ -159,7 +160,7 @@ namespace pl::core {
 
 namespace {
 
-struct KWTokenInfo {
+struct KWOpTypeInfo {
     Token::Type type;
     Token::ValueTypes value;
 };
@@ -196,12 +197,14 @@ struct TransEqual {
     }
 };
 
-std::unordered_map<std::string, KWTokenInfo, TransHash, TransEqual> g_KW2TokenInfo;
+std::unordered_map<std::string, KWOpTypeInfo, TransHash, TransEqual> g_KWOpTypeTokenInfo;
 
 lexertl::state_machine g_sm;
 
+unsigned int g_firstAutoID = 0;
+
 enum {
-    eEOF, eNewLine, eKWNamedOpTypeConst
+    eEOF, eNewLine, eKWNamedOpTypeConst, eSingleLineComment, eFirstAutoLexToken
 };
 
 } // anon namespace
@@ -211,15 +214,28 @@ void init_new_lexer()
     lexertl::rules rules;
 
     rules.push("\n", eNewLine);
+    rules.push(R"(\/\/.*$)", eSingleLineComment);
     rules.push(R"([a-zA-Z_]\w*)", eKWNamedOpTypeConst);
 
     auto keywords = Token::Keywords();
     for (const auto& [key, value] : keywords)
-        g_KW2TokenInfo.insert(std::make_pair(key, KWTokenInfo{value.type, value.value}));
+        g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
 
     auto opeators = Token::Operators();
     for (const auto& [key, value] : opeators)
-        g_KW2TokenInfo.insert(std::make_pair(key, KWTokenInfo{value.type, value.value}));
+        g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
+
+    auto types = Token::Types();
+    for (const auto& [key, value] : opeators)
+        g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
+
+    g_firstAutoID = eFirstAutoLexToken;
+    int lexerid = eFirstAutoLexToken;
+    
+    ++lexerid;
+
+    /*for (const auto& [key, value] : pl::core::tkn::constants)
+        g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));*/
 
     lexertl::generator::build(rules, g_sm);
 }
@@ -254,13 +270,21 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
         }
 
         //if (isAutoID(results.id))
-        if (results.id == eKWNamedOpTypeConst)
-        {
-            const string_view kw(results.first, results.second);
-            auto it = g_KW2TokenInfo.find(kw);
-            if (it != g_KW2TokenInfo.end()) {
-                m_tokens.emplace_back(it->second.type, it->second.value, location()); 
+        switch (results.id) {
+        case eKWNamedOpTypeConst: {
+                const string_view kw(results.first, results.second);
+                auto it = g_KWOpTypeTokenInfo.find(kw);
+                if (it != g_KWOpTypeTokenInfo.end()) {
+                    m_tokens.emplace_back(it->second.type, it->second.value, location()); 
+                }
             }
+            break;
+        case eSingleLineComment: {
+                const string_view comment(results.first+2, results.second);
+                auto ctok = pl::core::tkn::Literal::makeComment(true, string(comment));
+                m_tokens.emplace_back(ctok.type, ctok.value, location());
+            }
+            break;
         }
 
         lexertl::lookup(g_sm, results);
