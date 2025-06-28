@@ -204,7 +204,8 @@ lexertl::state_machine g_sm;
 unsigned int g_firstAutoID = 0;
 
 enum {
-    eEOF, eNewLine, eKWNamedOpTypeConst, eSingleLineComment, eFirstAutoLexToken
+    eEOF, eNewLine, eKWNamedOpTypeConst, eSingleLineComment,
+    eMultiLineCommentOpen, eMultiLineComment, eFirstAutoLexToken
 };
 
 } // anon namespace
@@ -213,8 +214,16 @@ void init_new_lexer()
 {
     lexertl::rules rules;
 
+    rules.push_state("MLCOMMENT");
+
     rules.push("\n", eNewLine);
+
     rules.push(R"(\/\/.*$)", eSingleLineComment);
+
+    rules.push("INITIAL", R"(\/\*.*$)", eMultiLineCommentOpen, "MLCOMMENT");
+    rules.push("MLCOMMENT", R"([^*\n]+|.)", eMultiLineComment, "MLCOMMENT");
+    rules.push("MLCOMMENT", R"(\/\*)", lexertl::rules::skip(), "INITIAL");
+
     rules.push(R"([a-zA-Z_]\w*)", eKWNamedOpTypeConst);
 
     auto keywords = Token::Keywords();
@@ -244,7 +253,9 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
 {
     m_tokens.clear();
 
-    lexertl::smatch results(source->content.begin(), source->content.end());
+    string::const_iterator content_end = source->content.end();
+    lexertl::smatch results(source->content.begin(), content_end);
+
     auto line_start = results.first;
     u32 line = 1;
 
@@ -253,24 +264,20 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
         size_t errorLength = results.second-results.first;
         return Location { source, line, column, errorLength };
     };
-    (void)location;
+
+    string::const_iterator mlcoment_start = content_end;
+    (void)mlcoment_start;
 
     lexertl::lookup(g_sm, results);
     while (results.id!=0)
     {
-        //cout << "#" << results.id << " : " << string_view(results.first, results.second) << endl;
-        
-        if (results.id == eNewLine)
-        {
-            //cout << "#" << line << " : " << string_view(line_start, results.first) << endl;
-
-            ++line;
-            auto len = results.first - line_start; (void)len;
-            line_start = results.second;
-        }
-
-        //if (isAutoID(results.id))
         switch (results.id) {
+        case eNewLine: {
+                ++line;
+                auto len = results.first - line_start; (void)len;
+                line_start = results.second;
+            }
+            break;
         case eKWNamedOpTypeConst: {
                 const string_view kw(results.first, results.second);
                 auto it = g_KWOpTypeTokenInfo.find(kw);
@@ -281,6 +288,14 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
             break;
         case eSingleLineComment: {
                 const string_view comment(results.first+2, results.second);
+                auto ctok = pl::core::tkn::Literal::makeComment(true, string(comment));
+                m_tokens.emplace_back(ctok.type, ctok.value, location());
+            }
+            break;
+        case eMultiLineCommentOpen:
+        case eMultiLineComment: {
+                auto start = (results.id==eMultiLineCommentOpen) ? results.first+2 : results.first;
+                const string_view comment(start, results.second);
                 auto ctok = pl::core::tkn::Literal::makeComment(true, string(comment));
                 m_tokens.emplace_back(ctok.type, ctok.value, location());
             }
