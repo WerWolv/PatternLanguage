@@ -208,7 +208,8 @@ std::unordered_map<std::string, KWOpTypeInfo, TransHash, TransEqual> g_KWOpTypeT
 lexertl::state_machine g_sm;
 
 enum {
-    eEOF, eNewLine, eKWNamedOpTypeConst, eSingleLineComment,
+    eEOF, eNewLine, eKWNamedOpTypeConst,
+    eSingleLineComment, eSingleLineDocComment,
     eMultiLineCommentOpen, eMultiLineCommentClose
 };
 
@@ -222,7 +223,8 @@ void init_new_lexer()
 
     rules.push("*", "\n", eNewLine, ".");
 
-    rules.push(R"(\/\/.*$)", eSingleLineComment);
+    rules.push(R"(\/\/[^/][^\n]*)", eSingleLineComment);
+    rules.push(R"(\/\/\/[^\n]*)", eSingleLineDocComment);
 
     rules.push("INITIAL", R"(\/\*.*)", eMultiLineCommentOpen, "MLCOMMENT");
     rules.push("MLCOMMENT", R"([^*\n]+|.)", lexertl::rules::skip(), "MLCOMMENT");
@@ -287,6 +289,12 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
         case eSingleLineComment: {
                 const string_view comment(results.first+2, results.second);
                 auto ctok = pl::core::tkn::Literal::makeComment(true, string(comment));
+                m_tokens.emplace_back(ctok.type, ctok.value, location());
+            }
+            break;
+        case eSingleLineDocComment: {
+                const string_view comment(results.first+3, results.second);
+                auto ctok = pl::core::tkn::Literal::makeDocComment(false, true, string(comment));
                 m_tokens.emplace_back(ctok.type, ctok.value, location());
             }
             break;
