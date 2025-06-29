@@ -272,6 +272,14 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
     string::const_iterator mlcoment_start;
     Location mlcomment_location;
 
+    enum MLCommentType{
+        MLComment,
+        MLLocalDocComment,
+        MLGlobalDocComment
+    };
+
+    MLCommentType mlcomment_type;
+
     lexertl::lookup(g_sm, results);
     while (results.id!=0)
     {
@@ -286,7 +294,7 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
                 const string_view kw(results.first, results.second);
                 auto it = g_KWOpTypeTokenInfo.find(kw);
                 if (it != g_KWOpTypeTokenInfo.end()) {
-                    m_tokens.emplace_back(it->second.type, it->second.value, location()); 
+                    m_tokens.emplace_back(it->second.type, it->second.value, location());
                 }
             }
             break;
@@ -303,11 +311,13 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
             }
             break;
         case eMultiLineCommentOpen:
+            mlcomment_type = MLComment;
             mlcoment_start_raw = results.first;
             mlcoment_start = results.first+2;
             mlcomment_location = location();
             break;
         case eMultiLineDocCommentOpen:
+            mlcomment_type = (results.first[2]=='*') ? MLLocalDocComment : MLGlobalDocComment;
             mlcoment_start_raw = results.first;
             mlcoment_start = results.first+3;
             mlcomment_location = location();
@@ -315,8 +325,24 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
         case eMultiLineCommentClose: {
                 mlcomment_location.length = results.second-mlcoment_start_raw;
                 const string_view comment(mlcoment_start, results.second-2);
-                auto ctok = pl::core::tkn::Literal::makeComment(false, string(comment));
-                m_tokens.emplace_back(ctok.type, ctok.value, mlcomment_location);
+        
+                switch (mlcomment_type) {
+                case MLComment: {
+                        auto ctok = pl::core::tkn::Literal::makeComment(false, string(comment));
+                        m_tokens.emplace_back(ctok.type, ctok.value, mlcomment_location);
+                    }
+                    break;
+                case MLLocalDocComment: {
+                        auto ctok = pl::core::tkn::Literal::makeDocComment(false, false, string(comment));
+                        m_tokens.emplace_back(ctok.type, ctok.value, mlcomment_location);
+                    }
+                    break;
+                case MLGlobalDocComment: {
+                        auto ctok = pl::core::tkn::Literal::makeDocComment(true, false, string(comment));
+                        m_tokens.emplace_back(ctok.type, ctok.value, mlcomment_location);
+                    }
+                    break;
+                }
             }
             break;
         }
