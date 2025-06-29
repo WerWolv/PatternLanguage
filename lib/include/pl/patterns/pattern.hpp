@@ -37,6 +37,8 @@ namespace pl::ptrn {
 
         [[nodiscard]] virtual size_t getEntryCount() const = 0;
 
+        virtual void replaceEntry(const std::shared_ptr<Pattern> &findPattern, std::shared_ptr<Pattern> replacePattern) = 0;
+
         virtual void addEntry(const std::shared_ptr<Pattern> &) {
             core::err::E0012.throwError("Cannot add entry to this pattern");
         }
@@ -63,10 +65,12 @@ namespace pl::ptrn {
 
     class Pattern : public std::enable_shared_from_this<Pattern> {
     public:
-        constexpr static u64 MainSectionId          = 0x0000'0000'0000'0000;
-        constexpr static u64 HeapSectionId          = 0xFFFF'FFFF'FFFF'FFFF;
-        constexpr static u64 PatternLocalSectionId  = 0xFFFF'FFFF'FFFF'FFFE;
-        constexpr static u64 InstantiationSectionId = 0xFFFF'FFFF'FFFF'FFFD;
+        enum Section : u64 {
+            MainSectionId          = 0x0000'0000'0000'0000,
+            HeapSectionId          = 0xFFFF'FFFF'FFFF'FFFF,
+            PatternLocalSectionId  = 0xFFFF'FFFF'FFFF'FFFE,
+            InstantiationSectionId = 0xFFFF'FFFF'FFFF'FFFD
+        };
 
         Pattern(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
             : m_evaluator(evaluator), m_line(line), m_offset(offset), m_size(size) {
@@ -98,6 +102,11 @@ namespace pl::ptrn {
             this->m_parent = other.m_parent;
             this->m_arrayIndex = other.m_arrayIndex;
             this->m_line = other.m_line;
+
+            if (other.m_heapData != nullptr) {
+                this->m_heapData = std::make_unique<std::vector<u8>>(*other.m_heapData);
+                this->m_offset = reinterpret_cast<u64>(this->m_heapData.get());
+            }
 
             if (other.m_cachedDisplayValue != nullptr)
                 this->m_cachedDisplayValue = std::make_unique<std::string>(*other.m_cachedDisplayValue);
@@ -209,7 +218,7 @@ namespace pl::ptrn {
             else return this->m_endian.value_or(this->m_evaluator->getDefaultEndian());
         }
         virtual void setEndian(std::endian endian) {
-            if (m_section == HeapSectionId || m_section == PatternLocalSectionId || m_section == InstantiationSectionId)
+            if (m_section == Section::HeapSectionId || m_section == Section::PatternLocalSectionId || m_section == Section::InstantiationSectionId)
                 return;
 
             this->m_endian = endian;
@@ -350,18 +359,29 @@ namespace pl::ptrn {
         virtual void setLocal(bool local) {
             if (local) {
                 this->setEndian(std::endian::native);
-                this->setSection(HeapSectionId);
+                this->setSection(Section::HeapSectionId);
+
+                if (this->m_heapData == nullptr) {
+                    this->m_heapData = std::make_unique<std::vector<u8>>(this->m_size, 0x00);
+                    this->m_offset = reinterpret_cast<u64>(this->m_heapData.get());
+                }
             } else {
-                this->m_section = MainSectionId;
+                this->m_section = Section::MainSectionId;
+            }
+
+            if (auto iterable = dynamic_cast<IIterable*>(this); iterable != nullptr) {
+                iterable->forEachEntry(0, iterable->getEntryCount(), [local](u64, Pattern *child) {
+                    child->setLocal(local);
+                });
             }
         }
 
         [[nodiscard]] bool isLocal() const {
-            return this->m_section != MainSectionId;
+            return this->m_section != Section::MainSectionId;
         }
 
         [[nodiscard]] bool isPatternLocal() const {
-            return this->m_section == PatternLocalSectionId;
+            return this->m_section == Section::PatternLocalSectionId;
         }
 
         virtual void setReference(bool reference) {
@@ -372,21 +392,21 @@ namespace pl::ptrn {
             return this->m_reference;
         }
 
-        virtual void setSection(u64 id) {
-            if (this->m_section == id)
+        virtual void setSection(u64 section) {
+            if (this->m_section == section)
                 return;
 
-            if (this->m_section != PatternLocalSectionId && this->m_section != HeapSectionId) {
+            if (this->m_section != Section::PatternLocalSectionId && this->m_section != Section::HeapSectionId) {
                 if (this->m_evaluator != nullptr)
                     this->m_evaluator->patternDestroyed(this);
-                this->m_section = id;
+                this->m_section = Section(section);
                 if (this->m_evaluator != nullptr)
                     this->m_evaluator->patternCreated(this);
             }
         }
 
         [[nodiscard]] u64 getSection() const {
-            return this->m_section;
+            return u64(this->m_section);
         }
 
         virtual void sort(const std::function<bool(const Pattern *left, const Pattern *right)> &comparator) {
@@ -463,7 +483,7 @@ namespace pl::ptrn {
             }
 
             if (!result.empty()) {
-                this->getEvaluator()->writeData(this->getOffset(), result.data(), result.size(), this->getSection());
+                this->getEvaluator()->writeData(this->getOffset(), result.data(), result.size(), u64(this->getSection()));
                 this->clearFormatCache();
             }
         }
@@ -638,7 +658,8 @@ namespace pl::ptrn {
 
         u64 m_offset  = 0x00;
         size_t m_size = 0x00;
-        u64 m_section = 0x00;
+        Section m_section = Section::MainSectionId;
+        std::unique_ptr<std::vector<u8>> m_heapData;
 
         u32 m_color = 0x00;
 

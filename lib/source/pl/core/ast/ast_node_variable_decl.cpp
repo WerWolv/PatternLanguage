@@ -147,14 +147,7 @@ namespace pl::core::ast {
 
         if (!initValues.empty()) {
             auto &initValue = initValues.front();
-            if (variable->getSection() == ptrn::Pattern::HeapSectionId) {
-                auto &heap = evaluator->getHeap();
-                heap.emplace_back();
-                heap.back().resize(initValue->getSize());
-
-                initValue->setSection(ptrn::Pattern::HeapSectionId);
-                initValue->setOffset(u64(heap.size() - 1) << 32);
-            } else if (variable->getSection() == ptrn::Pattern::PatternLocalSectionId) {
+            if (variable->getSection() == ptrn::Pattern::PatternLocalSectionId) {
                 evaluator->changePatternSection(initValue.get(), ptrn::Pattern::PatternLocalSectionId);
                 initValue->setOffset(0);
             }

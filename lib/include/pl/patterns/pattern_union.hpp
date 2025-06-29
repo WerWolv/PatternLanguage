@@ -69,6 +69,15 @@ namespace pl::ptrn {
             return this->m_members.size();
         }
 
+        void replaceEntry(const std::shared_ptr<Pattern> &findPattern, std::shared_ptr<Pattern> replacePattern) override {
+            for (auto &member : this->m_members) {
+                if (member == findPattern) {
+                    member = std::move(replacePattern);
+                    member->setParent(this->reference());
+                }
+            }
+        }
+
         void setOffset(u64 offset) override {
             for (auto &member : this->m_members) {
                 if (member->getSection() == this->getSection()) {

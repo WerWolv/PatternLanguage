@@ -95,6 +95,10 @@ namespace pl::ptrn {
                 callback(i, this->getEntry(i).get());
         }
 
+        void replaceEntry(const std::shared_ptr<Pattern> &, std::shared_ptr<Pattern>) override {
+            core::err::E0001.throwError("Unable to replace pattern within string");
+        }
+
         std::vector<u8> getRawBytes() override {
             std::vector<u8> result;
 

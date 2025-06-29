@@ -41,18 +41,7 @@ namespace pl::core::ast {
             if (literal == nullptr)
                 return std::nullopt;
             else {
-                return std::visit(wolv::util::overloaded {
-                        [](const auto &value) -> FunctionResult {
-                            return value;
-                        },
-                        [evaluator](const std::shared_ptr<ptrn::Pattern> &pattern) -> FunctionResult {
-                            auto &currScope = evaluator->getScope(0);
-
-                            currScope.heapStartSize = evaluator->getHeap().size();
-
-                            return pattern;
-                        }
-                }, literal->getValue());
+                return literal->getValue();
             }
         }
     }

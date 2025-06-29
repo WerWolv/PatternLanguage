@@ -340,7 +340,7 @@ namespace pl::core {
         }
     }
 
-    static ast::ASTNodeBuiltinType* getBuiltinType(const ast::ASTNodeTypeDecl *type) {
+    /*static ast::ASTNodeBuiltinType* getBuiltinType(const ast::ASTNodeTypeDecl *type) {
         const ast::ASTNodeTypeDecl *typeDecl = type;
         while (true) {
             if (auto innerType = dynamic_cast<ast::ASTNodeTypeDecl*>(typeDecl->getType().get()); innerType != nullptr)
@@ -350,9 +350,9 @@ namespace pl::core {
             else
                 return nullptr;
         }
-    }
+    }*/
 
-    std::shared_ptr<ptrn::Pattern> Evaluator::createVariable(const std::string &name, const ast::ASTNodeTypeDecl *type, const std::optional<Token::Literal> &value, bool outVariable, bool reference, bool templateVariable, bool constant) {
+    std::shared_ptr<ptrn::Pattern> Evaluator::createVariable(const std::string &name, const ast::ASTNodeTypeDecl *type, const std::optional<Token::Literal> &value, bool outVariable, bool /*reference*/, bool /*templateVariable*/, bool constant) {
         auto startPos = this->getBitwiseReadOffset();
         ON_SCOPE_EXIT { this->setBitwiseReadOffset(startPos); };
 
@@ -360,111 +360,32 @@ namespace pl::core {
         if (name == "_")
             return nullptr;
 
-        if (templateVariable) {
-            std::erase_if(this->m_templateParameters.back(), [&](const auto &var) {
-                return var->getVariableName() == name;
-            });
-        } else {
-            auto &currScope = this->getScope(0);
-            for (auto &variable : *currScope.scope) {
-                if (variable->getVariableName() == name) {
-                    err::E0003.throwError(fmt::format("Variable with name '{}' already exists in this scope.", name), {}, type->getLocation());
-                }
-            }
+        std::vector<std::shared_ptr<ptrn::Pattern>> results;
+        type->createPatterns(this, results);
+        if (results.empty()) {
+            std::shared_ptr<ptrn::Pattern> pattern = std::make_shared<ptrn::PatternPadding>(this, 0x00, 0x00, 0);
+            pattern->setVariableName(name);
+            this->setVariable(pattern, value.value());
+            results.push_back(pattern);
         }
 
-        auto sectionId = this->getSectionId();
-        auto startOffset = this->getBitwiseReadOffset();
-
-        auto heapAddress = u64(this->getHeap().size());
-        u32 patternLocalAddress = 0;
-        if (!reference) {
-            if (sectionId == ptrn::Pattern::PatternLocalSectionId) {
-                patternLocalAddress = this->m_patternLocalStorage.empty() ? 0 : this->m_patternLocalStorage.rbegin()->first + 1;
-                this->m_patternLocalStorage.insert({ patternLocalAddress, { } });
-            } else if (sectionId == ptrn::Pattern::HeapSectionId) {
-                this->getHeap().emplace_back();
-            } else {
-                err::E0001.throwError(fmt::format("Attempted to place a variable into section 0x{:X}.", sectionId), {}, type->getLocation());
+        auto result = results[0];
+        if (outVariable)
+            m_outVariables[name] = result;
+        if (constant) {
+            if (!value.has_value()) {
+                err::E0007.throwError("Constant values must be initialized at definition");
             }
+
+            result->setConstant(true);
+            this->setVariable(result, value.value());
         }
 
-        std::shared_ptr<ptrn::Pattern> pattern;
+        result->setLocal(true);
+        result->setVariableName(name);
+        this->getScope(0).scope->push_back(result);
 
-        this->setBitwiseReadOffset(startOffset);
-
-        if (auto builtinType = getBuiltinType(type); builtinType != nullptr && builtinType->getType() == Token::ValueType::Auto) {
-            // Handle auto variables
-            if (!value.has_value())
-                pattern = std::make_shared<ptrn::PatternPadding>(this, 0, 0, 0);
-            else if (std::get_if<u128>(&value.value()) != nullptr)
-                pattern = std::make_shared<ptrn::PatternUnsigned>(this, 0, sizeof(u128), 0);
-            else if (std::get_if<i128>(&value.value()) != nullptr)
-                pattern = std::make_shared<ptrn::PatternSigned>(this, 0, sizeof(i128), 0);
-            else if (std::get_if<double>(&value.value()) != nullptr)
-                pattern = std::make_shared<ptrn::PatternFloat>(this, 0, sizeof(double), 0);
-            else if (std::get_if<bool>(&value.value()) != nullptr)
-                pattern = std::make_shared<ptrn::PatternBoolean>(this, 0, 0);
-            else if (std::get_if<char>(&value.value()) != nullptr)
-                pattern = std::make_shared<ptrn::PatternCharacter>(this, 0, 0);
-            else if (auto string = std::get_if<std::string>(&value.value()); string != nullptr)
-                pattern = std::make_shared<ptrn::PatternString>(this, 0, string->size(), 0);
-            else if (auto patternValue = std::get_if<std::shared_ptr<ptrn::Pattern>>(&value.value()); patternValue != nullptr) {
-                if (reference && !templateVariable)
-                    pattern = *patternValue;
-                else
-                    pattern = (*patternValue)->clone();
-            }
-            else
-                err::E0003.throwError("Cannot determine type of 'auto' variable.", "Try initializing it directly with a literal.", type->getLocation());
-        } else {
-            if (builtinType != nullptr) {
-                std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
-                type->createPatterns(this, patterns);
-                pattern = std::move(patterns.front());
-            }
-            else {
-                pattern = std::make_shared<ptrn::PatternPadding>(this, 0, 0, 0);
-
-                if (auto typeName = findTypeName(type); typeName.has_value())
-                    pattern->setTypeName(typeName.value());
-                else
-                    err::E0003.throwError("Cannot determine type.", "", type->getLocation());
-            }
-        }
-
-        pattern->setVariableName(name);
-
-        if (!reference) {
-            pattern->setSection(sectionId);
-
-            if (sectionId == ptrn::Pattern::HeapSectionId) {
-                pattern->setOffset(heapAddress << 32);
-                this->getHeap()[heapAddress].resize(pattern->getSize());
-            } else if (sectionId == ptrn::Pattern::PatternLocalSectionId) {
-                pattern->setOffset(u64(patternLocalAddress) << 32);
-                this->m_patternLocalStorage[patternLocalAddress].data.resize(pattern->getSize());
-            }
-        }
-
-        pattern->setReference(reference);
-        pattern->setConstant(constant);
-
-        if (outVariable) {
-            if (this->isGlobalScope())
-                this->m_outVariables[name] = pattern;
-            else
-                err::E0003.throwError("Out variables can only be declared in the global scope.", {}, type->getLocation());
-        }
-
-        if (this->isDebugModeEnabled())
-            this->getConsole().log(LogConsole::Level::Debug, fmt::format("Creating local variable '{} {}' at heap address 0x{:X}.", pattern->getTypeName(), pattern->getVariableName(), pattern->getOffset()));
-
-        if (templateVariable)
-            this->m_templateParameters.back().push_back(pattern);
-        else
-            this->getScope(0).scope->push_back(pattern);
-        return pattern;
+        return result;
     }
 
     template<typename T>
@@ -478,31 +399,35 @@ namespace pl::core {
         return result;
     }
 
-    static Token::Literal castLiteral(const ptrn::Pattern *pattern, const Token::Literal &literal) {
+    static Token::Literal castLiteral(const std::shared_ptr<ptrn::Pattern> &pattern, const Token::Literal &literal) {
+        if (pattern == nullptr)
+            return literal;
+
+        const auto pointer = pattern.get();
         return std::visit(wolv::util::overloaded {
             [&](auto &value) -> Token::Literal {
-               if (dynamic_cast<const ptrn::PatternUnsigned*>(pattern) || dynamic_cast<const ptrn::PatternEnum*>(pattern))
+               if (dynamic_cast<const ptrn::PatternUnsigned*>(pointer) || dynamic_cast<const ptrn::PatternEnum*>(pointer))
                    return truncateValue<u128>(pattern->getSize(), u128(value));
-               else if (dynamic_cast<const ptrn::PatternSigned*>(pattern))
+               else if (dynamic_cast<const ptrn::PatternSigned*>(pointer))
                    return truncateValue<i128>(pattern->getSize(), i128(value));
-               else if (dynamic_cast<const ptrn::PatternFloat*>(pattern)) {
+               else if (dynamic_cast<const ptrn::PatternFloat*>(pointer)) {
                    if (pattern->getSize() == sizeof(float))
                        return double(float(value));
                    else
                        return double(value);
-               } else if (dynamic_cast<const ptrn::PatternBoolean*>(pattern))
+               } else if (dynamic_cast<const ptrn::PatternBoolean*>(pointer))
                    return value == 0 ? u128(0) : u128(1);
-               else if (dynamic_cast<const ptrn::PatternCharacter*>(pattern) || dynamic_cast<const ptrn::PatternWideCharacter*>(pattern))
+               else if (dynamic_cast<const ptrn::PatternCharacter*>(pointer) || dynamic_cast<const ptrn::PatternWideCharacter*>(pointer))
                    return truncateValue(pattern->getSize(), u128(value));
-               else if (dynamic_cast<const ptrn::PatternString*>(pattern))
+               else if (dynamic_cast<const ptrn::PatternString*>(pointer))
                    return Token::Literal(value).toString(false);
-               else if (dynamic_cast<const ptrn::PatternPadding*>(pattern))
+               else if (dynamic_cast<const ptrn::PatternPadding*>(pointer))
                    return value;
                else
                    err::E0004.throwError(fmt::format("Cannot cast from type 'integer' to type '{}'.", pattern->getTypeName()));
             },
             [&](const std::string &value) -> Token::Literal {
-                if (dynamic_cast<const ptrn::PatternUnsigned*>(pattern) != nullptr) {
+                if (dynamic_cast<const ptrn::PatternUnsigned*>(pointer) != nullptr) {
                     if (value.size() <= pattern->getSize()) {
                         u128 result = 0;
                         std::memcpy(&result, value.data(), value.size());
@@ -510,11 +435,11 @@ namespace pl::core {
                     } else {
                         err::E0004.throwError(fmt::format("String of size {} cannot be packed into integer of size {}", value.size(), pattern->getSize()));
                     }
-                } else if (dynamic_cast<const ptrn::PatternBoolean*>(pattern) != nullptr)
+                } else if (dynamic_cast<const ptrn::PatternBoolean*>(pointer) != nullptr)
                     return !value.empty();
-                else if (dynamic_cast<const ptrn::PatternString*>(pattern) != nullptr)
+                else if (dynamic_cast<const ptrn::PatternString*>(pointer) != nullptr)
                     return value;
-                else if (dynamic_cast<const ptrn::PatternPadding*>(pattern) != nullptr)
+                else if (dynamic_cast<const ptrn::PatternPadding*>(pointer) != nullptr)
                     return value;
                 else
                     err::E0004.throwError(fmt::format("Cannot cast from type 'string' to type '{}'.", pattern->getTypeName()));
@@ -579,64 +504,7 @@ namespace pl::core {
         if (name == "_")
             return;
 
-        auto &pattern = [&]() -> std::shared_ptr<ptrn::Pattern>& {
-            auto& variablePattern = this->getVariableByName(name);
-
-            if (variablePattern->isLocal() || variablePattern->isReference()) {
-                // If the variable is being set to a pattern, adjust its layout to the real layout as it potentially contains dynamically sized members
-                std::visit(wolv::util::overloaded {
-                    [&](ptrn::Pattern * const value) {
-                        if (value->getTypeName().empty())
-                            return;
-
-                        if (value->getTypeName() != variablePattern->getTypeName() && !variablePattern->getTypeName().empty())
-                            err::E0004.throwError(fmt::format("Cannot cast from type '{}' to type '{}'.", value->getTypeName(), variablePattern->getTypeName()));
-
-                        auto reference = variablePattern->isReference();
-                        auto offset = variablePattern->getOffset();
-                        auto section = variablePattern->getSection();
-
-                        // Keep the old variable until the new one is ref-counted, so we don't delete storage.
-                        auto oldVariable = std::exchange(variablePattern, value->clone());
-
-                        variablePattern->setVariableName(name);
-                        variablePattern->setReference(reference);
-
-                        if (!reference) {
-                            variablePattern->setOffset(offset);
-                            variablePattern->setSection(section);
-                        }
-
-                        this->changePatternSection(variablePattern.get(), section);
-                    },
-                    [&](const std::string &value) {
-                        if (dynamic_cast<ptrn::PatternString*>(variablePattern.get()) != nullptr)
-                            variablePattern->setSize(value.size());
-                        else
-                            err::E0004.throwError(fmt::format("Cannot assign value of type 'string' to variable of type '{}'.", variablePattern->getTypeName()));
-                    },
-                    [](const auto &) {}
-                }, variableValue);
-            } else {
-                std::visit(wolv::util::overloaded {
-                    [&](ptrn::Pattern * const value) {
-                        if (value->getTypeName().empty())
-                            return;
-
-                        if (value->getTypeName() != variablePattern->getTypeName() && !variablePattern->getTypeName().empty())
-                            err::E0004.throwError(fmt::format("Cannot cast from type '{}' to type '{}'.", value->getTypeName(), variablePattern->getTypeName()));
-                    },
-                    [&](const std::string &value) {
-                        if (variablePattern->getSize() != value.size())
-                            err::E0004.throwError(fmt::format("Cannot assign string of size {} to variable of size {}.", value.size(), variablePattern->getSize()));
-                    },
-                    [](const auto &) {}
-                }, variableValue);
-            }
-
-            return variablePattern;
-        }();
-
+        auto &pattern = this->getVariableByName(name);
         this->setVariable(pattern, variableValue);
     }
 
@@ -655,152 +523,67 @@ namespace pl::core {
         pattern->setVariableName(variableName);
     }
 
+    template<std::derived_from<ptrn::Pattern> T>
+    static std::shared_ptr<ptrn::Pattern> initializeLocalPattern(Evaluator *evaluator, const auto &value) {
+        std::shared_ptr<ptrn::Pattern> pattern;
+        if constexpr (requires { T(evaluator, 0x00, sizeof(value), 0); })
+            pattern = std::make_shared<T>(evaluator, 0x00, sizeof(value), 0);
+        else
+            pattern = std::make_shared<T>(evaluator, 0x00, 0);
+
+        pattern->setLocal(true);
+        evaluator->writeData(pattern->getOffset(), &value, sizeof(value), pattern->getSection());
+
+        return pattern;
+    }
+
     void Evaluator::setVariable(std::shared_ptr<ptrn::Pattern> &pattern, const Token::Literal &variableValue) {
         auto startPos = this->getBitwiseReadOffset();
         ON_SCOPE_EXIT { this->setBitwiseReadOffset(startPos); };
 
-        if (pattern->isConstant() && pattern->isInitialized())
-            err::E0011.throwError(fmt::format("Cannot modify constant variable '{}'.", pattern->getVariableName()));
-        pattern->setInitialized(true);
-
-        if (!pattern->isReference()) {
-            this->changePatternSection(pattern.get(), pattern->getSection());
-        } else if (!pattern->isLocal()) {
+        auto boxedValue =
             std::visit(wolv::util::overloaded {
-                [&](const std::shared_ptr<ptrn::Pattern> &patternValue) {
-                    pattern = patternValue;
+                [this](char value) -> std::shared_ptr<ptrn::Pattern> {
+                    return initializeLocalPattern<ptrn::PatternCharacter>(this, value);
                 },
-                [](const auto &) { }
-            }, variableValue);
-            return;
+                [this](bool value) -> std::shared_ptr<ptrn::Pattern> {
+                    return initializeLocalPattern<ptrn::PatternBoolean>(this, value);
+                },
+                [this](u128 value) -> std::shared_ptr<ptrn::Pattern> {
+                    return initializeLocalPattern<ptrn::PatternUnsigned>(this, value);
+                },
+                [this](i128 value) -> std::shared_ptr<ptrn::Pattern> {
+                    return initializeLocalPattern<ptrn::PatternSigned>(this, value);
+                },
+                [this](double value) -> std::shared_ptr<ptrn::Pattern> {
+                    return initializeLocalPattern<ptrn::PatternFloat>(this, value);
+                },
+                [this](std::string value) -> std::shared_ptr<ptrn::Pattern> {
+                    auto pattern = std::make_shared<ptrn::PatternString>(this, 0x00, value.size(), 0);
+                    pattern->setLocal(true);
+                    this->writeData(pattern->getOffset(), value.data(), value.size(), pattern->getSection());
+                    return pattern;
+                },
+                [&](std::shared_ptr<ptrn::Pattern> value) -> std::shared_ptr<ptrn::Pattern> {
+                    if (pattern->isReference())
+                        return value;
+                    else {
+                        auto result = value->clone();
+                        result->setLocal(true);
+                        return result;
+                    }
+                }
+            }, castLiteral(pattern, variableValue));
+
+        boxedValue->setVariableName(pattern->getVariableName());
+
+        if (auto parent = pattern->getParent(); parent != nullptr) {
+            if (auto iterable = dynamic_cast<ptrn::IIterable*>(parent); iterable != nullptr) {
+                iterable->replaceEntry(pattern, boxedValue);
+            }
         }
 
-        if (pattern->getSize() > 0xFFFF'FFFF)
-            err::E0003.throwError(fmt::format("Value is too large to place into local variable '{}'.", pattern->getVariableName()));
-
-        // Cast values to type given by pattern
-        Token::Literal castedValue = castLiteral(pattern.get(), variableValue);
-
-        // Write value into variable storage
-        {
-            bool heapSection = pattern->getSection() == ptrn::Pattern::HeapSectionId;
-            bool mainSection = pattern->getSection() == ptrn::Pattern::MainSectionId;
-            bool patternLocalSection = pattern->getSection() == ptrn::Pattern::PatternLocalSectionId;
-
-            auto getStorage = [&, this]() -> auto& {
-                if (heapSection) {
-                    if (auto &heap = this->getHeap(); heap.size() > pattern->getHeapAddress())
-                        return heap[pattern->getHeapAddress()];
-                    else
-                        err::E0011.throwError(fmt::format("Tried accessing out of bounds heap cell {}. This is a bug.", pattern->getHeapAddress()));
-                } else if (patternLocalSection) {
-                    if (this->m_patternLocalStorage.contains(pattern->getHeapAddress()))
-                        return this->m_patternLocalStorage[pattern->getHeapAddress()].data;
-                    else
-                        err::E0011.throwError(fmt::format("Tried accessing out of bounds pattern local cell {}. This is a bug.", pattern->getHeapAddress()));
-                } else {
-                    return this->getSection(pattern->getSection());
-                }
-            };
-
-            auto copyToStorage = [&, this](auto &value) {
-                u64 offset = (pattern->isPatternLocal() || heapSection) ? pattern->getOffset() & 0xFFFF'FFFF : pattern->getOffset();
-
-                if (mainSection) {
-                    if (!this->m_mainSectionEditsAllowed)
-                        err::E0007.throwError("Modifying the main memory directly is only allowed with `#pragma allow_edits` set.");
-
-                    this->accessData(offset, &value, pattern->getSize(), pattern->getSection(), true);
-                } else {
-                    auto &storage = getStorage();
-
-                    if (storage.size() < offset + pattern->getSize())
-                        storage.resize(offset + pattern->getSize());
-                    std::memmove(storage.data() + offset, &value, pattern->getSize());
-                }
-
-                if (this->isDebugModeEnabled())
-                    this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {}.", pattern->getVariableName(), value));
-            };
-
-            std::visit(wolv::util::overloaded {
-                [&](const u128 &value) {
-                    changePatternType(pattern, std::make_shared<ptrn::PatternUnsigned>(this, 0, 16, 0));
-
-                    auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
-                    copyToStorage(adjustedValue);
-                },
-                [&](const i128 &value) {
-                    changePatternType(pattern, std::make_shared<ptrn::PatternSigned>(this, 0, 16, 0));
-
-                    auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
-                    adjustedValue = hlp::signExtend(pattern->getSize() * 8, adjustedValue);
-                    copyToStorage(adjustedValue);
-                },
-                [&](const bool &value) {
-                    changePatternType(pattern, std::make_shared<ptrn::PatternBoolean>(this, 0, 0));
-
-                    auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
-                    copyToStorage(adjustedValue);
-                },
-                [&](const char &value) {
-                    changePatternType(pattern, std::make_shared<ptrn::PatternCharacter>(this, 0, 0));
-
-                    auto adjustedValue = hlp::changeEndianess(value, pattern->getSize(), pattern->getEndian());
-                    copyToStorage(adjustedValue);
-                },
-                [&](const double &value) {
-                    changePatternType(pattern, std::make_shared<ptrn::PatternFloat>(this, 0, 8, 0));
-
-                    if (pattern->getSize() == sizeof(float)) {
-                        auto floatValue = float(value);
-                        u32 integerValue = 0x00;
-                        std::memcpy(&integerValue, &floatValue, sizeof(float));
-                        auto adjustedValue = hlp::changeEndianess(integerValue, pattern->getSize(), pattern->getEndian());
-
-                        copyToStorage(adjustedValue);
-                    } else {
-                        u64 integerValue = 0x00;
-                        std::memcpy(&integerValue, &value, sizeof(double));
-                        auto adjustedValue = hlp::changeEndianess(integerValue, pattern->getSize(), pattern->getEndian());
-
-                        copyToStorage(adjustedValue);
-                    }
-                },
-                [&](const std::string &value) {
-                    changePatternType(pattern, std::make_shared<ptrn::PatternString>(this, 0, value.length(), 0));
-
-                    pattern->setSize(value.size());
-
-                    auto copy = value;
-                    copyToStorage(copy[0]);
-                },
-                [&, this](const std::shared_ptr<ptrn::Pattern>& value) {
-                    if (!pattern->isReference()) {
-                        changePatternType(pattern, value->clone());
-                    } else {
-                        pattern = value;
-                    }
-
-                    auto &storage = getStorage();
-                    if (value->getSection() != ptrn::Pattern::InstantiationSectionId) {
-                        if (heapSection || patternLocalSection) {
-                            storage.resize((value->getOffset() & 0xFFFF'FFFF) + value->getSize());
-                            this->readData(value->getOffset(), storage.data(), value->getSize(), value->getSection());
-                        } else if (storage.size() < pattern->getOffset() + pattern->getSize()) {
-                            storage.resize(pattern->getOffset() + pattern->getSize());
-                            this->readData(value->getOffset(), storage.data() + pattern->getOffset(), value->getSize(), value->getSection());
-                        }
-                    } else {
-                        storage.resize(value->getSize());
-                        std::fill(storage.begin(), storage.end(), 0x00);
-                    }
-
-                    if (this->isDebugModeEnabled())
-                        this->getConsole().log(LogConsole::Level::Debug, fmt::format("Setting local variable '{}' to {:02X}.", pattern->getVariableName(), fmt::join(storage, " ")));
-                }
-            }, castedValue);
-        }
+        pattern = std::move(boxedValue);
     }
 
     void Evaluator::setVariableAddress(const std::string &variableName, u64 address, u64 section) {
@@ -872,24 +655,14 @@ namespace pl::core {
                     this->m_writerFunction(address, static_cast<u8*>(buffer), size);
             }
         } else if (sectionId == ptrn::Pattern::HeapSectionId) {
-            auto &heap = this->getHeap();
-
-            auto heapAddress = (address >> 32);
-            auto storageAddress = address & 0xFFFF'FFFF;
-            if (heapAddress < heap.size()) {
-                auto &storage = heap[heapAddress];
-
-                if (storageAddress + size > storage.size()) {
-                    storage.resize(storageAddress + size);
-                }
-
-                if (!write)
-                    std::memmove(buffer, storage.data() + storageAddress, size);
-                else
-                    std::memmove(storage.data() + storageAddress, buffer, size);
+            auto *patternData = reinterpret_cast<std::vector<u8>*>(address);
+            if (!write) {
+                std::memmove(buffer, patternData->data(), size);
+            } else {
+                if (patternData->size() != size)
+                    patternData->resize(size);
+                std::memmove(patternData->data(), buffer, size);
             }
-            else
-                err::E0011.throwError(fmt::format("Tried accessing out of bounds heap cell {}. This is a bug.", heapAddress));
         } else if (sectionId == ptrn::Pattern::PatternLocalSectionId) {
             auto &patternLocal = this->m_patternLocalStorage;
 

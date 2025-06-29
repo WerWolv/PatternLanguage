@@ -433,6 +433,10 @@ namespace pl::ptrn {
                 this->setBaseColor(this->m_entries.front()->getColor());
         }
 
+        void replaceEntry(const std::shared_ptr<Pattern> &, std::shared_ptr<Pattern>) override {
+            core::err::E0001.throwError("Unable to replace pattern within bitfield");
+        }
+
         [[nodiscard]] std::string toString() override {
             std::string result;
 
@@ -779,6 +783,10 @@ namespace pl::ptrn {
                 if (!pattern->isPatternLocal() || pattern->hasAttribute("export"))
                     fn(i, pattern.get());
             }
+        }
+
+        void replaceEntry(const std::shared_ptr<Pattern> &, std::shared_ptr<Pattern>) override {
+            core::err::E0001.throwError("Unable to replace pattern within bitfield");
         }
 
         void sort(const std::function<bool (const Pattern *, const Pattern *)> &comparator) override {

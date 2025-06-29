@@ -26,7 +26,7 @@ namespace pl::core::ast {
     [[nodiscard]] std::unique_ptr<ASTNode> ASTNodeFunctionCall::evaluate(Evaluator *evaluator) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
-        evaluator->pushSectionId(ptrn::Pattern::HeapSectionId);
+        evaluator->pushSectionId(ptrn::Pattern::Section::HeapSectionId);
 
         auto startOffset = evaluator->getBitwiseReadOffset();
         ON_SCOPE_EXIT {

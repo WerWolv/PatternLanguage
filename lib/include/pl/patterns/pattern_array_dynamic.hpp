@@ -152,6 +152,15 @@ namespace pl::ptrn {
                 this->setBaseColor(this->m_entries.front()->getColor());
         }
 
+        void replaceEntry(const std::shared_ptr<Pattern> &findPattern, std::shared_ptr<Pattern> replacePattern) override {
+            for (auto &member : this->m_entries) {
+                if (member == findPattern) {
+                    member = std::move(replacePattern);
+                    member->setParent(this->reference());
+                }
+            }
+        }
+
         [[nodiscard]] std::string toString() override {
             std::string result;
 

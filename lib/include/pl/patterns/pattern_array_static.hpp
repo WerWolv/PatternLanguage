@@ -56,6 +56,10 @@ namespace pl::ptrn {
             }
         }
 
+        void replaceEntry(const std::shared_ptr<Pattern> &, std::shared_ptr<Pattern>) override {
+            core::err::E0001.throwError("Unable to replace pattern within static array");
+        }
+
         void setOffset(u64 offset) override {
             this->m_template->setOffset(this->m_template->getOffset() - this->getOffset() + offset);
 
