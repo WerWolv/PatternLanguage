@@ -1,10 +1,11 @@
 // lexertl_test.cpp
 //
 
+#include <pl/core/new_lexer.hpp>
+
 #include <pl/api.hpp>
 #include <pl/core/token.hpp>
 #include <pl/core/tokens.hpp>
-#include <pl/core/new_lexer.hpp>
 
 //#include "out.cpp"
 
@@ -14,19 +15,12 @@
 #include <lexertl/generate_cpp.hpp>
 
 #include <string>
-#include <iostream>
-#include <fstream>
-//#include <vector>
-#include <string>
 #include <string_view>
+#include <vector>
 #include <unordered_map>
-#include <type_traits>
 
 using std::string;
 using std::string_view;
-using std::cin;
-using std::cout;
-using std::endl;
 
 // void compile(lexertl::state_machine &sm, lexertl::rules &rules)
 // {
