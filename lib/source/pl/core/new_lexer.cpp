@@ -210,7 +210,7 @@ lexertl::state_machine g_sm;
 enum {
     eEOF, eNewLine, eKWNamedOpTypeConst,
     eSingleLineComment, eSingleLineDocComment,
-    eMultiLineCommentOpen, eMultiLineCommentClose
+    eMultiLineCommentOpen, eMultiLineDocCommentOpen, eMultiLineCommentClose
 };
 
 } // anonymous namespace
@@ -226,7 +226,9 @@ void init_new_lexer()
     rules.push(R"(\/\/[^/][^\n]*)", eSingleLineComment);
     rules.push(R"(\/\/\/[^\n]*)", eSingleLineDocComment);
 
-    rules.push("INITIAL", R"(\/\*.*)", eMultiLineCommentOpen, "MLCOMMENT");
+    rules.push("INITIAL", R"(\/\*[^*!\n].*)", eMultiLineCommentOpen, "MLCOMMENT");
+    rules.push("INITIAL", R"(\/\*[*!].*)", eMultiLineDocCommentOpen, "MLCOMMENT");
+
     rules.push("MLCOMMENT", R"([^*\n]+|.)", lexertl::rules::skip(), "MLCOMMENT");
     rules.push("MLCOMMENT", R"(\*\/)", eMultiLineCommentClose, "INITIAL");
 
@@ -266,7 +268,9 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
         return Location { source, line, column, errorLength };
     };
 
-    string::const_iterator mlcoment_start = content_end;
+    string::const_iterator mlcoment_start_raw; // start of parsed token, no skipping
+    string::const_iterator mlcoment_start;
+    Location mlcomment_location;
 
     lexertl::lookup(g_sm, results);
     while (results.id!=0)
@@ -299,12 +303,20 @@ hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
             }
             break;
         case eMultiLineCommentOpen:
+            mlcoment_start_raw = results.first;
             mlcoment_start = results.first+2;
+            mlcomment_location = location();
+            break;
+        case eMultiLineDocCommentOpen:
+            mlcoment_start_raw = results.first;
+            mlcoment_start = results.first+3;
+            mlcomment_location = location();
             break;
         case eMultiLineCommentClose: {
+                mlcomment_location.length = results.second-mlcoment_start_raw;
                 const string_view comment(mlcoment_start, results.second-2);
-                auto ctok = pl::core::tkn::Literal::makeComment(true, string(comment));
-                m_tokens.emplace_back(ctok.type, ctok.value, location());
+                auto ctok = pl::core::tkn::Literal::makeComment(false, string(comment));
+                m_tokens.emplace_back(ctok.type, ctok.value, mlcomment_location);
             }
             break;
         }
