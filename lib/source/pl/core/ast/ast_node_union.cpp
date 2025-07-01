@@ -27,7 +27,8 @@ namespace pl::core::ast {
         ON_SCOPE_EXIT {
             size_t size = 0;
             for (auto &memberPattern : memberPatterns) {
-                size = std::max(memberPattern->getSize(), size);
+                if (!memberPattern->isLocal())
+                    size = std::max(memberPattern->getSize(), size);
             }
             pattern->setSize(size);
 
