@@ -14,6 +14,8 @@
 #include <lexertl/generator.hpp>
 #include <lexertl/generate_cpp.hpp>
 
+#include <cstddef>
+#include <algorithm>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -249,6 +251,7 @@ namespace pl::core {
     hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
     {
         m_tokens.clear();
+        m_longestLineLength = 0;
 
         string::const_iterator content_end = source->content.end();
         lexertl::smatch results(source->content.begin(), content_end);
@@ -280,7 +283,8 @@ namespace pl::core {
             switch (results.id) {
             case eNewLine: {
                     ++line;
-                    auto len = results.first - line_start; (void)len;
+                    std::size_t len = results.first - line_start;
+                    m_longestLineLength = std::max(len, m_longestLineLength);
                     line_start = results.second;
                 }
                 break;
