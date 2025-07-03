@@ -3,19 +3,20 @@
 
 #include <vector>
 #include <pl/core/token.hpp>
+#include <pl/core/errors/error.hpp>
 #include <pl/core/errors/result.hpp>
 
 namespace pl::core {
 
-void init_new_lexer();
+    void init_new_lexer();
 
-class New_Lexer {
-public:
-    New_Lexer() = default;
-    hlp::CompileResult<std::vector<Token>> lex(const api::Source *source);
+    class New_Lexer : err::ErrorCollectorExplicitLocation {
+    public:
+        New_Lexer() = default;
+        hlp::CompileResult<std::vector<Token>> lex(const api::Source *source);
 
-private:
-    std::vector<Token> m_tokens;
-};
+    private:
+        std::vector<Token> m_tokens;
+    };
 
 } // namespace pl::core

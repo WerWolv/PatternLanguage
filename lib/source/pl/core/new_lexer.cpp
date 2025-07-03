@@ -152,199 +152,199 @@ void usegen(const string &input)
 
 namespace pl::core {
 
-namespace {
+    namespace {
 
-// Much of the contents of this anonymous namespace serve as conceptually
-// private static members of the Lexer class. They're placed here to avoid
-// pulling in unnecessary symbols into every file that includes our header.
+        // Much of the contents of this anonymous namespace serve as conceptually
+        // private static members of the Lexer class. They're placed here to avoid
+        // pulling in unnecessary symbols into every file that includes our header.
 
-struct KWOpTypeInfo {
-    Token::Type type;
-    Token::ValueTypes value;
-};
+        struct KWOpTypeInfo {
+            Token::Type type;
+            Token::ValueTypes value;
+        };
 
-// This "Trans" stuff is to allow us to use std::string_view to lookup stuff
-// so we don't have to construct a std::string.
-struct TransHash {
-    using is_transparent = void;
+        // This "Trans" stuff is to allow us to use std::string_view to lookup stuff
+        // so we don't have to construct a std::string.
+        struct TransHash {
+            using is_transparent = void;
 
-    std::size_t operator()(const string &s) const noexcept {
-        return std::hash<string>{}(s);
-    }
+            std::size_t operator()(const string &s) const noexcept {
+                return std::hash<string>{}(s);
+            }
 
-    std::size_t operator()(string_view s) const noexcept {
-        return std::hash<string_view>{}(s);
-    }
-};
+            std::size_t operator()(string_view s) const noexcept {
+                return std::hash<string_view>{}(s);
+            }
+        };
 
-struct TransEqual {
-    using is_transparent = void;
+        struct TransEqual {
+            using is_transparent = void;
 
-    bool operator()(const string &lhs, const string &rhs) const noexcept {
-        return lhs == rhs;
-    }
+            bool operator()(const string &lhs, const string &rhs) const noexcept {
+                return lhs == rhs;
+            }
 
-    bool operator()(const string &lhs, string_view rhs) const noexcept {
-        return lhs == rhs;
-    }
+            bool operator()(const string &lhs, string_view rhs) const noexcept {
+                return lhs == rhs;
+            }
 
-    bool operator()(string_view lhs, const string& rhs) const noexcept {
-        return lhs == rhs;
-    }
+            bool operator()(string_view lhs, const string& rhs) const noexcept {
+                return lhs == rhs;
+            }
 
-    bool operator()(string_view lhs, string_view rhs) const noexcept {
-        return lhs == rhs;
-    }
-};
+            bool operator()(string_view lhs, string_view rhs) const noexcept {
+                return lhs == rhs;
+            }
+        };
 
-std::unordered_map<std::string, KWOpTypeInfo, TransHash, TransEqual> g_KWOpTypeTokenInfo;
+        std::unordered_map<std::string, KWOpTypeInfo, TransHash, TransEqual> g_KWOpTypeTokenInfo;
 
-lexertl::state_machine g_sm;
+        lexertl::state_machine g_sm;
 
-enum {
-    eEOF, eNewLine, eKWNamedOpTypeConst,
-    eSingleLineComment, eSingleLineDocComment,
-    eMultiLineCommentOpen, eMultiLineDocCommentOpen, eMultiLineCommentClose
-};
+        enum {
+            eEOF, eNewLine, eKWNamedOpTypeConst,
+            eSingleLineComment, eSingleLineDocComment,
+            eMultiLineCommentOpen, eMultiLineDocCommentOpen, eMultiLineCommentClose
+        };
 
-} // anonymous namespace
+    } // anonymous namespace
 
-void init_new_lexer()
-{
-    lexertl::rules rules;
-
-    rules.push_state("MLCOMMENT");
-
-    rules.push("*", "\n", eNewLine, ".");
-
-    rules.push(R"(\/\/[^/][^\n]*)", eSingleLineComment);
-    rules.push(R"(\/\/\/[^\n]*)", eSingleLineDocComment);
-
-    rules.push("INITIAL", R"(\/\*[^*!\n].*)", eMultiLineCommentOpen, "MLCOMMENT");
-    rules.push("INITIAL", R"(\/\*[*!].*)", eMultiLineDocCommentOpen, "MLCOMMENT");
-
-    rules.push("MLCOMMENT", R"([^*\n]+|.)", lexertl::rules::skip(), "MLCOMMENT");
-    rules.push("MLCOMMENT", R"(\*\/)", eMultiLineCommentClose, "INITIAL");
-
-    rules.push(R"([a-zA-Z_]\w*)", eKWNamedOpTypeConst);
-
-    auto keywords = Token::Keywords();
-    for (const auto& [key, value] : keywords)
-        g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value   .type, value.value}));
-
-    auto opeators = Token::Operators();
-    for (const auto& [key, value] : opeators)
-        g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
-
-    auto types = Token::Types();
-    for (const auto& [key, value] : opeators)
-        g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
-
-    /*for (const auto& [key, value] : pl::core::tkn::constants)
-        g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));*/
-
-    lexertl::generator::build(rules, g_sm);
-}
-
-hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
-{
-    m_tokens.clear();
-
-    string::const_iterator content_end = source->content.end();
-    lexertl::smatch results(source->content.begin(), content_end);
-
-    auto line_start = results.first;
-    u32 line = 1;
-
-    auto location = [&]() -> Location {
-        u32 column = results.first-line_start+1;
-        size_t errorLength = results.second-results.first;
-        return Location { source, line, column, errorLength };
-    };
-
-    string::const_iterator mlcoment_start_raw; // start of parsed token, no skipping
-    string::const_iterator mlcoment_start;
-    Location mlcomment_location;
-
-    enum MLCommentType{
-        MLComment,
-        MLLocalDocComment,
-        MLGlobalDocComment
-    };
-
-    MLCommentType mlcomment_type;
-
-    lexertl::lookup(g_sm, results);
-    while (results.id!=0)
+    void init_new_lexer()
     {
-        switch (results.id) {
-        case eNewLine: {
-                ++line;
-                auto len = results.first - line_start; (void)len;
-                line_start = results.second;
-            }
-            break;
-        case eKWNamedOpTypeConst: {
-                const string_view kw(results.first, results.second);
-                auto it = g_KWOpTypeTokenInfo.find(kw);
-                if (it != g_KWOpTypeTokenInfo.end()) {
-                    m_tokens.emplace_back(it->second.type, it->second.value, location());
-                }
-            }
-            break;
-        case eSingleLineComment: {
-                const string_view comment(results.first+2, results.second);
-                auto ctok = pl::core::tkn::Literal::makeComment(true, string(comment));
-                m_tokens.emplace_back(ctok.type, ctok.value, location());
-            }
-            break;
-        case eSingleLineDocComment: {
-                const string_view comment(results.first+3, results.second);
-                auto ctok = pl::core::tkn::Literal::makeDocComment(false, true, string(comment));
-                m_tokens.emplace_back(ctok.type, ctok.value, location());
-            }
-            break;
-        case eMultiLineCommentOpen:
-            mlcomment_type = MLComment;
-            mlcoment_start_raw = results.first;
-            mlcoment_start = results.first+2;
-            mlcomment_location = location();
-            break;
-        case eMultiLineDocCommentOpen:
-            mlcomment_type = (results.first[2]=='*') ? MLLocalDocComment : MLGlobalDocComment;
-            mlcoment_start_raw = results.first;
-            mlcoment_start = results.first+3;
-            mlcomment_location = location();
-            break;
-        case eMultiLineCommentClose: {
-                mlcomment_location.length = results.second-mlcoment_start_raw;
-                const string_view comment(mlcoment_start, results.second-2);
-        
-                switch (mlcomment_type) {
-                case MLComment: {
-                        auto ctok = pl::core::tkn::Literal::makeComment(false, string(comment));
-                        m_tokens.emplace_back(ctok.type, ctok.value, mlcomment_location);
-                    }
-                    break;
-                case MLLocalDocComment: {
-                        auto ctok = pl::core::tkn::Literal::makeDocComment(false, false, string(comment));
-                        m_tokens.emplace_back(ctok.type, ctok.value, mlcomment_location);
-                    }
-                    break;
-                case MLGlobalDocComment: {
-                        auto ctok = pl::core::tkn::Literal::makeDocComment(true, false, string(comment));
-                        m_tokens.emplace_back(ctok.type, ctok.value, mlcomment_location);
-                    }
-                    break;
-                }
-            }
-            break;
-        }
+        lexertl::rules rules;
+
+        rules.push_state("MLCOMMENT");
+
+        rules.push("*", "\n", eNewLine, ".");
+
+        rules.push(R"(\/\/[^/][^\n]*)", eSingleLineComment);
+        rules.push(R"(\/\/\/[^\n]*)", eSingleLineDocComment);
+
+        rules.push("INITIAL", R"(\/\*[^*!\n].*)", eMultiLineCommentOpen, "MLCOMMENT");
+        rules.push("INITIAL", R"(\/\*[*!].*)", eMultiLineDocCommentOpen, "MLCOMMENT");
+
+        rules.push("MLCOMMENT", R"([^*\n]+|.)", lexertl::rules::skip(), "MLCOMMENT");
+        rules.push("MLCOMMENT", R"(\*\/)", eMultiLineCommentClose, "INITIAL");
+
+        rules.push(R"([a-zA-Z_]\w*)", eKWNamedOpTypeConst);
+
+        auto keywords = Token::Keywords();
+        for (const auto& [key, value] : keywords)
+            g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value   .type, value.value}));
+
+        auto opeators = Token::Operators();
+        for (const auto& [key, value] : opeators)
+            g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
+
+        auto types = Token::Types();
+        for (const auto& [key, value] : opeators)
+            g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
+
+        /*for (const auto& [key, value] : pl::core::tkn::constants)
+            g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));*/
+
+        lexertl::generator::build(rules, g_sm);
+    }
+
+    hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
+    {
+        m_tokens.clear();
+
+        string::const_iterator content_end = source->content.end();
+        lexertl::smatch results(source->content.begin(), content_end);
+
+        auto line_start = results.first;
+        u32 line = 1;
+
+        auto location = [&]() -> Location {
+            u32 column = results.first-line_start+1;
+            size_t errorLength = results.second-results.first;
+            return Location { source, line, column, errorLength };
+        };
+
+        string::const_iterator mlcoment_start_raw; // start of parsed token, no skipping
+        string::const_iterator mlcoment_start;
+        Location mlcomment_location;
+
+        enum MLCommentType{
+            MLComment,
+            MLLocalDocComment,
+            MLGlobalDocComment
+        };
+
+        MLCommentType mlcomment_type;
 
         lexertl::lookup(g_sm, results);
-    }
+        while (results.id!=0)
+        {
+            switch (results.id) {
+            case eNewLine: {
+                    ++line;
+                    auto len = results.first - line_start; (void)len;
+                    line_start = results.second;
+                }
+                break;
+            case eKWNamedOpTypeConst: {
+                    const string_view kw(results.first, results.second);
+                    auto it = g_KWOpTypeTokenInfo.find(kw);
+                    if (it != g_KWOpTypeTokenInfo.end()) {
+                        m_tokens.emplace_back(it->second.type, it->second.value, location());
+                    }
+                }
+                break;
+            case eSingleLineComment: {
+                    const string_view comment(results.first+2, results.second);
+                    auto ctok = pl::core::tkn::Literal::makeComment(true, string(comment));
+                    m_tokens.emplace_back(ctok.type, ctok.value, location());
+                }
+                break;
+            case eSingleLineDocComment: {
+                    const string_view comment(results.first+3, results.second);
+                    auto ctok = pl::core::tkn::Literal::makeDocComment(false, true, string(comment));
+                    m_tokens.emplace_back(ctok.type, ctok.value, location());
+                }
+                break;
+            case eMultiLineCommentOpen:
+                mlcomment_type = MLComment;
+                mlcoment_start_raw = results.first;
+                mlcoment_start = results.first+2;
+                mlcomment_location = location();
+                break;
+            case eMultiLineDocCommentOpen:
+                mlcomment_type = (results.first[2]=='*') ? MLLocalDocComment : MLGlobalDocComment;
+                mlcoment_start_raw = results.first;
+                mlcoment_start = results.first+3;
+                mlcomment_location = location();
+                break;
+            case eMultiLineCommentClose: {
+                    mlcomment_location.length = results.second-mlcoment_start_raw;
+                    const string_view comment(mlcoment_start, results.second-2);
+            
+                    switch (mlcomment_type) {
+                    case MLComment: {
+                            auto ctok = pl::core::tkn::Literal::makeComment(false, string(comment));
+                            m_tokens.emplace_back(ctok.type, ctok.value, mlcomment_location);
+                        }
+                        break;
+                    case MLLocalDocComment: {
+                            auto ctok = pl::core::tkn::Literal::makeDocComment(false, false, string(comment));
+                            m_tokens.emplace_back(ctok.type, ctok.value, mlcomment_location);
+                        }
+                        break;
+                    case MLGlobalDocComment: {
+                            auto ctok = pl::core::tkn::Literal::makeDocComment(true, false, string(comment));
+                            m_tokens.emplace_back(ctok.type, ctok.value, mlcomment_location);
+                        }
+                        break;
+                    }
+                }
+                break;
+            }
 
-    return {};
-}
+            lexertl::lookup(g_sm, results);
+        }
+
+        return {};
+    }
 
 } // namespace pl::core
