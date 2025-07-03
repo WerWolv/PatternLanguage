@@ -215,15 +215,15 @@ namespace pl::core {
 
         rules.push_state("MLCOMMENT");
 
-        rules.push("*", "\n", eNewLine, ".");
+        rules.push("*", "\r\n|\n|\r", eNewLine, ".");
 
-        rules.push(R"(\/\/[^/][^\n]*)", eSingleLineComment);
-        rules.push(R"(\/\/\/[^\n]*)", eSingleLineDocComment);
+        rules.push(R"(\/\/[^/][^\r\n]*)", eSingleLineComment);
+        rules.push(R"(\/\/\/[^\r\n]*)", eSingleLineDocComment);
 
-        rules.push("INITIAL", R"(\/\*[^*!\n].*)", eMultiLineCommentOpen, "MLCOMMENT");
+        rules.push("INITIAL", R"(\/\*[^*!\r\n].*)", eMultiLineCommentOpen, "MLCOMMENT");
         rules.push("INITIAL", R"(\/\*[*!].*)", eMultiLineDocCommentOpen, "MLCOMMENT");
 
-        rules.push("MLCOMMENT", R"([^*\n]+|.)", lexertl::rules::skip(), "MLCOMMENT");
+        rules.push("MLCOMMENT", R"([^*\r\n]+|.)", lexertl::rules::skip(), "MLCOMMENT");
         rules.push("MLCOMMENT", R"(\*\/)", eMultiLineCommentClose, "INITIAL");
 
         rules.push(R"([a-zA-Z_]\w*)", eKWNamedOpTypeConst);
@@ -344,7 +344,7 @@ namespace pl::core {
             lexertl::lookup(g_sm, results);
         }
 
-        return {};
+        return { m_tokens, collectErrors() };
     }
 
 } // namespace pl::core
