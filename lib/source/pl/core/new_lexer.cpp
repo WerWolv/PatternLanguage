@@ -506,9 +506,12 @@ namespace pl::core {
                     }
                 }
             }
-
+        
             lexertl::lookup(g_sm, results);
         }
+
+        const auto &eop = pl::core::tkn::Separator::EndOfProgram;
+        m_tokens.emplace_back(eop.type, eop.value, location());
 
         return { m_tokens, collectErrors() };
     }
