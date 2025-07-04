@@ -13,6 +13,7 @@
 #include <lexertl/state_machine.hpp>
 #include <lexertl/generator.hpp>
 #include <lexertl/generate_cpp.hpp>
+#include <pl/helpers/utils.hpp>
 
 #include <cstddef>
 #include <algorithm>
@@ -154,6 +155,152 @@ void usegen(const string &input)
 
 namespace pl::core {
 
+    // TODO:
+    //  "integerSeparator_" is defined in "lexer.cpp".
+    //  Remove trailing underscore when it's removed.
+    static constexpr char integerSeparator_ = '\'';
+
+    // TODO:
+    //  "characterValue" is defined in "lexer.cpp".
+    //  Remove trailing underscore when it's removed.
+    static int characterValue_(const char c) {
+        if (c >= '0' && c <= '9') {
+            return c - '0';
+        }
+        if (c >= 'a' && c <= 'f') {
+            return c - 'a' + 10;
+        }
+        if (c >= 'A' && c <= 'F') {
+            return c - 'A' + 10;
+        }
+
+        return 0;
+    }
+
+    // TODO:
+    //  "isIntegerCharacter" is defined in "lexer.cpp".
+    //  Remove trailing underscore when it's removed.
+    static bool isIntegerCharacter_(const char c, const int base) {
+        switch (base) {
+            case 16:
+                return std::isxdigit(c);
+            case 10:
+                return std::isdigit(c);
+            case 8:
+                return c >= '0' && c <= '7';
+            case 2:
+                return c == '0' || c == '1';
+            default:
+                return false;
+        }
+    }
+
+    std::optional<u128> New_Lexer::parseInteger(std::string_view literal, const auto &location) {
+        u8 base = 10;
+
+        u128 value = 0;
+        if(literal[0] == '0') {
+            if(literal.size() == 1) {
+                return 0;
+            }
+            bool hasPrefix = true;
+            switch (literal[1]) {
+                case 'x':
+                case 'X':
+                    base = 16;
+                break;
+                case 'o':
+                case 'O':
+                    base = 8;
+                break;
+                case 'b':
+                case 'B':
+                    base = 2;
+                break;
+                default:
+                    hasPrefix = false;
+                break;
+            }
+            if (hasPrefix) {
+                literal = literal.substr(2);
+            }
+        }
+
+        for (const char c : literal) {
+            if(c == integerSeparator_) continue;
+
+            if (!isIntegerCharacter_(c, base)) {
+                error(location(), "Invalid integer literal: {}", literal);
+                return std::nullopt;
+            }
+            value = value * base + characterValue_(c);
+        }
+
+        return value;
+    }
+
+    std::optional<double> New_Lexer::parseFloatingPoint(std::string_view literal, const char suffix, const auto &location) {
+        char *end = nullptr;
+        double val = std::strtod(literal.data(), &end);
+
+        if(end != literal.data() + literal.size()) {
+            error(location(), "Invalid float literal: {}", literal);
+            return std::nullopt;
+        }
+
+        switch (suffix) {
+            case 'f':
+            case 'F':
+                return float(val);
+            case 'd':
+            case 'D':
+            default:
+                return val;
+        }
+    }
+
+    std::optional<Token::Literal> New_Lexer::parseNumericLiteral(std::string_view literal, const auto &location) {
+        // parse a c like numeric literal
+        const bool floatSuffix = hlp::stringEndsWithOneOf(literal, { "f", "F", "d", "D" });
+        const bool unsignedSuffix = hlp::stringEndsWithOneOf(literal, { "u", "U" });
+        const bool isFloat = literal.find('.') != std::string_view::npos
+                       || (!literal.starts_with("0x") && floatSuffix);
+        const bool isUnsigned = unsignedSuffix;
+
+        if(isFloat) {
+
+            char suffix = 0;
+            if(floatSuffix) {
+                // remove suffix
+                suffix = literal.back();
+                literal = literal.substr(0, literal.size() - 1);
+            }
+
+            auto floatingPoint = parseFloatingPoint(literal, suffix, location);
+
+            if(!floatingPoint.has_value()) return std::nullopt;
+
+            return floatingPoint.value();
+
+        }
+
+        if(unsignedSuffix) {
+            // remove suffix
+            literal = literal.substr(0, literal.size() - 1);
+        }
+
+        const auto integer = parseInteger(literal, location);
+
+        if(!integer.has_value()) return std::nullopt;
+
+        u128 value = integer.value();
+        if(isUnsigned) {
+            return value;
+        }
+
+        return i128(value);
+    }
+
     namespace {
 
         // Much of the contents of this anonymous namespace serve as conceptually
@@ -206,7 +353,8 @@ namespace pl::core {
         enum {
             eEOF, eNewLine, eKWNamedOpTypeConst,
             eSingleLineComment, eSingleLineDocComment,
-            eMultiLineCommentOpen, eMultiLineDocCommentOpen, eMultiLineCommentClose
+            eMultiLineCommentOpen, eMultiLineDocCommentOpen, eMultiLineCommentClose,
+            eNumber
         };
 
     } // anonymous namespace
@@ -224,11 +372,12 @@ namespace pl::core {
 
         rules.push("INITIAL", R"(\/\*[^*!\r\n].*)", eMultiLineCommentOpen, "MLCOMMENT");
         rules.push("INITIAL", R"(\/\*[*!].*)", eMultiLineDocCommentOpen, "MLCOMMENT");
-
         rules.push("MLCOMMENT", R"([^*\r\n]+|.)", lexertl::rules::skip(), "MLCOMMENT");
         rules.push("MLCOMMENT", R"(\*\/)", eMultiLineCommentClose, "INITIAL");
 
         rules.push(R"([a-zA-Z_]\w*)", eKWNamedOpTypeConst);
+
+        rules.push(R"([0-9][0-9a-fA-F'xXoOpP.uU+-]*)", eNumber);
 
         auto keywords = Token::Keywords();
         for (const auto& [key, value] : keywords)
@@ -278,8 +427,11 @@ namespace pl::core {
         MLCommentType mlcomment_type;
 
         lexertl::lookup(g_sm, results);
-        while (results.id!=0)
+        for (;;)
         {
+            if (results.id==eEOF)
+                break;
+
             switch (results.id) {
             case eNewLine: {
                     ++line;
@@ -343,6 +495,14 @@ namespace pl::core {
                     }
                 }
                 break;
+            case eNumber: {
+                    const string_view num_str(results.first, results.second);
+                    const auto num = parseNumericLiteral(num_str, location);
+                    if (num.has_value()) {
+                        auto ntok = pl::core::tkn::Literal::makeNumeric(num.value());
+                        m_tokens.emplace_back(ntok.type, ntok.value, location());
+                    }
+                }
             }
 
             lexertl::lookup(g_sm, results);

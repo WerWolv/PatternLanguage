@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 #include <vector>
 #include <pl/core/token.hpp>
 #include <pl/core/errors/error.hpp>
@@ -18,6 +19,10 @@ namespace pl::core {
         size_t getLongestLineLength() const { return m_longestLineLength; } // TODO: include newline?
 
     private:
+        [[maybe_unused]] std::optional<u128> parseInteger(std::string_view literal, const auto &location);
+        [[maybe_unused]] std::optional<double> parseFloatingPoint(std::string_view literal, const char suffix, const auto &location);
+        [[maybe_unused]] std::optional<Token::Literal> parseNumericLiteral(std::string_view literal, const auto &location);
+
         std::vector<Token> m_tokens;
         std::size_t m_longestLineLength = 0;
     };
