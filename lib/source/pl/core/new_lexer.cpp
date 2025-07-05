@@ -355,7 +355,7 @@ namespace pl::core {
             eEOF, eNewLine, eKWNamedOpTypeConst,
             eSingleLineComment, eSingleLineDocComment,
             eMultiLineCommentOpen, eMultiLineDocCommentOpen, eMultiLineCommentClose,
-            eNumber
+            eNumber, eString
         };
 
     } // anonymous namespace
@@ -379,6 +379,8 @@ namespace pl::core {
         rules.push(R"([a-zA-Z_]\w*)", eKWNamedOpTypeConst);
 
         rules.push(R"([0-9][0-9a-fA-F'xXoOpP.uU+-]*)", eNumber);
+
+        rules.push(R"(["](\\.|[^"\\])*["])", eString); // TODO: Improve string handling
 
         auto keywords = Token::Keywords();
         for (const auto& [key, value] : keywords)
@@ -504,6 +506,16 @@ namespace pl::core {
                         m_tokens.emplace_back(ntok.type, ntok.value, location());
                     }
                 }
+                break;
+            case eString: {
+                    const string_view str(results.first+1, results.second-1);
+                    const auto stok = pl::core::tkn::Literal::makeString(string(str));
+                    m_tokens.emplace_back(stok.type, stok.value, location());
+                    // TODO:
+                    //  'makeString' does not take a std::string_view
+                    //  Handle string escape sequences
+                }
+                break;
             }
 
             lexertl::lookup(g_sm, results);

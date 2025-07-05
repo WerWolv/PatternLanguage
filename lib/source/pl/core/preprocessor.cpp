@@ -593,8 +593,9 @@ namespace pl::core {
             }
         }
 
-        auto [result,errors] = lexer->lex(m_source);
-        auto [new_result,new_errors] = new_lexer->lex(m_source);
+        /*auto [result,errors] = lexer->lex(m_source);
+        auto [new_result,new_errors] = new_lexer->lex(m_source);*/
+        auto [result,errors] = new_lexer->lex(m_source);
         if (result.has_value())
             m_result = std::move(result.value());
         else
