@@ -21,6 +21,7 @@
 #include <string_view>
 #include <vector>
 #include <unordered_map>
+#include <sstream>
 
 using std::string;
 using std::string_view;
@@ -355,8 +356,41 @@ namespace pl::core {
             eEOF, eNewLine, eKWNamedOpTypeConst,
             eSingleLineComment, eSingleLineDocComment,
             eMultiLineCommentOpen, eMultiLineDocCommentOpen, eMultiLineCommentClose,
-            eNumber, eString
+            eNumber, eString, eSeparator
         };
+
+        inline bool must_escape(char c)
+        {
+            switch (c) {
+            case '+': case '/': case '*': case '?':
+            case '|':
+            case '(': case ')':
+            case '[': case ']':
+            case '{': case '}':
+            case '.':
+            case '^': case '$':
+            case '\\':
+            case '"':
+                return true;
+
+            default:
+                break;
+            }
+            return false;
+        }
+
+        inline string escape_regex(const std::string& s) {
+            string result;
+            result.reserve(s.size() * 2);
+
+            for (char c : s) {
+                if (must_escape(c))
+                    result += '\\';
+                result += c;
+            }
+
+            return result;
+        }
 
     } // anonymous namespace
 
@@ -382,20 +416,28 @@ namespace pl::core {
 
         rules.push(R"(["](\\.|[^"\\])*["])", eString); // TODO: Improve string handling
 
-        auto keywords = Token::Keywords();
+        const auto &keywords = Token::Keywords();
         for (const auto& [key, value] : keywords)
-            g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value   .type, value.value}));
-
-        auto opeators = Token::Operators();
-        for (const auto& [key, value] : opeators)
             g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
 
-        auto types = Token::Types();
-        for (const auto& [key, value] : opeators)
+        const auto &operators = Token::Operators();
+        for (const auto& [key, value] : operators)
             g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
 
-        /*for (const auto& [key, value] : tkn::constants)
-            g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));*/
+        const auto &types = Token::Types();
+        for (const auto& [key, value] : types)
+            g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
+
+        std::ostringstream sep_ss;
+        const auto &seps = Token::Separators();
+        for (const auto& [key, value] : seps) {
+            string name(1, key);
+            name = escape_regex(name);
+            sep_ss << name << "|";
+        }
+        string sep = sep_ss.str();
+        sep.pop_back();
+        rules.push(sep, eSeparator);
 
         lexertl::generator::build(rules, g_sm);
     }
@@ -521,6 +563,12 @@ namespace pl::core {
                     // TODO:
                     //  'makeString' does not take a std::string_view
                     //  Handle string escape sequences
+                }
+                break;
+            case eSeparator: {
+                    const char sep = *results.first;
+                    const auto separatorToken = Token::Separators().find(sep)->second;
+                    m_tokens.emplace_back(separatorToken.type, separatorToken.value, location());
                 }
                 break;
             }
