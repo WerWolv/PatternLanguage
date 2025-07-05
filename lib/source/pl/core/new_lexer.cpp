@@ -394,7 +394,7 @@ namespace pl::core {
         for (const auto& [key, value] : opeators)
             g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
 
-        /*for (const auto& [key, value] : pl::core::tkn::constants)
+        /*for (const auto& [key, value] : tkn::constants)
             g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));*/
 
         lexertl::generator::build(rules, g_sm);
@@ -445,21 +445,28 @@ namespace pl::core {
                 break;
             case eKWNamedOpTypeConst: {
                     const string_view kw(results.first, results.second);
-                    auto it = g_KWOpTypeTokenInfo.find(kw);
-                    if (it != g_KWOpTypeTokenInfo.end()) {
+                    if (const auto it = g_KWOpTypeTokenInfo.find(kw); it != g_KWOpTypeTokenInfo.end()) {
                         m_tokens.emplace_back(it->second.type, it->second.value, location());
+                    }
+                    else if (const auto it = tkn::constants.find(kw); it != tkn::constants.end()) {
+                        auto ctok = tkn::Literal::makeNumeric(it->second);
+                        m_tokens.emplace_back(ctok.type, ctok.value, location());
+                    }
+                    else {
+                        auto idtok = tkn::Literal::makeIdentifier(string(kw));
+                        m_tokens.emplace_back(idtok.type, idtok.value, location());
                     }
                 }
                 break;
             case eSingleLineComment: {
                     const string_view comment(results.first+2, results.second);
-                    auto ctok = pl::core::tkn::Literal::makeComment(true, string(comment));
+                    auto ctok = tkn::Literal::makeComment(true, string(comment));
                     m_tokens.emplace_back(ctok.type, ctok.value, location());
                 }
                 break;
             case eSingleLineDocComment: {
                     const string_view comment(results.first+3, results.second);
-                    auto ctok = pl::core::tkn::Literal::makeDocComment(false, true, string(comment));
+                    auto ctok = tkn::Literal::makeDocComment(false, true, string(comment));
                     m_tokens.emplace_back(ctok.type, ctok.value, location());
                 }
                 break;
@@ -481,17 +488,17 @@ namespace pl::core {
 
                     switch (mlcomment_type) {
                     case MLComment: {
-                            auto ctok = pl::core::tkn::Literal::makeComment(false, string(comment));
+                            auto ctok = tkn::Literal::makeComment(false, string(comment));
                             m_tokens.emplace_back(ctok.type, ctok.value, mlcomment_location);
                         }
                         break;
                     case MLLocalDocComment: {
-                            auto ctok = pl::core::tkn::Literal::makeDocComment(false, false, string(comment));
+                            auto ctok = tkn::Literal::makeDocComment(false, false, string(comment));
                             m_tokens.emplace_back(ctok.type, ctok.value, mlcomment_location);
                         }
                         break;
                     case MLGlobalDocComment: {
-                            auto ctok = pl::core::tkn::Literal::makeDocComment(true, false, string(comment));
+                            auto ctok = tkn::Literal::makeDocComment(true, false, string(comment));
                             m_tokens.emplace_back(ctok.type, ctok.value, mlcomment_location);
                         }
                         break;
@@ -502,14 +509,14 @@ namespace pl::core {
                     const string_view num_str(results.first, results.second);
                     const auto num = parseNumericLiteral(num_str, location);
                     if (num.has_value()) {
-                        auto ntok = pl::core::tkn::Literal::makeNumeric(num.value());
+                        auto ntok = tkn::Literal::makeNumeric(num.value());
                         m_tokens.emplace_back(ntok.type, ntok.value, location());
                     }
                 }
                 break;
             case eString: {
                     const string_view str(results.first+1, results.second-1);
-                    const auto stok = pl::core::tkn::Literal::makeString(string(str));
+                    const auto stok = tkn::Literal::makeString(string(str));
                     m_tokens.emplace_back(stok.type, stok.value, location());
                     // TODO:
                     //  'makeString' does not take a std::string_view
@@ -521,7 +528,7 @@ namespace pl::core {
             lexertl::lookup(g_sm, results);
         }
 
-        const auto &eop = pl::core::tkn::Separator::EndOfProgram;
+        const auto &eop = tkn::Separator::EndOfProgram;
         m_tokens.emplace_back(eop.type, eop.value, location());
 
         return { m_tokens, collectErrors() };
