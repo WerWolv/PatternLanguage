@@ -267,7 +267,6 @@ namespace pl::core {
         const bool unsignedSuffix = hlp::stringEndsWithOneOf(literal, { "u", "U" });
         const bool isFloat = literal.find('.') != std::string_view::npos
                        || (!literal.starts_with("0x") && floatSuffix);
-        const bool isUnsigned = unsignedSuffix;
 
         if(isFloat) {
 
@@ -296,7 +295,7 @@ namespace pl::core {
         if(!integer.has_value()) return std::nullopt;
 
         u128 value = integer.value();
-        if(isUnsigned) {
+        if(unsignedSuffix) {
             return value;
         }
 
@@ -477,7 +476,7 @@ namespace pl::core {
             case eMultiLineCommentClose: {
                     mlcomment_location.length = results.second-mlcoment_start_raw;
                     const string_view comment(mlcoment_start, results.second-2);
-            
+
                     switch (mlcomment_type) {
                     case MLComment: {
                             auto ctok = pl::core::tkn::Literal::makeComment(false, string(comment));
@@ -506,7 +505,7 @@ namespace pl::core {
                     }
                 }
             }
-        
+
             lexertl::lookup(g_sm, results);
         }
 
