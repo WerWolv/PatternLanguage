@@ -16,6 +16,7 @@
 #include <pl/helpers/utils.hpp>
 
 #include <cstddef>
+#include <cctype>
 #include <algorithm>
 #include <string>
 #include <string_view>
@@ -580,14 +581,23 @@ namespace pl::core {
                 }
                 break;
             case eDirective: {
-                    const string_view dir(results.first, results.second);
-                    int a=0;(void)a;
+                    auto first = results.first;
+                    for (++first; std::isspace(*first); ++first) {}
+                    string name = "#"+string(first, results.second); // TODO: I don't like this!
+                    const auto &directives = Token::Directives();
+                    if (const auto directiveToken = directives.find(name); directiveToken != directives.end()) {
+                        m_tokens.emplace_back(directiveToken->second.type, directiveToken->second.value, location());
+                    }
+                    else {
+                        error(location(), "Unknown directive: {}", name);
+                    }
                 }
                 break;
             case eDirectiveType: {
                     const string_view type(results.first, results.second);
                     int a=0;(void)a;
                 }
+
                 break;
             case eDirectiveParam: {
                     const string_view param(results.first, results.second);
