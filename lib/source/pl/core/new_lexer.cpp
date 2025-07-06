@@ -352,13 +352,6 @@ namespace pl::core {
 
         lexertl::state_machine g_sm;
 
-        enum {
-            eEOF, eNewLine, eKWNamedOpTypeConst,
-            eSingleLineComment, eSingleLineDocComment,
-            eMultiLineCommentOpen, eMultiLineDocCommentOpen, eMultiLineCommentClose,
-            eNumber, eString, eSeparator
-        };
-
         inline bool must_escape(char c)
         {
             switch (c) {
@@ -392,6 +385,13 @@ namespace pl::core {
             return result;
         }
 
+        enum {
+            eEOF, eNewLine, eKWNamedOpTypeConst,
+            eSingleLineComment, eSingleLineDocComment,
+            eMultiLineCommentOpen, eMultiLineDocCommentOpen, eMultiLineCommentClose,
+            eNumber, eString, eSeparator, eDirective, eDirectiveType, eDirectiveParam
+        };
+
     } // anonymous namespace
 
     void init_new_lexer()
@@ -399,14 +399,17 @@ namespace pl::core {
         lexertl::rules rules;
 
         rules.push_state("MLCOMMENT");
+        rules.push_state("DIRECTIVETYPE");
+        rules.push_state("DIRECTIVEPARAM");
 
-        rules.push("*", "\r\n|\n|\r", eNewLine, ".");
+        rules.push("\r\n|\n|\r", eNewLine);
 
         rules.push(R"(\/\/[^/][^\r\n]*)", eSingleLineComment);
         rules.push(R"(\/\/\/[^\r\n]*)", eSingleLineDocComment);
 
         rules.push("INITIAL", R"(\/\*[^*!\r\n].*)", eMultiLineCommentOpen, "MLCOMMENT");
         rules.push("INITIAL", R"(\/\*[*!].*)", eMultiLineDocCommentOpen, "MLCOMMENT");
+        rules.push("MLCOMMENT", "\r\n|\n|\r", eNewLine, ".");
         rules.push("MLCOMMENT", R"([^*\r\n]+|.)", lexertl::rules::skip(), "MLCOMMENT");
         rules.push("MLCOMMENT", R"(\*\/)", eMultiLineCommentClose, "INITIAL");
 
@@ -415,6 +418,11 @@ namespace pl::core {
         rules.push(R"([0-9][0-9a-fA-F'xXoOpP.uU+-]*)", eNumber);
 
         rules.push(R"(["](\\.|[^"\\])*["])", eString); // TODO: Improve string handling
+
+        rules.push("INITIAL", R"(#\s*[a-zA-Z_]\w*)", eDirective, "DIRECTIVETYPE");
+        rules.push("DIRECTIVETYPE", R"([_a-zA-Z][_a-zA-Z0-9]*)", eDirectiveType, "DIRECTIVEPARAM");
+        rules.push("DIRECTIVEPARAM", "\r\n|\n|\r", eNewLine, "INITIAL");
+        rules.push("DIRECTIVEPARAM", R"(\S.*)", eDirectiveParam, "INITIAL");
 
         const auto &keywords = Token::Keywords();
         for (const auto& [key, value] : keywords)
@@ -571,6 +579,21 @@ namespace pl::core {
                     m_tokens.emplace_back(separatorToken.type, separatorToken.value, location());
                 }
                 break;
+            case eDirective: {
+                    const string_view dir(results.first, results.second);
+                    int a=0;(void)a;
+                }
+                break;
+            case eDirectiveType: {
+                    const string_view type(results.first, results.second);
+                    int a=0;(void)a;
+                }
+                break;
+            case eDirectiveParam: {
+                    const string_view param(results.first, results.second);
+                    int a=0;(void)a;
+                }
+                break; 
             }
 
             lexertl::lookup(g_sm, results);
