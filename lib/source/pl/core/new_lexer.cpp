@@ -616,3 +616,10 @@ namespace pl::core {
     }
 
 } // namespace pl::core
+
+/*
+Notes:
+ The code that handles idefs and defines is confusing. The identifier (what is defined)
+ is is not handled in the directive's code path (in most other constructs this is the case)
+ but in the subsequent iterations of lexing the loop.
+*/
