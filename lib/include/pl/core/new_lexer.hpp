@@ -7,6 +7,8 @@
 #include <pl/core/token.hpp>
 #include <pl/core/errors/error.hpp>
 #include <pl/core/errors/result.hpp>
+// Debugging
+#include <string>
 
 namespace pl::core {
 
@@ -26,5 +28,8 @@ namespace pl::core {
         std::vector<Token> m_tokens;
         std::size_t m_longestLineLength = 0;
     };
+
+    // Debugging
+    void save_compile_results(std::string fn, hlp::CompileResult<std::vector<Token>> &res);
 
 } // namespace pl::core

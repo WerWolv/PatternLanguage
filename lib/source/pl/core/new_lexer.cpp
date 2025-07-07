@@ -24,6 +24,13 @@
 #include <unordered_map>
 #include <sstream>
 
+// Debugging
+#include <iostream>
+#include <fstream>
+#include <chrono>
+using std::cout;
+using std::endl;
+
 using std::string;
 using std::string_view;
 
@@ -613,6 +620,29 @@ namespace pl::core {
         m_tokens.emplace_back(eop.type, eop.value, location());
 
         return { m_tokens, collectErrors() };
+    }
+
+    // Debugging
+    [[maybe_unused]] void save_compile_results(string fn, hlp::CompileResult<std::vector<Token>> &res)
+    {
+        auto now = std::chrono::steady_clock::now();
+        auto ticks = std::chrono::duration_cast<std::chrono::milliseconds>(
+            now.time_since_epoch()
+        ).count();
+        
+        std::ofstream ofs(fn+"("+std::to_string(ticks)+").txt");
+        const auto &tokens = res.unwrap();
+        for (const auto &tok : tokens) {
+            const auto &loc = tok.location; 
+            auto type = tok.getFormattedType();
+            auto value = tok.getFormattedValue();
+            ofs
+                << "type: " << type << ", value: " << value
+                << " (" << loc.source->source << ", " << loc.line << ":" << loc.column << ")"
+                << endl;
+            
+            int a = 1+1; (void)a;
+        }
     }
 
 } // namespace pl::core
