@@ -582,7 +582,7 @@ namespace pl::core {
                 break;
             case eDirective: {
                     auto first = results.first;
-                    for (++first; std::isspace(*first); ++first) {}
+                    for (++first; std::isspace(static_cast<unsigned char>(*first)); ++first) {}
                     string name = "#"+string(first, results.second); // TODO: I don't like this!
                     const auto &directives = Token::Directives();
                     if (const auto directiveToken = directives.find(name); directiveToken != directives.end()) {
