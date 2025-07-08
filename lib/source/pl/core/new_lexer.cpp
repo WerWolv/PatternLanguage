@@ -637,7 +637,7 @@ namespace pl::core {
             auto type = tok.getFormattedType();
             auto value = tok.getFormattedValue();
             ofs
-                << "type: " << type << ", value: " << value
+                << "type: " << type << ", value: '" << value << "'"
                 << " (" << loc.source->source << ", " << loc.line << ":" << loc.column << ")"
                 << endl;
             

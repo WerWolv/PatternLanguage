@@ -201,6 +201,7 @@ namespace pl {
             this->m_runningTime = std::chrono::duration_cast<std::chrono::duration<double>>(endTime - startTime).count();
         };
 
+        // TODO: lextwice: this is where tabs and newlines are altered.
         code = wolv::util::replaceStrings(code, "\r\n", "\n");
         code = wolv::util::replaceStrings(code, "\t", "    ");
 
