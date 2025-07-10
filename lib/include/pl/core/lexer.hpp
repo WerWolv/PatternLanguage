@@ -58,6 +58,7 @@ namespace pl::core
             char ch = m_sourceCode[m_cursor];
             if (ch == '\n')
             {
+                m_tabCompensation = 0;
                 m_longestLineLength = std::max(m_longestLineLength, m_cursor - m_lineBegin);
                 m_line++;
                 m_lineBegin = ++m_cursor;
@@ -65,6 +66,7 @@ namespace pl::core
             }
             else if (ch == '\r')
             {
+                m_tabCompensation = 0;
                 m_longestLineLength = std::max(m_longestLineLength, m_cursor - m_lineBegin);
                 m_line++;
                 ch = m_sourceCode[++m_cursor];
@@ -82,6 +84,7 @@ namespace pl::core
         std::vector<Token> m_tokens;
         size_t m_cursor = 0;
         u32 m_line = 0;
+        u32 m_tabCompensation = 0;
         u32 m_lineBegin = 0;
         size_t m_longestLineLength = 0;
         u32 m_errorLength;

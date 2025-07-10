@@ -551,6 +551,7 @@ namespace pl::core
         this->m_line = 1;
         this->m_lineBegin = 0;
         this->m_longestLineLength = 0;
+        this->m_tabCompensation = 0;
 
         const size_t end = this->m_sourceCode.size();
 
@@ -568,7 +569,14 @@ namespace pl::core
 
             if (std::isblank(c) || std::isspace(c))
             {
-                if (!skipLineEnding())
+                if (c == '\t')
+                {
+                    u32 column = m_tabCompensation + (m_cursor - m_lineBegin + 1);
+                    u32 tabbedColumn = (((column - 1) / 4 + 1) * 4) + 1;
+                    m_tabCompensation += tabbedColumn - column - 1;
+                    ++m_cursor;
+                }
+                else if (!skipLineEnding())
                     ++m_cursor;
                 continue;
             }
@@ -778,7 +786,7 @@ namespace pl::core
 
     Location Lexer::location()
     {
-        u32 column = m_cursor - m_lineBegin + 1;
+        u32 column = m_tabCompensation + m_cursor - m_lineBegin + 1;
         return Location{m_source, m_line, column, m_errorLength};
     }
 }
