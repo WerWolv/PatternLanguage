@@ -159,8 +159,7 @@ namespace pl::core
             result += character.value();
         }
 
-        if (hasTheLineEnded(m_sourceCode[m_cursor]))
-            m_cursor++;
+        skipLineEnding();
 
         return makeTokenAt(Literal::makeString(result), location, result.size());
     }
@@ -184,8 +183,7 @@ namespace pl::core
             result += character.value();
         }
 
-        if (hasTheLineEnded(m_sourceCode[m_cursor]))
-            m_cursor++;
+        skipLineEnding();
 
         return makeTokenAt(Literal::makeString(result), location, result.size());
     }
@@ -368,8 +366,7 @@ namespace pl::core
         }
         auto len = m_cursor - begin;
 
-        if (hasTheLineEnded(m_sourceCode[m_cursor]))
-            m_cursor++;
+        skipLineEnding();
 
         return makeTokenAt(Literal::makeComment(true, result), location, len);
     }
@@ -388,8 +385,7 @@ namespace pl::core
         }
         auto len = m_cursor - begin;
 
-        if (hasTheLineEnded(m_sourceCode[m_cursor]))
-            m_cursor++;
+        skipLineEnding();
 
         return makeTokenAt(Literal::makeDocComment(false, true, result), location, len);
     }
@@ -404,7 +400,7 @@ namespace pl::core
         m_cursor += 3;
         while (true)
         {
-            hasTheLineEnded(peek(0));
+            skipLineEnding();
 
             if (peek(1) == '\x00')
             {
@@ -434,7 +430,7 @@ namespace pl::core
         m_cursor += 2;
         while (true)
         {
-            hasTheLineEnded(peek(0));
+            skipLineEnding();
 
             if (peek(1) == '\x00')
             {
@@ -572,8 +568,8 @@ namespace pl::core
 
             if (std::isblank(c) || std::isspace(c))
             {
-                hasTheLineEnded(c);
-                m_cursor++;
+                if (!skipLineEnding())
+                    ++m_cursor;
                 continue;
             }
 
@@ -693,22 +689,16 @@ namespace pl::core
                         peek(0) == 0 || directive == Token::Directive::IfDef || directive == Token::Directive::IfNDef ||
                         directive == Token::Directive::EndIf)
                         continue;
-                    if (hasTheLineEnded(peek(0)))
-                    {
-                        m_cursor++;
+                    if (skipLineEnding())
                         continue;
-                    }
                     auto directiveValue = parseDirectiveValue();
                     if (directiveValue.has_value())
                     {
                         addToken(directiveValue.value());
                         if (m_line != line || peek(0) == 0)
                             continue;
-                        if (hasTheLineEnded(peek(0)))
-                        {
-                            m_cursor++;
+                        if (skipLineEnding())
                             continue;
-                        }
                         directiveValue = parseDirectiveArgument();
                         if (directiveValue.has_value())
                         {
@@ -788,12 +778,21 @@ namespace pl::core
 
     Location Lexer::location()
     {
-        u32 column = m_cursor - m_lineBegin;
-        // There is no newline before the first line so add 1 to the column
-        if (m_line == 1)
-        {
-            column += 1;
-        }
+        u32 column = m_cursor - m_lineBegin + 1;
         return Location{m_source, m_line, column, m_errorLength};
     }
 }
+
+/*
+Notes
+-----
+
+m_longestLineLength
+The line length OR the first line of a file is one less than other lines. For example, an empty
+first line measures as 0, but but subsequent empty lines measure as 1. This is due to m_lineBegin
+pointing to the \n of the previous line, except for first line ,where it points to the first char
+of the line. This is special-cased in Lexer::location() but not handled in the max line length code.
+
+Lexer::parseDirectiveValue()
+Only a single space is accepted between a #pragma and its value
+*/

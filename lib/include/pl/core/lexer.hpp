@@ -13,19 +13,20 @@
 
 #include <pl/core/errors/result.hpp>
 
-namespace pl::core {
+namespace pl::core
+{
 
-    class Lexer : err::ErrorCollector {
+    class Lexer : err::ErrorCollector
+    {
     public:
         Lexer() = default;
 
         hlp::CompileResult<std::vector<Token>> lex(const api::Source *source);
         size_t getLongestLineLength() const { return m_longestLineLength; }
 
-
     private:
         [[nodiscard]] char peek(size_t p = 1) const;
-        bool processToken(auto parserFunction, const std::string_view& identifier);
+        bool processToken(auto parserFunction, const std::string_view &identifier);
         Location location() override;
 
         std::optional<char> parseCharacter();
@@ -48,20 +49,36 @@ namespace pl::core {
         std::optional<double> parseFloatingPoint(std::string_view literal, char suffix);
         std::optional<u128> parseInteger(std::string_view literal);
 
-        Token makeToken(const Token& token, size_t length = 1);
-        static Token makeTokenAt(const Token& token, Location& location, size_t length = 1);
-        void addToken(const Token& token);
-        bool hasTheLineEnded(const char &ch) {
-            if(ch == '\n') {
+        Token makeToken(const Token &token, size_t length = 1);
+        static Token makeTokenAt(const Token &token, Location &location, size_t length = 1);
+        void addToken(const Token &token);
+
+        bool skipLineEnding()
+        {
+            char ch = m_sourceCode[m_cursor];
+            if (ch == '\n')
+            {
                 m_longestLineLength = std::max(m_longestLineLength, m_cursor - m_lineBegin);
                 m_line++;
+                m_lineBegin = ++m_cursor;
+                return true;
+            }
+            else if (ch == '\r')
+            {
+                m_longestLineLength = std::max(m_longestLineLength, m_cursor - m_lineBegin);
+                m_line++;
+                ch = m_sourceCode[++m_cursor];
+                if (ch == '\n')
+                    ++m_cursor;
                 m_lineBegin = m_cursor;
                 return true;
             }
+
             return false;
         }
+
         std::string m_sourceCode;
-        const api::Source* m_source = nullptr;
+        const api::Source *m_source = nullptr;
         std::vector<Token> m_tokens;
         size_t m_cursor = 0;
         u32 m_line = 0;
