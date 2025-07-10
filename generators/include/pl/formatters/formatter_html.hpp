@@ -18,7 +18,7 @@ namespace pl::gen::fmt {
         }
 
     private:
-        static std::string generateTooltip(std::vector<ptrn::Pattern*> &patterns) {
+        static std::string generateTooltip(const std::vector<ptrn::Pattern*> &patterns) {
             if (patterns.empty())
                 return "";
 

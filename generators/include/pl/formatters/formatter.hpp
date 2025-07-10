@@ -33,7 +33,7 @@ namespace pl::gen::fmt {
         void enableMetaInformation(bool enable) { this->m_metaInformation = enable; }
         [[nodiscard]] bool isMetaInformationEnabled() const { return this->m_metaInformation; }
 
-        std::vector<std::pair<std::string, std::string>> getMetaInformation(ptrn::Pattern *pattern) const {
+        std::vector<std::pair<std::string, std::string>> getMetaInformation(const ptrn::Pattern *pattern) const {
             if (!this->m_metaInformation)
                 return { };
 

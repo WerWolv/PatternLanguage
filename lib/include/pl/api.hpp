@@ -41,7 +41,7 @@ namespace pl::api {
         std::string content;
         std::string source;
         u32 id = 0;
-        bool mainSource;
+        bool mainSource = false;
 
          Source(std::string content, std::string source = DefaultSource, bool mainSource = false) :
             content(std::move(content)), source(std::move(source)), mainSource(mainSource) {

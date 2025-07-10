@@ -328,7 +328,6 @@ namespace pl::core {
 
         [[nodiscard]] std::optional<Token::Literal> getEnvVariable(const std::string &name) const {
             if (this->m_envVariables.contains(name)) {
-                auto value = this->m_envVariables.at(name);
                 return this->m_envVariables.at(name);
             } else
                 return std::nullopt;
@@ -477,7 +476,7 @@ namespace pl::core {
         }
 
     private:
-        PatternLanguage *m_patternLanguage;
+        PatternLanguage *m_patternLanguage = nullptr;
         std::list<PatternLanguage> m_subRuntimes;
 
         u64 m_currOffset = 0x00;
