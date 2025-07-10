@@ -79,6 +79,8 @@ namespace pl::core
             return false;
         }
 
+        static constexpr int tabsize = 4;
+
         std::string m_sourceCode;
         const api::Source *m_source = nullptr;
         std::vector<Token> m_tokens;

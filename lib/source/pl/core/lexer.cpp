@@ -572,7 +572,7 @@ namespace pl::core
                 if (c == '\t')
                 {
                     u32 column = m_tabCompensation + (m_cursor - m_lineBegin + 1);
-                    u32 tabbedColumn = (((column - 1) / 4 + 1) * 4) + 1;
+                    u32 tabbedColumn = (((column - 1) / tabsize + 1) * tabsize) + 1;
                     m_tabCompensation += tabbedColumn - column - 1;
                     ++m_cursor;
                 }
