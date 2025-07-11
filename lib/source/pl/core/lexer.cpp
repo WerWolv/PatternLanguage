@@ -16,16 +16,16 @@ namespace pl::core {
 
     static bool isIntegerCharacter(const char c, const int base) {
         switch (base) {
-        case 16:
-            return std::isxdigit(c);
-        case 10:
-            return std::isdigit(c);
-        case 8:
-            return c >= '0' && c <= '7';
-        case 2:
-            return c == '0' || c == '1';
-        default:
-            return false;
+            case 16:
+                return std::isxdigit(c);
+            case 10:
+                return std::isdigit(c);
+            case 8:
+                return c >= '0' && c <= '7';
+            case 2:
+                return c == '0' || c == '1';
+            default:
+                return false;
         }
     }
 
@@ -46,7 +46,7 @@ namespace pl::core {
     static size_t getIntegerLiteralLength(const std::string_view& literal) {
         const auto count = literal.find_first_not_of("0123456789ABCDEFabcdef'xXoOpP.uU+-");
         const std::string_view intLiteral = count == std::string_view::npos ? literal : literal.substr(0, count);
-        if (const auto signPos = intLiteral.find_first_of("+-"); signPos != std::string_view::npos && ((literal.at(signPos-1) != 'e' && literal.at(signPos-1) != 'E') || literal.starts_with("0x")))
+        if (const auto signPos = intLiteral.find_first_of("+-"); signPos != std::string_view::npos && ((literal.at(signPos-1) != 'e' && literal.at(signPos-1) != 'E')  || literal.starts_with("0x")))
             return signPos;
         return intLiteral.size();
     }
@@ -76,25 +76,23 @@ namespace pl::core {
                 case '\\':
                     return '\\';
                 case 'x': {
-                    const char hex[3] = {m_sourceCode[m_cursor], m_sourceCode[m_cursor + 1], 0};
+                    const char hex[3] = { m_sourceCode[m_cursor], m_sourceCode[m_cursor + 1], 0 };
                     m_cursor += 2;
                     try {
                         return static_cast<char>(std::stoul(hex, nullptr, 16));
-                    }
-                    catch (const std::invalid_argument&) {
+                    } catch (const std::invalid_argument&) {
                         m_errorLength = 2;
                         error("Invalid hex escape sequence: {}", hex);
                         return std::nullopt;
                     }
                 }
                 case 'u': {
-                    const char hex[5] = {m_sourceCode[m_cursor], m_sourceCode[m_cursor + 1], m_sourceCode[m_cursor + 2],
-                                        m_sourceCode[m_cursor + 3], 0};
+                    const char hex[5] = { m_sourceCode[m_cursor], m_sourceCode[m_cursor + 1], m_sourceCode[m_cursor + 2],
+                                    m_sourceCode[m_cursor + 3], 0 };
                     m_cursor += 4;
                     try {
                         return static_cast<char>(std::stoul(hex, nullptr, 16));
-                    }
-                    catch (const std::invalid_argument &) {
+                    } catch (const std::invalid_argument&) {
                         m_errorLength = 4;
                         error("Invalid unicode escape sequence: {}", hex);
                         return std::nullopt;
@@ -102,9 +100,9 @@ namespace pl::core {
                 }
                 default:
                     m_errorLength = 1;
-                    error("Unknown escape sequence: {}", m_sourceCode[m_cursor - 1]);
-                    return std::nullopt;
-                }
+                    error("Unknown escape sequence: {}", m_sourceCode[m_cursor-1]);
+                return std::nullopt;
+            }
         }
         return c;
     }
@@ -122,11 +120,10 @@ namespace pl::core {
     std::optional<Token> Lexer::parseDirectiveValue() {
         std::string result;
 
-        // TODO: What if there are two spaces? Tabs? BUG!
         m_cursor++; // Skip space
         auto location = this->location();
 
-        while (!std::isblank(m_sourceCode[m_cursor]) && !std::isspace(m_sourceCode[m_cursor]) && m_sourceCode[m_cursor] != '\0') {
+        while (!std::isblank(m_sourceCode[m_cursor]) && !std::isspace(m_sourceCode[m_cursor]) && m_sourceCode[m_cursor] != '\0' ) {
 
             auto character = parseCharacter();
             if (!character.has_value()) {
@@ -136,7 +133,8 @@ namespace pl::core {
             result += character.value();
         }
 
-        skipLineEnding();
+        if (hasTheLineEnded(m_sourceCode[m_cursor]))
+            m_cursor++;
 
         return makeTokenAt(Literal::makeString(result), location, result.size());
     }
@@ -201,8 +199,8 @@ namespace pl::core {
         u8 base = 10;
 
         u128 value = 0;
-        if (literal[0] == '0') {
-            if (literal.size() == 1) {
+        if(literal[0] == '0') {
+            if(literal.size() == 1) {
                 return 0;
             }
             bool hasPrefix = true;
@@ -210,18 +208,18 @@ namespace pl::core {
                 case 'x':
                 case 'X':
                     base = 16;
-                    break;
+                break;
                 case 'o':
                 case 'O':
                     base = 8;
-                    break;
+                break;
                 case 'b':
                 case 'B':
                     base = 2;
-                    break;
+                break;
                 default:
                     hasPrefix = false;
-                    break;
+                break;
             }
             if (hasPrefix) {
                 literal = literal.substr(2);
@@ -229,7 +227,7 @@ namespace pl::core {
         }
 
         for (const char c : literal) {
-            if (c == integerSeparator) continue;
+            if(c == integerSeparator) continue;
 
             if (!isIntegerCharacter(c, base)) {
                 m_errorLength = literal.size();
