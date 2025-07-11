@@ -133,8 +133,7 @@ namespace pl::core {
             result += character.value();
         }
 
-        if (hasTheLineEnded(m_sourceCode[m_cursor]))
-            m_cursor++;
+        skipLineEnding();
 
         return makeTokenAt(Literal::makeString(result), location, result.size());
     }

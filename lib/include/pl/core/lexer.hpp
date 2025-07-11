@@ -84,6 +84,6 @@ namespace pl::core {
         u32 m_tabCompensation = 0;
         u32 m_lineBegin = 0;
         size_t m_longestLineLength = 0;
-        u32 m_errorLength = 0
+        u32 m_errorLength = 0;
     };
 }
