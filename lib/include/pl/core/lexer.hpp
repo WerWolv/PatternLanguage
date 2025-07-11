@@ -13,11 +13,9 @@
 
 #include <pl/core/errors/result.hpp>
 
-namespace pl::core
-{
+namespace pl::core {
 
-    class Lexer : err::ErrorCollector
-    {
+    class Lexer : err::ErrorCollector {
     public:
         Lexer() = default;
 
@@ -26,7 +24,7 @@ namespace pl::core
 
     private:
         [[nodiscard]] char peek(size_t p = 1) const;
-        bool processToken(auto parserFunction, const std::string_view &identifier);
+        bool processToken(auto parserFunction, const std::string_view& identifier);
         Location location() override;
 
         std::optional<char> parseCharacter();
@@ -49,12 +47,11 @@ namespace pl::core
         std::optional<double> parseFloatingPoint(std::string_view literal, char suffix);
         std::optional<u128> parseInteger(std::string_view literal);
 
-        Token makeToken(const Token &token, size_t length = 1);
-        static Token makeTokenAt(const Token &token, Location &location, size_t length = 1);
-        void addToken(const Token &token);
+        Token makeToken(const Token& token, size_t length = 1);
+        static Token makeTokenAt(const Token& token, Location &location, size_t length = 1);
+        void addToken(const Token& token);
 
-        bool skipLineEnding()
-        {
+        bool skipLineEnding() {
             char ch = m_sourceCode[m_cursor];
             if (ch == '\n') {
                 m_tabCompensation = 0;

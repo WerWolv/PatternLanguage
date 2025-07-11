@@ -27,22 +27,17 @@
 namespace pl
 {
 
-    namespace core
-    {
+    namespace core {
         class Preprocessor;
         class Lexer;
         class Parser;
         class Validator;
         class Evaluator;
 
-        namespace ast
-        {
-            class ASTNode;
-        }
+        namespace ast { class ASTNode; }
     }
 
-    namespace ptrn
-    {
+    namespace ptrn {
         class Pattern;
         class IIterable;
     }
@@ -52,9 +47,9 @@ namespace pl
      * @note The runtime can be reused for multiple executions, but if you want to execute multiple files at once, you should create a new runtime for each file
      * @note Things like the abort function and getter functions to check if the runtime is currently executing code are thread safe. However, the runtime is not thread safe in general
      */
-    class PatternLanguage
-    {
+    class PatternLanguage {
     public:
+
         /**
          * @brief Construct a new Pattern Language object
          * @param addLibStd Whether to add the standard library functions to the language
@@ -62,24 +57,23 @@ namespace pl
         explicit PatternLanguage(bool addLibStd = true);
         ~PatternLanguage();
 
-        PatternLanguage(const PatternLanguage &) = delete;
+        PatternLanguage(const PatternLanguage&) = delete;
         PatternLanguage(PatternLanguage &&other) noexcept;
 
-        struct Internals
-        {
+        struct Internals {
             std::unique_ptr<core::Preprocessor> preprocessor;
-            std::unique_ptr<core::Lexer> lexer;
-            std::unique_ptr<core::Parser> parser;
-            std::unique_ptr<core::Validator> validator;
-            std::unique_ptr<core::Evaluator> evaluator;
+            std::unique_ptr<core::Lexer>        lexer;
+            std::unique_ptr<core::Parser>       parser;
+            std::unique_ptr<core::Validator>    validator;
+            std::unique_ptr<core::Evaluator>    evaluator;
         };
 
         /**
-         * @brief Lexes and preprocesses a pattern language code string and returns a token stream
-         * @param code Code to preprocess
-         * @param source Source of the code
-         * @return token stream
-         */
+        * @brief Lexes and preprocesses a pattern language code string and returns a token stream
+        * @param code Code to preprocess
+        * @param source Source of the code
+        * @return token stream
+        */
         [[nodiscard]] std::optional<std::vector<pl::core::Token>> preprocessString(const std::string &code, const std::string &source);
 
         /**
@@ -124,7 +118,7 @@ namespace pl
          * @param source the source of the code
          * @return the source that was added or that already existed
          */
-        [[nodiscard]] api::Source *addVirtualSource(const std::string &code, const std::string &source, bool mainSource = false) const;
+        [[nodiscard]] api::Source* addVirtualSource(const std::string& code, const std::string& source, bool mainSource = false) const;
 
         /**
          * @brief Aborts the currently running execution asynchronously
@@ -138,7 +132,7 @@ namespace pl
          * @param readFunction Function to read data from the data source
          * @param writerFunction Optional function to write data to the data source
          */
-        void setDataSource(u64 baseAddress, u64 size, std::function<void(u64, u8 *, size_t)> readFunction, std::optional<std::function<void(u64, const u8 *, size_t)>> writerFunction = std::nullopt);
+        void setDataSource(u64 baseAddress, u64 size, std::function<void(u64, u8*, size_t)> readFunction, std::optional<std::function<void(u64, const u8*, size_t)>> writerFunction = std::nullopt);
 
         /**
          * @brief Sets the base address of the data source
@@ -195,13 +189,13 @@ namespace pl
          * @brief Sets the include paths for where to look for include files
          * @param paths List of paths to look in
          */
-        void setIncludePaths(const std::vector<std::fs::path> &paths);
+        void setIncludePaths(const std::vector<std::fs::path>& paths);
 
         /**
          * @brief Sets the source resolver of the pattern language
          * @param resolver Resolver to use
          */
-        void setResolver(const core::Resolver &resolver);
+        void setResolver(const core::Resolver& resolver);
 
         /**
          * @brief Registers a callback to be called when a dangerous function is being executed
@@ -228,7 +222,7 @@ namespace pl
          * @brief Gets the errors that occurred during the last compilation (e.g. parseString())
          * @return A vector of errors (can be empty if no errors occurred)
          */
-        [[nodiscard]] const std::vector<core::err::CompileError> &getCompileErrors() const;
+        [[nodiscard]] const std::vector<core::err::CompileError>& getCompileErrors() const;
 
         /**
          * @brief Gets a map of all out variables and their values that have been defined in the last execution
@@ -253,13 +247,13 @@ namespace pl
          * @param id ID of the section
          * @return Memory of the section
          */
-        [[nodiscard]] const std::vector<u8> &getSection(u64 id) const;
+        [[nodiscard]] const std::vector<u8>& getSection(u64 id) const;
 
         /**
          * @brief Gets all custom sections that were created
          * @return Custom sections
          */
-        [[nodiscard]] const std::map<u64, api::Section> &getSections() const;
+        [[nodiscard]] const std::map<u64, api::Section>& getSections() const;
 
         /**
          * @brief Gets all patterns that were created in the given section
@@ -293,8 +287,7 @@ namespace pl
          * @brief Checks whether the runtime is currently running
          * @return True if the runtime is running, false otherwise
          */
-        [[nodiscard]] bool isRunning() const
-        {
+        [[nodiscard]] bool isRunning() const {
             return this->m_running;
         }
 
@@ -302,8 +295,7 @@ namespace pl
          * @brief Gets the time the last execution took
          * @return Time the last execution took
          */
-        [[nodiscard]] double getLastRunningTime() const
-        {
+        [[nodiscard]] double getLastRunningTime() const {
             return this->m_runningTime;
         }
 
@@ -339,23 +331,21 @@ namespace pl
          * @warning Generally this should only be used by "IDEs" or other tools that need to access the internals of the pattern language
          * @return Internals
          */
-        [[nodiscard]] const Internals &getInternals() const
+        [[nodiscard]] const Internals& getInternals() const
         {
             return this->m_internals;
         }
 
-        [[nodiscard]] const std::map<std::string, std::string> &getDefines() const
+        [[nodiscard]] const std::map<std::string, std::string>& getDefines() const
         {
             return this->m_defines;
         }
 
-        [[nodiscard]] const std::vector<std::shared_ptr<core::ast::ASTNode>> getAST() const
-        {
+        [[nodiscard]] const std::vector<std::shared_ptr<core::ast::ASTNode>> getAST() const {
             return this->m_currAST;
         }
 
-        [[nodiscard]] const std::map<std::string, api::PragmaHandler> &getPragmas() const
-        {
+        [[nodiscard]] const std::map<std::string, api::PragmaHandler> &getPragmas() const {
             return this->m_pragmas;
         }
 
@@ -363,8 +353,7 @@ namespace pl
          * @brief Gets the source resolver of the pattern language
          * @return Mutable reference to the Resolver
          */
-        [[nodiscard]] core::Resolver &getResolver()
-        {
+        [[nodiscard]] core::Resolver& getResolver() {
             return this->m_resolvers;
         }
 
@@ -372,8 +361,7 @@ namespace pl
          * @brief Gets the source resolver of the pattern language
          * @return Resolver
          */
-        [[nodiscard]] const core::Resolver &getResolver() const
-        {
+        [[nodiscard]] const core::Resolver& getResolver() const {
             return this->m_resolvers;
         }
 
@@ -382,8 +370,7 @@ namespace pl
          * @note This is useful for built-in functions that need to clean up their state
          * @param callback Callback to call
          */
-        void addCleanupCallback(const std::function<void(PatternLanguage &)> &callback)
-        {
+        void addCleanupCallback(const std::function<void(PatternLanguage&)> &callback) {
             this->m_cleanupCallbacks.push_back(callback);
         }
 
@@ -391,8 +378,7 @@ namespace pl
          * @brief Checks whether the patterns are valid
          * @return True if the patterns are valid, false otherwise
          */
-        [[nodiscard]] bool arePatternsValid() const
-        {
+        [[nodiscard]] bool arePatternsValid() const {
             return this->m_patternsValid;
         }
 
@@ -400,23 +386,21 @@ namespace pl
          * @brief Gets the current run id
          * @return Run id
          */
-        [[nodiscard]] u64 getRunId() const
-        {
+        [[nodiscard]] u64 getRunId() const {
             return this->m_runId;
         }
 
-        [[nodiscard]] const std::atomic<u64> &getLastReadAddress() const;
-        [[nodiscard]] const std::atomic<u64> &getLastWriteAddress() const;
-        [[nodiscard]] const std::atomic<u64> &getLastPatternPlaceAddress() const;
+        [[nodiscard]] const std::atomic<u64>& getLastReadAddress() const;
+        [[nodiscard]] const std::atomic<u64>& getLastWriteAddress() const;
+        [[nodiscard]] const std::atomic<u64>& getLastPatternPlaceAddress() const;
 
         PatternLanguage cloneRuntime() const;
 
-        [[nodiscard]] bool isSubRuntime() const
-        {
+        [[nodiscard]] bool isSubRuntime() const {
             return this->m_subRuntime;
         }
 
-        [[nodiscard]] const std::set<pl::ptrn::Pattern *> &getPatternsWithAttribute(const std::string &attribute) const;
+        [[nodiscard]] const std::set<pl::ptrn::Pattern *>& getPatternsWithAttribute(const std::string &attribute) const;
 
     private:
         void flattenPatterns();
@@ -435,15 +419,15 @@ namespace pl
 
         std::map<u64, std::vector<std::shared_ptr<ptrn::Pattern>>> m_patterns;
         std::atomic<bool> m_flattenedPatternsValid = false;
-        std::map<u64, wolv::container::IntervalTree<ptrn::Pattern *, u64, 5>> m_flattenedPatterns;
+        std::map<u64, wolv::container::IntervalTree<ptrn::Pattern*, u64, 5>> m_flattenedPatterns;
         std::thread m_flattenThread;
-        std::vector<std::function<void(PatternLanguage &)>> m_cleanupCallbacks;
+        std::vector<std::function<void(PatternLanguage&)>> m_cleanupCallbacks;
         std::vector<std::shared_ptr<core::ast::ASTNode>> m_currAST;
 
         std::atomic<bool> m_running = false;
         std::atomic<bool> m_patternsValid = false;
         std::atomic<bool> m_aborted = false;
-        std::atomic<u64> m_runId = 0;
+        std::atomic<u64>  m_runId = 0;
 
         std::optional<u64> m_startAddress;
         std::endian m_defaultEndian = std::endian::little;
@@ -451,14 +435,13 @@ namespace pl
 
         u64 m_dataBaseAddress;
         u64 m_dataSize;
-        std::function<void(u64, u8 *, size_t)> m_dataReadFunction;
-        std::optional<std::function<void(u64, const u8 *, size_t)>> m_dataWriteFunction;
+        std::function<void(u64, u8*, size_t)> m_dataReadFunction;
+        std::optional<std::function<void(u64, const u8*, size_t)>> m_dataWriteFunction;
 
         std::function<bool()> m_dangerousFunctionCallCallback;
         core::LogConsole::Callback m_logCallback;
 
-        struct Function
-        {
+        struct Function {
             api::Namespace nameSpace;
             std::string name;
             api::FunctionParameterCount parameterCount;
