@@ -31,13 +31,14 @@ namespace pl {
         return functionName;
     }
 
-    PatternLanguage::PatternLanguage(const bool addLibStd)  {
+    PatternLanguage::PatternLanguage(const bool addLibStd) {
         this->m_internals = {
-            .preprocessor = std::make_unique<core::Preprocessor>(),
-            .lexer = std::make_unique<core::Lexer>(),
-            .parser = std::make_unique<core::Parser>(),
-            .validator = std::make_unique<core::Validator>(),
-            .evaluator = std::make_unique<core::Evaluator>()};
+            .preprocessor   = std::make_unique<core::Preprocessor>(),
+            .lexer          = std::make_unique<core::Lexer>(),
+            .parser         = std::make_unique<core::Parser>(),
+            .validator      = std::make_unique<core::Validator>(),
+            .evaluator      = std::make_unique<core::Evaluator>()
+        };
 
         this->m_internals.evaluator->setRuntime(this);
 
@@ -56,37 +57,35 @@ namespace pl {
     }
 
     PatternLanguage::PatternLanguage(PatternLanguage &&other) noexcept {
-        if (this->m_flattenThread.joinable())
-            this->m_flattenThread.join();
-
-        this->m_internals = std::move(other.m_internals);
-        other.m_internals = {};
+        this->m_internals           = std::move(other.m_internals);
+        other.m_internals = { };
         this->m_internals.evaluator->setRuntime(this);
 
-        this->m_compileErrors = std::move(other.m_compileErrors);
-        this->m_currError = std::move(other.m_currError);
 
-        this->m_defines = std::move(other.m_defines);
-        this->m_pragmas = std::move(other.m_pragmas);
+        this->m_compileErrors       = std::move(other.m_compileErrors);
+        this->m_currError           = std::move(other.m_currError);
 
-        this->m_resolvers = std::move(other.m_resolvers);
-        this->m_fileResolver = std::move(other.m_fileResolver);
-        this->m_parserManager = std::move(other.m_parserManager);
+        this->m_defines              = std::move(other.m_defines);
+        this->m_pragmas             = std::move(other.m_pragmas);
 
-        this->m_patterns = std::move(other.m_patterns);
-        this->m_flattenedPatterns = std::move(other.m_flattenedPatterns);
-        this->m_cleanupCallbacks = std::move(other.m_cleanupCallbacks);
-        this->m_currAST = std::move(other.m_currAST);
+        this->m_resolvers           = std::move(other.m_resolvers);
+        this->m_fileResolver        = std::move(other.m_fileResolver);
+        this->m_parserManager       = std::move(other.m_parserManager);
 
-        this->m_dataBaseAddress = other.m_dataBaseAddress;
-        this->m_dataSize = other.m_dataSize;
-        this->m_dataReadFunction = std::move(other.m_dataReadFunction);
-        this->m_dataWriteFunction = std::move(other.m_dataWriteFunction);
+        this->m_patterns            = std::move(other.m_patterns);
+        this->m_flattenedPatterns   = std::move(other.m_flattenedPatterns);
+        this->m_cleanupCallbacks    = std::move(other.m_cleanupCallbacks);
+        this->m_currAST             = std::move(other.m_currAST);
 
-        this->m_logCallback = std::move(other.m_logCallback);
-        this->m_dangerousFunctionCallCallback = std::move(other.m_dangerousFunctionCallCallback);
+        this->m_dataBaseAddress     = other.m_dataBaseAddress;
+        this->m_dataSize            = other.m_dataSize;
+        this->m_dataReadFunction    = std::move(other.m_dataReadFunction);
+        this->m_dataWriteFunction   = std::move(other.m_dataWriteFunction);
 
-        this->m_functions = std::move(other.m_functions);
+        this->m_logCallback                     = std::move(other.m_logCallback);
+        this->m_dangerousFunctionCallCallback   = std::move(other.m_dangerousFunctionCallCallback);
+
+        this->m_functions           = std::move(other.m_functions);
 
         this->m_running.exchange(other.m_running.load());
         this->m_patternsValid.exchange(other.m_patternsValid.load());
@@ -94,30 +93,30 @@ namespace pl {
         this->m_runId.exchange(other.m_runId.load());
         this->m_subRuntime = other.m_subRuntime;
 
-        m_startAddress = std::move(other.m_startAddress);
+        m_startAddress  = std::move(other.m_startAddress);
         m_defaultEndian = other.m_defaultEndian;
-        m_runningTime = other.m_runningTime;
+        m_runningTime   = other.m_runningTime;
     }
 
     PatternLanguage PatternLanguage::cloneRuntime() const {
         PatternLanguage runtime;
-        runtime.m_defines = this->m_defines;
-        runtime.m_pragmas = this->m_pragmas;
+        runtime.m_defines       = this->m_defines;
+        runtime.m_pragmas       = this->m_pragmas;
 
-        runtime.m_resolvers = this->m_resolvers;
-        runtime.m_fileResolver = this->m_fileResolver;
+        runtime.m_resolvers     = this->m_resolvers;
+        runtime.m_fileResolver  = this->m_fileResolver;
         runtime.m_parserManager = this->m_parserManager;
 
-        runtime.m_startAddress = this->m_startAddress;
+        runtime.m_startAddress  = this->m_startAddress;
         runtime.m_defaultEndian = this->m_defaultEndian;
 
-        runtime.m_dataBaseAddress = this->m_dataBaseAddress;
-        runtime.m_dataSize = this->m_dataSize;
-        runtime.m_dataReadFunction = this->m_dataReadFunction;
-        runtime.m_dataWriteFunction = this->m_dataWriteFunction;
+        runtime.m_dataBaseAddress     = this->m_dataBaseAddress;
+        runtime.m_dataSize            = this->m_dataSize;
+        runtime.m_dataReadFunction    = this->m_dataReadFunction;
+        runtime.m_dataWriteFunction   = this->m_dataWriteFunction;
 
-        runtime.m_logCallback = this->m_logCallback;
-        runtime.m_dangerousFunctionCallCallback = this->m_dangerousFunctionCallCallback;
+        runtime.m_logCallback                     = this->m_logCallback;
+        runtime.m_dangerousFunctionCallCallback   = this->m_dangerousFunctionCallCallback;
 
         runtime.m_functions = this->m_functions;
         runtime.m_subRuntime = true;
@@ -125,7 +124,7 @@ namespace pl {
         return runtime;
     }
 
-    [[nodiscard]] std::optional<std::vector<pl::core::Token>> PatternLanguage::preprocessString(const std::string &code, const std::string &source) {
+    [[nodiscard]] std::optional<std::vector<pl::core::Token>> PatternLanguage::preprocessString(const std::string& code, const std::string& source) {
         this->reset();
 
         auto internalSource = addVirtualSource(code, source, true); // add virtual source to file resolver
@@ -140,7 +139,7 @@ namespace pl {
         this->m_compileErrors.clear();
 
         auto [tokens, preprocessorErrors] = this->m_internals.preprocessor->preprocess(this, internalSource, true);
-        if (!preprocessorErrors.empty())
+        if (!preprocessorErrors.empty()) 
             this->m_compileErrors = std::move(preprocessorErrors);
         if (!tokens.has_value() || tokens->empty())
             return std::nullopt;
@@ -199,7 +198,7 @@ namespace pl {
         ON_SCOPE_EXIT { this->m_running = false; };
 
         ON_SCOPE_EXIT {
-            for (const auto &error : this->m_compileErrors) {
+            for (const auto &error: this->m_compileErrors) {
                 evaluator->getConsole().log(core::LogConsole::Level::Error, error.format());
             }
 

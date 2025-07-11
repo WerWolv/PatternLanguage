@@ -24,8 +24,7 @@
 #include <wolv/io/fs.hpp>
 #include <wolv/container/interval_tree.hpp>
 
-namespace pl
-{
+namespace pl {
 
     namespace core {
         class Preprocessor;
@@ -331,13 +330,11 @@ namespace pl
          * @warning Generally this should only be used by "IDEs" or other tools that need to access the internals of the pattern language
          * @return Internals
          */
-        [[nodiscard]] const Internals& getInternals() const
-        {
+        [[nodiscard]] const Internals& getInternals() const {
             return this->m_internals;
         }
 
-        [[nodiscard]] const std::map<std::string, std::string>& getDefines() const
-        {
+        [[nodiscard]] const std::map<std::string, std::string>& getDefines() const {
             return this->m_defines;
         }
 
@@ -345,7 +342,7 @@ namespace pl
             return this->m_currAST;
         }
 
-        [[nodiscard]] const std::map<std::string, api::PragmaHandler> &getPragmas() const {
+        [[nodiscard]] const std::map<std::string, api::PragmaHandler>& getPragmas() const {
             return this->m_pragmas;
         }
 
@@ -400,7 +397,7 @@ namespace pl
             return this->m_subRuntime;
         }
 
-        [[nodiscard]] const std::set<pl::ptrn::Pattern *>& getPatternsWithAttribute(const std::string &attribute) const;
+        [[nodiscard]] const std::set<pl::ptrn::Pattern*>& getPatternsWithAttribute(const std::string& attribute) const;
 
     private:
         void flattenPatterns();

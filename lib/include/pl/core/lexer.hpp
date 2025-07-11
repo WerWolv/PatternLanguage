@@ -48,7 +48,7 @@ namespace pl::core {
         std::optional<u128> parseInteger(std::string_view literal);
 
         Token makeToken(const Token& token, size_t length = 1);
-        static Token makeTokenAt(const Token& token, Location &location, size_t length = 1);
+        static Token makeTokenAt(const Token& token, Location& location, size_t length = 1);
         void addToken(const Token& token);
 
         bool skipLineEnding() {
@@ -77,7 +77,7 @@ namespace pl::core {
         static constexpr int tabsize = 4;
 
         std::string m_sourceCode;
-        const api::Source *m_source = nullptr;
+        const api::Source* m_source = nullptr;
         std::vector<Token> m_tokens;
         size_t m_cursor = 0;
         u32 m_line = 0;

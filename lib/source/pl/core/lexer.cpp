@@ -5,8 +5,7 @@
 
 #include <optional>
 
-namespace pl::core
-{
+namespace pl::core {
     using namespace tkn;
 
     static constexpr char integerSeparator = '\'';
@@ -16,8 +15,7 @@ namespace pl::core
     }
 
     static bool isIntegerCharacter(const char c, const int base) {
-        switch (base)
-        {
+        switch (base) {
         case 16:
             return std::isxdigit(c);
         case 10:
@@ -45,7 +43,7 @@ namespace pl::core
         return 0;
     }
 
-    static size_t getIntegerLiteralLength(const std::string_view &literal) {
+    static size_t getIntegerLiteralLength(const std::string_view& literal) {
         const auto count = literal.find_first_not_of("0123456789ABCDEFabcdef'xXoOpP.uU+-");
         const std::string_view intLiteral = count == std::string_view::npos ? literal : literal.substr(0, count);
         if (const auto signPos = intLiteral.find_first_of("+-"); signPos != std::string_view::npos && ((literal.at(signPos-1) != 'e' && literal.at(signPos-1) != 'E') || literal.starts_with("0x")))
@@ -54,59 +52,59 @@ namespace pl::core
     }
 
     std::optional<char> Lexer::parseCharacter() {
-        const char &c = m_sourceCode[m_cursor++];
+        const char& c = m_sourceCode[m_cursor++];
         if (c == '\\') {
             switch (m_sourceCode[m_cursor++]) {
-            case 'a':
-                return '\a';
-            case 'b':
-                return '\b';
-            case 'f':
-                return '\f';
-            case 'n':
-                return '\n';
-            case 't':
-                return '\t';
-            case 'r':
-                return '\r';
-            case '0':
-                return '\0';
-            case '\'':
-                return '\'';
-            case '"':
-                return '"';
-            case '\\':
-                return '\\';
-            case 'x': {
-                const char hex[3] = {m_sourceCode[m_cursor], m_sourceCode[m_cursor + 1], 0};
-                m_cursor += 2;
-                try {
-                    return static_cast<char>(std::stoul(hex, nullptr, 16));
+                case 'a':
+                    return '\a';
+                case 'b':
+                    return '\b';
+                case 'f':
+                    return '\f';
+                case 'n':
+                    return '\n';
+                case 't':
+                    return '\t';
+                case 'r':
+                    return '\r';
+                case '0':
+                    return '\0';
+                case '\'':
+                    return '\'';
+                case '"':
+                    return '"';
+                case '\\':
+                    return '\\';
+                case 'x': {
+                    const char hex[3] = {m_sourceCode[m_cursor], m_sourceCode[m_cursor + 1], 0};
+                    m_cursor += 2;
+                    try {
+                        return static_cast<char>(std::stoul(hex, nullptr, 16));
+                    }
+                    catch (const std::invalid_argument&) {
+                        m_errorLength = 2;
+                        error("Invalid hex escape sequence: {}", hex);
+                        return std::nullopt;
+                    }
                 }
-                catch (const std::invalid_argument&) {
-                    m_errorLength = 2;
-                    error("Invalid hex escape sequence: {}", hex);
+                case 'u': {
+                    const char hex[5] = {m_sourceCode[m_cursor], m_sourceCode[m_cursor + 1], m_sourceCode[m_cursor + 2],
+                                        m_sourceCode[m_cursor + 3], 0};
+                    m_cursor += 4;
+                    try {
+                        return static_cast<char>(std::stoul(hex, nullptr, 16));
+                    }
+                    catch (const std::invalid_argument &) {
+                        m_errorLength = 4;
+                        error("Invalid unicode escape sequence: {}", hex);
+                        return std::nullopt;
+                    }
+                }
+                default:
+                    m_errorLength = 1;
+                    error("Unknown escape sequence: {}", m_sourceCode[m_cursor - 1]);
                     return std::nullopt;
                 }
-            }
-            case 'u': {
-                const char hex[5] = {m_sourceCode[m_cursor], m_sourceCode[m_cursor + 1], m_sourceCode[m_cursor + 2],
-                                     m_sourceCode[m_cursor + 3], 0};
-                m_cursor += 4;
-                try {
-                    return static_cast<char>(std::stoul(hex, nullptr, 16));
-                }
-                catch (const std::invalid_argument &) {
-                    m_errorLength = 4;
-                    error("Invalid unicode escape sequence: {}", hex);
-                    return std::nullopt;
-                }
-            }
-            default:
-                m_errorLength = 1;
-                error("Unknown escape sequence: {}", m_sourceCode[m_cursor - 1]);
-                return std::nullopt;
-            }
         }
         return c;
     }
@@ -209,21 +207,21 @@ namespace pl::core
             }
             bool hasPrefix = true;
             switch (literal[1]) {
-            case 'x':
-            case 'X':
-                base = 16;
-                break;
-            case 'o':
-            case 'O':
-                base = 8;
-                break;
-            case 'b':
-            case 'B':
-                base = 2;
-                break;
-            default:
-                hasPrefix = false;
-                break;
+                case 'x':
+                case 'X':
+                    base = 16;
+                    break;
+                case 'o':
+                case 'O':
+                    base = 8;
+                    break;
+                case 'b':
+                case 'B':
+                    base = 2;
+                    break;
+                default:
+                    hasPrefix = false;
+                    break;
             }
             if (hasPrefix) {
                 literal = literal.substr(2);
@@ -231,8 +229,7 @@ namespace pl::core
         }
 
         for (const char c : literal) {
-            if (c == integerSeparator)
-                continue;
+            if (c == integerSeparator) continue;
 
             if (!isIntegerCharacter(c, base)) {
                 m_errorLength = literal.size();
@@ -249,7 +246,7 @@ namespace pl::core
         char *end = nullptr;
         double val = std::strtod(literal.data(), &end);
 
-        if (end != literal.data() + literal.size()) {
+        if(end != literal.data() + literal.size()) {
             m_errorLength = literal.size();
             error("Invalid float literal: {}", literal);
             return std::nullopt;
@@ -257,27 +254,27 @@ namespace pl::core
 
         switch (suffix)
         {
-        case 'f':
-        case 'F':
-            return float(val);
-        case 'd':
-        case 'D':
-        default:
-            return val;
+            case 'f':
+            case 'F':
+                return float(val);
+            case 'd':
+            case 'D':
+            default:
+                return val;
         }
     }
 
     std::optional<Token::Literal> Lexer::parseIntegerLiteral(std::string_view literal) {
         // parse a c like numeric literal
-        const bool floatSuffix = hlp::stringEndsWithOneOf(literal, {"f", "F", "d", "D"});
-        const bool unsignedSuffix = hlp::stringEndsWithOneOf(literal, {"u", "U"});
+        const bool floatSuffix = hlp::stringEndsWithOneOf(literal, { "f", "F", "d", "D" });
+        const bool unsignedSuffix = hlp::stringEndsWithOneOf(literal, { "u", "U" });
         const bool isFloat = literal.find('.') != std::string_view::npos || (!literal.starts_with("0x") && floatSuffix);
         const bool isUnsigned = unsignedSuffix;
 
-        if (isFloat) {
+        if(isFloat) {
 
             char suffix = 0;
-            if (floatSuffix) {
+            if(floatSuffix) {
                 // remove suffix
                 suffix = literal.back();
                 literal = literal.substr(0, literal.size() - 1);
@@ -285,24 +282,24 @@ namespace pl::core
 
             auto floatingPoint = parseFloatingPoint(literal, suffix);
 
-            if (!floatingPoint.has_value())
+            if(!floatingPoint.has_value())
                 return std::nullopt;
 
             return floatingPoint.value();
         }
 
-        if (unsignedSuffix) {
+        if(unsignedSuffix) {
             // remove suffix
             literal = literal.substr(0, literal.size() - 1);
         }
 
         const auto integer = parseInteger(literal);
 
-        if (!integer.has_value())
+        if(!integer.has_value())
             return std::nullopt;
 
         u128 value = integer.value();
-        if (isUnsigned) {
+        if(isUnsigned) {
             return value;
         }
 
@@ -315,7 +312,7 @@ namespace pl::core
         m_cursor += 2;
 
         std::string result;
-        while (m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\0') {
+        while(m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\0') {
             result += m_sourceCode[m_cursor];
             m_cursor++;
         }
@@ -332,7 +329,7 @@ namespace pl::core
         m_cursor += 3;
 
         std::string result;
-        while (m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\0') {
+        while(m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\0') {
             result += m_sourceCode[m_cursor];
             m_cursor++;
         }
@@ -353,13 +350,13 @@ namespace pl::core
         while (true) {
             skipLineEnding();
 
-            if (peek(1) == '\x00') {
+            if(peek(1) == '\x00') {
                 m_errorLength = 1;
                 error("Unexpected end of file while parsing multi line doc comment");
                 return std::nullopt;
             }
 
-            if (peek(0) == '*' && peek(1) == '/') {
+            if(peek(0) == '*' && peek(1) == '/') {
                 m_cursor += 2;
                 break;
             }
@@ -376,7 +373,7 @@ namespace pl::core
         std::string result;
 
         m_cursor += 2;
-        while (true) {
+        while(true) {
             skipLineEnding();
 
             if (peek(1) == '\x00') {
@@ -403,7 +400,7 @@ namespace pl::core
         std::optional<Token> lastMatch = std::nullopt;
 
         for (int i = 1; i <= Operator::maxOperatorLength; ++i) {
-            const auto view = std::string_view{&m_sourceCode[begin], static_cast<size_t>(i)};
+            const auto view = std::string_view { &m_sourceCode[begin], static_cast<size_t>(i) };
             if (auto operatorToken = operators.find(view); operatorToken != operators.end()) {
                 m_cursor++;
                 lastMatch = operatorToken->second;
@@ -463,9 +460,9 @@ namespace pl::core
         return {token.type, token.value, location};
     }
 
-    Token Lexer::makeTokenAt(const Token &token, Location &location, const size_t length) {
+    Token Lexer::makeTokenAt(const Token &token, Location& location, const size_t length) {
         location.length = length;
-        return {token.type, token.value, location};
+        return { token.type, token.value, location };
     }
 
     void Lexer::addToken(const Token &token) {
@@ -486,7 +483,7 @@ namespace pl::core
         m_tokens.clear();
 
         while (this->m_cursor < end) {
-            const char &c = this->m_sourceCode[this->m_cursor];
+            const char& c = this->m_sourceCode[this->m_cursor];
 
             if (c == '\x00') {
                 m_longestLineLength = std::max(m_longestLineLength, m_cursor - m_lineBegin);
@@ -505,13 +502,13 @@ namespace pl::core
                 continue;
             }
 
-            if (isIdentifierCharacter(c) && !std::isdigit(c)) {
+            if(isIdentifierCharacter(c) && !std::isdigit(c)) {
                 size_t length = 0;
                 while (isIdentifierCharacter(peek(length))) {
                     length++;
                 }
 
-                auto identifier = std::string_view{&m_sourceCode[m_cursor], length};
+                auto identifier = std::string_view { &m_sourceCode[m_cursor], length };
 
                 // process keywords, named operators and types
                 if (processToken(&Lexer::parseKeyword, identifier) ||
@@ -529,11 +526,11 @@ namespace pl::core
                 continue;
             }
 
-            if (std::isdigit(c)) {
+            if(std::isdigit(c)) {
                 auto literal = &m_sourceCode[m_cursor];
                 size_t size = getIntegerLiteralLength(literal);
 
-                const auto integer = parseIntegerLiteral({literal, size});
+                const auto integer = parseIntegerLiteral({ literal, size });
 
                 if (integer.has_value()) {
                     addToken(makeToken(Literal::makeNumeric(integer.value()), size));
@@ -546,33 +543,32 @@ namespace pl::core
             }
 
             // comment cases
-            if (c == '/') {
+            if(c == '/') {
                 const char category = peek(1);
                 char type = peek(2);
-                if (category == '/') {
-                    if (type == '/') {
+                if(category == '/') {
+                    if(type == '/') {
                         const auto token = parseOneLineDocComment();
                         if (token.has_value()) {
                             addToken(token.value());
                         }
-                    }
-                    else {
+                    } else {
                         const auto token = parseOneLineComment();
-                        if (token.has_value()) {
+                        if(token.has_value()) {
                             addToken(token.value());
                         }
                     }
                     continue;
                 }
-                if (category == '*') {
-                    if (type != '!' && (type != '*' || peek(3) == '/')) {
+                if(category == '*') {
+                    if(type != '!' && (type != '*' || peek(3) == '/')) {
                         const auto token = parseMultiLineComment();
-                        if (token.has_value())
+                        if(token.has_value())
                             addToken(token.value());
                         continue;
                     }
                     const auto token = parseMultiLineDocComment();
-                    if (token.has_value()) {
+                    if(token.has_value()) {
                         addToken(token.value());
                     }
                     continue;
@@ -630,15 +626,14 @@ namespace pl::core
                     addToken(string.value());
                     continue;
                 }
-            }
-            else if (c == '\'') {
+            } else if (c == '\'') {
                 auto location = this->location();
                 const auto begin = m_cursor;
                 m_cursor++; // skip opening '
                 const auto character = parseCharacter();
 
                 if (character.has_value()) {
-                    if (m_sourceCode[m_cursor] != '\'') {
+                    if(m_sourceCode[m_cursor] != '\'') {
                         m_errorLength = 1;
                         error("Expected closing '");
                         continue;
@@ -649,8 +644,7 @@ namespace pl::core
                     addToken(makeTokenAt(Literal::makeNumeric(character.value()), location, m_cursor - begin));
                     continue;
                 }
-            }
-            else {
+            } else {
                 m_errorLength = 1;
                 error("Unexpected character: {}", c);
                 m_cursor++;
@@ -663,14 +657,14 @@ namespace pl::core
         m_longestLineLength = std::max(m_longestLineLength, m_cursor - m_lineBegin);
         addToken(makeToken(Separator::EndOfProgram, 0));
 
-        return {m_tokens, collectErrors()};
+        return { m_tokens, collectErrors() };
     }
 
     inline char Lexer::peek(const size_t p) const {
         return m_cursor + p < m_sourceCode.size() ? m_sourceCode[m_cursor + p] : '\0';
     }
 
-    bool Lexer::processToken(auto parserFunction, const std::string_view &identifier) {
+    bool Lexer::processToken(auto parserFunction, const std::string_view& identifier) {
         const auto token = (this->*parserFunction)(identifier);
         if (token.has_value()) {
             m_tokens.emplace_back(token.value());
