@@ -23,6 +23,7 @@ namespace pl {
     static std::string getFunctionName(const api::Namespace &ns, const std::string &name) {
         std::string functionName;
 
+
         for (auto &scope : ns)
             functionName += fmt::format("{}::", scope);
 
@@ -57,6 +58,9 @@ namespace pl {
     }
 
     PatternLanguage::PatternLanguage(PatternLanguage &&other) noexcept {
+        if (this->m_flattenThread.joinable())
+            this->m_flattenThread.join();
+
         this->m_internals           = std::move(other.m_internals);
         other.m_internals = { };
         this->m_internals.evaluator->setRuntime(this);
@@ -166,12 +170,14 @@ namespace pl {
         if (ast->empty())
             return ast;
 
+
         auto [validated, validatorErrors] = this->m_internals.validator->validate(ast.value());
         wolv::util::unused(validated);
         if (!validatorErrors.empty()) {
             this->m_compileErrors.insert(m_compileErrors.end(), validatorErrors.begin(), validatorErrors.end());
             validatorErrors.clear();
         }
+
 
         this->m_internals.preprocessor->setStoredErrors(this->m_compileErrors);
 
@@ -181,8 +187,8 @@ namespace pl {
         return m_currAST;
     }
 
-    bool PatternLanguage::executeString(const std::string &code, const std::string &source, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
-        const auto startTime = std::chrono::high_resolution_clock::now();
+    bool PatternLanguage::executeString(const std::string &code, const std::string& source, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
+	   	const auto startTime = std::chrono::high_resolution_clock::now();
         ON_SCOPE_EXIT {
             const auto endTime = std::chrono::high_resolution_clock::now();
             this->m_runningTime = std::chrono::duration_cast<std::chrono::duration<double>>(endTime - startTime).count();
@@ -227,18 +233,22 @@ namespace pl {
         this->m_currAST = std::move(*ast);
 
         for (const auto &[ns, name, parameterCount, callback, dangerous] : this->m_functions) {
-            this->m_internals.evaluator->addBuiltinFunction(getFunctionName(ns, name), parameterCount, {}, callback, dangerous);
+            this->m_internals.evaluator->addBuiltinFunction(getFunctionName(ns, name), parameterCount, { }, callback, dangerous);
         }
 
-        std::optional<std::function<void(u64, const u8 *, size_t)>> writeFunction;
+        std::optional<std::function<void(u64, const u8*, size_t)>> writeFunction;
         if (m_dataWriteFunction.has_value()) {
             writeFunction = [this](u64 address, const u8 *buffer, size_t size) {
                 return (*this->m_dataWriteFunction)(address + this->getStartAddress(), buffer, size);
             };
         }
 
-        evaluator->setDataSource(this->m_dataBaseAddress, this->m_dataSize, [this](u64 address, u8 *buffer, size_t size)
-                                 { return this->m_dataReadFunction(address + this->getStartAddress(), buffer, size); }, writeFunction);
+        evaluator->setDataSource(this->m_dataBaseAddress, this->m_dataSize,
+            [this](u64 address, u8 *buffer, size_t size) {
+                return this->m_dataReadFunction(address + this->getStartAddress(), buffer, size);
+            },
+            writeFunction
+        );
 
         evaluator->setStartAddress(this->getStartAddress());
         evaluator->setReadOffset(evaluator->getDataBaseAddress());
@@ -272,8 +282,7 @@ namespace pl {
                 console.log(core::LogConsole::Level::Error, fmt::format("Error happened with cursor at address 0x{:04X}", *cursor + m_startAddress.value_or(0x00)));
 
             console.log(core::LogConsole::Level::Error, "\n");
-        }
-        else {
+        } else {
             auto returnCode = evaluator->getMainResult().value_or(i128(0)).toSigned();
 
             if (!isSubRuntime()) {
@@ -296,10 +305,10 @@ namespace pl {
             }
         }
 
+
         if (this->m_aborted) {
             this->reset();
-        }
-        else {
+        } else {
             this->flattenPatterns();
             this->m_patternsValid = true;
         }
@@ -320,12 +329,12 @@ namespace pl {
         const auto functionContent = fmt::format("fn main() {{ {0} }};", code);
 
         auto success = this->executeString(functionContent, api::Source::DefaultSource, {}, {}, false);
-        auto result = this->m_internals.evaluator->getMainResult();
+        auto result  = this->m_internals.evaluator->getMainResult();
 
-        return {success, std::move(result)};
+        return { success, std::move(result) };
     }
 
-    api::Source *PatternLanguage::addVirtualSource(const std::string &code, const std::string &source, bool mainSource) const {
+    api::Source* PatternLanguage::addVirtualSource(const std::string &code, const std::string &source, bool mainSource) const {
         return this->m_fileResolver.addVirtualFile(code, source, mainSource);
     }
 
@@ -334,11 +343,11 @@ namespace pl {
         this->m_aborted = true;
     }
 
-    void PatternLanguage::setIncludePaths(const std::vector<std::fs::path> &paths) {
+    void PatternLanguage::setIncludePaths(const std::vector<std::fs::path>& paths) {
         this->m_fileResolver.setIncludePaths(paths);
     }
 
-    void PatternLanguage::setResolver(const core::Resolver &resolver) {
+    void PatternLanguage::setResolver(const core::Resolver& resolver) {
         this->m_resolvers = resolver;
     }
 
@@ -358,22 +367,22 @@ namespace pl {
         this->m_defines.erase(name);
     }
 
-    void PatternLanguage::setDataSource(u64 baseAddress, u64 size, std::function<void(u64, u8 *, size_t)> readFunction, std::optional<std::function<void(u64, const u8 *, size_t)>> writeFunction) {
+    void PatternLanguage::setDataSource(u64 baseAddress, u64 size, std::function<void(u64, u8*, size_t)> readFunction, std::optional<std::function<void(u64, const u8*, size_t)>> writeFunction) {
         this->m_dataBaseAddress = baseAddress;
         this->m_dataSize = size;
         this->m_dataReadFunction = std::move(readFunction);
         this->m_dataWriteFunction = std::move(writeFunction);
     }
 
-    const std::atomic<u64> &PatternLanguage::getLastReadAddress() const {
+    const std::atomic<u64>& PatternLanguage::getLastReadAddress() const {
         return this->m_internals.evaluator->getLastReadAddress();
     }
 
-    const std::atomic<u64> &PatternLanguage::getLastWriteAddress() const {
+    const std::atomic<u64>& PatternLanguage::getLastWriteAddress() const {
         return this->m_internals.evaluator->getLastWriteAddress();
     }
 
-    const std::atomic<u64> &PatternLanguage::getLastPatternPlaceAddress() const {
+    const std::atomic<u64>& PatternLanguage::getLastPatternPlaceAddress() const {
         return this->m_internals.evaluator->getLastPatternPlaceAddress();
     }
 
@@ -397,6 +406,7 @@ namespace pl {
         return this->m_startAddress.value_or(0x00);
     }
 
+
     void PatternLanguage::setDangerousFunctionCallHandler(std::function<bool()> callback) {
         this->m_dangerousFunctionCallCallback = std::move(callback);
     }
@@ -404,6 +414,7 @@ namespace pl {
     [[nodiscard]] std::map<std::string, core::Token::Literal> PatternLanguage::getOutVariables() const {
         return this->m_internals.evaluator->getOutVariables();
     }
+
 
     void PatternLanguage::setLogCallback(const core::LogConsole::Callback &callback) {
         this->m_logCallback = callback;
@@ -413,9 +424,10 @@ namespace pl {
         return this->m_currError;
     }
 
-    const std::vector<core::err::CompileError> &PatternLanguage::getCompileErrors() const {
+    const std::vector<core::err::CompileError>& PatternLanguage::getCompileErrors() const {
         return this->m_compileErrors;
     }
+
 
     u64 PatternLanguage::getCreatedPatternCount() const {
         return this->m_internals.evaluator->getPatternCount();
@@ -425,7 +437,7 @@ namespace pl {
         return this->m_internals.evaluator->getPatternLimit();
     }
 
-    const std::vector<u8> &PatternLanguage::getSection(u64 id) const {
+    const std::vector<u8>& PatternLanguage::getSection(u64 id) const {
         static std::vector<u8> empty;
         if (id > this->m_internals.evaluator->getSectionCount() || id == ptrn::Pattern::MainSectionId || id == ptrn::Pattern::HeapSectionId)
             return empty;
@@ -433,7 +445,7 @@ namespace pl {
             return this->m_internals.evaluator->getSection(id);
     }
 
-    [[nodiscard]] const std::map<u64, api::Section> &PatternLanguage::getSections() const {
+    [[nodiscard]] const std::map<u64, api::Section>& PatternLanguage::getSections() const {
         return this->m_internals.evaluator->getSections();
     }
 
@@ -445,8 +457,8 @@ namespace pl {
             return empty;
     }
 
-    void PatternLanguage::reset()
-    {
+
+    void PatternLanguage::reset() {
         if (this->m_flattenThread.joinable())
             this->m_flattenThread.join();
         this->m_patterns.clear();
@@ -468,10 +480,11 @@ namespace pl {
         this->m_internals.parser->setParserManager(&m_parserManager);
         this->m_patternsValid = false;
 
-        this->m_resolvers.setDefaultResolver([this](const std::string &path)
-                                             { return this->m_fileResolver.resolve(path); });
+        this->m_resolvers.setDefaultResolver([this](const std::string& path) {
+            return this->m_fileResolver.resolve(path);
+        });
 
-        auto resolver = [this](const std::string &path) {
+        auto resolver = [this](const std::string& path) {
             return this->m_resolvers.resolve(path);
         };
 
@@ -502,11 +515,11 @@ namespace pl {
                 if (this->m_aborted)
                     return;
 
-                if (auto staticArray = dynamic_cast<ptrn::PatternArrayStatic *>(pattern.get()); staticArray != nullptr) {
+                if (auto staticArray = dynamic_cast<ptrn::PatternArrayStatic*>(pattern.get()); staticArray != nullptr) {
                     if (staticArray->getEntryCount() > 0 && staticArray->getEntry(0)->getChildren().empty()) {
                         const auto address = staticArray->getOffset();
                         const auto size = staticArray->getSize();
-                        sectionTree.insert({address, address + size - 1}, staticArray);
+                        sectionTree.insert({ address, address + size - 1 }, staticArray);
                         continue;
                     }
                 }
@@ -519,7 +532,7 @@ namespace pl {
                     if (child->getSize() == 0)
                         continue;
 
-                    sectionTree.insert({address, address + child->getSize() - 1}, child);
+                    sectionTree.insert({ address, address + child->getSize() - 1 }, child);
                 }
             }
         }
@@ -527,13 +540,12 @@ namespace pl {
 
     std::vector<ptrn::Pattern *> PatternLanguage::getPatternsAtAddress(u64 address, u64 section) const {
         if (this->m_flattenedPatterns.empty() || !this->m_flattenedPatterns.contains(section))
-            return {};
+            return { };
 
-        auto intervals = this->m_flattenedPatterns.at(section).overlapping({address, address});
+        auto intervals = this->m_flattenedPatterns.at(section).overlapping({ address, address });
 
-        std::vector<ptrn::Pattern *> results;
-        std::transform(intervals.begin(), intervals.end(), std::back_inserter(results), [](const auto &interval)
-                       {
+        std::vector<ptrn::Pattern*> results;
+        std::transform(intervals.begin(), intervals.end(), std::back_inserter(results), [](const auto &interval) {
             ptrn::Pattern* value = interval.value;
 
             auto parent = value->getParent();
@@ -548,16 +560,17 @@ namespace pl {
                 value->clearFormatCache();
             }
 
-            return value; });
+            return value;
+        });
 
         return results;
     }
 
     std::vector<u32> PatternLanguage::getColorsAtAddress(u64 address, u64 section) const {
         if (this->m_flattenedPatterns.empty() || !this->m_flattenedPatterns.contains(section))
-            return {};
+            return { };
 
-        auto intervals = this->m_flattenedPatterns.at(section).overlapping({address, address});
+        auto intervals = this->m_flattenedPatterns.at(section).overlapping({ address, address });
 
         std::vector<u32> results;
         for (auto &[interval, pattern] : intervals) {
@@ -571,7 +584,7 @@ namespace pl {
         return results;
     }
 
-    const std::set<ptrn::Pattern *> &PatternLanguage::getPatternsWithAttribute(const std::string &attribute) const {
+    const std::set<ptrn::Pattern*>& PatternLanguage::getPatternsWithAttribute(const std::string &attribute) const {
         return m_internals.evaluator->getPatternsWithAttribute(attribute);
     }
 
