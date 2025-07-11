@@ -482,7 +482,7 @@ namespace pl::core {
             const char& c = this->m_sourceCode[this->m_cursor];
 
             if (c == '\x00') {
-                m_longestLineLength = std::max(m_longestLineLength, m_cursor - m_lineBegin);
+                m_longestLineLength = std::max(m_longestLineLength, m_cursor-m_lineBegin+m_tabCompensation);
                 break; // end of string
             }
 
