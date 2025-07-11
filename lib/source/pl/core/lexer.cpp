@@ -250,8 +250,7 @@ namespace pl::core {
             return std::nullopt;
         }
 
-        switch (suffix)
-        {
+        switch (suffix) {
             case 'f':
             case 'F':
                 return float(val);
@@ -266,7 +265,8 @@ namespace pl::core {
         // parse a c like numeric literal
         const bool floatSuffix = hlp::stringEndsWithOneOf(literal, { "f", "F", "d", "D" });
         const bool unsignedSuffix = hlp::stringEndsWithOneOf(literal, { "u", "U" });
-        const bool isFloat = literal.find('.') != std::string_view::npos || (!literal.starts_with("0x") && floatSuffix);
+        const bool isFloat = literal.find('.') != std::string_view::npos
+                       || (!literal.starts_with("0x") && floatSuffix);
         const bool isUnsigned = unsignedSuffix;
 
         if(isFloat) {
@@ -280,10 +280,10 @@ namespace pl::core {
 
             auto floatingPoint = parseFloatingPoint(literal, suffix);
 
-            if(!floatingPoint.has_value())
-                return std::nullopt;
+            if(!floatingPoint.has_value()) return std::nullopt;
 
             return floatingPoint.value();
+
         }
 
         if(unsignedSuffix) {
@@ -293,8 +293,7 @@ namespace pl::core {
 
         const auto integer = parseInteger(literal);
 
-        if(!integer.has_value())
-            return std::nullopt;
+        if(!integer.has_value()) return std::nullopt;
 
         u128 value = integer.value();
         if(isUnsigned) {
@@ -374,13 +373,13 @@ namespace pl::core {
         while(true) {
             skipLineEnding();
 
-            if (peek(1) == '\x00') {
+            if(peek(1) == '\x00') {
                 m_errorLength = 2;
                 error("Unexpected end of file while parsing multi line doc comment");
                 return std::nullopt;
             }
 
-            if (peek(0) == '*' && peek(1) == '/') {
+            if(peek(0) == '*' && peek(1) == '/') {
                 m_cursor += 2;
                 break;
             }
@@ -455,7 +454,7 @@ namespace pl::core {
     Token Lexer::makeToken(const Token &token, const size_t length) {
         auto location = this->location();
         location.length = length;
-        return {token.type, token.value, location};
+        return { token.type, token.value, location };
     }
 
     Token Lexer::makeTokenAt(const Token &token, Location& location, const size_t length) {
@@ -512,10 +511,9 @@ namespace pl::core {
                 if (processToken(&Lexer::parseKeyword, identifier) ||
                     processToken(&Lexer::parseNamedOperator, identifier) ||
                     processToken(&Lexer::parseType, identifier) ||
-                    processToken(&Lexer::parseConstant, identifier))
-                {
+                    processToken(&Lexer::parseConstant, identifier)) {
                     continue;
-                }
+                    }
 
                 // not a predefined token, so it must be an identifier
                 addToken(makeToken(Literal::makeIdentifier(std::string(identifier)), length));
@@ -530,7 +528,7 @@ namespace pl::core {
 
                 const auto integer = parseIntegerLiteral({ literal, size });
 
-                if (integer.has_value()) {
+                if(integer.has_value()) {
                     addToken(makeToken(Literal::makeNumeric(integer.value()), size));
                     this->m_cursor += size;
                     continue;
@@ -547,7 +545,7 @@ namespace pl::core {
                 if(category == '/') {
                     if(type == '/') {
                         const auto token = parseOneLineDocComment();
-                        if (token.has_value()) {
+                        if(token.has_value()) {
                             addToken(token.value());
                         }
                     } else {
