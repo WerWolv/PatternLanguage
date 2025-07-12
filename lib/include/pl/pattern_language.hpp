@@ -75,6 +75,7 @@ namespace pl {
         */
         [[nodiscard]] std::optional<std::vector<pl::core::Token>> preprocessString(const std::string &code, const std::string &source);
 
+
         /**
          * @brief Parses a pattern language code string and returns the generated AST
          *   To get parsing errors, check PatternLanguage#getCompileErrors() after calling this method
@@ -121,7 +122,7 @@ namespace pl {
 
         /**
          * @brief Aborts the currently running execution asynchronously
-         */
+        */
         void abort();
 
         /**
@@ -157,6 +158,7 @@ namespace pl {
          */
         void setStartAddress(u64 address);
         u64 getStartAddress() const;
+
 
         /**
          * @brief Adds a new pragma preprocessor instruction
@@ -268,6 +270,7 @@ namespace pl {
          * @return Patterns
          */
         [[nodiscard]] std::vector<ptrn::Pattern *> getPatternsAtAddress(u64 address, u64 section = 0x00) const;
+
 
         /**
          * @brief Get the colors of all patterns that overlap with the given address
