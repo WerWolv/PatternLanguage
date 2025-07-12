@@ -51,7 +51,7 @@ namespace pl::core {
         return intLiteral.size();
     }
 
-    
+
     std::optional<char> Lexer::parseCharacter() {
         const char& c = m_sourceCode[m_cursor++];
         if (c == '\\') {
