@@ -371,7 +371,7 @@ namespace pl::core {
         while (true) {
             skipLineEnding();
 
-            if(peek(1) == '\x00') {
+            if(m_cursor>=m_sourceCode.size() || peek(0)=='\x00') {
                 m_errorLength = 1;
                 error("Unexpected end of file while parsing multi line doc comment");
                 return std::nullopt;
@@ -397,7 +397,7 @@ namespace pl::core {
         while(true) {
             skipLineEnding();
 
-            if(peek(1) == '\x00') {
+            if(m_cursor>=m_sourceCode.size() || peek(0)=='\x00') {
                 m_errorLength = 2;
                 error("Unexpected end of file while parsing multi line doc comment");
                 return std::nullopt;
