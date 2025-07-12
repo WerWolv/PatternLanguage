@@ -51,6 +51,30 @@ namespace pl::core {
         return intLiteral.size();
     }
 
+    inline bool Lexer::skipLineEnding() {
+        char ch = m_sourceCode[m_cursor];
+        if (ch == '\n') {
+            m_longestLineLength = std::max(m_longestLineLength, m_cursor-m_lineBegin+m_tabCompensation);
+            m_tabCompensation = 0;
+            m_line++;
+            m_lineBegin = ++m_cursor;
+            return true;
+        }
+        else if (ch == '\r') {
+            m_longestLineLength = std::max(m_longestLineLength, m_cursor-m_lineBegin+m_tabCompensation);
+            m_tabCompensation = 0;
+            m_line++;
+            if (++m_cursor<m_sourceCode.size()) {
+                ch = m_sourceCode[m_cursor];
+                if (ch == '\n')
+                    ++m_cursor;
+            }
+            m_lineBegin = m_cursor;
+            return true;
+        }
+
+        return false;
+    }
 
     std::optional<char> Lexer::parseCharacter() {
         const char& c = m_sourceCode[m_cursor++];

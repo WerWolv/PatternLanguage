@@ -56,28 +56,7 @@ namespace pl::core {
         static Token makeTokenAt(const Token& token, Location& location, size_t length = 1);
         void addToken(const Token& token);
 
-        bool skipLineEnding() {
-            char ch = m_sourceCode[m_cursor];
-            if (ch == '\n') {
-                m_longestLineLength = std::max(m_longestLineLength, m_cursor-m_lineBegin+m_tabCompensation);
-                m_tabCompensation = 0;
-                m_line++;
-                m_lineBegin = ++m_cursor;
-                return true;
-            }
-            else if (ch == '\r') {
-                m_longestLineLength = std::max(m_longestLineLength, m_cursor-m_lineBegin+m_tabCompensation);
-                m_tabCompensation = 0;
-                m_line++;
-                ch = m_sourceCode[++m_cursor];
-                if (ch == '\n')
-                    ++m_cursor;
-                m_lineBegin = m_cursor;
-                return true;
-            }
-
-            return false;
-        }
+        bool skipLineEnding();
 
         static constexpr int tabsize = 4;
 
