@@ -51,6 +51,7 @@ namespace pl::core {
         return intLiteral.size();
     }
 
+    
     std::optional<char> Lexer::parseCharacter() {
         const char& c = m_sourceCode[m_cursor++];
         if (c == '\\') {
@@ -414,7 +415,7 @@ namespace pl::core {
             separatorToken != Token::Separators().end()) {
             m_cursor++;
             return makeTokenAt(separatorToken->second, location, m_cursor - begin);
-        }
+            }
 
         return std::nullopt;
     }
@@ -556,7 +557,7 @@ namespace pl::core {
                     continue;
                 }
                 if(category == '*') {
-                    if(type != '!' && (type != '*' || peek(3) == '/')) {
+                    if (type != '!' && (type != '*' || peek(3) == '/' )) {
                         const auto token = parseMultiLineComment();
                         if(token.has_value())
                             addToken(token.value());
@@ -582,7 +583,7 @@ namespace pl::core {
                 continue;
             }
 
-            if (c == '#' && (m_tokens.empty() || m_tokens.back().location.line < m_line)) {
+            if (c == '#' && (m_tokens.empty() ||  m_tokens.back().location.line < m_line)) {
                 size_t length = 1;
                 u32 line = m_line;
                 while (isIdentifierCharacter(peek(length)))
@@ -592,8 +593,8 @@ namespace pl::core {
                 if (processToken(&Lexer::parseDirectiveName, directiveName)) {
                     Token::Directive directive = get<Token::Directive>(m_tokens.back().value);
                     if (m_line != line || directive == Token::Directive::Define || directive == Token::Directive::Undef ||
-                        peek(0) == 0 || directive == Token::Directive::IfDef || directive == Token::Directive::IfNDef ||
-                        directive == Token::Directive::EndIf)
+                         peek(0) == 0  || directive == Token::Directive::IfDef  || directive == Token::Directive::IfNDef ||
+                         directive == Token::Directive::EndIf)
                         continue;
                     if (skipLineEnding())
                         continue;
@@ -621,7 +622,7 @@ namespace pl::core {
                     addToken(string.value());
                     continue;
                 }
-            } else if (c == '\'') {
+            } else if(c == '\'') {
                 auto location = this->location();
                 const auto begin = m_cursor;
                 m_cursor++; // skip opening '
