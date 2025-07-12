@@ -20,8 +20,12 @@ namespace pl::core {
         Lexer() = default;
 
         hlp::CompileResult<std::vector<Token>> lex(const api::Source *source);
-        size_t getLongestLineLength() const { return m_longestLineLength; }
-
+        size_t getLongestLineLength() const { 
+            // 'getLongestLineLength' is used by the pattern editor to control
+            // the x-scrolling range. Adding two makes the whole longest line visible.
+            // Not sure why we have to do this.
+            return m_longestLineLength+2; 
+        }
 
     private:
         [[nodiscard]] char peek(size_t p = 1) const;
@@ -51,20 +55,17 @@ namespace pl::core {
         Token makeToken(const Token& token, size_t length = 1);
         static Token makeTokenAt(const Token& token, Location& location, size_t length = 1);
         void addToken(const Token& token);
-        bool hasTheLineEnded(const char &ch) {
-            if(ch == '\n') {
-                m_longestLineLength = std::max(m_longestLineLength, m_cursor - m_lineBegin);
-                m_line++;
-                m_lineBegin = m_cursor;
-                return true;
-            }
-            return false;
-        }
+
+        bool skipLineEnding();
+
+        static constexpr int tabsize = 4;
+
         std::string m_sourceCode;
         const api::Source* m_source = nullptr;
         std::vector<Token> m_tokens;
         size_t m_cursor = 0;
         u32 m_line = 0;
+        u32 m_tabCompensation = 0;
         u32 m_lineBegin = 0;
         size_t m_longestLineLength = 0;
         u32 m_errorLength = 0;
