@@ -93,7 +93,7 @@ namespace pl {
          * @param checkResult Whether to check the result of the execution
          * @return True if the execution was successful, false otherwise. Call PatternLanguage#getCompileErrors() AND PatternLanguage#getEvalError() to get the compilation or runtime errors if false is returned
          */
-        [[nodiscard]] bool executeString(std::string code, const std::string& source = api::Source::DefaultSource, const std::map<std::string, core::Token::Literal> &envVars = {}, const std::map<std::string, core::Token::Literal> &inVariables = {}, bool checkResult = true);
+        [[nodiscard]] bool executeString(const std::string &code, const std::string &source = api::Source::DefaultSource, const std::map<std::string, core::Token::Literal> &envVars = {}, const std::map<std::string, core::Token::Literal> &inVariables = {}, bool checkResult = true);
 
         /**
          * @brief Executes a pattern language file
