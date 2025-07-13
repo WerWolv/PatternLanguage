@@ -21,10 +21,7 @@ namespace pl::core {
 
         hlp::CompileResult<std::vector<Token>> lex(const api::Source *source);
         size_t getLongestLineLength() const { 
-            // 'getLongestLineLength' is used by the pattern editor to control
-            // the x-scrolling range. Adding two makes the whole longest line visible.
-            // Not sure why we have to do this.
-            return m_longestLineLength+2; 
+            return m_longestLineLength; // Does not include line endings
         }
 
     private:
