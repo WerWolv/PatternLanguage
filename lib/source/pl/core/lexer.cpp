@@ -5,6 +5,12 @@
 
 #include <optional>
 
+/*
+TODO:
+    There are still potential buffer overruns in here.
+    Rewrite the lexer.
+*/
+
 namespace pl::core {
     using namespace tkn;
 
@@ -51,6 +57,8 @@ namespace pl::core {
         return intLiteral.size();
     }
 
+    // If this function returns true m_cursor has been advanced.
+    // In thus case make sure the bounds are checked.  
     inline bool Lexer::skipLineEnding() {
         char ch = m_sourceCode[m_cursor];
         if (ch == '\n') {
@@ -59,8 +67,7 @@ namespace pl::core {
             m_line++;
             m_lineBegin = ++m_cursor;
             return true;
-        }
-        else if (ch == '\r') {
+        } else if (ch == '\r') {
             m_longestLineLength = std::max(m_longestLineLength, m_cursor-m_lineBegin+m_tabCompensation);
             m_tabCompensation = 0;
             m_line++;
@@ -680,6 +687,7 @@ namespace pl::core {
         return { m_tokens, collectErrors() };
     }
 
+    // Note: if m_cursor is out of bounds we return ''\0''.
     inline char Lexer::peek(const size_t p) const {
         return m_cursor + p < m_sourceCode.size() ? m_sourceCode[m_cursor + p] : '\0';
     }
