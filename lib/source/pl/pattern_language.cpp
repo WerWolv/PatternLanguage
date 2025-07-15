@@ -194,8 +194,7 @@ namespace pl {
             this->m_runningTime = std::chrono::duration_cast<std::chrono::duration<double>>(endTime - startTime).count();
         };
 
-        code = wolv::util::replaceStrings(code, "\r\n", "\n");
-        code = wolv::util::replaceStrings(code, "\t", "    ");
+        code = wolv::util::preprocessText(code);
 
         const auto &evaluator = this->m_internals.evaluator;
 
