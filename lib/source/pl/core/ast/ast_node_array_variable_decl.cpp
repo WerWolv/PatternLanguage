@@ -230,7 +230,7 @@ namespace pl::core::ast {
             outputPattern = std::move(arrayPattern);
         }
 
-        outputPattern->setVariableName(this->m_name);
+        outputPattern->setVariableName(this->m_name, this->getLocation());
         if (templatePattern->hasOverriddenEndian())
             outputPattern->setEndian(templatePattern->getEndian());
         outputPattern->setTypeName(templatePattern->getTypeName());
@@ -257,7 +257,7 @@ namespace pl::core::ast {
 
         evaluator->alignToByte();
         auto arrayPattern = std::make_unique<ptrn::PatternArrayDynamic>(evaluator, evaluator->getReadOffset(), 0, getLocation().line);
-        arrayPattern->setVariableName(this->m_name);
+        arrayPattern->setVariableName(this->m_name, this->getLocation());
         arrayPattern->setSection(evaluator->getSectionId());
 
         std::vector<std::shared_ptr<ptrn::Pattern>> entries;

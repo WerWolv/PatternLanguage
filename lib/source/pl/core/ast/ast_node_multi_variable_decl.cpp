@@ -32,7 +32,7 @@ namespace pl::core::ast {
             auto variableDecl = dynamic_cast<ASTNodeVariableDecl *>(variable.get());
             auto variableType = variableDecl->getType();
 
-            evaluator->createVariable(variableDecl->getName(), variableType.get());
+            evaluator->createVariable(variableDecl->getName(), this->getLocation(), variableType.get());
         }
 
         return std::nullopt;

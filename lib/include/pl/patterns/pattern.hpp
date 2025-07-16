@@ -2,6 +2,7 @@
 
 #include <pl/core/errors/error.hpp>
 #include <pl/core/evaluator.hpp>
+#include <pl/core/location.hpp>
 #include <pl/pattern_visitor.hpp>
 #include <pl/helpers/types.hpp>
 #include <pl/helpers/utils.hpp>
@@ -154,14 +155,19 @@ namespace pl::ptrn {
                 return *this->m_variableName;
         }
 
+        const pl::core::Location getVariableLocation() const {
+            return m_variableLocation;
+        }
+
         [[nodiscard]] bool hasVariableName() const {
             return getEvaluator()->isStringPoolEntryValid(this->m_variableName);
         }
 
-        void setVariableName(const std::string &name) {
+        void setVariableName(const std::string &name, const pl::core::Location &loc) {
             if (!name.empty()) {
                 auto [it, inserted] = m_evaluator->getStringPool().emplace(name);
                 this->m_variableName = it;
+                this->m_variableLocation = loc;
             }
         }
 
@@ -633,6 +639,7 @@ namespace pl::ptrn {
         u32 m_line = 0;
 
         std::set<std::string>::const_iterator m_variableName;
+        pl::core::Location m_variableLocation;
         std::set<std::string>::const_iterator m_typeName;
         std::optional<u64> m_arrayIndex;
 

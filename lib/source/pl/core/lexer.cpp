@@ -5,12 +5,6 @@
 
 #include <optional>
 
-/*
-TODO:
-    There are still potential buffer overruns in here.
-    Rewrite the lexer.
-*/
-
 namespace pl::core {
     using namespace tkn;
 
@@ -58,7 +52,7 @@ namespace pl::core {
     }
 
     // If this function returns true m_cursor has been advanced.
-    // In thus case make sure the bounds are checked.  
+    // In this case make sure the bounds are checked.  
     inline bool Lexer::skipLineEnding() {
         char ch = m_sourceCode[m_cursor];
         if (ch == '\n') {

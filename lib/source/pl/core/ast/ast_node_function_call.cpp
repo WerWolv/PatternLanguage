@@ -96,7 +96,7 @@ namespace pl::core::ast {
                           for (size_t i = 0; i < variables.size(); i++) {
                               auto &[pattern, name] = variables[i];
 
-                              pattern->setVariableName(name);
+                              pattern->setVariableName(name, pattern->getVariableLocation());
                           }
                       };
 
