@@ -70,8 +70,8 @@ namespace pl::ptrn {
         constexpr static u64 InstantiationSectionId = 0xFFFF'FFFF'FFFF'FFFD;
 
         Pattern(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
-            : m_evaluator(evaluator), m_line(line), m_offset(offset), m_size(size) {
-
+            : m_evaluator(evaluator), m_line(line), m_variableLocation(pl::core::Location::Empty()),
+              m_offset(offset), m_size(size) {
             if (evaluator != nullptr) {
                 this->m_color       = evaluator->getNextPatternColor();
                 this->m_manualColor = false;
@@ -94,6 +94,7 @@ namespace pl::ptrn {
             this->m_initialized = other.m_initialized;
             this->m_constant = other.m_constant;
             this->m_variableName = other.m_variableName;
+            this->m_variableLocation = other.m_variableLocation;
             this->m_typeName = other.m_typeName;
             this->m_reference = other.m_reference;
             this->m_parent = other.m_parent;
@@ -155,7 +156,7 @@ namespace pl::ptrn {
                 return *this->m_variableName;
         }
 
-        const pl::core::Location getVariableLocation() const {
+        pl::core::Location getVariableLocation() const {
             return m_variableLocation;
         }
 

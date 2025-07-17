@@ -1700,8 +1700,9 @@ namespace pl::core {
 
     // (parseType) Identifier[(parseMathematicalExpression)]
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMemberArrayVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool constant) {
+        auto &token = m_curr[-2];
         auto name = getValue<Token::Identifier>(-2).get();
-        auto memberIdentifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
+        auto memberIdentifier = std::get_if<Token::Identifier>(&token.value);
 
         hlp::safe_unique_ptr<ast::ASTNode> size;
 
@@ -1778,7 +1779,7 @@ namespace pl::core {
             else
                 memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
         }
-        return create<ast::ASTNodeArrayVariableDecl>(name, type.unwrapUnchecked(), std::move(size.unwrapUnchecked()), nullptr, nullptr, constant);
+        return createAt<ast::ASTNodeArrayVariableDecl>(token.location, name, type.unwrapUnchecked(), std::move(size.unwrapUnchecked()), nullptr, nullptr, constant);
     }
 
     // (parseType) *Identifier : (parseType)
