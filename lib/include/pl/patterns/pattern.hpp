@@ -164,7 +164,7 @@ namespace pl::ptrn {
             return getEvaluator()->isStringPoolEntryValid(this->m_variableName);
         }
 
-        void setVariableName(const std::string &name, const pl::core::Location &loc) {
+        void setVariableName(const std::string &name, pl::core::Location loc = pl::core::Location()) {
             if (!name.empty()) {
                 auto [it, inserted] = m_evaluator->getStringPool().emplace(name);
                 this->m_variableName = it;
