@@ -93,7 +93,7 @@ namespace pl::core {
         }
 
         template<typename T, typename...Ts>
-        hlp::safe_unique_ptr<T> createAt(const Location &loc, Ts&&... ts) {
+        hlp::safe_unique_ptr<T> createWithLocation(const Location &loc, Ts&&... ts) {
             auto temp = std::make_unique<T>(std::forward<Ts>(ts)...);
             temp->setLocation(loc);
             return temp;

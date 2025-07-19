@@ -1779,7 +1779,7 @@ namespace pl::core {
             else
                 memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
         }
-        return createAt<ast::ASTNodeArrayVariableDecl>(nameToken.location, name, type.unwrapUnchecked(), std::move(size.unwrapUnchecked()), nullptr, nullptr, constant);
+        return createWithLocation<ast::ASTNodeArrayVariableDecl>(nameToken.location, name, type.unwrapUnchecked(), std::move(size.unwrapUnchecked()), nullptr, nullptr, constant);
     }
 
     // (parseType) *Identifier : (parseType)

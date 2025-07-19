@@ -271,7 +271,6 @@ namespace pl::core {
             pattern->setSection(section);
         }
 
-        // TODO: may by dogy
         pattern->setVariableName(name, pattern->getVariableLocation());
 
         if (this->isDebugModeEnabled())

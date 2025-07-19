@@ -89,8 +89,7 @@ namespace pl::core::ast {
                     if (params[paramIndex].isString())
                         reference = false;
 
-                    // TODO: This might be dogy
-                    auto variable = ctx->createVariable(name, this->getLocation(), typeNode, params[paramIndex], false, reference);
+                    auto variable = ctx->createVariable(name, type->getLocation(), typeNode, params[paramIndex], false, reference);
 
                     if (reference && params[paramIndex].isPattern()) {
                         auto pattern = params[paramIndex].toPattern();
@@ -101,8 +100,8 @@ namespace pl::core::ast {
 
                     ctx->setVariable(name, params[paramIndex]);
                     originalNames.emplace_back(variable, name);
-                    // TODO: This might be dogy
-                    variable->setVariableName(name, this->getLocation());
+
+                    variable->setVariableName(name, type->getLocation());
 
                     ctx->setCurrentControlFlowStatement(ControlFlowStatement::None);
                 }
