@@ -294,7 +294,6 @@ namespace pl::core {
                 if (!peek(token))
                     return true;
 
-                this->next();
                 partReset();
                 return false;
             } else
