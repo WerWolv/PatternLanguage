@@ -2148,6 +2148,7 @@ namespace pl::core {
         } else if (const auto identifierOffset = parseCompoundAssignment(tkn::Literal::Identifier); identifierOffset.has_value())
             member = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(*identifierOffset).get());
         else if (MATCHES(optional(tkn::Keyword::Unsigned) && sequence(tkn::Literal::Identifier, tkn::Operator::Colon))) {
+            auto identToken = m_curr[-2];
             auto fieldName = getValue<Token::Identifier>(-2).get();
             auto identifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
             if (identifier != nullptr)
@@ -2157,7 +2158,7 @@ namespace pl::core {
             if (bitfieldSize == nullptr)
                 return nullptr;
 
-            member = create<ast::ASTNodeBitfieldField>(fieldName, std::move(bitfieldSize));
+            member = createWithLocation<ast::ASTNodeBitfieldField>(identToken.location, fieldName, std::move(bitfieldSize));
         } else if (sequence(tkn::Keyword::Signed, tkn::Literal::Identifier, tkn::Operator::Colon)) {
             auto fieldName = getValue<Token::Identifier>(-2).get();
             auto identifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
