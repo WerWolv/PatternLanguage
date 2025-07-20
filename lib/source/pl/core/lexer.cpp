@@ -51,6 +51,31 @@ namespace pl::core {
         return intLiteral.size();
     }
 
+    // If this function returns true m_cursor has been advanced.
+    // In this case make sure the bounds are checked.  
+    inline bool Lexer::skipLineEnding() {
+        char ch = m_sourceCode[m_cursor];
+        if (ch == '\n') {
+            m_longestLineLength = std::max(m_longestLineLength, m_cursor-m_lineBegin+m_tabCompensation);
+            m_tabCompensation = 0;
+            m_line++;
+            m_lineBegin = ++m_cursor;
+            return true;
+        } else if (ch == '\r') {
+            m_longestLineLength = std::max(m_longestLineLength, m_cursor-m_lineBegin+m_tabCompensation);
+            m_tabCompensation = 0;
+            m_line++;
+            if (++m_cursor<m_sourceCode.size()) {
+                ch = m_sourceCode[m_cursor];
+                if (ch == '\n')
+                    ++m_cursor;
+            }
+            m_lineBegin = m_cursor;
+            return true;
+        }
+
+        return false;
+    }
 
     std::optional<char> Lexer::parseCharacter() {
         const char& c = m_sourceCode[m_cursor++];
@@ -134,8 +159,7 @@ namespace pl::core {
             result += character.value();
         }
 
-        if (hasTheLineEnded(m_sourceCode[m_cursor]))
-            m_cursor++;
+        skipLineEnding();
 
         return makeTokenAt(Literal::makeString(result), location, result.size());
     }
@@ -156,8 +180,7 @@ namespace pl::core {
             result += character.value();
         }
 
-        if (hasTheLineEnded(m_sourceCode[m_cursor]))
-            m_cursor++;
+        skipLineEnding();
 
         return makeTokenAt(Literal::makeString(result), location, result.size());
     }
@@ -317,8 +340,7 @@ namespace pl::core {
         }
         auto len = m_cursor - begin;
 
-        if (hasTheLineEnded(m_sourceCode[m_cursor]))
-            m_cursor++;
+        skipLineEnding();
 
         return makeTokenAt(Literal::makeComment(true, result), location, len);
     }
@@ -335,8 +357,7 @@ namespace pl::core {
         }
         auto len = m_cursor - begin;
 
-        if (hasTheLineEnded(m_sourceCode[m_cursor]))
-            m_cursor++;
+        skipLineEnding();
 
         return makeTokenAt(Literal::makeDocComment(false, true, result), location, len);
     }
@@ -348,10 +369,10 @@ namespace pl::core {
         std::string result;
 
         m_cursor += 3;
-        while(true) {
-            hasTheLineEnded(peek(0));
+        while (true) {
+            skipLineEnding();
 
-            if(peek(1) == '\x00') {
+            if(m_cursor>=m_sourceCode.size() || peek(0)=='\x00') {
                 m_errorLength = 1;
                 error("Unexpected end of file while parsing multi line doc comment");
                 return std::nullopt;
@@ -375,9 +396,9 @@ namespace pl::core {
 
         m_cursor += 2;
         while(true) {
-            hasTheLineEnded(peek(0));
+            skipLineEnding();
 
-            if(peek(1) == '\x00') {
+            if(m_cursor>=m_sourceCode.size() || peek(0)=='\x00') {
                 m_errorLength = 2;
                 error("Unexpected end of file while parsing multi line doc comment");
                 return std::nullopt;
@@ -477,6 +498,7 @@ namespace pl::core {
         this->m_line = 1;
         this->m_lineBegin = 0;
         this->m_longestLineLength = 0;
+        this->m_tabCompensation = 0;
 
         const size_t end = this->m_sourceCode.size();
 
@@ -486,13 +508,19 @@ namespace pl::core {
             const char& c = this->m_sourceCode[this->m_cursor];
 
             if (c == '\x00') {
-                m_longestLineLength = std::max(m_longestLineLength, m_cursor - m_lineBegin);
+                m_longestLineLength = std::max(m_longestLineLength, m_cursor-m_lineBegin+m_tabCompensation);
                 break; // end of string
             }
 
             if (std::isblank(c) || std::isspace(c)) {
-                hasTheLineEnded(c);
-                m_cursor++;
+                if (c == '\t') {
+                    u32 column = m_tabCompensation + (m_cursor - m_lineBegin + 1);
+                    u32 tabbedColumn = (((column - 1) / tabsize + 1) * tabsize) + 1;
+                    m_tabCompensation += tabbedColumn - column - 1;
+                    ++m_cursor;
+                }
+                else if (!skipLineEnding())
+                    ++m_cursor;
                 continue;
             }
 
@@ -593,19 +621,15 @@ namespace pl::core {
                          peek(0) == 0  || directive == Token::Directive::IfDef  || directive == Token::Directive::IfNDef ||
                          directive == Token::Directive::EndIf)
                         continue;
-                    if (hasTheLineEnded(peek(0))) {
-                        m_cursor++;
+                    if (skipLineEnding())
                         continue;
-                    }
                     auto directiveValue = parseDirectiveValue();
                     if (directiveValue.has_value()) {
                         addToken(directiveValue.value());
                         if (m_line != line || peek(0) == 0)
                             continue;
-                        if (hasTheLineEnded(peek(0))) {
-                            m_cursor++;
+                        if (skipLineEnding())
                             continue;
-                        }
                         directiveValue = parseDirectiveArgument();
                         if (directiveValue.has_value()) {
                             addToken(directiveValue.value());
@@ -657,6 +681,7 @@ namespace pl::core {
         return { m_tokens, collectErrors() };
     }
 
+    // Note: if m_cursor is out of bounds we return ''\0''.
     inline char Lexer::peek(const size_t p) const {
         return m_cursor + p < m_sourceCode.size() ? m_sourceCode[m_cursor + p] : '\0';
     }
@@ -671,12 +696,9 @@ namespace pl::core {
         return false;
     }
 
-    Location Lexer::location() {
-        u32 column = m_cursor - m_lineBegin;
-        // There is no newline before the first line so add 1 to the column
-        if(m_line==1) {
-            column += 1;
-        }
-        return Location { m_source, m_line, column, m_errorLength };
+    Location Lexer::location()
+    {
+        u32 column = m_tabCompensation + m_cursor - m_lineBegin + 1;
+        return Location{m_source, m_line, column, m_errorLength};
     }
 }

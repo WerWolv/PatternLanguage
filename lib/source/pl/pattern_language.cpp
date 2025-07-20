@@ -187,15 +187,12 @@ namespace pl {
         return m_currAST;
     }
 
-    bool PatternLanguage::executeString(std::string code, const std::string& source, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
+    bool PatternLanguage::executeString(const std::string &code, const std::string& source, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
 	   	const auto startTime = std::chrono::high_resolution_clock::now();
         ON_SCOPE_EXIT {
             const auto endTime = std::chrono::high_resolution_clock::now();
             this->m_runningTime = std::chrono::duration_cast<std::chrono::duration<double>>(endTime - startTime).count();
         };
-
-        code = wolv::util::preprocessText(code);
-
         const auto &evaluator = this->m_internals.evaluator;
 
         evaluator->getConsole().setLogCallback(this->m_logCallback);
