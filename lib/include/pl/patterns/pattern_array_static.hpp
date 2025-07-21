@@ -85,7 +85,7 @@ namespace pl::ptrn {
 
                 std::shared_ptr<Pattern> highlightTemplate = this->m_template->clone();
 
-                highlightTemplate->setVariableName(this->getVariableName());
+                highlightTemplate->setVariableName(this->getVariableName(), this->getVariableLocation());
                 highlightTemplate->setOffset(this->getOffset());
 
                 const auto &children = this->m_highlightTemplates.emplace_back(std::move(highlightTemplate))->getChildren();

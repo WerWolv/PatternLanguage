@@ -72,7 +72,7 @@ namespace pl::core::ast {
                     if (this->m_placementOffset != nullptr && dynamic_cast<ptrn::PatternString*>(pattern.get()) != nullptr)
                         err::E0005.throwError(fmt::format("Variables of type 'str' cannot be placed in memory.", this->m_name), { }, this->getLocation());
 
-                    pattern->setVariableName(this->m_name);
+                    pattern->setVariableName(this->m_name, this->getLocation());
 
                     if (this->m_placementSection != nullptr)
                         pattern->setSection(evaluator->getSectionId());
@@ -126,7 +126,8 @@ namespace pl::core::ast {
 
         auto startOffset = evaluator->getBitwiseReadOffset();
 
-        evaluator->createVariable(this->getName(), this->getType().get(), { }, this->m_outVariable, false, false, this->m_constant);
+        // TODO: debug-menu: can get location here.
+        evaluator->createVariable(this->getName(), this->getLocation(), this->getType().get(), { }, this->m_outVariable, false, false, this->m_constant);
         auto &variable = evaluator->getScope(0).scope->back();
 
         std::vector<std::shared_ptr<ptrn::Pattern>> initValues;

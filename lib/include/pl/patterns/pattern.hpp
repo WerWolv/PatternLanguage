@@ -2,6 +2,7 @@
 
 #include <pl/core/errors/error.hpp>
 #include <pl/core/evaluator.hpp>
+#include <pl/core/location.hpp>
 #include <pl/pattern_visitor.hpp>
 #include <pl/helpers/types.hpp>
 #include <pl/helpers/utils.hpp>
@@ -69,8 +70,8 @@ namespace pl::ptrn {
         constexpr static u64 InstantiationSectionId = 0xFFFF'FFFF'FFFF'FFFD;
 
         Pattern(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
-            : m_evaluator(evaluator), m_line(line), m_offset(offset), m_size(size) {
-
+            : m_evaluator(evaluator), m_line(line), m_variableLocation(pl::core::Location::Empty()),
+              m_offset(offset), m_size(size) {
             if (evaluator != nullptr) {
                 this->m_color       = evaluator->getNextPatternColor();
                 this->m_manualColor = false;
@@ -93,6 +94,7 @@ namespace pl::ptrn {
             this->m_initialized = other.m_initialized;
             this->m_constant = other.m_constant;
             this->m_variableName = other.m_variableName;
+            this->m_variableLocation = other.m_variableLocation;
             this->m_typeName = other.m_typeName;
             this->m_reference = other.m_reference;
             this->m_parent = other.m_parent;
@@ -154,14 +156,19 @@ namespace pl::ptrn {
                 return *this->m_variableName;
         }
 
+        pl::core::Location getVariableLocation() const {
+            return m_variableLocation;
+        }
+
         [[nodiscard]] bool hasVariableName() const {
             return getEvaluator()->isStringPoolEntryValid(this->m_variableName);
         }
 
-        void setVariableName(const std::string &name) {
+        void setVariableName(const std::string &name, pl::core::Location loc = pl::core::Location()) {
             if (!name.empty()) {
                 auto [it, inserted] = m_evaluator->getStringPool().emplace(name);
                 this->m_variableName = it;
+                this->m_variableLocation = loc;
             }
         }
 
@@ -633,6 +640,7 @@ namespace pl::ptrn {
         u32 m_line = 0;
 
         std::set<std::string>::const_iterator m_variableName;
+        pl::core::Location m_variableLocation;
         std::set<std::string>::const_iterator m_typeName;
         std::optional<u64> m_arrayIndex;
 

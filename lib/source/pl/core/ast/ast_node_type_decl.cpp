@@ -141,7 +141,7 @@ namespace pl::core::ast {
 
                     this->m_currTemplateParameterType->setLocation(lvalue->getLocation());
 
-                    auto variable = evaluator->createVariable(lvalue->getLValueName(), this->m_currTemplateParameterType.get(), value, false, value.isPattern(), true, true);
+                    auto variable = evaluator->createVariable(lvalue->getLValueName(), lvalue->getLocation(), this->m_currTemplateParameterType.get(), value, false, value.isPattern(), true, true);
                     if (variable != nullptr) {
                         variable->setInitialized(false);
                         evaluator->setVariable(variable, value);

@@ -271,7 +271,7 @@ namespace pl::core {
             pattern->setSection(section);
         }
 
-        pattern->setVariableName(name);
+        pattern->setVariableName(name, pattern->getVariableLocation());
 
         if (this->isDebugModeEnabled())
             this->getConsole().log(LogConsole::Level::Debug, fmt::format("Creating local array variable '{} {}[{}]' at heap address 0x{:X}.", pattern->getTypeName(), pattern->getVariableName(), entryCount, pattern->getOffset()));
@@ -352,7 +352,7 @@ namespace pl::core {
         }
     }
 
-    std::shared_ptr<ptrn::Pattern> Evaluator::createVariable(const std::string &name, const ast::ASTNodeTypeDecl *type, const std::optional<Token::Literal> &value, bool outVariable, bool reference, bool templateVariable, bool constant) {
+    std::shared_ptr<ptrn::Pattern> Evaluator::createVariable(const std::string &name, const pl::core::Location &loc, const ast::ASTNodeTypeDecl *type, const std::optional<Token::Literal> &value, bool outVariable, bool reference, bool templateVariable, bool constant) {
         auto startPos = this->getBitwiseReadOffset();
         ON_SCOPE_EXIT { this->setBitwiseReadOffset(startPos); };
 
@@ -433,7 +433,7 @@ namespace pl::core {
             }
         }
 
-        pattern->setVariableName(name);
+        pattern->setVariableName(name, loc);
 
         if (!reference) {
             pattern->setSection(sectionId);
@@ -599,7 +599,7 @@ namespace pl::core {
                         // Keep the old variable until the new one is ref-counted, so we don't delete storage.
                         auto oldVariable = std::exchange(variablePattern, value->clone());
 
-                        variablePattern->setVariableName(name);
+                        variablePattern->setVariableName(name, variablePattern->getVariableLocation());
                         variablePattern->setReference(reference);
 
                         if (!reference) {
@@ -647,12 +647,13 @@ namespace pl::core {
         auto section = pattern->getSection();
         auto offset = pattern->getOffset();
         auto variableName = pattern->getVariableName();
+        auto variableLocation = pattern->getVariableLocation();
 
         pattern = std::move(newPattern);
 
         pattern->setSection(section);
         pattern->setOffset(offset);
-        pattern->setVariableName(variableName);
+        pattern->setVariableName(variableName, variableLocation);
     }
 
     void Evaluator::setVariable(std::shared_ptr<ptrn::Pattern> &pattern, const Token::Literal &variableValue) {

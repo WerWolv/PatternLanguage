@@ -77,7 +77,7 @@ namespace pl::core::ast {
             std::vector<std::pair<std::shared_ptr<ptrn::Pattern>, std::string>> originalNames;
             ON_SCOPE_EXIT {
                 for (auto &[variable, name] : originalNames) {
-                    variable->setVariableName(name);
+                    variable->setVariableName(name, variable->getVariableLocation());
                 }
             };
             for (u32 paramIndex = 0; paramIndex < this->m_params.size() && paramIndex < params.size(); paramIndex++) {
@@ -89,7 +89,7 @@ namespace pl::core::ast {
                     if (params[paramIndex].isString())
                         reference = false;
 
-                    auto variable = ctx->createVariable(name, typeNode, params[paramIndex], false, reference);
+                    auto variable = ctx->createVariable(name, type->getLocation(), typeNode, params[paramIndex], false, reference);
 
                     if (reference && params[paramIndex].isPattern()) {
                         auto pattern = params[paramIndex].toPattern();
@@ -100,7 +100,8 @@ namespace pl::core::ast {
 
                     ctx->setVariable(name, params[paramIndex]);
                     originalNames.emplace_back(variable, name);
-                    variable->setVariableName(name);
+
+                    variable->setVariableName(name, type->getLocation());
 
                     ctx->setCurrentControlFlowStatement(ControlFlowStatement::None);
                 }

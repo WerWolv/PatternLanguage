@@ -54,7 +54,7 @@ namespace pl::core::ast {
 
         auto position = evaluator->getBitwiseReadOffset();
         auto arrayPattern = std::make_shared<ptrn::PatternBitfieldArray>(evaluator, position.byteOffset, position.bitOffset, 0, getLocation().line);
-        arrayPattern->setVariableName(this->m_name);
+        arrayPattern->setVariableName(this->m_name, this->getLocation());
         arrayPattern->setSection(evaluator->getSectionId());
         arrayPattern->setReversed(evaluator->isReadOrderReversed());
 
@@ -65,7 +65,7 @@ namespace pl::core::ast {
 
         auto addEntries = [&](std::vector<std::shared_ptr<ptrn::Pattern>> &&patterns) {
             for (auto &pattern : patterns) {
-                pattern->setVariableName(fmt::format("[{}]", entryIndex));
+                pattern->setVariableName(fmt::format("[{}]", entryIndex), pattern->getVariableLocation());
                 pattern->setEndian(arrayPattern->getEndian());
                 if (pattern->getSection() == ptrn::Pattern::MainSectionId)
                     pattern->setSection(arrayPattern->getSection());

@@ -45,7 +45,7 @@ namespace pl::core::ast {
         auto position = evaluator->getBitwiseReadOffsetAndIncrement(bitSize);
         auto pattern = this->createBitfield(evaluator, position.byteOffset, position.bitOffset, bitSize);
         pattern->setPadding(this->isPadding());
-        pattern->setVariableName(this->getName());
+        pattern->setVariableName(this->getName(), this->getLocation());
 
         pattern->setEndian(evaluator->getDefaultEndian());
         pattern->setSection(evaluator->getSectionId());

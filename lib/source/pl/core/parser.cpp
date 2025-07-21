@@ -1700,8 +1700,9 @@ namespace pl::core {
 
     // (parseType) Identifier[(parseMathematicalExpression)]
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMemberArrayVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool constant) {
+        auto &nameToken = m_curr[-2];
         auto name = getValue<Token::Identifier>(-2).get();
-        auto memberIdentifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
+        auto memberIdentifier = std::get_if<Token::Identifier>(&nameToken.value);
 
         hlp::safe_unique_ptr<ast::ASTNode> size;
 
@@ -1778,7 +1779,7 @@ namespace pl::core {
             else
                 memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
         }
-        return create<ast::ASTNodeArrayVariableDecl>(name, type.unwrapUnchecked(), std::move(size.unwrapUnchecked()), nullptr, nullptr, constant);
+        return createWithLocation<ast::ASTNodeArrayVariableDecl>(nameToken.location, name, type.unwrapUnchecked(), std::move(size.unwrapUnchecked()), nullptr, nullptr, constant);
     }
 
     // (parseType) *Identifier : (parseType)
@@ -2147,6 +2148,7 @@ namespace pl::core {
         } else if (const auto identifierOffset = parseCompoundAssignment(tkn::Literal::Identifier); identifierOffset.has_value())
             member = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(*identifierOffset).get());
         else if (MATCHES(optional(tkn::Keyword::Unsigned) && sequence(tkn::Literal::Identifier, tkn::Operator::Colon))) {
+            auto identToken = m_curr[-2];
             auto fieldName = getValue<Token::Identifier>(-2).get();
             auto identifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
             if (identifier != nullptr)
@@ -2156,7 +2158,7 @@ namespace pl::core {
             if (bitfieldSize == nullptr)
                 return nullptr;
 
-            member = create<ast::ASTNodeBitfieldField>(fieldName, std::move(bitfieldSize));
+            member = createWithLocation<ast::ASTNodeBitfieldField>(identToken.location, fieldName, std::move(bitfieldSize));
         } else if (sequence(tkn::Keyword::Signed, tkn::Literal::Identifier, tkn::Operator::Colon)) {
             auto fieldName = getValue<Token::Identifier>(-2).get();
             auto identifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
