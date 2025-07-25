@@ -320,6 +320,7 @@ namespace pl::core {
         std::ranges::copy(preprocessor.m_pragmas.begin(), preprocessor.m_pragmas.end(), std::inserter(this->m_pragmas, this->m_pragmas.begin()));
         std::ranges::copy(preprocessor.m_keys.begin(), preprocessor.m_keys.end(), std::inserter(this->m_keys, this->m_keys.begin()));
         std::ranges::copy(preprocessor.m_namespaces.begin(), preprocessor.m_namespaces.end(), std::inserter(this->m_namespaces, this->m_namespaces.begin()));
+        std::ranges::copy(preprocessor.m_parsedImports.begin(), preprocessor.m_parsedImports.end(),std::inserter(this->m_parsedImports, this->m_parsedImports.begin()));
 
         if (shouldInclude) {
             auto content = result.unwrap();
@@ -540,19 +541,16 @@ namespace pl::core {
         for (auto token = tokens.begin(); token != tokens.end(); token++ ) {
             u32 idx = 1;
             if (auto *keyword = std::get_if<Token::Keyword>(&token->value); keyword != nullptr && *keyword == Token::Keyword::Namespace) {
-                if (auto *valueType = std::get_if<Token::ValueType>(&token[1].value);
-                                                        valueType != nullptr && *valueType == Token::ValueType::Auto)
+                if (auto *valueType = std::get_if<Token::ValueType>(&token[1].value); valueType != nullptr && *valueType == Token::ValueType::Auto)
                     idx += 1;
                 auto *identifier = std::get_if<Token::Identifier>(&token[idx].value);
                 while (identifier != nullptr) {
-                    if (auto *separator = std::get_if<Token::Separator>(&token[idx].value);
-                                                        separator != nullptr && *separator == Token::Separator::EndOfProgram)
+                    if (auto *separator = std::get_if<Token::Separator>(&token[idx].value); separator != nullptr && *separator == Token::Separator::EndOfProgram)
                         break;
                     if (std::ranges::find(m_namespaces, identifier->get()) == m_namespaces.end())
                         m_namespaces.push_back(identifier->get());
                     idx += 1;
-                    if (auto *operatorToken = std::get_if<Token::Operator>(&token[idx].value);
-                                                        operatorToken == nullptr || *operatorToken != Token::Operator::ScopeResolution)
+                    if (auto *operatorToken = std::get_if<Token::Operator>(&token[idx].value); operatorToken == nullptr || *operatorToken != Token::Operator::ScopeResolution)
                         break;
                     idx += 1;
                     identifier = std::get_if<Token::Identifier>(&token[idx].value);
@@ -608,6 +606,7 @@ namespace pl::core {
             process();
 
         appendToNamespaces(m_output);
+        saveTokens(source, m_result);
 
         // Handle pragmas
         for (const auto &[type, datas] : this->m_pragmas) {
@@ -616,14 +615,19 @@ namespace pl::core {
 
                 if (this->m_pragmaHandlers.contains(type)) {
                     if (!this->m_pragmaHandlers[type](*m_runtime, value))
-                        errorAt(Location { m_source, line, 1, value.length() },
-                                "Value '{}' cannot be used with the '{}' pragma directive.", value, type);
+                        errorAt(Location { m_source, line, 1, value.length() }, "Value '{}' cannot be used with the '{}' pragma directive.", value, type);
                 }
             }
         }
         validateOutput();
         m_initialized = false;
         return { m_output, collectErrors() };
+    }
+
+    void Preprocessor::saveTokens(api::Source *source, const std::vector<Token> &tokens) {
+        if (!source->mainSource && !m_parsedImports.contains(source->source)) {
+            m_parsedImports[source->source] = tokens;
+        }
     }
 
     bool Preprocessor::eof() {
