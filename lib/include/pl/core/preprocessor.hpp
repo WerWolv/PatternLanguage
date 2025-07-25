@@ -113,6 +113,10 @@ namespace pl::core {
         }
 
         void appendToNamespaces(std::vector<Token> tokens);
+        void saveTokens(api::Source *source, const std::vector<Token> &tokens);
+        const std::map<std::string, std::vector<Token>> &getParsedImports() const {
+            return m_parsedImports;
+        }
 
     private:
         Preprocessor(const Preprocessor &);
@@ -137,6 +141,7 @@ namespace pl::core {
         void registerStatementHandler(const Token::Keyword &name, auto memberFunction);
         void reportError(const std::string &message, const std::string &description);
 
+        std::map<std::string, std::vector<Token>> m_parsedImports;
         std::unordered_map<std::string, api::PragmaHandler> m_pragmaHandlers;
         std::unordered_map<Token::Directive, api::DirectiveHandler> m_directiveHandlers;
         std::unordered_map<Token::Keyword, api::StatementHandler> m_statementHandlers;
