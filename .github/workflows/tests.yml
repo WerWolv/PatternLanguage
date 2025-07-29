@@ -71,10 +71,6 @@ jobs:
         cd build
         ctest --output-on-failure
 
-    - name: 🧪 Run ImHex-Patterns tests
-      if: ${{ env.DISPATCH_TOKEN != '' }}
-      uses: WerWolv/ImHex-Patterns/.github/workflows/tests.yml@master
-
      # Generate report from all gcov .gcda files
     - name: 🧪 Generate coverage report
       run: |
@@ -86,3 +82,8 @@ jobs:
         fail_ci_if_error: true
         token: ${{ secrets.CODECOV_TOKEN }}
         file: coverage_report.xml
+
+  imhex_patterns_tests:
+    name: 🧪 ImHex Patterns Tests
+    needs: tests
+    uses: WerWolv/ImHex-Patterns/.github/workflows/tests.yml@master
