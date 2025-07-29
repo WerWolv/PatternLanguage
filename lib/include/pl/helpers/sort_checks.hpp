@@ -3,6 +3,7 @@
 #include <algorithm>
 
 void sortPredicateError(const char *pMsg);
+void transitivityError(const char *pMsg, size_t b_idx, size_t e_idx, size_t x_idx, size_t y_idx);
 
 // Logical implication
 inline bool imp(bool l, bool r) {
@@ -39,12 +40,12 @@ namespace impl {
 // b[n]<b[n+1]. We'll assume this even though with a dogy predicate
 // it may not be the case.
 template <typename Iter, typename Predicate>
-void transitivity(const Iter b, const Iter e, const Predicate pred)
+void transitivity(const Iter cb, const Iter b, const Iter e, const Predicate pred)
 {
     for (Iter l=b; l<e-2; ++l) {
         for (Iter r=l+2; r<e; ++r) {
             if (!pred(*l, *r)) {
-                sortPredicateError("Transitivity");
+                transitivityError("Transitivity", b-cb, e-cb-1, l-cb, r-cb);
                 // For all x (at index n) in [b, e-1): 
                 //  pred(b[n], b[n+1]) == true
                 // pred(*l, *r) returned false however. This is in violation
@@ -61,12 +62,12 @@ void transitivity(const Iter b, const Iter e, const Predicate pred)
 //
 // Incomparability is perhaps better undersood as equality.
 template <typename Iter, typename Predicate>
-void transitivity_of_incomparability(const Iter b, const Iter e, const Predicate pred)
+void transitivity_of_incomparability(const Iter cb, const Iter b, const Iter e, const Predicate pred)
 {
     for (Iter l=b; l<e-2; ++l) {
         for (Iter r=l+2; r<e; ++r) {
             if (!(!pred(*l, *r) && !pred(*r, *l))) {
-                sortPredicateError("Transitivity of incomparability");
+                transitivityError("Transitivity of incomparability", b-cb, e-cb-1, l-cb, r-cb);
                 // For all x (at index n) in [b, e-1): 
                 //  pred(b[n], b[n+1]) == false && pred(b[n+1], b[n]) == false
                 // (!pred(*l, *r) && !pred(*r, *l)) returned false however. This is in violation
@@ -87,12 +88,12 @@ void post_sort_check(const Iter b, const Iter e, const Predicate pred) {
         if (pred(*l, *(l+1))) {
             Iter r = l+1;
             for (; r<e-1 && pred(*r, *(r+1)); ++r) {}
-            impl::transitivity(l, r+1, pred);
+            impl::transitivity(b, l, r+1, pred);
             l = r;
         } else if (!pred(*(l+1), *l)) {
             Iter r = l+1;
             for (; r<e-1 && !pred(*(r+1), *r) && !pred(*r, *(r+1)); ++r) {}
-            impl::transitivity_of_incomparability(l, r+1, pred);
+            impl::transitivity_of_incomparability(b, l, r+1, pred);
             l = r;
         }
         else {
