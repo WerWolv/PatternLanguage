@@ -22,7 +22,6 @@ inline bool imp(bool l, bool r) {
 
 template <typename Predicate>
 auto checked_pedicate(const Predicate pred) {
-    // IDIOT: The lambda below can't know the location in the collection!
     return [=](const auto &l, const auto &r) {
         // Irreflexivity: !(x<x)
         if (pred(l,l))

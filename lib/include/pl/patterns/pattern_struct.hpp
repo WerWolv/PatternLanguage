@@ -161,23 +161,7 @@ namespace pl::ptrn {
             for (auto &member : this->m_members)
                 this->m_sortedMembers.push_back(member.get());
 
-            // DEBUGGING
-            auto smb = &m_sortedMembers[0]; (void)smb;
-            for (auto p : m_sortedMembers) {
-                auto vn = p->getVariableName();
-                int a=1;(void)a;
-            }
-            //
-
             pl::hlp::checked_sort(this->m_sortedMembers.begin(), this->m_sortedMembers.end(), comparator);
-
-            // DEBUGGING
-            std::vector<Pattern *> postSorted;
-            for (auto p : m_sortedMembers) {
-                postSorted.push_back(p);
-            }
-            //
-
             for (auto &member : this->m_sortedMembers)
                 member->sort(comparator);
         }
