@@ -1,9 +1,16 @@
 #pragma once
 
+#define ENABLE_STD_SORT_CHECKS
+
+#ifdef ENABLE_STD_SORT_CHECKS
 #include <cstddef>
+#endif
+
 #include <algorithm>
 
 namespace  pl::hlp {
+
+#ifdef ENABLE_STD_SORT_CHECKS
 
 void sortPredicateError(const char *pMsg);
 void transitivityError(const char *pMsg, std::size_t b_idx, std::size_t e_idx, std::size_t x_idx, std::size_t y_idx);
@@ -108,16 +115,26 @@ void post_sort_check(const Iter b, const Iter e, const Predicate pred) {
     }
 }
 
+#endif // ENABLE_STD_SORT_CHECKS
+
 template<typename RandomIt, typename Compare>
 void checked_sort(RandomIt first, RandomIt last, Compare comp) {
+#ifdef ENABLE_STD_SORT_CHECKS
     std::sort(first, last, checked_pedicate(comp));
     post_sort_check(first, last, comp);
+#else
+    std::sort(first, last, comp);
+#endif
 }
 
 template<typename RandomIt, typename Compare>
 void checked_stable_sort(RandomIt first, RandomIt last, Compare comp) {
+#ifdef ENABLE_STD_SORT_CHECKS
     std::stable_sort(first, last, checked_pedicate(comp));
     post_sort_check(first, last, comp);
+#else
+    std::stable_sort(first, last, comp);
+#endif
 }
 
 } // namespace pl::hlp
