@@ -5,6 +5,7 @@
 
 #include <pl/helpers/utils.hpp>
 #include <pl/helpers/concepts.hpp>
+#include <pl/helpers/variant_type_index.hpp>
 #include <variant>
 
 namespace pl::core {
@@ -110,29 +111,6 @@ namespace pl::core {
         return std::holds_alternative<std::shared_ptr<ptrn::Pattern>>(*this);
     }
 
-///
-template<typename T, typename Variant>
-struct variant_index;
-
-template<typename T, typename... Ts>
-struct variant_index<T, std::variant<Ts...>> {
-    static constexpr std::size_t value = []{
-        constexpr bool matches[] = { std::is_same_v<std::remove_cvref_t<T>, Ts>... };
-
-        std::size_t idx = 0;
-        for (std::size_t i = 0; i < sizeof...(Ts); ++i) {
-            if (matches[i]) { idx = i; }
-        }
-
-        return idx;
-    }();
-};
-
-template<class T, class Variant>
-inline constexpr std::size_t variant_index_v = variant_index<T, Variant>::value;
-///
-
-
     std::strong_ordering Token::Literal::operator<=>(const Literal &other) const {
         return std::visit(wolv::util::overloaded {
             [](std::shared_ptr<ptrn::Pattern> lhs, std::shared_ptr<ptrn::Pattern> rhs) {
@@ -185,7 +163,7 @@ inline constexpr std::size_t variant_index_v = variant_index<T, Variant>::value;
             },
             []<typename TL, typename TR>(TL, TR) -> std::strong_ordering {
                 using V = std::variant<char, bool, u128, i128, double, std::string, std::shared_ptr<ptrn::Pattern>>;
-                return variant_index_v<TL, V> <=> variant_index_v<TR, V>;
+                return pl::hlp::variant_type_index_v<TL, V> <=> pl::hlp::variant_type_index_v<TR, V>;
                 //return std::strong_ordering::equal;
             }
         }, *this, other);
