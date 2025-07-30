@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pl/patterns/pattern.hpp>
+#include <pl/helpers/sort_checks.hpp>
 
 namespace pl::ptrn {
 
@@ -159,7 +160,7 @@ namespace pl::ptrn {
             for (auto &member : this->m_members)
                 this->m_sortedMembers.push_back(member.get());
 
-            std::sort(this->m_sortedMembers.begin(), this->m_sortedMembers.end(), comparator);
+            pl::hlp::checked_sort(this->m_sortedMembers.begin(), this->m_sortedMembers.end(), comparator);
 
             for (auto &member : this->m_members)
                 member->sort(comparator);

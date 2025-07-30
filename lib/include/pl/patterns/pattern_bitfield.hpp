@@ -2,6 +2,7 @@
 
 #include <pl/patterns/pattern.hpp>
 #include <pl/patterns/pattern_enum.hpp>
+#include <pl/helpers/sort_checks.hpp>
 
 namespace pl::ptrn {
 
@@ -497,7 +498,7 @@ namespace pl::ptrn {
             for (auto &member : this->m_entries)
                 this->m_sortedEntries.push_back(member.get());
 
-            std::sort(this->m_sortedEntries.begin(), this->m_sortedEntries.end(), comparator);
+            pl::hlp::checked_sort(this->m_sortedEntries.begin(), this->m_sortedEntries.end(), comparator);
             if (this->isReversed())
                 std::reverse(this->m_sortedEntries.begin(), this->m_sortedEntries.end());
 
@@ -774,7 +775,7 @@ namespace pl::ptrn {
             for (auto &member : this->m_fields)
                 this->m_sortedFields.push_back(member.get());
 
-            std::sort(this->m_sortedFields.begin(), this->m_sortedFields.end(), comparator);
+            pl::hlp::checked_sort(this->m_sortedFields.begin(), this->m_sortedFields.end(), comparator);
             if (this->isReversed())
                 std::reverse(this->m_sortedFields.begin(), this->m_sortedFields.end());
 
