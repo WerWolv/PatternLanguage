@@ -169,7 +169,7 @@ namespace pl::ptrn {
             }
             //
 
-            checked_sort(this->m_sortedMembers.begin(), this->m_sortedMembers.end(), comparator);
+            pl::hlp::checked_sort(this->m_sortedMembers.begin(), this->m_sortedMembers.end(), comparator);
 
             // DEBUGGING
             std::vector<Pattern *> postSorted;

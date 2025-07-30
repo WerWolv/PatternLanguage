@@ -1,9 +1,12 @@
 #pragma once
 
+#include <cstddef>
 #include <algorithm>
 
+namespace  pl::hlp {
+
 void sortPredicateError(const char *pMsg);
-void transitivityError(const char *pMsg, size_t b_idx, size_t e_idx, size_t x_idx, size_t y_idx);
+void transitivityError(const char *pMsg, std::size_t b_idx, std::size_t e_idx, std::size_t x_idx, std::size_t y_idx);
 
 // Logical implication
 inline bool imp(bool l, bool r) {
@@ -116,3 +119,5 @@ void checked_stable_sort(RandomIt first, RandomIt last, Compare comp) {
     std::stable_sort(first, last, checked_pedicate(comp));
     post_sort_check(first, last, comp);
 }
+
+} // namespace pl::hlp
