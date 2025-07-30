@@ -162,9 +162,7 @@ namespace pl::core {
                 }
             },
             []<typename TL, typename TR>(TL, TR) -> std::strong_ordering {
-                using V = std::variant<char, bool, u128, i128, double, std::string, std::shared_ptr<ptrn::Pattern>>;
-                return pl::hlp::variant_type_index_v<TL, V> <=> pl::hlp::variant_type_index_v<TR, V>;
-                //return std::strong_ordering::equal;
+                return pl::hlp::variant_type_index_v<TL, LiteralVariantType> <=> pl::hlp::variant_type_index_v<TR, LiteralVariantType>;
             }
         }, *this, other);
     }
