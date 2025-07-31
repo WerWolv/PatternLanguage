@@ -5,6 +5,7 @@
 
 #include <pl/helpers/utils.hpp>
 #include <pl/helpers/concepts.hpp>
+#include <pl/helpers/variant_type_index.hpp>
 #include <variant>
 
 namespace pl::core {
@@ -160,8 +161,8 @@ namespace pl::core {
                     return std::strong_ordering::greater;
                 }
             },
-            [](auto, auto) -> std::strong_ordering {
-                return std::strong_ordering::equal;
+            []<typename TL, typename TR>(TL, TR) -> std::strong_ordering {
+                return hlp::VariantTypeIndex<TL, LiteralVariantType> <=> hlp::VariantTypeIndex<TR, LiteralVariantType>;
             }
         }, *this, other);
     }
