@@ -162,7 +162,7 @@ namespace pl::core {
                 }
             },
             []<typename TL, typename TR>(TL, TR) -> std::strong_ordering {
-                return hlp::variant_type_index_v<TL, LiteralVariantType> <=> hlp::variant_type_index_v<TR, LiteralVariantType>;
+                return hlp::variantTypeIndex_v<TL, LiteralVariantType> <=> hlp::variantTypeIndex_v<TR, LiteralVariantType>;
             }
         }, *this, other);
     }
