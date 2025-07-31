@@ -13,7 +13,6 @@ endif ()
 
 add_library(libpl ${LIBRARY_TYPE}
         source/pl/helpers/utils.cpp
-        source/pl/helpers/sort_checks.cpp
 
         source/pl/pattern_language.cpp
 
