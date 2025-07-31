@@ -11,15 +11,17 @@ struct variant_type_index;
 
 template<typename T, typename... Ts>
 struct variant_type_index<T, std::variant<Ts...>> {
-    static constexpr std::size_t value = []{
+    static constexpr auto value = [] -> std::size_t {
+        static_assert(
+            (std::is_same_v<std::remove_cvref_t<T>, Ts> || ...),
+            "T not in std::variant");
         constexpr bool matches[] = { std::is_same_v<std::remove_cvref_t<T>, Ts>... };
 
-        std::size_t idx = 0;
-        for (std::size_t i = 0; i < sizeof...(Ts); ++i) {
-            if (matches[i]) { idx = i; }
+        for (std::size_t i=0; i<sizeof...(Ts); ++i) {
+            if (matches[i]) { return i; }
         }
 
-        return idx;
+        return -1;
     }();
 };
 
