@@ -7,10 +7,10 @@
 namespace pl::hlp {
 
 template<typename T, typename Variant>
-struct VariantTypeIndex;
+struct VariantTypeIndexImpl;
 
 template<typename T, typename... Ts>
-struct VariantTypeIndex<T, std::variant<Ts...>> {
+struct VariantTypeIndexImpl<T, std::variant<Ts...>> {
     static constexpr auto value = [] -> std::size_t {
         static_assert(
             (std::is_same_v<std::remove_cvref_t<T>, Ts> || ...),
@@ -26,6 +26,6 @@ struct VariantTypeIndex<T, std::variant<Ts...>> {
 };
 
 template<class T, class Variant>
-inline constexpr std::size_t variantTypeIndex_v = VariantTypeIndex<T, Variant>::value;
+inline constexpr std::size_t VariantTypeIndex = VariantTypeIndexImpl<T, Variant>::value;
 
 } // namespace pl::hlp
