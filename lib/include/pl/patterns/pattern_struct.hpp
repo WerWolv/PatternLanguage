@@ -161,6 +161,7 @@ namespace pl::ptrn {
                 this->m_sortedMembers.push_back(member.get());
 
             std::sort(this->m_sortedMembers.begin(), this->m_sortedMembers.end(), comparator);
+
             for (auto &member : this->m_sortedMembers)
                 member->sort(comparator);
         }
