@@ -1,4 +1,6 @@
 #include <pl/helpers/sort_checks.hpp>
+
+#ifdef ENABLE_STD_SORT_CHECKS
 #include <cstddef>
 #include <iostream>
 
@@ -19,3 +21,5 @@ void transitivityError(const char *pMsg, size_t b_idx, size_t e_idx, size_t x_id
 }
 
 } // namespace pl::hlp
+
+#endif // ENABLE_STD_SORT_CHECKS
