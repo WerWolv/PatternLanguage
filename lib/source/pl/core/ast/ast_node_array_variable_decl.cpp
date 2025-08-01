@@ -19,7 +19,8 @@
 namespace pl::core::ast {
 
     ASTNodeArrayVariableDecl::ASTNodeArrayVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeDecl> type, std::unique_ptr<ASTNode> &&size, std::unique_ptr<ASTNode> &&placementOffset, std::unique_ptr<ASTNode> &&placementSection, bool constant)
-        :m_name(std::move(name)), m_type(std::move(type)), m_size(std::move(size)), m_placementOffset(std::move(placementOffset)), m_placementSection(std::move(placementSection)), m_constant(constant) { }
+        :m_name(std::move(name)), m_type(std::move(type)), m_size(std::move(size)), m_placementOffset(std::move(placementOffset)), m_placementSection(std::move(placementSection)), m_constant(constant) {
+        }
 
     ASTNodeArrayVariableDecl::ASTNodeArrayVariableDecl(const ASTNodeArrayVariableDecl &other) : ASTNode(other), Attributable(other) {
         this->m_name = other.m_name;
@@ -230,7 +231,7 @@ namespace pl::core::ast {
             outputPattern = std::move(arrayPattern);
         }
 
-        outputPattern->setVariableName(this->m_name);
+        outputPattern->setVariableName(this->m_name, this->getLocation());
         if (templatePattern->hasOverriddenEndian())
             outputPattern->setEndian(templatePattern->getEndian());
         outputPattern->setTypeName(templatePattern->getTypeName());
@@ -257,7 +258,7 @@ namespace pl::core::ast {
 
         evaluator->alignToByte();
         auto arrayPattern = std::make_unique<ptrn::PatternArrayDynamic>(evaluator, evaluator->getReadOffset(), 0, getLocation().line);
-        arrayPattern->setVariableName(this->m_name);
+        arrayPattern->setVariableName(this->m_name, this->getLocation());
         arrayPattern->setSection(evaluator->getSectionId());
 
         std::vector<std::shared_ptr<ptrn::Pattern>> entries;

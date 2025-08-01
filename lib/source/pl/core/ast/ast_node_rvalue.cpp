@@ -140,7 +140,7 @@ namespace pl::core::ast {
         if (auto transformFunc = evaluator->findFunction(pattern->getTransformFunction()); transformFunc.has_value()) {
             auto oldPatternName = pattern->getVariableName();
             auto result = transformFunc->func(evaluator, { std::move(literal) });
-            pattern->setVariableName(oldPatternName);
+            pattern->setVariableName(oldPatternName, pattern->getVariableLocation());
 
             if (!result.has_value())
                 err::E0009.throwError("Transform function did not return a value.", "Try adding a 'return <value>;' statement in all code paths.", this->getLocation());

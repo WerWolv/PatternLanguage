@@ -93,6 +93,13 @@ namespace pl::core {
         }
 
         template<typename T, typename...Ts>
+        hlp::safe_unique_ptr<T> createWithLocation(const Location &loc, Ts&&... ts) {
+            auto temp = std::make_unique<T>(std::forward<Ts>(ts)...);
+            temp->setLocation(loc);
+            return temp;
+        }
+
+        template<typename T, typename...Ts>
         hlp::safe_shared_ptr<T> createShared(Ts&&... ts) {
             auto temp = std::make_shared<T>(std::forward<Ts>(ts)...);
             temp->setLocation(this->m_curr[-1].location);
@@ -287,7 +294,6 @@ namespace pl::core {
                 if (!peek(token))
                     return true;
 
-                this->next();
                 partReset();
                 return false;
             } else
