@@ -169,7 +169,7 @@ namespace pl::core {
         m_cursor++; // Skip space
         auto location = this->location();
 
-        while (m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\0') {
+        while (m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\r' && m_sourceCode[m_cursor] != '\0') {
 
             auto character = parseCharacter();
             if (!character.has_value()) {
@@ -192,7 +192,7 @@ namespace pl::core {
 
         while (m_sourceCode[m_cursor] != '\"') {
             char c = peek(0);
-            if (c == '\n') {
+            if (c == '\n' || c == '\r') {
                 m_errorLength = 1;
                 error("Unexpected newline in string literal");
                 m_line++;
@@ -333,7 +333,7 @@ namespace pl::core {
         m_cursor += 2;
 
         std::string result;
-        while(m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\0') {
+        while(m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\r' && m_sourceCode[m_cursor] != '\0') {
             result += m_sourceCode[m_cursor];
             m_cursor++;
         }
@@ -350,7 +350,7 @@ namespace pl::core {
         m_cursor += 3;
 
         std::string result;
-        while(m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\0') {
+        while(m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\r' && m_sourceCode[m_cursor] != '\0') {
             result += m_sourceCode[m_cursor];
             m_cursor++;
         }

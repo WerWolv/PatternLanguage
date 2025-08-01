@@ -40,7 +40,7 @@ namespace pl::core::err::impl {
                     }
                 }
                 errorLine = errorLine.substr(start, end - start);
-                arrowPosition = column - start;
+                arrowPosition = column - start - 1;
             }
 
             result += fmt::format("{}{}\n", lineNumberPrefix, errorLine);

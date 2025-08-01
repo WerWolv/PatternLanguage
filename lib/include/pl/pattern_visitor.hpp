@@ -4,6 +4,7 @@ namespace pl {
 
     namespace ptrn {
 
+        class Pattern;
         class PatternArrayDynamic;
         class PatternArrayStatic;
         class PatternBitfield;
@@ -28,6 +29,7 @@ namespace pl {
 
     class PatternVisitor {
     public:
+        virtual ~PatternVisitor() = default;
         virtual void visit(ptrn::PatternArrayDynamic& pattern)  = 0;
         virtual void visit(ptrn::PatternArrayStatic& pattern)   = 0;
         virtual void visit(ptrn::PatternBitfield& pattern)      = 0;

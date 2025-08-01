@@ -220,8 +220,10 @@ namespace pl::core {
             constexpr bool operator==(const Comment &) const = default;
         };
 
+        using LiteralVariantType = std::variant<char, bool, u128, i128, double, std::string, std::shared_ptr<ptrn::Pattern>>;
 
-        struct Literal : std::variant<char, bool, u128, i128, double, std::string, std::shared_ptr<ptrn::Pattern>> {
+
+        struct Literal : LiteralVariantType {
             using variant::variant;
 
             [[nodiscard]] std::shared_ptr<ptrn::Pattern> toPattern() const;
