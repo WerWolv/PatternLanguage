@@ -447,7 +447,8 @@ namespace pl::core {
             return false;
         }
 
-        inline string escape_regex(const std::string& s) {
+        template <typename String>
+        inline string escape_regex(const String& s) {
             string result;
             result.reserve(s.size() * 2);
 
@@ -464,7 +465,8 @@ namespace pl::core {
             eEOF, eNewLine, eKWNamedOpTypeConst,
             eSingleLineComment, eSingleLineDocComment,
             eMultiLineCommentOpen, eMultiLineDocCommentOpen, eMultiLineCommentClose,
-            eNumber, eString, eSeparator, eDirective, eDirectiveType, eDirectiveParam
+            eNumber, eString, eSeparator, eDirective, eDirectiveType, eDirectiveParam,
+            eOperator
         };
 
     } // anonymous namespace
@@ -503,9 +505,15 @@ namespace pl::core {
         for (const auto& [key, value] : keywords)
             g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
 
+        std::ostringstream ops_ss;
         const auto &operators = Token::Operators();
-        for (const auto& [key, value] : operators)
+        for (const auto& [key, value] : operators) {
             g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
+            ops_ss << escape_regex(key) << "|";
+        }
+        string ops = ops_ss.str();
+        ops.pop_back();
+        rules.push(ops, eOperator);
 
         const auto &types = Token::Types();
         for (const auto& [key, value] : types)
@@ -568,7 +576,8 @@ namespace pl::core {
                     line_start = results.second;
                 }
                 break;
-            case eKWNamedOpTypeConst: {
+            case eKWNamedOpTypeConst:
+            case eOperator: {
                     const string_view kw(results.first, results.second);
                     if (const auto it = g_KWOpTypeTokenInfo.find(kw); it != g_KWOpTypeTokenInfo.end()) {
                         m_tokens.emplace_back(it->second.type, it->second.value, location());
@@ -680,7 +689,7 @@ namespace pl::core {
                     const auto stok = tkn::Literal::makeString(string(param));
                     m_tokens.emplace_back(stok.type, stok.value, location());
                 }
-                break; 
+                break;
             }
 
             lexertl::lookup(g_sm, results);
