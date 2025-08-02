@@ -466,7 +466,7 @@ namespace pl::core {
             eSingleLineComment, eSingleLineDocComment,
             eMultiLineCommentOpen, eMultiLineDocCommentOpen, eMultiLineCommentClose,
             eNumber, eString, eSeparator, eDirective, eDirectiveType, eDirectiveParam,
-            eOperator
+            eOperator, eChar
         };
 
     } // anonymous namespace
@@ -494,7 +494,8 @@ namespace pl::core {
 
         rules.push(R"([0-9][0-9a-fA-F'xXoOpP.uU+-]*)", eNumber);
 
-        rules.push(R"(["](\\.|[^"\\])*["])", eString); // TODO: Improve string handling
+        rules.push(R"(["](\\.|[^"\\])*["])", eString); // TODO: improve string handling
+        rules.push(R"('.*')", eChar); // TODO: fix this
 
         rules.push("INITIAL", R"(#\s*[a-zA-Z_]\w*)", eDirective, "DIRECTIVETYPE");
         rules.push("DIRECTIVETYPE", R"([_a-zA-Z][_a-zA-Z0-9]*)", eDirectiveType, "DIRECTIVEPARAM");
@@ -656,6 +657,15 @@ namespace pl::core {
                     // TODO:
                     //  'makeString' does not take a std::string_view
                     //  Handle string escape sequences
+                }
+                break;
+            case eChar: {
+                    const string_view ch(results.first+1, results.second-1);
+                    const char *p = &ch[0];
+                    auto pch = parseCharacter(p, location);
+                    // TODO: error handling
+                    auto chtok = tkn::Literal::makeNumeric(pch.value());
+                    m_tokens.emplace_back(chtok.type, chtok.value, location());
                 }
                 break;
             case eSeparator: {
