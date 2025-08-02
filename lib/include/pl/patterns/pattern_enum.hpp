@@ -32,10 +32,6 @@ namespace pl::ptrn {
             return "enum " + Pattern::getTypeName();
         }
 
-        [[nodiscard]] std::string getTypeName() const override {
-            return Pattern::getTypeName();
-        }
-
         void setEnumValues(const std::map<std::string, EnumValue> &enumValues) {
             this->m_enumValues = enumValues;
         }

@@ -55,7 +55,8 @@ namespace pl::ptrn {
     public:
         PatternBitfieldField(core::Evaluator *evaluator, u64 offset, u8 bitOffset, u8 bitSize, u32 line, PatternBitfieldMember *parentBitfield = nullptr)
                 : PatternBitfieldMember(evaluator, offset, (bitOffset + bitSize + 7) / 8, line), m_bitOffset(bitOffset % 8), m_bitSize(bitSize) {
-            this->setParent(parentBitfield);
+            if (parentBitfield != nullptr)
+                this->setParent(parentBitfield->reference());
         }
 
         PatternBitfieldField(const PatternBitfieldField &other) : PatternBitfieldMember(other) {
@@ -221,10 +222,6 @@ namespace pl::ptrn {
             return "enum " + Pattern::getTypeName();
         }
 
-        [[nodiscard]] std::string getTypeName() const override {
-            return Pattern::getTypeName();
-        }
-
         void setEnumValues(const std::map<std::string, PatternEnum::EnumValue> &enumValues) {
             this->m_enumValues = enumValues;
         }
@@ -282,7 +279,10 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternBitfieldArray(*this));
+            auto other =  std::make_shared<PatternBitfieldArray>(*this);
+            for (const auto &entry : other->m_entries)
+                entry->setParent(other->reference());
+            return other;
         }
 
         [[nodiscard]] u8 getBitOffset() const override {
@@ -384,12 +384,8 @@ namespace pl::ptrn {
 
         void setOffset(u64 offset) override {
             for (auto &entry : this->m_entries) {
-                if (entry->getSection() == this->getSection()) {
-                    if (entry->getSection() != ptrn::Pattern::PatternLocalSectionId)
-                        entry->setOffset(entry->getOffset() - this->getOffset() + offset);
-                    else
-                        entry->setOffset(offset);
-                }
+                if (entry->getSection() == this->getSection() && entry->getSection() != ptrn::Pattern::PatternLocalSectionId)
+                    entry->setOffset(entry->getOffset() - this->getOffset() + offset);
             }
 
             PatternBitfieldMember::setOffset(offset);
@@ -421,8 +417,6 @@ namespace pl::ptrn {
             for (auto &entry : this->m_entries) {
                 if (!entry->hasOverriddenColor())
                     entry->setBaseColor(this->getColor());
-
-                entry->setParent(this);
 
                 this->m_sortedEntries.push_back(entry.get());
             }
@@ -546,7 +540,7 @@ namespace pl::ptrn {
                 : PatternBitfieldMember(evaluator, offset, size_t((totalBitSize + 7) / 8), line), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
 
         PatternBitfield(const PatternBitfield &other) : PatternBitfieldMember(other) {
-            for (auto &field : other.m_fields)
+            for (const auto &field : other.m_fields)
                 this->m_fields.push_back(field->clone());
 
             this->m_firstBitOffset = other.m_firstBitOffset;
@@ -643,7 +637,7 @@ namespace pl::ptrn {
                 this->setBaseColor(this->m_fields.front()->getColor());
 
             for (const auto &field : this->m_fields) {
-                field->setParent(this);
+                field->setParent(this->reference());
                 this->m_sortedFields.push_back(field.get());
             }
         }
@@ -757,12 +751,8 @@ namespace pl::ptrn {
 
         void setOffset(u64 offset) override {
             for (auto &field : this->m_fields) {
-                if (field->getSection() == this->getSection()) {
-                    if (field->getSection() != ptrn::Pattern::PatternLocalSectionId)
-                        field->setOffset(field->getOffset() - this->getOffset() + offset);
-                    else
-                        field->setOffset(offset);
-                }
+                if (field->getSection() == this->getSection() && field->getSection() != ptrn::Pattern::PatternLocalSectionId)
+                    field->setOffset(field->getOffset() - this->getOffset() + offset);
             }
 
             PatternBitfieldMember::setOffset(offset);

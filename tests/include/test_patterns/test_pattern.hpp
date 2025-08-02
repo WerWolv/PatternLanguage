@@ -30,18 +30,18 @@ namespace pl::test {
         virtual ~TestPattern() = default;
 
         template<typename T>
-        std::unique_ptr<T> create(const std::string &typeName, const std::string &varName, auto... args) {
-            auto pattern = std::make_unique<T>(m_evaluator, args...);
+        std::shared_ptr<T> create(const std::string &typeName, const std::string &varName, auto... args) {
+            auto pattern = std::make_shared<T>(m_evaluator, args...);
             pattern->setTypeName(typeName);
             pattern->setVariableName(varName);
 
-            return std::move(pattern);
+            return pattern;
         }
 
         [[nodiscard]] virtual std::string getSourceCode() const = 0;
 
-        [[nodiscard]] virtual const std::vector<std::unique_ptr<ptrn::Pattern>> &getPatterns() const final { return this->m_patterns; }
-        virtual void addPattern(std::unique_ptr<ptrn::Pattern> &&pattern) final {
+        [[nodiscard]] virtual const std::vector<std::shared_ptr<ptrn::Pattern>> &getPatterns() const final { return this->m_patterns; }
+        virtual void addPattern(std::shared_ptr<ptrn::Pattern> &&pattern) final {
             this->m_patterns.push_back(std::move(pattern));
         }
 
@@ -60,7 +60,7 @@ namespace pl::test {
         }
 
     private:
-        std::vector<std::unique_ptr<ptrn::Pattern>> m_patterns;
+        std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;
         core::Evaluator *m_evaluator;
         Mode m_mode;
 

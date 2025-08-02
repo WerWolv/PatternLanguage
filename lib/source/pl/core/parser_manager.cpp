@@ -55,6 +55,7 @@ namespace pl::core {
 
         auto result = parser.parse(tokens.value());
         oldPreprocessor->appendToNamespaces(tokens.value());
+        oldPreprocessor->saveTokens(source, tokens.value());
 
         if (result.hasErrs())
             return Result::err(result.errs);

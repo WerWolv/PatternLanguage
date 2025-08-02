@@ -41,7 +41,7 @@ namespace pl::api {
         std::string content;
         std::string source;
         u32 id = 0;
-        bool mainSource;
+        bool mainSource = false;
 
          Source(std::string content, std::string source = DefaultSource, bool mainSource = false) :
             content(std::move(content)), source(std::move(source)), mainSource(mainSource) {
@@ -126,7 +126,7 @@ namespace pl::api {
     /**
      * @brief A function callback called when a custom built-in type is being instantiated
      */
-    using TypeCallback = std::function<std::unique_ptr<ptrn::Pattern>(core::Evaluator *, const std::vector<core::Token::Literal> &)>;
+    using TypeCallback = std::function<std::shared_ptr<ptrn::Pattern>(core::Evaluator *, const std::vector<core::Token::Literal> &)>;
 
     /**
      * @brief A type representing a function.

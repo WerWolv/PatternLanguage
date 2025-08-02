@@ -22,13 +22,13 @@ namespace pl::lib::libstd::mem {
         if (offsetTo - offsetFrom > bufferSize)
             offsetTo = offsetFrom + bufferSize;
 
-        std::vector<u8> bytes(std::max(sequence.size(), size_t(4 * 1024)), 0x00);
-        for (u64 offset = offsetFrom; offset < offsetTo; offset += bytes.size()) {
+        std::vector<u8> bytes(std::max(sequence.size(), size_t(4 * 1024)) + sequence.size(), 0x00);
+        for (u64 offset = offsetFrom; offset < offsetTo; offset += bytes.size() - sequence.size()) {
             const auto bytesToRead = std::min<std::size_t>(bytes.size(), offsetTo - offset);
             ctx->readData(offset, bytes.data(), bytesToRead, ptrn::Pattern::MainSectionId);
             ctx->handleAbort();
 
-            for (u64 i = 0; i < bytes.size(); i += 1) {
+            for (u64 i = 0; i < bytes.size() - sequence.size(); i += 1) {
                 if (bytes[i] == sequence[0]) [[unlikely]] {
                     bool found = true;
                     for (u64 j = 1; j < sequence.size(); j++) {

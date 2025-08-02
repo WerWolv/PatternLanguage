@@ -15,14 +15,17 @@ namespace pl::ptrn {
             for (const auto &member : other.m_members) {
                 auto copy = member->clone();
 
-                copy->setParent(this);
                 this->m_sortedMembers.push_back(copy.get());
                 this->m_members.push_back(std::move(copy));
             }
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternStruct(*this));
+            auto other = std::make_shared<PatternStruct>(*this);
+            for (const auto &member : other->m_members)
+                member->setParent(other->reference());
+
+            return other;
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> getEntry(size_t index) const override {
@@ -36,7 +39,7 @@ namespace pl::ptrn {
         void addEntry(const std::shared_ptr<Pattern> &entry) override {
             if (entry == nullptr) return;
 
-            entry->setParent(this);
+            entry->setParent(this->reference());
             this->m_sortedMembers.push_back(entry.get());
             this->m_members.push_back(entry);
         }
@@ -69,12 +72,8 @@ namespace pl::ptrn {
 
         void setOffset(u64 offset) override {
             for (auto &member : this->m_members) {
-                if (member->getSection() == this->getSection()) {
-                    if (member->getSection() != ptrn::Pattern::PatternLocalSectionId)
-                        member->setOffset(member->getOffset() - this->getOffset() + offset);
-                    else
-                        member->setOffset(offset);
-                }
+                if (member->getSection() == this->getSection() && member->getSection() != ptrn::Pattern::PatternLocalSectionId)
+                    member->setOffset(member->getOffset() - this->getOffset() + offset);
             }
 
             Pattern::setOffset(offset);

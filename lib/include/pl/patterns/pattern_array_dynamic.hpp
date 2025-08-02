@@ -20,7 +20,11 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
-            return std::unique_ptr<Pattern>(new PatternArrayDynamic(*this));
+            auto other = std::make_shared<PatternArrayDynamic>(*this);
+            for (const auto &entry : other->m_entries)
+                entry->setParent(other->reference());
+
+            return other;
         }
 
         void setColor(u32 color) override {
@@ -47,12 +51,8 @@ namespace pl::ptrn {
 
         void setOffset(u64 offset) override {
             for (auto &entry : this->m_entries) {
-                if (entry->getSection() == this->getSection()) {
-                    if (entry->getSection() != ptrn::Pattern::PatternLocalSectionId)
-                        entry->setOffset(entry->getOffset() - this->getOffset() + offset);
-                    else
-                        entry->setOffset(offset);
-                }
+                if (entry->getSection() == this->getSection() && entry->getSection() != ptrn::Pattern::PatternLocalSectionId)
+                    entry->setOffset(entry->getOffset() - this->getOffset() + offset);
             }
 
             Pattern::setOffset(offset);
@@ -133,7 +133,6 @@ namespace pl::ptrn {
 
             if (!entry->hasOverriddenColor())
                 entry->setBaseColor(this->getColor());
-            entry->setParent(this);
 
             this->m_entries.emplace_back(entry);
         }

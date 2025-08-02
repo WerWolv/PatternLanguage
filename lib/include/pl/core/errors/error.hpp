@@ -100,7 +100,7 @@ namespace pl::core::err {
         }
 
     private:
-        char m_prefix;
+        char m_prefix = 'E';
         u32 m_errorCode;
         std::string m_title;
     };
