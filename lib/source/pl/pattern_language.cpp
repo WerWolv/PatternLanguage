@@ -202,8 +202,8 @@ namespace pl {
         };
 
         // TODO: lextwice: this is where tabs and newlines are altered.
-        code = wolv::util::replaceStrings(code, "\r\n", "\n");
-        code = wolv::util::replaceStrings(code, "\t", "    ");
+        //code = wolv::util::replaceStrings(code, "\r\n", "\n");
+        //code = wolv::util::replaceStrings(code, "\t", "    ");
 
         const auto &evaluator = this->m_internals.evaluator;
 

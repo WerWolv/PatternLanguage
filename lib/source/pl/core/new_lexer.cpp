@@ -278,7 +278,6 @@ namespace pl::core {
                        || (!literal.starts_with("0x") && floatSuffix);
 
         if(isFloat) {
-
             char suffix = 0;
             if(floatSuffix) {
                 // remove suffix
@@ -291,7 +290,6 @@ namespace pl::core {
             if(!floatingPoint.has_value()) return std::nullopt;
 
             return floatingPoint.value();
-
         }
 
         if(unsignedSuffix) {
@@ -309,6 +307,75 @@ namespace pl::core {
         }
 
         return i128(value);
+    }
+
+    std::optional<char> New_Lexer::parseCharacter(const char* &pchar, const auto &location) {
+        const char c = *(pchar++);
+        if (c == '\\') {
+            switch (*(pchar++)) {
+                case 'a':
+                    return '\a';
+                case 'b':
+                    return '\b';
+                case 'f':
+                    return '\f';
+                case 'n':
+                    return '\n';
+                case 't':
+                    return '\t';
+                case 'r':
+                    return '\r';
+                case '0':
+                    return '\0';
+                case '\'':
+                    return '\'';
+                case '"':
+                    return '"';
+                case '\\':
+                    return '\\';
+                case 'x': {
+                    const char hex[3] = { *pchar, *pchar++, 0 }; // TODO: buffer overrun?
+                    try {
+                        return static_cast<char>(std::stoul(hex, nullptr, 16));
+                    } catch (const std::invalid_argument&) {
+                        error(location(), "Invalid hex escape sequence: {}", hex); // TODO: error loc
+                        return std::nullopt;
+                    }
+                }
+                case 'u': {
+                    const char hex[5] = { *pchar, *pchar++, *pchar++, *pchar++, 0};
+                    try {
+                        return static_cast<char>(std::stoul(hex, nullptr, 16));
+                    } catch (const std::invalid_argument&) {
+                        error(location(), "Invalid unicode escape sequence: {}", hex); // TODO: error loc
+                        return std::nullopt;
+                    }
+                }
+                default:
+                    error(location(), "Unknown escape sequence: {}", pchar); // TODO: error loc & msg content
+                return std::nullopt;
+            }
+        }
+        return c;
+    }
+
+    std::optional<Token> New_Lexer::parseStringLiteral(std::string_view literal, const auto &location)
+    {
+        std::string result;
+
+        const char *p = &literal.front();
+        const char *e = &literal.back(); // inclusive
+        while (p<=e) {
+            auto character = parseCharacter(p, location);
+            if (!character.has_value()) {
+                return std::nullopt;
+            }
+
+            result += character.value();
+        }
+
+        (void)location;
+        return tkn::Literal::makeString(result); // TODO: location info
     }
 
     namespace {
@@ -574,7 +641,8 @@ namespace pl::core {
                 break;
             case eString: {
                     const string_view str(results.first+1, results.second-1);
-                    const auto stok = tkn::Literal::makeString(string(str));
+                    auto stok = parseStringLiteral(str, location).value();
+                    // TODO: error handling
                     m_tokens.emplace_back(stok.type, stok.value, location());
                     // TODO:
                     //  'makeString' does not take a std::string_view
@@ -602,13 +670,15 @@ namespace pl::core {
                 break;
             case eDirectiveType: {
                     const string_view type(results.first, results.second);
-                    int a=0;(void)a;
+                    const auto stok = tkn::Literal::makeString(string(type));
+                    m_tokens.emplace_back(stok.type, stok.value, location());
                 }
 
                 break;
             case eDirectiveParam: {
                     const string_view param(results.first, results.second);
-                    int a=0;(void)a;
+                    const auto stok = tkn::Literal::makeString(string(param));
+                    m_tokens.emplace_back(stok.type, stok.value, location());
                 }
                 break; 
             }
