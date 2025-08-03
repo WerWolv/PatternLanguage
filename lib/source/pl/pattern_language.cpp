@@ -269,7 +269,7 @@ namespace pl {
                 if (node == nullptr)
                     continue;
 
-                auto location = node->getLocation();
+                const auto &location = node->getLocation();
                 if (lastLine == location.line)
                     continue;
 
