@@ -430,7 +430,7 @@ namespace pl::core {
         inline bool must_escape(char c)
         {
             switch (c) {
-            case '+': case '/': case '*': case '?':
+            case '+': case '-': case '/': case '*': case '?':
             case '|':
             case '(': case ')':
             case '[': case ']':
@@ -466,7 +466,7 @@ namespace pl::core {
         }
 
         enum {
-            eEOF, eNewLine, eKWNamedOpTypeConst,
+            eEOF, eNewLine, eKWNamedOpTypeConstIdent,
             eSingleLineComment, eSingleLineDocComment,
             eMultiLineCommentOpen, eMultiLineDocCommentOpen, eMultiLineCommentClose,
             eNumber, eString, eSeparator, eDirective, eDirectiveType, eDirectiveParam,
@@ -494,7 +494,7 @@ namespace pl::core {
         rules.push("MLCOMMENT", R"([^*\r\n]+|.)", lexertl::rules::skip(), "MLCOMMENT");
         rules.push("MLCOMMENT", R"(\*\/)", eMultiLineCommentClose, "INITIAL");
 
-        rules.push(R"([a-zA-Z_]\w*)", eKWNamedOpTypeConst);
+        rules.push(R"([a-zA-Z_]\w*)", eKWNamedOpTypeConstIdent);
 
         rules.push(R"([0-9][0-9a-fA-F'xXoOpP.uU+-]*)", eNumber);
 
@@ -506,7 +506,23 @@ namespace pl::core {
         rules.push("DIRECTIVEPARAM", "\r\n|\n|\r", eNewLine, "INITIAL");
         rules.push("DIRECTIVEPARAM", R"(\S.*)", eDirectiveParam, "INITIAL");
 
-        rules.push(escape_regex(R"((+-*/%&|^~<>!$:?@=)+|addressof|sizeof|typenameof)"), eOperator);
+        // The parser expects >= and <= as two serqrate tokens. Not sure why.
+        // I origionally intended to handle this differently but there are
+        // many issues similar to what I just desribed which make this difficult.
+        // I may address this in future if this code every sees daylight.
+        const char* ops[] = {"+", "-", "*", "/", "%", "&", "|", "^", "~", "==", "!=", "<", ">",
+                             "&&", "||", "!", "^^", "$", ":", "::", "?", "@", "=", "addressof",
+                             "sizeof", "typenameof"};
+        std::ostringstream ops_ss; 
+        for (auto op : ops) {
+            ops_ss << escape_regex(op) << "|";
+        }
+        string oprs = ops_ss.str();
+        oprs.pop_back();
+        rules.push(oprs, eOperator);
+
+        string sep_chars = escape_regex("(){}[],.;");
+        rules.push("["+sep_chars+"]", eSeparator);
 
         const auto &keywords = Token::Keywords();
         for (const auto& [key, value] : keywords)
@@ -526,7 +542,7 @@ namespace pl::core {
         for (const auto& [key, value] : types)
             g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
 
-        std::ostringstream sep_ss;
+        /*std::ostringstream sep_ss;
         const auto &seps = Token::Separators();
         for (const auto& [key, value] : seps) {
             string name(1, key);
@@ -535,7 +551,7 @@ namespace pl::core {
         }
         string sep = sep_ss.str();
         sep.pop_back();
-        rules.push(sep, eSeparator);
+        rules.push(sep, eSeparator);*/
 
         lexertl::generator::build(rules, g_sm);
     }
@@ -583,7 +599,7 @@ namespace pl::core {
                     line_start = results.second;
                 }
                 break;
-            case eKWNamedOpTypeConst:
+            case eKWNamedOpTypeConstIdent:
             case eOperator: {
                     const string_view kw(results.first, results.second);
                     if (const auto it = g_KWOpTypeTokenInfo.find(kw); it != g_KWOpTypeTokenInfo.end()) {
