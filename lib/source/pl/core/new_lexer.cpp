@@ -506,10 +506,10 @@ namespace pl::core {
         rules.push("DIRECTIVEPARAM", "\r\n|\n|\r", eNewLine, "INITIAL");
         rules.push("DIRECTIVEPARAM", R"(\S.*)", eDirectiveParam, "INITIAL");
 
-        // The parser expects >= and <= as two serqrate tokens. Not sure why.
-        // I origionally intended to handle this differently but there are
-        // many issues similar to what I just desribed which make this difficult.
-        // I may address this in future if this code every sees daylight.
+        // The parser expects >= and <= as two separate tokens. Not sure why.
+        // I originally intended to handle this differently but there are
+        // many issues similar to what I just described which make this difficult.
+        // I may address this in future if this code every see daylight.
         const char* ops[] = {"+", "-", "*", "/", "%", "&", "|", "^", "~", "==", "!=", "<", ">",
                              "&&", "||", "!", "^^", "$", ":", "::", "?", "@", "=", "addressof",
                              "sizeof", "typenameof"};
