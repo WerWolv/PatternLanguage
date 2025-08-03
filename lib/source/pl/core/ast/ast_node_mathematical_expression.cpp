@@ -51,15 +51,15 @@ namespace pl::core::ast {
 
     ASTNodeMathematicalExpression::ASTNodeMathematicalExpression(const ASTNodeMathematicalExpression &other) : ASTNode(other) {
         this->m_operator = other.m_operator;
-        this->m_left     = other.m_left->clone();
-        this->m_right    = other.m_right->clone();
+        this->m_left     = other.m_left == nullptr ? nullptr : other.m_left->clone();
+        this->m_right    = other.m_right == nullptr ? nullptr : other.m_right->clone();
     }
 
     [[nodiscard]] std::unique_ptr<ASTNode> ASTNodeMathematicalExpression::evaluate(Evaluator *evaluator) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         if (this->getLeftOperand() == nullptr || this->getRightOperand() == nullptr)
-            err::E0002.throwError("Void expression used in ternary expression.", "If you used a function for one of the operands, make sure it returned a value.", this->getLocation());
+            err::E0002.throwError("Cannot evaluate void expression", "Did you try to work with the result of a function that didn't return anything?", this->getLocation());
 
         const auto throwInvalidOperandError = [this]() -> ASTNode * {
             err::E0002.throwError("Invalid operand used in mathematical expression.", { }, this->getLocation());
