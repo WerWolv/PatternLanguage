@@ -13,7 +13,7 @@ endif ()
 
 add_subdirectory(lexer_gen)
 
-set(GENERATED_FILE "${CMAKE_CURRENT_BINARY_DIR}/lexer.hpp")
+set(GENERATED_FILE "${CMAKE_CURRENT_SOURCE_DIR}/lexer.hpp")
 
 add_custom_command(
     OUTPUT ${GENERATED_FILE}
