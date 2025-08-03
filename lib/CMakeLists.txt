@@ -11,6 +11,22 @@ else ()
     message(STATUS "libpl static library is being created")
 endif ()
 
+add_subdirectory(lexer_gen)
+
+set(GENERATED_FILE "${CMAKE_CURRENT_BINARY_DIR}/lexer.hpp")
+
+add_custom_command(
+    OUTPUT ${GENERATED_FILE}
+    COMMAND lexer_gen
+    DEPENDS lexer_gen
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Generating lexertl17 static lexer"
+)
+
+add_custom_target(run_lexer_gen
+    DEPENDS ${GENERATED_FILE}
+)
+
 add_library(libpl ${LIBRARY_TYPE}
         source/pl/helpers/utils.cpp
 
@@ -74,6 +90,8 @@ add_library(libpl ${LIBRARY_TYPE}
         source/pl/lib/std/random.cpp
         source/pl/core/resolvers.cpp
 )
+
+add_dependencies(libpl run_lexer_gen)
 
 add_library(libpl_includes INTERFACE)
 
