@@ -461,6 +461,10 @@ namespace pl::core {
             return result;
         }
 
+        inline string escape_regex(const char *s) {
+            return escape_regex(std::string(s));
+        }
+
         enum {
             eEOF, eNewLine, eKWNamedOpTypeConst,
             eSingleLineComment, eSingleLineDocComment,
@@ -502,19 +506,21 @@ namespace pl::core {
         rules.push("DIRECTIVEPARAM", "\r\n|\n|\r", eNewLine, "INITIAL");
         rules.push("DIRECTIVEPARAM", R"(\S.*)", eDirectiveParam, "INITIAL");
 
+        rules.push(escape_regex(R"((+-*/%&|^~<>!$:?@=)+|addressof|sizeof|typenameof)"), eOperator);
+
         const auto &keywords = Token::Keywords();
         for (const auto& [key, value] : keywords)
             g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
 
-        std::ostringstream ops_ss;
+        //std::ostringstream ops_ss;
         const auto &operators = Token::Operators();
         for (const auto& [key, value] : operators) {
             g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
-            ops_ss << escape_regex(key) << "|";
+            //ops_ss << escape_regex(key) << "|";
         }
-        string ops = ops_ss.str();
-        ops.pop_back();
-        rules.push(ops, eOperator);
+        //string ops = ops_ss.str();
+        //ops.pop_back();
+        //rules.push(ops, eOperator);
 
         const auto &types = Token::Types();
         for (const auto& [key, value] : types)
@@ -718,18 +724,18 @@ namespace pl::core {
         auto ticks = std::chrono::duration_cast<std::chrono::milliseconds>(
             now.time_since_epoch()
         ).count();
-        
+
         std::ofstream ofs(fn+"("+std::to_string(ticks)+").txt");
         const auto &tokens = res.unwrap();
         for (const auto &tok : tokens) {
-            const auto &loc = tok.location; 
+            const auto &loc = tok.location;
             auto type = tok.getFormattedType();
             auto value = tok.getFormattedValue();
             ofs
                 << "type: " << type << ", value: '" << value << "'"
                 << " (" << loc.source->source << ", " << loc.line << ":" << loc.column << ")"
                 << endl;
-            
+
             int a = 1+1; (void)a;
         }
     }
