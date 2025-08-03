@@ -583,7 +583,7 @@ namespace pl::core {
             MLGlobalDocComment
         };
 
-        MLCommentType mlcomment_type;
+        MLCommentType mlcomment_type = MLComment;
 
         lexertl::lookup(g_sm, results);
         for (;;)
