@@ -505,6 +505,7 @@ namespace pl::core {
         rules.push(R"(["](\\.|[^"\\])*["])", eString); // TODO: improve string handling
         rules.push(R"('.*')", eChar); // TODO: fix this
 
+        rules.push("INITIAL", R"(#\s*define|undef|ifdef|ifndef|endif)", eDirective, ".");
         rules.push("INITIAL", R"(#\s*[a-zA-Z_]\w*)", eDirective, "DIRECTIVETYPE");
         rules.push("DIRECTIVETYPE", R"([_a-zA-Z][_a-zA-Z0-9]*)", eDirectiveType, "DIRECTIVEPARAM");
         rules.push("DIRECTIVEPARAM", "\r\n|\n|\r", eNewLine, "INITIAL");
