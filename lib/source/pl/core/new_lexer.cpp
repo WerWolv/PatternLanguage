@@ -483,6 +483,10 @@ namespace pl::core {
         rules.push_state("DIRECTIVETYPE");
         rules.push_state("DIRECTIVEPARAM");
 
+        // Note:
+        // This isn't in the "*" state because although a "." wont match newlines
+        // (as I've configured lexertl), rules like "[^abc]" will. Safest to just
+        // add it in other startes explictly.
         rules.push("\r\n|\n|\r", eNewLine);
 
         rules.push(R"(\/\/[^/][^\r\n]*)", eSingleLineComment);
