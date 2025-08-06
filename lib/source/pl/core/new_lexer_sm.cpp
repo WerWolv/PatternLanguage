@@ -2,6 +2,7 @@
 
 #include <lexertl/rules.hpp>
 #include <lexertl/generator.hpp>
+#include <lexertl/generate_cpp.hpp>
 #include <lexertl/state_machine.hpp>
 
 #include <string>
