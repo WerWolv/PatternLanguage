@@ -69,6 +69,7 @@ add_library(libpl ${LIBRARY_TYPE}
         source/pl/core/token.cpp
         source/pl/core/evaluator.cpp
         source/pl/core/lexer.cpp
+        source/pl/core/new_lexer_sm.cpp
         source/pl/core/new_lexer.cpp
         source/pl/core/parser.cpp
         source/pl/core/preprocessor.cpp

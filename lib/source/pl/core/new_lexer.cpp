@@ -1,6 +1,7 @@
 // lexertl_test.cpp
 //
 
+#include <pl/core/new_lexer_sm.hpp>
 #include <pl/core/new_lexer.hpp>
 
 #include <pl/api.hpp>
@@ -22,7 +23,6 @@
 #include <string_view>
 #include <vector>
 #include <unordered_map>
-#include <sstream>
 
 // Debugging
 #include <iostream>
@@ -427,138 +427,24 @@ namespace pl::core {
 
         lexertl::state_machine g_sm;
 
-        inline bool must_escape(char c)
-        {
-            switch (c) {
-            case '+': case '-': case '/': case '*': case '?':
-            case '|':
-            case '(': case ')':
-            case '[': case ']':
-            case '{': case '}':
-            case '.':
-            case '^': case '$':
-            case '\\':
-            case '"':
-                return true;
-
-            default:
-                break;
-            }
-            return false;
-        }
-
-        template <typename String>
-        inline string escape_regex(const String& s) {
-            string result;
-            result.reserve(s.size() * 2);
-
-            for (char c : s) {
-                if (must_escape(c))
-                    result += '\\';
-                result += c;
-            }
-
-            return result;
-        }
-
-        inline string escape_regex(const char *s) {
-            return escape_regex(std::string(s));
-        }
-
-        enum {
-            eEOF, eNewLine, eKWNamedOpTypeConstIdent,
-            eSingleLineComment, eSingleLineDocComment,
-            eMultiLineCommentOpen, eMultiLineDocCommentOpen, eMultiLineCommentClose,
-            eNumber, eString, eSeparator, eDirective, eDirectiveType, eDirectiveParam,
-            eOperator, eChar
-        };
-
     } // anonymous namespace
 
     void init_new_lexer()
     {
-        lexertl::rules rules;
-
-        rules.push_state("MLCOMMENT");
-        rules.push_state("DIRECTIVETYPE");
-        rules.push_state("DIRECTIVEPARAM");
-
-        // Note:
-        // This isn't in the "*" state because although a "." wont match newlines
-        // (as I've configured lexertl), rules like "[^abc]" will. Safest to just
-        // add it in other states explictly.
-        rules.push("\r\n|\n|\r", eNewLine);
-
-        rules.push(R"(\/\/[^/][^\r\n]*)", eSingleLineComment);
-        rules.push(R"(\/\/\/[^\r\n]*)", eSingleLineDocComment);
-
-        rules.push("INITIAL", R"(\/\*[^*!\r\n].*)", eMultiLineCommentOpen, "MLCOMMENT");
-        rules.push("INITIAL", R"(\/\*[*!].*)", eMultiLineDocCommentOpen, "MLCOMMENT");
-        rules.push("MLCOMMENT", "\r\n|\n|\r", eNewLine, ".");
-        rules.push("MLCOMMENT", R"([^*\r\n]+|.)", lexertl::rules::skip(), "MLCOMMENT");
-        rules.push("MLCOMMENT", R"(\*\/)", eMultiLineCommentClose, "INITIAL");
-
-        rules.push(R"([a-zA-Z_]\w*)", eKWNamedOpTypeConstIdent);
-
-        rules.push(R"([0-9][0-9a-fA-F'xXoOpP.uU+-]*)", eNumber);
-
-        rules.push(R"(["](\\.|[^"\\])*["])", eString); // TODO: improve string handling
-        rules.push(R"('.*')", eChar); // TODO: fix this
-
-        rules.push("INITIAL", R"(#\s*define|undef|ifdef|ifndef|endif)", eDirective, ".");
-        rules.push("INITIAL", R"(#\s*[a-zA-Z_]\w*)", eDirective, "DIRECTIVETYPE");
-        rules.push("DIRECTIVETYPE", R"([_a-zA-Z][_a-zA-Z0-9]*)", eDirectiveType, "DIRECTIVEPARAM");
-        rules.push("DIRECTIVEPARAM", "\r\n|\n|\r", eNewLine, "INITIAL");
-        rules.push("DIRECTIVEPARAM", R"(\S.*)", eDirectiveParam, "INITIAL");
-
-        // The parser expects >= and <= as two separate tokens. Not sure why.
-        // I originally intended to handle this differently but there are
-        // many issues similar to what I just described which make this difficult.
-        // I may address this in future if this code every see daylight.
-        const char* ops[] = {"+", "-", "*", "/", "%", "&", "|", "^", "~", "==", "!=", "<", ">",
-                             "&&", "||", "!", "^^", "$", ":", "::", "?", "@", "=", "addressof",
-                             "sizeof", "typenameof"};
-        std::ostringstream ops_ss; 
-        for (auto op : ops) {
-            ops_ss << escape_regex(op) << "|";
-        }
-        string oprs = ops_ss.str();
-        oprs.pop_back();
-        rules.push(oprs, eOperator);
-
-        string sep_chars = escape_regex("(){}[],.;");
-        rules.push("["+sep_chars+"]", eSeparator);
-
         const auto &keywords = Token::Keywords();
         for (const auto& [key, value] : keywords)
             g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
-
-        //std::ostringstream ops_ss;
+    
         const auto &operators = Token::Operators();
         for (const auto& [key, value] : operators) {
             g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
-            //ops_ss << escape_regex(key) << "|";
         }
-        //string ops = ops_ss.str();
-        //ops.pop_back();
-        //rules.push(ops, eOperator);
 
         const auto &types = Token::Types();
         for (const auto& [key, value] : types)
             g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
 
-        /*std::ostringstream sep_ss;
-        const auto &seps = Token::Separators();
-        for (const auto& [key, value] : seps) {
-            string name(1, key);
-            name = escape_regex(name);
-            sep_ss << name << "|";
-        }
-        string sep = sep_ss.str();
-        sep.pop_back();
-        rules.push(sep, eSeparator);*/
-
-        lexertl::generator::build(rules, g_sm);
+        new_lexer_compile(g_sm);
     }
 
     hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
