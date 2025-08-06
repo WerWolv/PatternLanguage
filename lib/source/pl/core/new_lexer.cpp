@@ -8,44 +8,18 @@
 #include <pl/core/token.hpp>
 #include <pl/core/tokens.hpp>
 
-//#include "out.cpp"
-
 #include <lexertl/lookup.hpp>
 #include <lexertl/state_machine.hpp>
 #include <lexertl/generator.hpp>
-#include <lexertl/generate_cpp.hpp>
-#include <pl/helpers/utils.hpp>
 
 #include <cstddef>
 #include <cctype>
-#include <algorithm>
 #include <string>
 #include <string_view>
 #include <vector>
 #include <unordered_map>
 
-// Debugging
-#include <iostream>
-#include <fstream>
-#include <chrono>
-using std::cout;
-using std::endl;
-
-using std::string;
-using std::string_view;
-
-/*void generate()
-{
-    lexertl::state_machine sm;
-    lexertl::rules rules;
-    compile(sm, rules);
-
-    sm.minimise();
-    std::ofstream ofs("out.cpp");
-    lexertl::table_based_cpp::generate_cpp("lookup", sm, false, ofs);
-}
-
-void usegen(const string &input)
+/*void usegen(const string &input)
 {
     lexertl::smatch results(input.begin(), input.end());
     auto line_start = results.first;
@@ -311,31 +285,31 @@ namespace pl::core {
         struct TransHash {
             using is_transparent = void;
 
-            std::size_t operator()(const string &s) const noexcept {
-                return std::hash<string>{}(s);
+            std::size_t operator()(const std::string &s) const noexcept {
+                return std::hash<std::string>{}(s);
             }
 
-            std::size_t operator()(string_view s) const noexcept {
-                return std::hash<string_view>{}(s);
+            std::size_t operator()(std::string_view s) const noexcept {
+                return std::hash<std::string_view>{}(s);
             }
         };
 
         struct TransEqual {
             using is_transparent = void;
 
-            bool operator()(const string &lhs, const string &rhs) const noexcept {
+            bool operator()(const std::string &lhs, const std::string &rhs) const noexcept {
                 return lhs == rhs;
             }
 
-            bool operator()(const string &lhs, string_view rhs) const noexcept {
+            bool operator()(const std::string &lhs, std::string_view rhs) const noexcept {
                 return lhs == rhs;
             }
 
-            bool operator()(string_view lhs, const string& rhs) const noexcept {
+            bool operator()(std::string_view lhs, const std::string& rhs) const noexcept {
                 return lhs == rhs;
             }
 
-            bool operator()(string_view lhs, string_view rhs) const noexcept {
+            bool operator()(std::string_view lhs, std::string_view rhs) const noexcept {
                 return lhs == rhs;
             }
         };
@@ -369,7 +343,7 @@ namespace pl::core {
         m_tokens.clear();
         m_longestLineLength = 0;
 
-        string::const_iterator content_end = source->content.end();
+        std::string::const_iterator content_end = source->content.end();
         lexertl::smatch results(source->content.begin(), content_end);
 
         auto line_start = results.first;
@@ -381,8 +355,8 @@ namespace pl::core {
             return Location { source, line, column, errorLength };
         };
 
-        string::const_iterator mlcoment_start_raw; // start of parsed token, no skipping
-        string::const_iterator mlcoment_start;
+        std::string::const_iterator mlcoment_start_raw; // start of parsed token, no skipping
+        std::string::const_iterator mlcoment_start;
         Location mlcomment_location;
 
         enum MLCommentType{
@@ -409,7 +383,7 @@ namespace pl::core {
                 break;
             case eKWNamedOpTypeConstIdent:
             case eOperator: {
-                    const string_view kw(results.first, results.second);
+                    const std::string_view kw(results.first, results.second);
                     if (const auto it = g_KWOpTypeTokenInfo.find(kw); it != g_KWOpTypeTokenInfo.end()) {
                         m_tokens.emplace_back(it->second.type, it->second.value, location());
                     }
@@ -418,20 +392,20 @@ namespace pl::core {
                         m_tokens.emplace_back(ctok.type, ctok.value, location());
                     }
                     else {
-                        auto idtok = tkn::Literal::makeIdentifier(string(kw));
+                        auto idtok = tkn::Literal::makeIdentifier(std::string(kw));
                         m_tokens.emplace_back(idtok.type, idtok.value, location());
                     }
                 }
                 break;
             case eSingleLineComment: {
-                    const string_view comment(results.first+2, results.second);
-                    auto ctok = tkn::Literal::makeComment(true, string(comment));
+                    const std::string_view comment(results.first+2, results.second);
+                    auto ctok = tkn::Literal::makeComment(true, std::string(comment));
                     m_tokens.emplace_back(ctok.type, ctok.value, location());
                 }
                 break;
             case eSingleLineDocComment: {
-                    const string_view comment(results.first+3, results.second);
-                    auto ctok = tkn::Literal::makeDocComment(false, true, string(comment));
+                    const std::string_view comment(results.first+3, results.second);
+                    auto ctok = tkn::Literal::makeDocComment(false, true, std::string(comment));
                     m_tokens.emplace_back(ctok.type, ctok.value, location());
                 }
                 break;
@@ -449,21 +423,21 @@ namespace pl::core {
                 break;
             case eMultiLineCommentClose: {
                     mlcomment_location.length = results.second-mlcoment_start_raw;
-                    const string_view comment(mlcoment_start, results.second-2);
+                    const std::string_view comment(mlcoment_start, results.second-2);
 
                     switch (mlcomment_type) {
                     case MLComment: {
-                            auto ctok = tkn::Literal::makeComment(false, string(comment));
+                            auto ctok = tkn::Literal::makeComment(false, std::string(comment));
                             m_tokens.emplace_back(ctok.type, ctok.value, mlcomment_location);
                         }
                         break;
                     case MLLocalDocComment: {
-                            auto ctok = tkn::Literal::makeDocComment(false, false, string(comment));
+                            auto ctok = tkn::Literal::makeDocComment(false, false, std::string(comment));
                             m_tokens.emplace_back(ctok.type, ctok.value, mlcomment_location);
                         }
                         break;
                     case MLGlobalDocComment: {
-                            auto ctok = tkn::Literal::makeDocComment(true, false, string(comment));
+                            auto ctok = tkn::Literal::makeDocComment(true, false, std::string(comment));
                             m_tokens.emplace_back(ctok.type, ctok.value, mlcomment_location);
                         }
                         break;
@@ -471,7 +445,7 @@ namespace pl::core {
                 }
                 break;
             case eNumber: {
-                    const string_view num_str(results.first, results.second);
+                    const std::string_view num_str(results.first, results.second);
                     const auto num = parseNumericLiteral(num_str, location);
                     if (num.has_value()) {
                         auto ntok = tkn::Literal::makeNumeric(num.value());
@@ -480,7 +454,7 @@ namespace pl::core {
                 }
                 break;
             case eString: {
-                    const string_view str(results.first+1, results.second-1);
+                    const std::string_view str(results.first+1, results.second-1);
                     auto stok = parseStringLiteral(str, location).value();
                     // TODO: error handling
                     m_tokens.emplace_back(stok.type, stok.value, location());
@@ -490,7 +464,7 @@ namespace pl::core {
                 }
                 break;
             case eChar: {
-                    const string_view ch(results.first+1, results.second-1);
+                    const std::string_view ch(results.first+1, results.second-1);
                     const char *p = &ch[0];
                     auto pch = parseCharacter(p, location);
                     // TODO: error handling
@@ -507,7 +481,7 @@ namespace pl::core {
             case eDirective: {
                     auto first = results.first;
                     for (++first; std::isspace(static_cast<unsigned char>(*first)); ++first) {}
-                    string name = "#"+string(first, results.second); // TODO: I don't like this!
+                    std::string name = "#"+std::string(first, results.second); // TODO: I don't like this!
                     const auto &directives = Token::Directives();
                     if (const auto directiveToken = directives.find(name); directiveToken != directives.end()) {
                         m_tokens.emplace_back(directiveToken->second.type, directiveToken->second.value, location());
@@ -518,15 +492,15 @@ namespace pl::core {
                 }
                 break;
             case eDirectiveType: {
-                    const string_view type(results.first, results.second);
-                    const auto stok = tkn::Literal::makeString(string(type));
+                    const std::string_view type(results.first, results.second);
+                    const auto stok = tkn::Literal::makeString(std::string(type));
                     m_tokens.emplace_back(stok.type, stok.value, location());
                 }
 
                 break;
             case eDirectiveParam: {
-                    const string_view param(results.first, results.second);
-                    const auto stok = tkn::Literal::makeString(string(param));
+                    const std::string_view param(results.first, results.second);
+                    const auto stok = tkn::Literal::makeString(std::string(param));
                     m_tokens.emplace_back(stok.type, stok.value, location());
                 }
                 break;
@@ -541,8 +515,7 @@ namespace pl::core {
         return { m_tokens, collectErrors() };
     }
 
-    // Debugging
-    [[maybe_unused]] void save_compile_results(string fn, hlp::CompileResult<std::vector<Token>> &res)
+    /*void save_compile_results(string fn, hlp::CompileResult<std::vector<Token>> &res)
     {
         auto now = std::chrono::steady_clock::now();
         auto ticks = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -562,13 +535,6 @@ namespace pl::core {
 
             int a = 1+1; (void)a;
         }
-    }
+    }*/
 
 } // namespace pl::core
-
-/*
-Notes:
- The code that handles idefs and defines is confusing. The identifier (what is defined)
- is is not handled in the directive's code path (in most other constructs this is the case)
- but in the subsequent iterations of lexing the loop.
-*/

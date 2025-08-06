@@ -32,6 +32,6 @@ namespace pl::core {
     };
 
     // Debugging
-    void save_compile_results(std::string fn, hlp::CompileResult<std::vector<Token>> &res);
+    //void save_compile_results(std::string fn, hlp::CompileResult<std::vector<Token>> &res);
 
 } // namespace pl::core
