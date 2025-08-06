@@ -17,7 +17,7 @@ set(GENERATED_FILE "${CMAKE_CURRENT_SOURCE_DIR}/lexer.hpp")
 
 add_custom_command(
     OUTPUT ${GENERATED_FILE}
-    COMMAND lexer_gen
+    COMMAND $<TARGET_FILE:lexer_gen>
     DEPENDS lexer_gen
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Generating lexertl17 static lexer"
