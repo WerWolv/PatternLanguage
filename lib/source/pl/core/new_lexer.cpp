@@ -11,6 +11,9 @@
 #include <lexertl/lookup.hpp>
 #include <lexertl/state_machine.hpp>
 #include <lexertl/generator.hpp>
+#if !defined(DEBUG)
+    #include <pl/core/new_lexer_static.hpp>
+#endif
 
 #include <cstddef>
 #include <cctype>

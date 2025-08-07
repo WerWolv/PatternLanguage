@@ -630,7 +630,7 @@ namespace pl::core {
         }
         validateOutput();
         m_initialized = false;
-        return { m_output, collectErrors() };
+         return { m_output, collectErrors() };
     }
 
     void Preprocessor::saveTokens(api::Source *source, const std::vector<Token> &tokens) {

@@ -13,18 +13,18 @@ endif ()
 
 add_subdirectory(lexer_gen)
 
-set(GENERATED_FILE "${CMAKE_CURRENT_SOURCE_DIR}/lexer.hpp")
+set(PL_STATICLEXERPATH "${CMAKE_CURRENT_SOURCE_DIR}/include/pl/core/new_lexer_static.hpp")
 
 add_custom_command(
-    OUTPUT ${GENERATED_FILE}
-    COMMAND $<TARGET_FILE:lexer_gen>
+    OUTPUT ${PL_STATICLEXERPATH}
+    COMMAND $<TARGET_FILE:lexer_gen> ${PL_STATICLEXERPATH}
     DEPENDS lexer_gen
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Generating lexertl17 static lexer"
 )
 
 add_custom_target(run_lexer_gen
-    DEPENDS ${GENERATED_FILE}
+    DEPENDS ${PL_STATICLEXERPATH}
 )
 
 add_library(libpl ${LIBRARY_TYPE}
@@ -69,8 +69,11 @@ add_library(libpl ${LIBRARY_TYPE}
         source/pl/core/token.cpp
         source/pl/core/evaluator.cpp
         source/pl/core/lexer.cpp
+    
+        $<$<NOT:$<CONFIG:Debug>>:${PL_STATICLEXERPATH}>
         source/pl/core/new_lexer_sm.cpp
         source/pl/core/new_lexer.cpp
+
         source/pl/core/parser.cpp
         source/pl/core/preprocessor.cpp
         source/pl/core/validator.cpp
@@ -91,8 +94,6 @@ add_library(libpl ${LIBRARY_TYPE}
         source/pl/lib/std/random.cpp
         source/pl/core/resolvers.cpp
 )
-
-add_dependencies(libpl run_lexer_gen)
 
 add_library(libpl_includes INTERFACE)
 
