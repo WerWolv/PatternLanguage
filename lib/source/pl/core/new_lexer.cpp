@@ -11,9 +11,11 @@
 #include <lexertl/lookup.hpp>
 #include <lexertl/state_machine.hpp>
 #include <lexertl/generator.hpp>
-#if !defined(DEBUG)
+// DISABLED: lexertl17 has an issue was all warnings being treated as errors.
+//  Submitted issue.
+/*#if !defined(DEBUG)
     #include <pl/core/new_lexer_static.hpp>
-#endif
+#endif*/
 
 #include <cstddef>
 #include <cctype>
@@ -21,6 +23,8 @@
 #include <string_view>
 #include <vector>
 #include <unordered_map>
+#include <chrono>
+#include <fstream>
 
 /*void usegen(const string &input)
 {
@@ -518,7 +522,7 @@ namespace pl::core {
         return { m_tokens, collectErrors() };
     }
 
-    /*void save_compile_results(string fn, hlp::CompileResult<std::vector<Token>> &res)
+    void save_compile_results(std::string fn, hlp::CompileResult<std::vector<Token>> &res)
     {
         auto now = std::chrono::steady_clock::now();
         auto ticks = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -534,10 +538,10 @@ namespace pl::core {
             ofs
                 << "type: " << type << ", value: '" << value << "'"
                 << " (" << loc.source->source << ", " << loc.line << ":" << loc.column << ")"
-                << endl;
+                << std::endl;
 
             int a = 1+1; (void)a;
         }
-    }*/
+    }
 
 } // namespace pl::core
