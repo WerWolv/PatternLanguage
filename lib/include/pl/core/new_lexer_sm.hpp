@@ -15,6 +15,6 @@ namespace pl::core {
         };
     } // anonymous namespace
 
-    void new_lexer_compile(lexertl::state_machine &sm);
+    void newLexerBuild(lexertl::state_machine &sm);
 
 } // namespace pl::core

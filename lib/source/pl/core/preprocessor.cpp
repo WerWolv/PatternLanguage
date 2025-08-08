@@ -594,10 +594,10 @@ namespace pl::core {
         (void)lexer;
         (void)new_lexer;
         //auto oldlr = lexer->lex(m_source);
-        //save_compile_results("a", oldlr);
+        //saveCompileResults("a", oldlr);
         //auto [result, errors] = oldlr;
         auto newlr = new_lexer->lex(m_source);
-        //save_compile_results("b", newlr);
+        //saveCompileResults("b", newlr);
         auto [result, errors] = newlr;
         if (result.has_value())
             m_result = std::move(result.value());

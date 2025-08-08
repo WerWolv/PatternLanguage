@@ -29,7 +29,7 @@
 /*void usegen(const string &input)
 {
     lexertl::smatch results(input.begin(), input.end());
-    auto line_start = results.first;
+    auto lineStart = results.first;
     std::vector<lexertl::smatch::iter_type::difference_type> lengths;
 
     // Read ahead
@@ -39,8 +39,8 @@
     {
         if (results.id == eNewLine)
         {
-            auto len = results.first - line_start;
-            line_start = results.second;
+            auto len = results.first - lineStart;
+            lineStart = results.second;
             lengths.push_back(len);
         }
 
@@ -327,7 +327,7 @@ namespace pl::core {
 
     } // anonymous namespace
 
-    void init_new_lexer()
+    void initNewLexer()
     {
         const auto &keywords = Token::Keywords();
         for (const auto& [key, value] : keywords)
@@ -342,7 +342,7 @@ namespace pl::core {
         for (const auto& [key, value] : types)
             g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
 
-        new_lexer_compile(g_sm);
+        newLexerBuild(g_sm);
     }
 
     hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
@@ -350,21 +350,21 @@ namespace pl::core {
         m_tokens.clear();
         m_longestLineLength = 0;
 
-        std::string::const_iterator content_end = source->content.end();
-        lexertl::smatch results(source->content.begin(), content_end);
+        std::string::const_iterator contentEnd = source->content.end();
+        lexertl::smatch results(source->content.begin(), contentEnd);
 
-        auto line_start = results.first;
+        auto lineStart = results.first;
         u32 line = 1;
 
         auto location = [&]() -> Location {
-            u32 column = results.first-line_start+1;
+            u32 column = results.first-lineStart+1;
             size_t errorLength = results.second-results.first;
             return Location { source, line, column, errorLength };
         };
 
-        std::string::const_iterator mlcoment_start_raw; // start of parsed token, no skipping
-        std::string::const_iterator mlcoment_start;
-        Location mlcomment_location;
+        std::string::const_iterator mlcomentStartRaw; // start of parsed token, no skipping
+        std::string::const_iterator mlcomentStart;
+        Location mlcommentLocation;
 
         enum MLCommentType{
             MLComment,
@@ -372,7 +372,7 @@ namespace pl::core {
             MLGlobalDocComment
         };
 
-        MLCommentType mlcomment_type = MLComment;
+        MLCommentType mlcommentType = MLComment;
 
         lexertl::lookup(g_sm, results);
         for (;;)
@@ -383,9 +383,9 @@ namespace pl::core {
             switch (results.id) {
             case eNewLine: {
                     ++line;
-                    std::size_t len = results.first - line_start;
+                    std::size_t len = results.first - lineStart;
                     m_longestLineLength = std::max(len, m_longestLineLength);
-                    line_start = results.second;
+                    lineStart = results.second;
                 }
                 break;
             case eKWNamedOpTypeConstIdent:
@@ -417,35 +417,35 @@ namespace pl::core {
                 }
                 break;
             case eMultiLineCommentOpen:
-                mlcomment_type = MLComment;
-                mlcoment_start_raw = results.first;
-                mlcoment_start = results.first+2;
-                mlcomment_location = location();
+                mlcommentType = MLComment;
+                mlcomentStartRaw = results.first;
+                mlcomentStart = results.first+2;
+                mlcommentLocation = location();
                 break;
             case eMultiLineDocCommentOpen:
-                mlcomment_type = (results.first[2]=='*') ? MLLocalDocComment : MLGlobalDocComment;
-                mlcoment_start_raw = results.first;
-                mlcoment_start = results.first+3;
-                mlcomment_location = location();
+                mlcommentType = (results.first[2]=='*') ? MLLocalDocComment : MLGlobalDocComment;
+                mlcomentStartRaw = results.first;
+                mlcomentStart = results.first+3;
+                mlcommentLocation = location();
                 break;
             case eMultiLineCommentClose: {
-                    mlcomment_location.length = results.second-mlcoment_start_raw;
-                    const std::string_view comment(mlcoment_start, results.second-2);
+                    mlcommentLocation.length = results.second-mlcomentStartRaw;
+                    const std::string_view comment(mlcomentStart, results.second-2);
 
-                    switch (mlcomment_type) {
+                    switch (mlcommentType) {
                     case MLComment: {
                             auto ctok = tkn::Literal::makeComment(false, std::string(comment));
-                            m_tokens.emplace_back(ctok.type, ctok.value, mlcomment_location);
+                            m_tokens.emplace_back(ctok.type, ctok.value, mlcommentLocation);
                         }
                         break;
                     case MLLocalDocComment: {
                             auto ctok = tkn::Literal::makeDocComment(false, false, std::string(comment));
-                            m_tokens.emplace_back(ctok.type, ctok.value, mlcomment_location);
+                            m_tokens.emplace_back(ctok.type, ctok.value, mlcommentLocation);
                         }
                         break;
                     case MLGlobalDocComment: {
                             auto ctok = tkn::Literal::makeDocComment(true, false, std::string(comment));
-                            m_tokens.emplace_back(ctok.type, ctok.value, mlcomment_location);
+                            m_tokens.emplace_back(ctok.type, ctok.value, mlcommentLocation);
                         }
                         break;
                     }
@@ -522,7 +522,7 @@ namespace pl::core {
         return { m_tokens, collectErrors() };
     }
 
-    void save_compile_results(std::string fn, hlp::CompileResult<std::vector<Token>> &res)
+    void saveCompileResults(std::string fn, hlp::CompileResult<std::vector<Token>> &res)
     {
         auto now = std::chrono::steady_clock::now();
         auto ticks = std::chrono::duration_cast<std::chrono::milliseconds>(

@@ -12,7 +12,7 @@
 
 namespace pl::core {
 
-    void init_new_lexer();
+    void initNewLexer();
 
     class New_Lexer : err::ErrorCollectorExplicitLocation {
     public:
@@ -32,6 +32,6 @@ namespace pl::core {
     };
 
     // Debugging
-    void save_compile_results(std::string fn, hlp::CompileResult<std::vector<Token>> &res);
+    void saveCompileResults(std::string fn, hlp::CompileResult<std::vector<Token>> &res);
 
 } // namespace pl::core

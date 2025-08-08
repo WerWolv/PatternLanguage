@@ -11,7 +11,7 @@
 namespace pl::core {
 
     namespace {
-        inline bool must_escape(char c)
+        inline bool mustEscape(char c)
         {
             switch (c) {
             case '+': case '-': case '/': case '*': case '?':
@@ -32,12 +32,12 @@ namespace pl::core {
         }
 
         template <typename String>
-            inline std::string escape_regex(const String& s) {
+            inline std::string escapeRegex(const String& s) {
                 std::string result;
                 result.reserve(s.size() * 2);
 
                 for (char c : s) {
-                    if (must_escape(c))
+                    if (mustEscape(c))
                         result += '\\';
                     result += c;
                 }
@@ -45,12 +45,12 @@ namespace pl::core {
                 return result;
             }
 
-            inline std::string escape_regex(const char *s) {
-                return escape_regex(std::string(s));
+            inline std::string escapeRegex(const char *s) {
+                return escapeRegex(std::string(s));
             }
     } // anonymous namespace
 
-    void new_lexer_compile(lexertl::state_machine &sm)
+    void newLexerBuild(lexertl::state_machine &sm)
     {
         lexertl::rules rules;
 
@@ -94,16 +94,16 @@ namespace pl::core {
         const char* ops[] = {"+", "-", "*", "/", "%", "&", "|", "^", "~", "==", "!=", "<", ">",
                              "&&", "||", "!", "^^", "$", ":", "::", "?", "@", "=", "addressof",
                              "sizeof", "typenameof"};
-        std::ostringstream ops_ss; 
+        std::ostringstream opsSS; 
         for (auto op : ops) {
-            ops_ss << escape_regex(op) << "|";
+            opsSS << escapeRegex(op) << "|";
         }
-        std::string oprs = ops_ss.str();
+        std::string oprs = opsSS.str();
         oprs.pop_back();
         rules.push(oprs, eOperator);
 
-        std::string sep_chars = escape_regex("(){}[],.;");
-        rules.push("["+sep_chars+"]", eSeparator);
+        std::string sepChars = escapeRegex("(){}[],.;");
+        rules.push("["+sepChars+"]", eSeparator);
 
         lexertl::generator::build(rules, sm);
     }

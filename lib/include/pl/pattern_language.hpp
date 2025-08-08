@@ -26,7 +26,7 @@
 
 namespace pl {
 
-    void pl_init();
+    void plInit();
 
     namespace core {
         class Preprocessor;
