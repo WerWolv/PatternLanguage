@@ -448,7 +448,15 @@ namespace pl::core {
                     }
                     else {
                         auto idtok = tkn::Literal::makeIdentifier(std::string(kw));
-                        m_tokens.emplace_back(idtok.type, idtok.value, location());
+                        // TODO:
+                        //  It seems the presence of a non-zero length in the location info is being
+                        //  used by the pattern editor editor for error highlighting. This makes things
+                        //  hard. I am trying to include location info in every token. At the very least
+                        //  this could make debugging easier. Who knows, it may have other uses. In the
+                        //  mean time hack the length to 0.
+                        auto loc = location();
+                        loc.length = 0;
+                        m_tokens.emplace_back(idtok.type, idtok.value, loc);
                     }
                 }
                 break;
@@ -517,7 +525,6 @@ namespace pl::core {
                 }
                 break;
             //
-
 
             case eString: {
                     const std::string_view str(results.first+1, results.second-1);
