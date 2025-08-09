@@ -11,7 +11,7 @@ namespace pl::core {
             eSingleLineComment, eSingleLineDocComment,
             eMultiLineCommentOpen, eMultiLineDocCommentOpen, eMultiLineCommentClose,
             eNumber, eString, eSeparator, eDirective, eDirectiveType, eDirectiveParam,
-            eOperator, eChar
+            eOperator, eChar, eInteger
         };
     } // anonymous namespace
 

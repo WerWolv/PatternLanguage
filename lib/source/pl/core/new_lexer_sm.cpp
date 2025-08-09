@@ -77,7 +77,8 @@ namespace pl::core {
 
         rules.push(R"([a-zA-Z_]\w*)", eKWNamedOpTypeConstIdent);
 
-        rules.push(R"([0-9][0-9a-fA-F'xXoOpP.uU+-]*)", eNumber);
+        rules.push("(0[xXoObB])?[0-9a-fA-F]+('[0-9a-fA-F]+)*[uU]?", eInteger);
+        //rules.push(R"([0-9][0-9a-fA-F'xXoOpP.uU+-]*)", eNumber);
 
         rules.push(R"(["](\\.|[^"\\])*["])", eString); // TODO: improve string handling
         rules.push(R"('.*')", eChar); // TODO: fix this

@@ -22,6 +22,7 @@ namespace pl::core {
 
     private:
         [[maybe_unused]] std::optional<u128> parseInteger(std::string_view literal, const auto &location);
+        Token::Literal _parseInteger(std::string_view literal);
         [[maybe_unused]] std::optional<double> parseFloatingPoint(std::string_view literal, const char suffix, const auto &location);
         [[maybe_unused]] std::optional<Token::Literal> parseNumericLiteral(std::string_view literal, const auto &location);
         [[maybe_unused]] std::optional<char> parseCharacter(const char* &pchar, const auto &location);

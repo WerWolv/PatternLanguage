@@ -148,6 +148,52 @@ namespace pl::core {
         return value;
     }
 
+    Token::Literal New_Lexer::_parseInteger(std::string_view literal) {
+        bool isUnsigned = (literal.back()=='u' || literal.back()=='U');
+        if (isUnsigned)
+            literal = literal.substr(0, literal.size()-1);
+
+        u8 base = 10;
+        u128 value = 0;
+        if(literal[0] == '0') {
+            if(literal.size() == 1) {
+                return 0;
+            }
+            bool hasPrefix = true;
+            switch (literal[1]) {
+                case 'x':
+                case 'X':
+                    base = 16;
+                break;
+                case 'o':
+                case 'O':
+                    base = 8;
+                break;
+                case 'b':
+                case 'B':
+                    base = 2;
+                break;
+                default:
+                    hasPrefix = false;
+                break;
+            }
+            if (hasPrefix) {
+                literal = literal.substr(2);
+            }
+        }
+
+        for (const char c : literal) {
+            if(c == integerSeparator_) continue;
+
+            value = value * base + characterValue_(c);
+        }
+
+        if (isUnsigned)
+            return value;
+
+        return i128(value);
+    }
+
     std::optional<double> New_Lexer::parseFloatingPoint(std::string_view literal, const char suffix, const auto &location) {
         char *end = nullptr;
         double val = std::strtod(literal.data(), &end);
@@ -232,7 +278,8 @@ namespace pl::core {
                 case '\\':
                     return '\\';
                 case 'x': {
-                    const char hex[3] = { *pchar, *pchar++, 0 }; // TODO: buffer overrun?
+                    const char hex[3] = { *pchar, *(pchar+1), 0 }; // TODO: buffer overrun?
+                    pchar += sizeof(hex)-1;
                     try {
                         return static_cast<char>(std::stoul(hex, nullptr, 16));
                     } catch (const std::invalid_argument&) {
@@ -241,7 +288,8 @@ namespace pl::core {
                     }
                 }
                 case 'u': {
-                    const char hex[5] = { *pchar, *pchar++, *pchar++, *pchar++, 0};
+                    const char hex[5] = { *pchar, *(pchar+1), *(pchar+2), *(pchar+3), 0};
+                    pchar += sizeof(hex)-1;
                     try {
                         return static_cast<char>(std::stoul(hex, nullptr, 16));
                     } catch (const std::invalid_argument&) {
@@ -460,6 +508,17 @@ namespace pl::core {
                     }
                 }
                 break;
+
+            // IN PROGRESS
+            case eInteger: {
+                    const std::string_view numStr(results.first, results.second);
+                    auto ntok = tkn::Literal::makeNumeric(_parseInteger(numStr));
+                    m_tokens.emplace_back(ntok.type, ntok.value, location());
+                }
+                break;
+            //
+
+
             case eString: {
                     const std::string_view str(results.first+1, results.second-1);
                     auto stok = parseStringLiteral(str, location).value();
