@@ -77,6 +77,7 @@ namespace pl::core {
 
         rules.push(R"([a-zA-Z_]\w*)", eKWNamedOpTypeConstIdent);
 
+        rules.push("[0-9]+[.][0-9]*([eE][+-]?[0-9]+[fFdD])?", eFPNumber);
         rules.push("(0[xXoObB])?[0-9a-fA-F]+('[0-9a-fA-F]+)*[uU]?", eInteger);
         //rules.push(R"([0-9][0-9a-fA-F'xXoOpP.uU+-]*)", eNumber);
 

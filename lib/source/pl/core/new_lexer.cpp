@@ -148,52 +148,6 @@ namespace pl::core {
         return value;
     }
 
-    Token::Literal New_Lexer::_parseInteger(std::string_view literal) {
-        bool isUnsigned = (literal.back()=='u' || literal.back()=='U');
-        if (isUnsigned)
-            literal = literal.substr(0, literal.size()-1);
-
-        u8 base = 10;
-        u128 value = 0;
-        if(literal[0] == '0') {
-            if(literal.size() == 1) {
-                return 0;
-            }
-            bool hasPrefix = true;
-            switch (literal[1]) {
-                case 'x':
-                case 'X':
-                    base = 16;
-                break;
-                case 'o':
-                case 'O':
-                    base = 8;
-                break;
-                case 'b':
-                case 'B':
-                    base = 2;
-                break;
-                default:
-                    hasPrefix = false;
-                break;
-            }
-            if (hasPrefix) {
-                literal = literal.substr(2);
-            }
-        }
-
-        for (const char c : literal) {
-            if(c == integerSeparator_) continue;
-
-            value = value * base + characterValue_(c);
-        }
-
-        if (isUnsigned)
-            return value;
-
-        return i128(value);
-    }
-
     std::optional<double> New_Lexer::parseFloatingPoint(std::string_view literal, const char suffix, const auto &location) {
         char *end = nullptr;
         double val = std::strtod(literal.data(), &end);
@@ -212,45 +166,6 @@ namespace pl::core {
             default:
                 return val;
         }
-    }
-
-    std::optional<Token::Literal> New_Lexer::parseNumericLiteral(std::string_view literal, const auto &location) {
-        // parse a c like numeric literal
-        const bool floatSuffix = hlp::stringEndsWithOneOf(literal, { "f", "F", "d", "D" });
-        const bool unsignedSuffix = hlp::stringEndsWithOneOf(literal, { "u", "U" });
-        const bool isFloat = literal.find('.') != std::string_view::npos
-                       || (!literal.starts_with("0x") && floatSuffix);
-
-        if(isFloat) {
-            char suffix = 0;
-            if(floatSuffix) {
-                // remove suffix
-                suffix = literal.back();
-                literal = literal.substr(0, literal.size() - 1);
-            }
-
-            auto floatingPoint = parseFloatingPoint(literal, suffix, location);
-
-            if(!floatingPoint.has_value()) return std::nullopt;
-
-            return floatingPoint.value();
-        }
-
-        if(unsignedSuffix) {
-            // remove suffix
-            literal = literal.substr(0, literal.size() - 1);
-        }
-
-        const auto integer = parseInteger(literal, location);
-
-        if(!integer.has_value()) return std::nullopt;
-
-        u128 value = integer.value();
-        if(unsignedSuffix) {
-            return value;
-        }
-
-        return i128(value);
     }
 
     std::optional<char> New_Lexer::parseCharacter(const char* &pchar, const auto &location) {
@@ -507,24 +422,35 @@ namespace pl::core {
                     }
                 }
                 break;
-            case eNumber: {
-                    const std::string_view num_str(results.first, results.second);
-                    const auto num = parseNumericLiteral(num_str, location);
+
+            case eInteger: {
+                    const std::string_view numStr(results.first, results.second);
+                    auto optNum = parseInteger(numStr, location);
+                    if (!optNum.has_value()) {
+                        continue;
+                    }
+                    auto ntok = tkn::Literal::makeNumeric(optNum.value());
+                    m_tokens.emplace_back(ntok.type, ntok.value, location());
+                }
+                break;
+
+            case eFPNumber: {
+                    std::string_view numStr(results.first, results.second);
+                    const bool floatSuffix = hlp::stringEndsWithOneOf(numStr, {"f","F","d","D"});
+                    char suffix = 0;
+                    if (floatSuffix) {
+                        // remove suffix
+                        suffix = numStr.back();
+                        numStr = numStr.substr(0, numStr.size()-1);
+                    }
+                    auto num = parseFloatingPoint(numStr, suffix, location);
                     if (num.has_value()) {
                         auto ntok = tkn::Literal::makeNumeric(num.value());
                         m_tokens.emplace_back(ntok.type, ntok.value, location());
                     }
-                }
-                break;
 
-            // IN PROGRESS
-            case eInteger: {
-                    const std::string_view numStr(results.first, results.second);
-                    auto ntok = tkn::Literal::makeNumeric(_parseInteger(numStr));
-                    m_tokens.emplace_back(ntok.type, ntok.value, location());
                 }
                 break;
-            //
 
             case eString: {
                     const std::string_view str(results.first+1, results.second-1);

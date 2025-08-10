@@ -10,8 +10,8 @@ namespace pl::core {
             eEOF, eNewLine, eKWNamedOpTypeConstIdent,
             eSingleLineComment, eSingleLineDocComment,
             eMultiLineCommentOpen, eMultiLineDocCommentOpen, eMultiLineCommentClose,
-            eNumber, eString, eSeparator, eDirective, eDirectiveType, eDirectiveParam,
-            eOperator, eChar, eInteger
+            eString, eSeparator, eDirective, eDirectiveType, eDirectiveParam,
+            eOperator, eChar, eInteger, eFPNumber
         };
     } // anonymous namespace
 
