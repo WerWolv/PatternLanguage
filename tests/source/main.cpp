@@ -15,11 +15,17 @@
 
 #include <fmt/args.h>
 
+namespace pl {
+
+    void plInit();
+}
+
 
 using namespace pl;
 using namespace pl::test;
 
 int runTests(int argc, char **argv) {
+    plInit();
     auto &testPatterns = TestPattern::getTests();
 
     // Check if a test to run has been provided
