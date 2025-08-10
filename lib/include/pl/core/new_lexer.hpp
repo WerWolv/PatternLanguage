@@ -12,11 +12,9 @@
 
 namespace pl::core {
 
-    void initNewLexer();
-
     class New_Lexer : err::ErrorCollectorExplicitLocation {
     public:
-        New_Lexer() = default;
+        New_Lexer();
         hlp::CompileResult<std::vector<Token>> lex(const api::Source *source);
         size_t getLongestLineLength() const { return m_longestLineLength; } // TODO: include newline?
 

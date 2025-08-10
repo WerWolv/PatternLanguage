@@ -21,11 +21,6 @@
 
 namespace pl {
 
-    void plInit()
-    {
-        core::initNewLexer();
-    }
-
     static std::string getFunctionName(const api::Namespace &ns, const std::string &name) {
         std::string functionName;
 

@@ -7,11 +7,6 @@
 
 #include <fmt/format.h>
 
-namespace pl {
-
-    void plInit();
-}
-
 // Available subcommands
 namespace pl::cli {
 
@@ -27,8 +22,6 @@ namespace pl::cli {
     // Run the pattern language CLI
     // first argument (args[0]) is the subcommand, not the executable name
     int executeCommandLineInterface(std::vector<std::string> args) {
-        plInit();
-
         CLI::App app("Pattern Language CLI");
         app.require_subcommand();
 

@@ -241,6 +241,8 @@ namespace pl::core {
 
     namespace {
 
+        bool g_lexerStaticInitDone = false;
+
         // Much of the contents of this anonymous namespace serve as conceptually
         // private static members of the Lexer class. They're placed here to avoid
         // pulling in unnecessary symbols into every file that includes our header.
@@ -306,6 +308,13 @@ namespace pl::core {
             g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
 
         newLexerBuild(g_sm);
+    }
+
+    New_Lexer::New_Lexer() {
+        if (!g_lexerStaticInitDone) {
+            g_lexerStaticInitDone = true;
+            initNewLexer();
+        }
     }
 
     hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
