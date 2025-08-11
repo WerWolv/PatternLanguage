@@ -105,8 +105,13 @@ namespace pl::core {
     // TODO:
     //  Consider making 'location' not use templates. Here and in other functions below.
     std::optional<u128> New_Lexer::parseInteger(std::string_view literal, const auto &location) {
-        u8 base = 10;
+        const bool isUnsigned = hlp::stringEndsWithOneOf(literal, { "u", "U" });
+        if(isUnsigned) {
+            // remove suffix
+            literal = literal.substr(0, literal.size() - 1);
+        }
 
+        u8 base = 10;
         u128 value = 0;
         if(literal[0] == '0') {
             if(literal.size() == 1) {
@@ -145,7 +150,11 @@ namespace pl::core {
             value = value * base + characterValue_(c);
         }
 
-        return value;
+        if (isUnsigned) {
+            return value;
+        }
+
+        return i128(value);
     }
 
     std::optional<double> New_Lexer::parseFloatingPoint(std::string_view literal, const char suffix, const auto &location) {
