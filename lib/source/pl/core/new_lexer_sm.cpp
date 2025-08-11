@@ -85,11 +85,12 @@ namespace pl::core {
         rules.push(R"(\"([^\"\r\n\\]|\\.)*\")", eString);
         rules.push(R"('([^\'\r\n\\]|\\.)')", eChar);
 
+        // TODO: rename eDirectiveType & DIRECTIVEPARAM.
         rules.push("INITIAL", R"(#\s*(define|undef|ifdef|ifndef|endif))", eDirective, ".");
         rules.push("INITIAL", R"(#\s*[a-zA-Z_]\w*)", eDirective, "DIRECTIVETYPE");
-        rules.push("DIRECTIVETYPE", R"([_a-zA-Z][_a-zA-Z0-9]*)", eDirectiveType, "DIRECTIVEPARAM");
+        rules.push("DIRECTIVETYPE", R"(\S+)", eDirectiveType, "DIRECTIVEPARAM");
         rules.push("DIRECTIVEPARAM", "\r\n|\n|\r", eNewLine, "INITIAL");
-        rules.push("DIRECTIVEPARAM", R"(\S.*)", eDirectiveParam, "INITIAL");
+        rules.push("DIRECTIVEPARAM", R"(\S.+)", eDirectiveParam, "INITIAL");
 
         // The parser expects >= and <= as two separate tokens. Not sure why.
         // I originally intended to handle this differently but this (and other "split tokens")
