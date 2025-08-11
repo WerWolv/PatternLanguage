@@ -29,6 +29,7 @@ namespace pl::core {
     };
 
     // Debugging
-    void saveCompileResults(std::string fn, hlp::CompileResult<std::vector<Token>> &res);
+    void compareCompileResults(const hlp::CompileResult<std::vector<Token>> &o, const hlp::CompileResult<std::vector<Token>> &n);
+    void saveCompileResults(const std::string &fn, const hlp::CompileResult<std::vector<Token>> &res);
 
 } // namespace pl::core

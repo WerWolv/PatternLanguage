@@ -532,7 +532,28 @@ namespace pl::core {
         return { m_tokens, collectErrors() };
     }
 
-    void saveCompileResults(std::string fn, hlp::CompileResult<std::vector<Token>> &res)
+    void compareCompileResults(const hlp::CompileResult<std::vector<Token>> &o, const hlp::CompileResult<std::vector<Token>> &n)
+    {
+        //(void)o;(void)n;
+        const auto &ou = o.unwrap();
+        const auto &nu = n.unwrap();
+    
+        if (ou.size() != nu.size()) {
+            saveCompileResults("a", o);
+            saveCompileResults("b", n);
+            return;
+        }
+    
+        /*for (auto oi=ou.begin(), ni=nu.begin(); oi<ou.end(); ++oi, ++ni) {
+            if (*oi != *ni) {
+                saveCompileResults("a", o);
+                saveCompileResults("b", n);
+                return;
+            }
+        }*/
+    }
+
+    void saveCompileResults(const std::string &fn, const hlp::CompileResult<std::vector<Token>> &res)
     {
         auto now = std::chrono::steady_clock::now();
         auto ticks = std::chrono::duration_cast<std::chrono::milliseconds>(
