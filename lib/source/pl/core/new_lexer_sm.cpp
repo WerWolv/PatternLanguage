@@ -7,6 +7,7 @@
 
 #include <string>
 #include <sstream> // TODO: replace with fmt?
+#include <iostream> // DEBUGGING
 
 namespace pl::core {
 
@@ -81,8 +82,8 @@ namespace pl::core {
         rules.push("(0[xXoObB])?[0-9a-fA-F]+('[0-9a-fA-F]+)*[uU]?", eInteger);
         //rules.push(R"([0-9][0-9a-fA-F'xXoOpP.uU+-]*)", eNumber);
 
-        rules.push(R"(["](\\.|[^"\\])*["])", eString); // TODO: improve string handling
-        rules.push(R"('.*')", eChar); // TODO: fix this
+        rules.push(R"(\"([^\"\r\n\\]|\\.)*\")", eString);
+        rules.push(R"('([^\'\r\n\\]|\\.)')", eChar);
 
         rules.push("INITIAL", R"(#\s*(define|undef|ifdef|ifndef|endif))", eDirective, ".");
         rules.push("INITIAL", R"(#\s*[a-zA-Z_]\w*)", eDirective, "DIRECTIVETYPE");

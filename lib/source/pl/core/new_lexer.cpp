@@ -436,7 +436,7 @@ namespace pl::core {
                     const std::string_view numStr(results.first, results.second);
                     auto optNum = parseInteger(numStr, location);
                     if (!optNum.has_value()) {
-                        continue;
+                        break;
                     }
                     auto ntok = tkn::Literal::makeNumeric(optNum.value());
                     m_tokens.emplace_back(ntok.type, ntok.value, location());
