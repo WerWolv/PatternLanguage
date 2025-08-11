@@ -576,3 +576,6 @@ namespace pl::core {
     }
 
 } // namespace pl::core
+
+// NOTES:
+//  - Floating point values are of Integer type?!?S
