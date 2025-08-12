@@ -472,6 +472,9 @@ namespace pl {
         this->m_parserManager.reset();
         this->m_internals.validator->setRecursionDepth(32);
 
+        this->m_internals.preprocessor->reset();
+        this->m_internals.lexer->reset();
+        this->m_internals.parser->reset();
         this->m_internals.evaluator->getConsole().clear();
         this->m_internals.evaluator->setDefaultEndian(this->m_defaultEndian);
         this->m_internals.evaluator->setEvaluationDepth(32);

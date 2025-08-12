@@ -40,6 +40,8 @@ namespace pl::core {
         void setLongestLineLength(size_t length) { m_longestLineLength = length; }
         void validateOutput();
 
+        void reset();
+
         [[nodiscard]] const std::vector<ExcludedLocation>& getExcludedLocations() const {
             return m_excludedLocations;
         }

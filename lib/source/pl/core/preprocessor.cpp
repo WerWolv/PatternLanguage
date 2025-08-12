@@ -538,6 +538,18 @@ namespace pl::core {
         }
     }
 
+    void Preprocessor::reset() {
+        this->m_excludedLocations.clear();
+        this->m_onceIncludedFiles.clear();
+        this->m_onceImportedFiles.clear();
+        this->m_keys.clear();
+        this->m_onlyIncludeOnce = false;
+
+        this->m_defines.clear();
+        this->m_pragmas.clear();
+    }
+
+
     void Preprocessor::appendToNamespaces(std::vector<Token> tokens) {
         for (auto token = tokens.begin(); token != tokens.end(); token++ ) {
             u32 idx = 1;
@@ -570,13 +582,9 @@ namespace pl::core {
         auto new_lexer = runtime->getInternals().new_lexer.get();
 
         if (initialRun) {
-            this->m_excludedLocations.clear();
-            this->m_onceIncludedFiles.clear();
-            this->m_onceImportedFiles.clear();
-            this->m_keys.clear();
-            this->m_onlyIncludeOnce = false;
+            this->reset();
 
-            this->m_defines.clear();
+
             for (const auto& [name, value] : m_runtime->getDefines()) {
                 addDefine(name, value);
             }
@@ -585,7 +593,6 @@ namespace pl::core {
                 addDefine("IMPORTED");
             }
 
-            this->m_pragmas.clear();
             for (const auto& [name, handler]: m_runtime->getPragmas()) {
                 addPragmaHandler(name, handler);
             }
