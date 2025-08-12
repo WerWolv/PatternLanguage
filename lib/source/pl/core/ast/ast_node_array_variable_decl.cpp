@@ -226,7 +226,7 @@ namespace pl::core::ast {
         } else {
             auto arrayPattern = std::make_shared<ptrn::PatternArrayStatic>(evaluator, startOffset, 0, getLocation().line);
             templatePattern->setParent(arrayPattern);
-            arrayPattern->setEntries(templatePattern->reference(), size_t(entryCount));
+            arrayPattern->setEntries(templatePattern->clone(), size_t(entryCount));
             arrayPattern->setSection(templatePattern->getSection());
             outputPattern = std::move(arrayPattern);
         }
