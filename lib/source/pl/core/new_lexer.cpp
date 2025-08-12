@@ -104,7 +104,7 @@ namespace pl::core {
 
     // TODO:
     //  Consider making 'location' not use templates. Here and in other functions below.
-    std::optional<u128> New_Lexer::parseInteger(std::string_view literal, const auto &location) {
+    std::optional<Token::Literal> New_Lexer::parseInteger(std::string_view literal, const auto &location) {
         const bool isUnsigned = hlp::stringEndsWithOneOf(literal, { "u", "U" });
         if(isUnsigned) {
             // remove suffix

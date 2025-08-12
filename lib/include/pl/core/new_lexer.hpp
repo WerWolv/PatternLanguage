@@ -19,7 +19,7 @@ namespace pl::core {
         size_t getLongestLineLength() const { return m_longestLineLength; } // TODO: include newline?
 
     private:
-        std::optional<u128> parseInteger(std::string_view literal, const auto &location);
+        std::optional<Token::Literal> parseInteger(std::string_view literal, const auto &location);
         std::optional<double> parseFloatingPoint(std::string_view literal, const char suffix, const auto &location);
         std::optional<char> parseCharacter(const char* &pchar, const auto &location);
         std::optional<Token> parseStringLiteral(std::string_view literal, const auto &location);
