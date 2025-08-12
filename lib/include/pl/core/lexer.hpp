@@ -21,7 +21,7 @@ namespace pl::core {
 
         hlp::CompileResult<std::vector<Token>> lex(const api::Source *source);
         size_t getLongestLineLength() const { return m_longestLineLength; }
-
+        void reset();
 
     private:
         [[nodiscard]] char peek(size_t p = 1) const;

@@ -2793,13 +2793,8 @@ namespace pl::core {
         this->m_curr = this->m_startToken = this->m_originalPosition = this->m_partOriginalPosition
             = TokenIter(tokens.begin(), tokens.end());
 
-        this->m_types.clear();
-        this->m_currTemplateType.clear();
-        this->m_matchedOptionals.clear();
-        this->m_processedDocComments.clear();
+        this->reset();
 
-        this->m_currNamespace.clear();
-        this->m_currNamespace.emplace_back();
         if (!this->m_aliasNamespace.empty())
             this->m_currNamespace.push_back(this->m_aliasNamespace);
 
@@ -2824,6 +2819,16 @@ namespace pl::core {
         }
 
         return { std::nullopt, this->collectErrors() };
+    }
+
+    void Parser::reset() {
+        this->m_types.clear();
+        this->m_currTemplateType.clear();
+        this->m_matchedOptionals.clear();
+        this->m_processedDocComments.clear();
+
+        this->m_currNamespace.clear();
+        this->m_currNamespace.emplace_back();
     }
 
     Location Parser::location() {

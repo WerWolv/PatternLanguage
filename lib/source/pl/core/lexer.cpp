@@ -473,14 +473,10 @@ namespace pl::core {
     hlp::CompileResult<std::vector<Token>> Lexer::lex(const api::Source *source) {
         this->m_sourceCode = source->content;
         this->m_source = source;
-        this->m_cursor = 0;
-        this->m_line = 1;
-        this->m_lineBegin = 0;
-        this->m_longestLineLength = 0;
+
+        this->reset();
 
         const size_t end = this->m_sourceCode.size();
-
-        m_tokens.clear();
 
         while (this->m_cursor < end) {
             const char& c = this->m_sourceCode[this->m_cursor];
@@ -656,6 +652,15 @@ namespace pl::core {
 
         return { m_tokens, collectErrors() };
     }
+
+    void Lexer::reset() {
+        this->m_cursor = 0;
+        this->m_line = 1;
+        this->m_lineBegin = 0;
+        this->m_longestLineLength = 0;
+        this->m_tokens.clear();
+    }
+
 
     inline char Lexer::peek(const size_t p) const {
         return m_cursor + p < m_sourceCode.size() ? m_sourceCode[m_cursor + p] : '\0';
