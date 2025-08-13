@@ -1,3 +1,9 @@
+/*
+Build a "static" lexer in release builds.
+
+Static in the sense that the state machine is built in a pre-build
+step to optimize application start-up time. 
+*/
 #include <pl/core/new_lexer_sm.hpp>
 
 #include <lexertl/state_machine.hpp>

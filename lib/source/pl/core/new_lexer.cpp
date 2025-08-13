@@ -1,4 +1,4 @@
-// lexertl_test.cpp
+// new_lexer.cpp
 //
 
 #include <pl/core/new_lexer_sm.hpp>
@@ -24,40 +24,6 @@
 #include <unordered_map>
 #include <chrono>
 #include <fstream>
-
-/*void usegen(const string &input)
-{
-    lexertl::smatch results(input.begin(), input.end());
-    auto lineStart = results.first;
-    std::vector<lexertl::smatch::iter_type::difference_type> lengths;
-
-    // Read ahead
-    lookup(results);
-
-    while (results.id!=0)
-    {
-        if (results.id == eNewLine)
-        {
-            auto len = results.first - lineStart;
-            lineStart = results.second;
-            lengths.push_back(len);
-        }
-
-        if (results.id != lexertl::smatch::npos())
-        {
-            cout << "Id: " << results.id << ", Token: '" <<
-                results.str() << "'\n";
-        }
-
-        lookup(results);
-    }
-
-    int line = 1;
-    for (auto l : lengths) {
-        cout << line << ": " << l << endl;
-        ++line;
-    }
-}*/
 
 namespace pl::core {
 
@@ -585,6 +551,3 @@ namespace pl::core {
     }
 
 } // namespace pl::core
-
-// NOTES:
-//  - Floating point values are of Integer type?!?S

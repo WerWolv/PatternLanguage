@@ -1,3 +1,11 @@
+/*
+Build the lexer state machine.
+
+In debug builds we use the state machine directly.
+
+In Release builds it's used by the pre-build step to generate the "static"
+lexer -- a precompiled implementation without any runtime overhead.
+*/
 #include <pl/core/new_lexer_sm.hpp>
 
 #include <lexertl/runtime_error.hpp>
@@ -13,6 +21,8 @@
 namespace pl::core {
 
     namespace {
+        // Is c a special regex char?
+        // Return true is is is so we can escape it.
         inline bool mustEscape(char c)
         {
             switch (c) {
@@ -33,6 +43,7 @@ namespace pl::core {
             return false;
         }
 
+        // Escape special regex chars.
         template <typename String>
             inline std::string escapeRegex(const String& s) {
                 std::string result;
