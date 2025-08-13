@@ -11,11 +11,10 @@
 #include <lexertl/lookup.hpp>
 #include <lexertl/state_machine.hpp>
 #include <lexertl/generator.hpp>
-// DISABLED: lexertl17 has an issue was all warnings being treated as errors.
-//  Submitted issue.
-/*#if !defined(DEBUG)
+
+#if !defined(DEBUG)
     #include <pl/core/new_lexer_static.hpp>
-#endif*/
+#endif
 
 #include <cstddef>
 #include <cctype>
@@ -249,7 +248,6 @@ namespace pl::core {
     }
 
     namespace {
-
         bool g_lexerStaticInitDone = false;
 
         // Much of the contents of this anonymous namespace serve as conceptually
@@ -297,7 +295,9 @@ namespace pl::core {
 
         std::unordered_map<std::string, KWOpTypeInfo, TransHash, TransEqual> g_KWOpTypeTokenInfo;
 
+#if defined(DEBUG)
         lexertl::state_machine g_sm;
+#endif
 
     } // anonymous namespace
 
@@ -316,7 +316,9 @@ namespace pl::core {
         for (const auto& [key, value] : types)
             g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
 
+#if defined(DEBUG)
         newLexerBuild(g_sm);
+#endif
     }
 
     New_Lexer::New_Lexer() {
@@ -354,8 +356,11 @@ namespace pl::core {
         };
 
         MLCommentType mlcommentType = MLComment;
-
+#if defined(DEBUG)
         lexertl::lookup(g_sm, results);
+#else
+        lookup(results);
+#endif
         for (;;)
         {
             if (results.id==eEOF)
@@ -523,7 +528,11 @@ namespace pl::core {
                 break;
             }
 
+#if defined(DEBUG)
             lexertl::lookup(g_sm, results);
+#else
+            lookup(results);
+#endif
         }
 
         const auto &eop = tkn::Separator::EndOfProgram;

@@ -13,11 +13,11 @@ int main(int argc, char *argv[])
 
     lexertl::state_machine sm;
 
-    pl::core::new_lexer_compile(sm);
+    pl::core::newLexerBuild(sm);
     sm.minimise();
 
     std::ofstream ofs(argv[1]);
-    lexertl::table_based_cpp::generate_cpp("lookup", sm, false, ofs);
+    lexertl::table_based_cpp::generate("lookup", sm, false, ofs);
 
     return 0;
 }
