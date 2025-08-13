@@ -12,7 +12,7 @@
 #include <lexertl/state_machine.hpp>
 #include <lexertl/generator.hpp>
 
-#if !defined(DEBUG)
+#if defined(NDEBUG)
     #include <pl/core/new_lexer_static.hpp>
 #endif
 
@@ -295,7 +295,7 @@ namespace pl::core {
 
         std::unordered_map<std::string, KWOpTypeInfo, TransHash, TransEqual> g_KWOpTypeTokenInfo;
 
-#if defined(DEBUG)
+#if !defined(NDEBUG)
         lexertl::state_machine g_sm;
 #endif
 
@@ -316,7 +316,7 @@ namespace pl::core {
         for (const auto& [key, value] : types)
             g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
 
-#if defined(DEBUG)
+#if !defined(NDEBUG)
         newLexerBuild(g_sm);
 #endif
     }
@@ -356,10 +356,10 @@ namespace pl::core {
         };
 
         MLCommentType mlcommentType = MLComment;
-#if defined(DEBUG)
-        lexertl::lookup(g_sm, results);
+#if defined(NDEBUG)
+            lookup(results);
 #else
-        lookup(results);
+            lexertl::lookup(g_sm, results);
 #endif
         for (;;)
         {
@@ -528,10 +528,10 @@ namespace pl::core {
                 break;
             }
 
-#if defined(DEBUG)
-            lexertl::lookup(g_sm, results);
-#else
+#if defined(NDEBUG)
             lookup(results);
+#else
+            lexertl::lookup(g_sm, results);
 #endif
         }
 
