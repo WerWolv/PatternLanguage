@@ -544,13 +544,13 @@ namespace pl::core {
             return;
         }
     
-        /*for (auto oi=ou.begin(), ni=nu.begin(); oi<ou.end(); ++oi, ++ni) {
+        for (auto oi=ou.begin(), ni=nu.begin(); oi<ou.end(); ++oi, ++ni) {
             if (*oi != *ni) {
                 saveCompileResults("a", o);
                 saveCompileResults("b", n);
                 return;
             }
-        }*/
+        }
     }
 
     void saveCompileResults(const std::string &fn, const hlp::CompileResult<std::vector<Token>> &res)
