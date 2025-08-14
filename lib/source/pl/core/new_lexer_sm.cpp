@@ -1,17 +1,17 @@
 /*
-Build the lexer state machine.
-
-In debug builds we use the state machine directly.
-
-In Release builds it's used by the pre-build step to generate the "static"
-lexer -- a precompiled implementation without any initialisation overhead.
-
-The lexertl17 lexing library is used. It's GitHub repo can be found here:
-https://github.com/BenHanson/lexertl17
-
-This file and new_lexer.cpp are the only two files to include lexertl
-(in addition to the lexer_gen project which builds the static lexer).
-*/
+ * Build the lexer state machine.
+ *
+ * In debug builds we use the state machine directly.
+ *
+ * In Release builds it's used by the pre-build step to generate the "static"
+ * lexer -- a precompiled implementation without any initialisation overhead.
+ *
+ * The lexertl17 lexing library is used. Its GitHub repo can be found here:
+ * https://github.com/BenHanson/lexertl17
+ *
+ * This file and new_lexer.cpp are the only two files to include lexertl
+ * (in addition to the lexer_gen project which builds the static lexer).
+ */
 #include <pl/core/new_lexer_sm.hpp>
 
 #include <lexertl/runtime_error.hpp>
@@ -83,9 +83,11 @@ namespace pl::core {
             //
             //  - [^xyx]: this will match anything that's not x, y or z. INCLUDING newlines!!!
 
-            rules.push_state("MLCOMMENT");
+            rules.push_state("MLCOMMENT");      // we're lexing a multiline comment
             rules.push_state("DIRECTIVETYPE");
             rules.push_state("DIRECTIVEPARAM");
+
+            rules.push("*", "[ \t\f\v]+", lexertl::rules::skip(), ".");
 
             rules.push("\r\n|\n|\r", LexerToken::NewLine);
 
@@ -121,22 +123,21 @@ namespace pl::core {
             rules.push("(0[xXoObB])?[0-9a-fA-F]+('[0-9a-fA-F]+)*[uU]?", LexerToken::Integer);
 
             rules.push(R"(\"([^\"\r\n\\]|\\.)*\")", LexerToken::String);
-            rules.push(R"('([^\'\r\n\\]|\\.)')", LexerToken::Char);
+            rules.push(R"('('|(\\'|[^'\r\n])+)')", LexerToken::Char);
 
-            // TODO: rename eDirectiveType & DIRECTIVEPARAM.
-            rules.push("INITIAL", R"(#\s*(define|undef|ifdef|ifndef|endif))", LexerToken::Directive, ".");
-            rules.push("INITIAL", R"(#\s*[a-zA-Z_]\w*)", LexerToken::Directive, "DIRECTIVETYPE");
+            rules.push("INITIAL", R"(#[ \t\f\v]*(define|undef|ifdef|ifndef|endif))", LexerToken::Directive, ".");
+            rules.push("INITIAL", R"(#[ \t\f\v]*[a-zA-Z_]\w*)", LexerToken::Directive, "DIRECTIVETYPE");
             rules.push("DIRECTIVETYPE", "\r\n|\n|\r", LexerToken::NewLine, "INITIAL");
             rules.push("DIRECTIVETYPE", R"(\S+)", LexerToken::DirectiveType, "DIRECTIVEPARAM");
             rules.push("DIRECTIVEPARAM", "\r\n|\n|\r", LexerToken::NewLine, "INITIAL");
-            rules.push("DIRECTIVEPARAM", R"(\S.+)", LexerToken::DirectiveParam, "INITIAL");
+            rules.push("DIRECTIVEPARAM", R"(\S.*)", LexerToken::DirectiveParam, "INITIAL");
 
             // The parser expects >= and <= as two separate tokens. Not sure why.
             // I originally intended to handle this differently but this (and other "split tokens")
             // make the longest-match rule useless. I will address this when I build a new parser.
             const char* ops[] = {"+", "-", "*", "/", "%", "&", "|", "^", "~", "==", "!=", "<", ">",
                                 "&&", "||", "!", "^^", "$", ":", "::", "?", "@", "=", "addressof",
-                                "sizeof", "typenameof"};
+                                "sizeof", "typenameof"};    
             std::ostringstream opsSS; 
             for (auto op : ops) {
                 opsSS << escapeRegex(op) << "|";
@@ -145,7 +146,7 @@ namespace pl::core {
             oprs.pop_back();
             rules.push(oprs, LexerToken::Operator);
 
-            std::string sepChars = escapeRegex("(){}[],.;");
+            const std::string sepChars = escapeRegex("(){}[],.;");
             rules.push("["+sepChars+"]", LexerToken::Separator);
 
             lexertl::generator::build(rules, sm);

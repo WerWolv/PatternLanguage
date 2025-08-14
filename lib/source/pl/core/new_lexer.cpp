@@ -332,6 +332,9 @@ namespace pl::core {
             if (results.id==LexerToken::EndOfFile)
                 break;
 
+            if (results.id==(unsigned short int)-1)
+                break;
+
             switch (results.id) {
             case LexerToken::NewLine: {
                     ++line;
@@ -343,6 +346,12 @@ namespace pl::core {
             case LexerToken::KWNamedOpTypeConstIdent:
             case LexerToken::Operator: {
                     const std::string_view kw(results.first, results.second);
+
+                    // DEBUGGING
+                    /*if (kw=="to_upper")
+                        __debugbreak();*/
+                    //
+
                     if (const auto it = g_KWOpTypeTokenInfo.find(kw); it != g_KWOpTypeTokenInfo.end()) {
                         m_tokens.emplace_back(it->second.type, it->second.value, location());
                     }
@@ -484,7 +493,6 @@ namespace pl::core {
                     const auto stok = tkn::Literal::makeString(std::string(type));
                     m_tokens.emplace_back(stok.type, stok.value, location());
                 }
-
                 break;
             case LexerToken::DirectiveParam: {
                     const std::string_view param(results.first, results.second);
