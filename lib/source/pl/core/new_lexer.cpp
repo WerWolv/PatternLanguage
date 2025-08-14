@@ -329,19 +329,19 @@ namespace pl::core {
 #endif
         for (;;)
         {
-            if (results.id==eEOF)
+            if (results.id==LexerToken::EndOfFile)
                 break;
 
             switch (results.id) {
-            case eNewLine: {
+            case LexerToken::NewLine: {
                     ++line;
                     std::size_t len = results.first - lineStart;
                     m_longestLineLength = std::max(len, m_longestLineLength);
                     lineStart = results.second;
                 }
                 break;
-            case eKWNamedOpTypeConstIdent:
-            case eOperator: {
+            case LexerToken::KWNamedOpTypeConstIdent:
+            case LexerToken::Operator: {
                     const std::string_view kw(results.first, results.second);
                     if (const auto it = g_KWOpTypeTokenInfo.find(kw); it != g_KWOpTypeTokenInfo.end()) {
                         m_tokens.emplace_back(it->second.type, it->second.value, location());
@@ -364,31 +364,31 @@ namespace pl::core {
                     }
                 }
                 break;
-            case eSingleLineComment: {
+            case LexerToken::SingleLineComment: {
                     const std::string_view comment(results.first+2, results.second);
                     auto ctok = tkn::Literal::makeComment(true, std::string(comment));
                     m_tokens.emplace_back(ctok.type, ctok.value, location());
                 }
                 break;
-            case eSingleLineDocComment: {
+            case LexerToken::SingleLineDocComment: {
                     const std::string_view comment(results.first+3, results.second);
                     auto ctok = tkn::Literal::makeDocComment(false, true, std::string(comment));
                     m_tokens.emplace_back(ctok.type, ctok.value, location());
                 }
                 break;
-            case eMultiLineCommentOpen:
+            case LexerToken::MultiLineCommentOpen:
                 mlcommentType = MLComment;
                 mlcomentStartRaw = results.first;
                 mlcomentStart = results.first+2;
                 mlcommentLocation = location();
                 break;
-            case eMultiLineDocCommentOpen:
+            case LexerToken::MultiLineDocCommentOpen:
                 mlcommentType = (results.first[2]=='*') ? MLLocalDocComment : MLGlobalDocComment;
                 mlcomentStartRaw = results.first;
                 mlcomentStart = results.first+3;
                 mlcommentLocation = location();
                 break;
-            case eMultiLineCommentClose: {
+            case LexerToken::MultiLineCommentClose: {
                     mlcommentLocation.length = results.second-mlcomentStartRaw;
                     const std::string_view comment(mlcomentStart, results.second-2);
 
@@ -412,7 +412,7 @@ namespace pl::core {
                 }
                 break;
 
-            case eInteger: {
+            case LexerToken::Integer: {
                     const std::string_view numStr(results.first, results.second);
                     auto optNum = parseInteger(numStr, location);
                     if (!optNum.has_value()) {
@@ -423,7 +423,7 @@ namespace pl::core {
                 }
                 break;
 
-            case eFPNumber: {
+            case LexerToken::FPNumber: {
                     std::string_view numStr(results.first, results.second);
                     const bool floatSuffix = hlp::stringEndsWithOneOf(numStr, {"f","F","d","D"});
                     char suffix = 0;
@@ -441,7 +441,7 @@ namespace pl::core {
                 }
                 break;
 
-            case eString: {
+            case LexerToken::String: {
                     const std::string_view str(results.first+1, results.second-1);
                     auto stok = parseStringLiteral(str, location).value();
                     // TODO: error handling
@@ -451,7 +451,7 @@ namespace pl::core {
                     //  Handle string escape sequences
                 }
                 break;
-            case eChar: {
+            case LexerToken::Char: {
                     const std::string_view ch(results.first+1, results.second-1);
                     const char *p = &ch[0];
                     auto pch = parseCharacter(p, location);
@@ -460,13 +460,13 @@ namespace pl::core {
                     m_tokens.emplace_back(chtok.type, chtok.value, location());
                 }
                 break;
-            case eSeparator: {
+            case LexerToken::Separator: {
                     const char sep = *results.first;
                     const auto separatorToken = Token::Separators().find(sep)->second;
                     m_tokens.emplace_back(separatorToken.type, separatorToken.value, location());
                 }
                 break;
-            case eDirective: {
+            case LexerToken::Directive: {
                     auto first = results.first;
                     for (++first; std::isspace(static_cast<unsigned char>(*first)); ++first) {}
                     std::string name = "#"+std::string(first, results.second); // TODO: I don't like this!
@@ -479,14 +479,14 @@ namespace pl::core {
                     }
                 }
                 break;
-            case eDirectiveType: {
+            case LexerToken::DirectiveType: {
                     const std::string_view type(results.first, results.second);
                     const auto stok = tkn::Literal::makeString(std::string(type));
                     m_tokens.emplace_back(stok.type, stok.value, location());
                 }
 
                 break;
-            case eDirectiveParam: {
+            case LexerToken::DirectiveParam: {
                     const std::string_view param(results.first, results.second);
                     const auto stok = tkn::Literal::makeString(std::string(param));
                     m_tokens.emplace_back(stok.type, stok.value, location());

@@ -4,7 +4,13 @@ Build the lexer state machine.
 In debug builds we use the state machine directly.
 
 In Release builds it's used by the pre-build step to generate the "static"
-lexer -- a precompiled implementation without any runtime overhead.
+lexer -- a precompiled implementation without any initialisation overhead.
+
+The lexertl17 lexing library is used. It's GitHub repo can be found here:
+https://github.com/BenHanson/lexertl17
+
+This file and new_lexer.cpp are the only two files to include lexertl
+(in addition to the lexer_gen project which builds the static lexer).
 */
 #include <pl/core/new_lexer_sm.hpp>
 
@@ -15,14 +21,15 @@ lexer -- a precompiled implementation without any runtime overhead.
 #include <lexertl/state_machine.hpp>
 
 #include <string>
-#include <sstream> // TODO: replace with fmt?
+#include <sstream>
 #include <cassert>
 
 namespace pl::core {
 
     namespace {
         // Is c a special regex char?
-        // Return true is is is so we can escape it.
+        // Return true if is is so we can escape it.
+        // Note that lexertl uses flex style regular expressions.
         inline bool mustEscape(char c)
         {
             switch (c) {
@@ -61,6 +68,7 @@ namespace pl::core {
             inline std::string escapeRegex(const char *s) {
                 return escapeRegex(std::string(s));
             }
+
     } // anonymous namespace
 
     void newLexerBuild(lexertl::state_machine &sm)
@@ -68,59 +76,60 @@ namespace pl::core {
         try {
             lexertl::rules rules;
 
+            // lexertl uses flex style regular expressions. Some pitfalls to look out for:
+            //  - " (quote) is a special character. If you want a literal quote, you need
+            //    to escape it. Anything enclosed in unescaped quotes it interpreted literally
+            //    and not as a regular expression.
+            //
+            //  - [^xyx]: this will match anything that's not x, y or z. INCLUDING newlines!!!
+
             rules.push_state("MLCOMMENT");
             rules.push_state("DIRECTIVETYPE");
             rules.push_state("DIRECTIVEPARAM");
 
-            // Note:
-            // This isn't in the "*" state because although a "." wont match newlines
-            // (as I've configured lexertl), rules like "[^abc]" will. Safest to just
-            // add it in other states explictly.
-            rules.push("\r\n|\n|\r", eNewLine);
+            rules.push("\r\n|\n|\r", LexerToken::NewLine);
 
-            rules.push(R"(\/\/[^/][^\r\n]*)", eSingleLineComment);
-            rules.push(R"(\/\/\/[^\r\n]*)", eSingleLineDocComment);
+            rules.push(R"(\/\/[^/][^\r\n]*)", LexerToken::SingleLineComment);
+            rules.push(R"(\/\/\/[^\r\n]*)", LexerToken::SingleLineDocComment);
 
-            //rules.push("INITIAL", R"(\/\*[^*!\r\n].*)", eMultiLineCommentOpen, "MLCOMMENT");
-            rules.push("INITIAL", R"(\/\*[^*!\r\n]?)", eMultiLineCommentOpen, "MLCOMMENT");
+            rules.push("INITIAL", R"(\/\*[^*!\r\n]?)", LexerToken::MultiLineCommentOpen, "MLCOMMENT");
         
-            rules.push("INITIAL", R"(\/\*[*!].*)", eMultiLineDocCommentOpen, "MLCOMMENT");
-            rules.push("MLCOMMENT", "\r\n|\n|\r", eNewLine, ".");
+            rules.push("INITIAL", R"(\/\*[*!].*)", LexerToken::MultiLineDocCommentOpen, "MLCOMMENT");
+            rules.push("MLCOMMENT", "\r\n|\n|\r", LexerToken::NewLine, ".");
             rules.push("MLCOMMENT", R"([^*\r\n]+|.)", lexertl::rules::skip(), "MLCOMMENT");
-            rules.push("MLCOMMENT", R"(\*\/)", eMultiLineCommentClose, "INITIAL");
+            rules.push("MLCOMMENT", R"(\*\/)", LexerToken::MultiLineCommentClose, "INITIAL");
 
-            rules.push(R"([a-zA-Z_]\w*)", eKWNamedOpTypeConstIdent);
+            rules.push(R"([a-zA-Z_]\w*)", LexerToken::KWNamedOpTypeConstIdent);
 
-            //rules.push("[0-9]+[.][0-9]*([eE][+-]?[0-9]+)?[fFdD]?", eFPNumber);
             rules.push(
                 "("
-                "([0-9]+\\.[0-9]*|\\.[0-9]+)"     // group decimal alternatives here with '|'
-                "([eE][+-]?[0-9]+)?"              // optional exponent
-                "[fFdD]?"                        // optional suffix
+                "([0-9]+\\.[0-9]*|\\.[0-9]+)"   // group decimal alternatives here with '|'
+                "([eE][+-]?[0-9]+)?"            // optional exponent
+                "[fFdD]?"                       // optional suffix
                 ")|"
                 "("
-                "[0-9]+[eE][+-]?[0-9]+"          // no decimal but exponent required
-                "[fFdD]?"                        // optional suffix
+                "[0-9]+[eE][+-]?[0-9]+"         // no decimal but exponent required
+                "[fFdD]?"                       // optional suffix
                 ")|"
                 "("
-                "[0-9]+"                         // no decimal, no exponent
+                "[0-9]+"                        // no decimal, no exponent
                 "[fFdD]"                        // suffix required
                 ")",
-                eFPNumber
+                LexerToken::FPNumber
             );
 
-            rules.push("(0[xXoObB])?[0-9a-fA-F]+('[0-9a-fA-F]+)*[uU]?", eInteger);
-            //rules.push(R"([0-9][0-9a-fA-F'xXoOpP.uU+-]*)", eNumber);
+            rules.push("(0[xXoObB])?[0-9a-fA-F]+('[0-9a-fA-F]+)*[uU]?", LexerToken::Integer);
 
-            rules.push(R"(\"([^\"\r\n\\]|\\.)*\")", eString);
-            rules.push(R"('([^\'\r\n\\]|\\.)')", eChar);
+            rules.push(R"(\"([^\"\r\n\\]|\\.)*\")", LexerToken::String);
+            rules.push(R"('([^\'\r\n\\]|\\.)')", LexerToken::Char);
 
             // TODO: rename eDirectiveType & DIRECTIVEPARAM.
-            rules.push("INITIAL", R"(#\s*(define|undef|ifdef|ifndef|endif))", eDirective, ".");
-            rules.push("INITIAL", R"(#\s*[a-zA-Z_]\w*)", eDirective, "DIRECTIVETYPE");
-            rules.push("DIRECTIVETYPE", R"(\S+)", eDirectiveType, "DIRECTIVEPARAM");
-            rules.push("DIRECTIVEPARAM", "\r\n|\n|\r", eNewLine, "INITIAL");
-            rules.push("DIRECTIVEPARAM", R"(\S.+)", eDirectiveParam, "INITIAL");
+            rules.push("INITIAL", R"(#\s*(define|undef|ifdef|ifndef|endif))", LexerToken::Directive, ".");
+            rules.push("INITIAL", R"(#\s*[a-zA-Z_]\w*)", LexerToken::Directive, "DIRECTIVETYPE");
+            rules.push("DIRECTIVETYPE", "\r\n|\n|\r", LexerToken::NewLine, "INITIAL");
+            rules.push("DIRECTIVETYPE", R"(\S+)", LexerToken::DirectiveType, "DIRECTIVEPARAM");
+            rules.push("DIRECTIVEPARAM", "\r\n|\n|\r", LexerToken::NewLine, "INITIAL");
+            rules.push("DIRECTIVEPARAM", R"(\S.+)", LexerToken::DirectiveParam, "INITIAL");
 
             // The parser expects >= and <= as two separate tokens. Not sure why.
             // I originally intended to handle this differently but this (and other "split tokens")
@@ -134,10 +143,10 @@ namespace pl::core {
             }
             std::string oprs = opsSS.str();
             oprs.pop_back();
-            rules.push(oprs, eOperator);
+            rules.push(oprs, LexerToken::Operator);
 
             std::string sepChars = escapeRegex("(){}[],.;");
-            rules.push("["+sepChars+"]", eSeparator);
+            rules.push("["+sepChars+"]", LexerToken::Separator);
 
             lexertl::generator::build(rules, sm);
         }

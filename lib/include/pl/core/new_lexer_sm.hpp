@@ -6,15 +6,19 @@ namespace pl::core {
 
     namespace {
 
-        enum {
-            eEOF, eNewLine, eKWNamedOpTypeConstIdent,
-            eSingleLineComment, eSingleLineDocComment,
-            eMultiLineCommentOpen, eMultiLineDocCommentOpen, eMultiLineCommentClose,
-            eString, eSeparator, eDirective, eDirectiveType, eDirectiveParam,
-            eOperator, eChar, eInteger, eFPNumber
-        };
-    } // anonymous namespace
+        namespace LexerToken {
+
+            enum {
+                EndOfFile, NewLine, KWNamedOpTypeConstIdent,
+                SingleLineComment, SingleLineDocComment,
+                MultiLineCommentOpen, MultiLineDocCommentOpen, MultiLineCommentClose,
+                String, Separator, Directive, DirectiveType, DirectiveParam,
+                Operator, Char, Integer, FPNumber
+            };
+
+        }
+    }
 
     void newLexerBuild(lexertl::state_machine &sm);
 
-} // namespace pl::core
+}
