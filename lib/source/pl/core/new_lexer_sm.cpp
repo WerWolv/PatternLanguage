@@ -83,13 +83,15 @@ namespace pl::core {
             //
             //  - [^xyx]: this will match anything that's not x, y or z. INCLUDING newlines!!!
 
+            rules.insert_macro("NL", "\r\n|\n|\r");
+
             rules.push_state("MLCOMMENT");      // we're lexing a multiline comment
             rules.push_state("DIRECTIVETYPE");
             rules.push_state("DIRECTIVEPARAM");
 
             rules.push("*", "[ \t\f\v]+", lexertl::rules::skip(), ".");
 
-            rules.push("\r\n|\n|\r", LexerToken::NewLine);
+            rules.push("{NL}", LexerToken::NewLine);
 
             rules.push(R"(\/\/[^/][^\r\n]*)", LexerToken::SingleLineComment);
             rules.push(R"(\/\/\/[^\r\n]*)", LexerToken::SingleLineDocComment);
@@ -97,7 +99,7 @@ namespace pl::core {
             rules.push("INITIAL", R"(\/\*[^*!\r\n]?)", LexerToken::MultiLineCommentOpen, "MLCOMMENT");
         
             rules.push("INITIAL", R"(\/\*[*!].*)", LexerToken::MultiLineDocCommentOpen, "MLCOMMENT");
-            rules.push("MLCOMMENT", "\r\n|\n|\r", LexerToken::NewLine, ".");
+            rules.push("MLCOMMENT", "{NL}", LexerToken::NewLine, ".");
             rules.push("MLCOMMENT", R"([^*\r\n]+|.)", lexertl::rules::skip(), "MLCOMMENT");
             rules.push("MLCOMMENT", R"(\*\/)", LexerToken::MultiLineCommentClose, "INITIAL");
 
@@ -127,9 +129,9 @@ namespace pl::core {
 
             rules.push("INITIAL", R"(#[ \t\f\v]*(define|undef|ifdef|ifndef|endif))", LexerToken::Directive, ".");
             rules.push("INITIAL", R"(#[ \t\f\v]*[a-zA-Z_]\w*)", LexerToken::Directive, "DIRECTIVETYPE");
-            rules.push("DIRECTIVETYPE", "\r\n|\n|\r", LexerToken::NewLine, "INITIAL");
+            rules.push("DIRECTIVETYPE", "{NL}", LexerToken::NewLine, "INITIAL");
             rules.push("DIRECTIVETYPE", R"(\S+)", LexerToken::DirectiveType, "DIRECTIVEPARAM");
-            rules.push("DIRECTIVEPARAM", "\r\n|\n|\r", LexerToken::NewLine, "INITIAL");
+            rules.push("DIRECTIVEPARAM", "{NL}", LexerToken::NewLine, "INITIAL");
             rules.push("DIRECTIVEPARAM", R"(\S.*)", LexerToken::DirectiveParam, "INITIAL");
 
             // The parser expects >= and <= as two separate tokens. Not sure why.
