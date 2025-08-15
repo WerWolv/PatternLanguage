@@ -83,13 +83,14 @@ namespace pl::core {
             //
             //  - [^xyx]: this will match anything that's not x, y or z. INCLUDING newlines!!!
 
-            rules.insert_macro("NL", "\r\n|\n|\r");
+            rules.insert_macro("NL", R"(\r\n|\n|\r)");  // Newline
+            rules.insert_macro("HWS", R"([ \t])");      // Horizontal whitespace
 
             rules.push_state("MLCOMMENT");      // we're lexing a multiline comment
             rules.push_state("DIRECTIVETYPE");
             rules.push_state("DIRECTIVEPARAM");
 
-            rules.push("*", "[ \t\f\v]+", lexertl::rules::skip(), ".");
+            rules.push("*", "{HWS}+", lexertl::rules::skip(), ".");
 
             rules.push("{NL}", LexerToken::NewLine);
 
@@ -127,8 +128,8 @@ namespace pl::core {
             rules.push(R"(\"([^\"\r\n\\]|\\.)*\")", LexerToken::String);
             rules.push(R"('('|(\\'|[^'\r\n])+)')", LexerToken::Char);
 
-            rules.push("INITIAL", R"(#[ \t\f\v]*(define|undef|ifdef|ifndef|endif))", LexerToken::Directive, ".");
-            rules.push("INITIAL", R"(#[ \t\f\v]*[a-zA-Z_]\w*)", LexerToken::Directive, "DIRECTIVETYPE");
+            rules.push("INITIAL", R"(#{HWS}*(define|undef|ifdef|ifndef|endif))", LexerToken::Directive, ".");
+            rules.push("INITIAL", R"(#{HWS}*[a-zA-Z_]\w*)", LexerToken::Directive, "DIRECTIVETYPE");
             rules.push("DIRECTIVETYPE", "{NL}", LexerToken::NewLine, "INITIAL");
             rules.push("DIRECTIVETYPE", R"(\S+)", LexerToken::DirectiveType, "DIRECTIVEPARAM");
             rules.push("DIRECTIVEPARAM", "{NL}", LexerToken::NewLine, "INITIAL");
