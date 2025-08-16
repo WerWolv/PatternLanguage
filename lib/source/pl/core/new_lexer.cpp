@@ -142,7 +142,7 @@ namespace pl::core {
         }
     }
 
-    std::optional<char> New_Lexer::parseCharacter(const char* &pchar, const auto &location) {
+    std::optional<char> New_Lexer::parseCharacter(const char* &pchar, const char* e, const auto &location) {
         const char c = *(pchar++);
         if (c == '\\') {
             switch (*(pchar++)) {
@@ -167,27 +167,35 @@ namespace pl::core {
                 case '\\':
                     return '\\';
                 case 'x': {
+                    if (pchar+1 >= e) {
+                        error(location(), "Incomplete escape sequence");
+                        return std::nullopt;
+                    }
                     const char hex[3] = { *pchar, *(pchar+1), 0 }; // TODO: buffer overrun?
                     pchar += sizeof(hex)-1;
                     try {
                         return static_cast<char>(std::stoul(hex, nullptr, 16));
                     } catch (const std::invalid_argument&) {
-                        error(location(), "Invalid hex escape sequence: {}", hex); // TODO: error loc
+                        error(location(), "Invalid hex escape sequence: {}", hex);
                         return std::nullopt;
                     }
                 }
                 case 'u': {
+                     if (pchar+3 >= e) {
+                        error(location(), "Incomplete escape sequence");
+                        return std::nullopt;
+                    }
                     const char hex[5] = { *pchar, *(pchar+1), *(pchar+2), *(pchar+3), 0};
                     pchar += sizeof(hex)-1;
                     try {
                         return static_cast<char>(std::stoul(hex, nullptr, 16));
                     } catch (const std::invalid_argument&) {
-                        error(location(), "Invalid unicode escape sequence: {}", hex); // TODO: error loc
+                        error(location(), "Invalid unicode escape sequence: {}", hex);
                         return std::nullopt;
                     }
                 }
                 default:
-                    error(location(), "Unknown escape sequence: {}", pchar); // TODO: error loc & msg content
+                    error(location(), "Unknown escape sequence: {}", pchar);
                 return std::nullopt;
             }
         }
@@ -201,7 +209,7 @@ namespace pl::core {
         const char *p = &literal.front();
         const char *e = &literal.back(); // inclusive
         while (p<=e) {
-            auto character = parseCharacter(p, location);
+            auto character = parseCharacter(p, e+1, location);
             if (!character.has_value()) {
                 return std::nullopt;
             }
@@ -209,8 +217,7 @@ namespace pl::core {
             result += character.value();
         }
 
-        (void)location;
-        return tkn::Literal::makeString(result); // TODO: location info
+        return Token{Token::Type::String, Token::Literal(result), location()};
     }
 
     namespace {
@@ -460,21 +467,28 @@ namespace pl::core {
 
             case LexerToken::String: {
                     const std::string_view str(results.first+1, results.second-1);
-                    auto stok = parseStringLiteral(str, location).value();
-                    // TODO: error handling
-                    m_tokens.emplace_back(stok.type, stok.value, location());
-                    // TODO:
-                    //  'makeString' does not take a std::string_view
-                    //  Handle string escape sequences
+                    auto optTok = parseStringLiteral(str, location);
+                    if (optTok.has_value()) {
+                        auto stok = optTok.value();
+                        m_tokens.emplace_back(stok.type, stok.value, location());
+                    }
                 }
                 break;
             case LexerToken::Char: {
                     const std::string_view ch(results.first+1, results.second-1);
                     const char *p = &ch[0];
-                    auto pch = parseCharacter(p, location);
-                    // TODO: error handling
-                    auto chtok = tkn::Literal::makeNumeric(pch.value());
-                    m_tokens.emplace_back(chtok.type, chtok.value, location());
+                    auto optCh = parseCharacter(p, (&ch.back())+1, location);
+                    if (optCh.has_value()) {
+                        if (p-1 < &ch.back()) {
+                            error(location(), "char literal too long");
+                        }
+                        else if (p-1 > &ch.back()) {
+                            error(location(), "char literal too short");
+                        }
+                        else {
+                            m_tokens.emplace_back(core::Token::Type::Integer, optCh.value(), location());
+                        }
+                    }
                 }
                 break;
             case LexerToken::Separator: {
