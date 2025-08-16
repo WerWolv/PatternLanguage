@@ -155,9 +155,8 @@ namespace pl::core {
             lexertl::generator::build(rules, sm);
         }
         catch (const lexertl::runtime_error &e) {
-            // Looks like a regex is invalid
             [[maybe_unused]] const char *what = e.what();
-            assert(false);
+            assert(!"lexer: looks like a regex is invalid");
             std::terminate();
         }
     }
