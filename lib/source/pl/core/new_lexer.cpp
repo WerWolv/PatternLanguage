@@ -375,28 +375,37 @@ namespace pl::core {
                 break;
             case LexerToken::SingleLineComment: {
                     const std::string_view comment(results.first+2, results.second);
-                    auto ctok = tkn::Literal::makeComment(true, std::string(comment));
-                    m_tokens.emplace_back(ctok.type, ctok.value, location());
+                    if (comment.size() && comment[0]=='/') {
+                        auto ctok = tkn::Literal::makeDocComment(false, true, std::string(comment.substr(1)));
+                        m_tokens.emplace_back(ctok.type, ctok.value, location());
+                    }
+                    else {
+                        auto ctok = tkn::Literal::makeComment(true, std::string(comment));
+                        m_tokens.emplace_back(ctok.type, ctok.value, location());
+                    }
                 }
                 break;
-            case LexerToken::SingleLineDocComment: {
-                    const std::string_view comment(results.first+3, results.second);
-                    auto ctok = tkn::Literal::makeDocComment(false, true, std::string(comment));
-                    m_tokens.emplace_back(ctok.type, ctok.value, location());
+
+            case LexerToken::MultiLineCommentOpen: {
+                    mlcommentType = MLComment;
+                    mlcomentStartRaw = results.first;
+                    mlcomentStart = results.first+2;
+                    mlcommentLocation = location();
+
+                    const std::string_view comment(results.first+2, results.second);
+                    if (comment.size()) {
+                        if (comment[0]=='*') {
+                            mlcommentType = MLLocalDocComment;
+                            ++mlcomentStart;
+                        }
+                        else if (comment[0]=='!') {
+                            mlcommentType = MLGlobalDocComment;
+                            ++mlcomentStart;
+                        }
+                    }
                 }
                 break;
-            case LexerToken::MultiLineCommentOpen:
-                mlcommentType = MLComment;
-                mlcomentStartRaw = results.first;
-                mlcomentStart = results.first+2;
-                mlcommentLocation = location();
-                break;
-            case LexerToken::MultiLineDocCommentOpen:
-                mlcommentType = (results.first[2]=='*') ? MLLocalDocComment : MLGlobalDocComment;
-                mlcomentStartRaw = results.first;
-                mlcomentStart = results.first+3;
-                mlcommentLocation = location();
-                break;
+
             case LexerToken::MultiLineCommentClose: {
                     mlcommentLocation.length = results.second-mlcomentStartRaw;
                     const std::string_view comment(mlcomentStart, results.second-2);

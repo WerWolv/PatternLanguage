@@ -9,11 +9,10 @@ namespace pl::core {
         namespace LexerToken {
 
             enum {
-                EndOfFile, NewLine, KWNamedOpTypeConstIdent,
-                SingleLineComment, SingleLineDocComment,
-                MultiLineCommentOpen, MultiLineDocCommentOpen, MultiLineCommentClose,
-                String, Separator, Directive, DirectiveType, DirectiveParam,
-                Operator, Char, Integer, FPNumber
+                EndOfFile, NewLine, KWNamedOpTypeConstIdent, SingleLineComment,
+                MultiLineCommentOpen,  MultiLineCommentClose, String, Separator,
+                Directive, DirectiveType, DirectiveParam, Operator, Char,
+                Integer, FPNumber
             };
 
         }

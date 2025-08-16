@@ -81,7 +81,7 @@ namespace pl::core {
             //    to escape it. Anything enclosed in unescaped quotes it interpreted literally
             //    and not as a regular expression.
             //
-            //  - [^xyx]: this will match anything that's not x, y or z. INCLUDING newlines!!!
+            //  - [^xyz]: this will match anything that's not x, y or z. INCLUDING newlines!!!
 
             rules.insert_macro("NL", R"(\r\n|\n|\r)");  // Newline
             rules.insert_macro("HWS", R"([ \t])");      // Horizontal whitespace
@@ -94,12 +94,10 @@ namespace pl::core {
 
             rules.push("{NL}", LexerToken::NewLine);
 
-            rules.push(R"(\/\/[^/][^\r\n]*)", LexerToken::SingleLineComment);
-            rules.push(R"(\/\/\/[^\r\n]*)", LexerToken::SingleLineDocComment);
+            rules.push(R"(\/\/[^\r\n]*)", LexerToken::SingleLineComment);
 
-            rules.push("INITIAL", R"(\/\*[^*!\r\n]?)", LexerToken::MultiLineCommentOpen, "MLCOMMENT");
-        
-            rules.push("INITIAL", R"(\/\*[*!].*)", LexerToken::MultiLineDocCommentOpen, "MLCOMMENT");
+            rules.push("INITIAL", R"(\/\*[^\r\n]?)", LexerToken::MultiLineCommentOpen, "MLCOMMENT");
+
             rules.push("MLCOMMENT", "{NL}", LexerToken::NewLine, ".");
             rules.push("MLCOMMENT", R"([^*\r\n]+|.)", lexertl::rules::skip(), "MLCOMMENT");
             rules.push("MLCOMMENT", R"(\*\/)", LexerToken::MultiLineCommentClose, "INITIAL");
