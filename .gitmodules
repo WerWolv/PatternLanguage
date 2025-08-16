@@ -16,3 +16,9 @@
 [submodule "lexertl17"]
 	path = external/lexertl17
 	url = https://github.com/BenHanson/lexertl17.git
+[submodule "external/external/lexertl17"]
+	path = external/external/lexertl17
+	url = https://github.com/BenHanson/lexertl17.git
+[submodule "external/lexertl17"]
+	path = external/lexertl17
+	url = https://github.com/BenHanson/lexertl17.git
