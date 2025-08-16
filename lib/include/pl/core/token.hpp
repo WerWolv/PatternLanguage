@@ -28,7 +28,7 @@ namespace pl::core {
 
         Token() = default;
 
-        enum class Type : u64 {
+        enum class Type /*: u64*/ { // Why so big?
             Keyword,
             ValueType,
             Operator,
@@ -279,6 +279,16 @@ namespace pl::core {
 
         bool operator==(const ValueTypes &other) const;
         bool operator!=(const ValueTypes &other) const;
+
+        // Debugging
+        friend bool operator==(const Token &l, const Token &r) {
+            return l.type==r.type && l.value==r.value;
+        }
+
+        friend bool operator!=(const Token &l, const Token &r) {
+            return l.type!=r.type || l.value!=r.value;
+        }
+        //
 
         Type type = {};
         ValueTypes value = {};

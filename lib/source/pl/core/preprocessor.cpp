@@ -4,6 +4,7 @@
 
 #include <pl/pattern_language.hpp>
 #include <pl/core/lexer.hpp>
+#include <pl/core/new_lexer.hpp>
 #include <pl/core/tokens.hpp>
 #include <pl/core/parser.hpp>
 
@@ -578,6 +579,7 @@ namespace pl::core {
         m_output.clear();
 
         auto lexer = runtime->getInternals().lexer.get();
+        auto new_lexer = runtime->getInternals().new_lexer.get();
 
         if (initialRun) {
             this->reset();
@@ -596,7 +598,15 @@ namespace pl::core {
             }
         }
 
-        auto [result,errors] = lexer->lex(m_source);
+        (void)lexer;
+        (void)new_lexer;
+        //auto oldlr = lexer->lex(m_source);
+        //saveCompileResults("a", oldlr);
+        //auto [result, errors] = oldlr;
+        auto newlr = new_lexer->lex(m_source);
+        //saveCompileResults("b", newlr);
+        auto [result, errors] = newlr;
+        //compareCompileResults(oldlr, newlr);
         if (result.has_value())
             m_result = std::move(result.value());
         else
