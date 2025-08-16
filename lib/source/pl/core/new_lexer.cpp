@@ -294,10 +294,14 @@ namespace pl::core {
         }
     }
 
+    void New_Lexer::reset() {
+        this->m_longestLineLength = 0;
+        this->m_tokens.clear();
+    }
+
     hlp::CompileResult<std::vector<Token>> New_Lexer::lex(const api::Source *source)
     {
-        m_tokens.clear();
-        m_longestLineLength = 0;
+        reset();
 
         std::string::const_iterator contentEnd = source->content.end();
         lexertl::smatch results(source->content.begin(), contentEnd);
@@ -346,11 +350,6 @@ namespace pl::core {
             case LexerToken::KWNamedOpTypeConstIdent:
             case LexerToken::Operator: {
                     const std::string_view kw(results.first, results.second);
-
-                    // DEBUGGING
-                    /*if (kw=="to_upper")
-                        __debugbreak();*/
-                    //
 
                     if (const auto it = g_KWOpTypeTokenInfo.find(kw); it != g_KWOpTypeTokenInfo.end()) {
                         m_tokens.emplace_back(it->second.type, it->second.value, location());

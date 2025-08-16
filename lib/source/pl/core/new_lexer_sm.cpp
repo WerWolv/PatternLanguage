@@ -78,7 +78,7 @@ namespace pl::core {
 
             // lexertl uses flex style regular expressions. Some pitfalls to look out for:
             //  - " (quote) is a special character. If you want a literal quote, you need
-            //    to escape it. Anything enclosed in unescaped quotes it interpreted literally
+            //    to escape it. Anything enclosed in unescaped quotes is interpreted literally
             //    and not as a regular expression.
             //
             //  - [^xyz]: this will match anything that's not x, y or z. INCLUDING newlines!!!
@@ -89,15 +89,22 @@ namespace pl::core {
             rules.push_state("MLCOMMENT");      // we're lexing a multiline comment
             rules.push_state("DIRECTIVETYPE");
             rules.push_state("DIRECTIVEPARAM");
+            
+            // We count newlines to tell what line of the file we're on.
+            // Care must be taken not to eat newlines in other rules. 
+            // There are other ways to handle this. Boost uses a special
+            // counting iterator. This is the simplest and should be fast.
+            rules.push("{NL}", LexerToken::NewLine);
 
             rules.push("*", "{HWS}+", lexertl::rules::skip(), ".");
 
-            rules.push("{NL}", LexerToken::NewLine);
-
             rules.push(R"(\/\/[^\r\n]*)", LexerToken::SingleLineComment);
 
+            // We match multiline comments in two stages. First we match the comment
+            // opening, and then the comment closing. The full text of the comment is
+            // composed in the C++ code based on 'first' of the opening and 'second'
+            // of the closing token.
             rules.push("INITIAL", R"(\/\*[^\r\n]?)", LexerToken::MultiLineCommentOpen, "MLCOMMENT");
-
             rules.push("MLCOMMENT", "{NL}", LexerToken::NewLine, ".");
             rules.push("MLCOMMENT", R"([^*\r\n]+|.)", lexertl::rules::skip(), "MLCOMMENT");
             rules.push("MLCOMMENT", R"(\*\/)", LexerToken::MultiLineCommentClose, "INITIAL");

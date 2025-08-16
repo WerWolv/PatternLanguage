@@ -15,8 +15,11 @@ namespace pl::core {
     class New_Lexer : err::ErrorCollectorExplicitLocation {
     public:
         New_Lexer();
+
+        void reset();
+
         hlp::CompileResult<std::vector<Token>> lex(const api::Source *source);
-        size_t getLongestLineLength() const { return m_longestLineLength; } // TODO: include newline?
+        size_t getLongestLineLength() const { return m_longestLineLength; }
 
     private:
         std::optional<Token::Literal> parseInteger(std::string_view literal, const auto &location);
