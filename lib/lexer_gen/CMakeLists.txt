@@ -1,5 +1,5 @@
 set(SOURCES
-    ../source/pl/core/new_lexer_sm.cpp
+    ../source/pl/core/lexer_sm.cpp
     main.cpp
 )
 

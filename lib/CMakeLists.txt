@@ -13,7 +13,7 @@ endif ()
 
 add_subdirectory(lexer_gen)
 
-set(PL_STATICLEXERPATH "${CMAKE_CURRENT_SOURCE_DIR}/include/pl/core/new_lexer_static.hpp")
+set(PL_STATICLEXERPATH "${CMAKE_CURRENT_SOURCE_DIR}/include/pl/core/lexer_static.hpp")
 
 add_custom_command(
     OUTPUT ${PL_STATICLEXERPATH}
@@ -68,11 +68,10 @@ add_library(libpl ${LIBRARY_TYPE}
 
         source/pl/core/token.cpp
         source/pl/core/evaluator.cpp
+
         source/pl/core/lexer.cpp
-    
         $<$<NOT:$<CONFIG:Debug>>:${PL_STATICLEXERPATH}>
-        $<$<CONFIG:Debug>:source/pl/core/new_lexer_sm.cpp>
-        source/pl/core/new_lexer.cpp
+        $<$<CONFIG:Debug>:source/pl/core/lexer_sm.cpp>
 
         source/pl/core/parser.cpp
         source/pl/core/preprocessor.cpp

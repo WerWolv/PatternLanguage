@@ -12,7 +12,7 @@
  * This file and new_lexer.cpp are the only two files to include lexertl
  * (in addition to the lexer_gen project which builds the static lexer).
  */
-#include <pl/core/new_lexer_sm.hpp>
+#include <pl/core/lexer_sm.hpp>
 
 #include <lexertl/runtime_error.hpp>
 #include <lexertl/rules.hpp>
