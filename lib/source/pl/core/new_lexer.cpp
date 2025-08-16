@@ -24,7 +24,6 @@
 #include <unordered_map>
 #include <chrono>
 #include <fstream>
-#include <exception>
 
 namespace pl::core {
 

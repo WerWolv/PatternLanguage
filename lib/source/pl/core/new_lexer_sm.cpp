@@ -23,6 +23,7 @@
 #include <string>
 #include <sstream>
 #include <cassert>
+#include <cstdlib>
 
 namespace pl::core {
 
@@ -162,7 +163,7 @@ namespace pl::core {
         catch (const lexertl::runtime_error &e) {
             [[maybe_unused]] const char *what = e.what();
             assert(!"lexer: looks like a regex is invalid");
-            std::terminate();
+            std::abort();
         }
     }
 
