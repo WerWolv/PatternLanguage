@@ -342,8 +342,10 @@ namespace pl::core {
                 break;
 
             switch (results.id) {
-            /*case (lexertl::smatch::id_type)-1:
-                break;*/
+            case (lexertl::smatch::id_type)-1: {
+                    error(location(), "Unexpected character: {}", *results.first);
+                }
+                break;
             case LexerToken::NewLine: {
                     ++line;
                     std::size_t len = results.first - lineStart;
