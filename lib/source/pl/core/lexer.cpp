@@ -341,10 +341,9 @@ namespace pl::core {
             if (results.id==LexerToken::EndOfFile)
                 break;
 
-            if (results.id==(unsigned short int)-1)
-                break;
-
             switch (results.id) {
+            /*case (lexertl::smatch::id_type)-1:
+                break;*/
             case LexerToken::NewLine: {
                     ++line;
                     std::size_t len = results.first - lineStart;
