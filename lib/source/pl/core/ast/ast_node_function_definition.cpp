@@ -96,10 +96,10 @@ namespace pl::core::ast {
                         variable->setSection(pattern->getSection());
                         variable->setOffset(pattern->getOffset());
                         variable = pattern;
+                        originalNames.emplace_back(pattern, pattern->getVariableName());
                     }
 
                     ctx->setVariable(name, params[paramIndex]);
-                    originalNames.emplace_back(variable, name);
                     variable->setVariableName(name);
 
                     ctx->setCurrentControlFlowStatement(ControlFlowStatement::None);
