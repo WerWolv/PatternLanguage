@@ -77,7 +77,7 @@ namespace pl::core::ast {
 
         auto pointerEndOffset = evaluator->getBitwiseReadOffset();
 
-        {
+        if (evaluator->getSectionId() != ptrn::Pattern::InstantiationSectionId) {
             i128 pointerAddress = pattern->getValue().toSigned();
 
             evaluator->setReadOffset(pointerStartOffset);
@@ -102,7 +102,6 @@ namespace pl::core::ast {
 
         if (this->m_placementSection != nullptr)
             pattern->setSection(evaluator->getSectionId());
-
 
         if (this->m_placementOffset != nullptr && !evaluator->isGlobalScope()) {
             evaluator->setBitwiseReadOffset(startOffset);

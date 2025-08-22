@@ -56,7 +56,8 @@ namespace pl::ptrn {
             if (this->getSection() == id)
                 return;
 
-            this->m_pointedAt->setSection(id);
+            if (this->m_pointedAt != nullptr)
+                this->m_pointedAt->setSection(id);
 
             Pattern::setSection(id);
         }
