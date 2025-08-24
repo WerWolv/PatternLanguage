@@ -59,17 +59,24 @@ namespace pl::lib::libstd::mem {
         {
 
             /* base_address() */
-            runtime.addFunction(nsStdMem, "base_address", FunctionParameterCount::none(), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                wolv::util::unused(params);
+            runtime.addFunction(nsStdMem, "base_address", FunctionParameterCount::between(0, 1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
+                auto section = params.size() == 1 ? params[0].toUnsigned() : ptrn::Pattern::MainSectionId;
+                if (section == 0xFFFF'FFFF'FFFF'FFFF)
+                    section = ctx->getUserSectionId();
+
+                if (section != ptrn::Pattern::MainSectionId)
+                    return 0;
 
                 return u128(ctx->getDataBaseAddress());
             });
 
             /* size() */
-            runtime.addFunction(nsStdMem, "size", FunctionParameterCount::none(), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                wolv::util::unused(params);
+            runtime.addFunction(nsStdMem, "size", FunctionParameterCount::between(0, 1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
+                auto section = params.size() == 1 ? params[0].toUnsigned() : ptrn::Pattern::MainSectionId;
+                if (section == 0xFFFF'FFFF'FFFF'FFFF)
+                    section = ctx->getUserSectionId();
 
-                return u128(ctx->getDataSize());
+                return u128(ctx->getSectionSize(section));
             });
 
             /* find_sequence_in_range(occurrence_index, start_offset, end_offset, bytes...) */
