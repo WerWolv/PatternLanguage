@@ -127,7 +127,7 @@ namespace pl {
          * @param source the source of the code
          * @return Key-value pairs of all pragmas that were set
          */
-        [[nodiscard]] std::map<std::string, std::string> getPragmaValues(const std::string &code, const std::string &source = api::Source::DefaultSource) const;
+        [[nodiscard]] std::multimap<std::string, std::string> getPragmaValues(const std::string &code, const std::string &source = api::Source::DefaultSource) const;
 
         /**
          * @brief Aborts the currently running execution asynchronously
