@@ -159,6 +159,7 @@ namespace pl::core {
         void pushSectionId(u64 id);
         void popSectionId();
         [[nodiscard]] u64 getSectionId() const;
+        [[nodiscard]] u64 getUserSectionId() const;
         [[nodiscard]] u64 createSection(const std::string &name);
         void removeSection(u64 id);
         [[nodiscard]] std::vector<u8>& getSection(u64 id);
