@@ -88,7 +88,7 @@ namespace pl::lib::libstd::mem {
                     sequence.push_back(u8(byte));
                 }
 
-                return findSequence(ctx, occurrenceIndex, offsetFrom, offsetTo, ctx->getSectionId(), sequence).value_or(-1);
+                return findSequence(ctx, occurrenceIndex, offsetFrom, offsetTo, ctx->getUserSectionId(), sequence).value_or(-1);
             });
 
             /* find_string_in_range(occurrence_index, start_offset, end_offset, string) */
@@ -98,7 +98,7 @@ namespace pl::lib::libstd::mem {
                 const u64 offsetTo        = params[2].toUnsigned();
                 const auto string         = params[3].toString(false);
 
-                return findSequence(ctx, occurrenceIndex, offsetFrom, offsetTo, ctx->getSectionId(), std::vector<u8>(string.data(), string.data() + string.size())).value_or(-1);
+                return findSequence(ctx, occurrenceIndex, offsetFrom, offsetTo, ctx->getUserSectionId(), std::vector<u8>(string.data(), string.data() + string.size())).value_or(-1);
             });
 
             /* read_unsigned(address, size, endian, section) */
@@ -106,7 +106,9 @@ namespace pl::lib::libstd::mem {
                 const u64 address            = params[0].toUnsigned();
                 const size_t size            = params[1].toSigned();
                 const types::Endian endian   = params[2].toUnsigned();
-                const u64 section            = params.size() == 4 ? params[3].toUnsigned() : ptrn::Pattern::MainSectionId;
+                u64 section                  = params.size() == 4 ? params[3].toUnsigned() : ptrn::Pattern::MainSectionId;
+                if (section == 0xFFFF'FFFF'FFFF'FFFF)
+                    section = ctx->getUserSectionId();
 
                 if (size < 1 || size > 16)
                     err::E0012.throwError(fmt::format("Read size {} is out of range.", size), "Try a value between 1 and 16.");
@@ -123,7 +125,9 @@ namespace pl::lib::libstd::mem {
                 const u64 address            = params[0].toUnsigned();
                 const size_t size            = params[1].toSigned();
                 const types::Endian endian   = params[2].toUnsigned();
-                const u64 section            = params.size() == 4 ? params[3].toUnsigned() : ptrn::Pattern::MainSectionId;
+                u64 section                  = params.size() == 4 ? params[3].toUnsigned() : ptrn::Pattern::MainSectionId;
+                if (section == 0xFFFF'FFFF'FFFF'FFFF)
+                    section = ctx->getUserSectionId();
 
                 if (size < 1 || size > 16)
                     err::E0012.throwError(fmt::format("Read size {} is out of range.", size), "Try a value between 1 and 16.");
@@ -140,7 +144,9 @@ namespace pl::lib::libstd::mem {
             runtime.addFunction(nsStdMem, "read_string", FunctionParameterCount::between(2, 3), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 const u64 address            = params[0].toUnsigned();
                 const size_t size            = params[1].toSigned();
-                const u64 section            = params.size() == 3 ? params[2].toUnsigned() : ptrn::Pattern::MainSectionId;
+                u64 section                  = params.size() == 3 ? params[2].toUnsigned() : ptrn::Pattern::MainSectionId;
+                if (section == 0xFFFF'FFFF'FFFF'FFFF)
+                    section = ctx->getUserSectionId();
 
                 std::string result(size, '\x00');
                 ctx->readData(address, result.data(), size, section);
