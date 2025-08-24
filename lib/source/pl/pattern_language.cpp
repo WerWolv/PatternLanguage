@@ -338,6 +338,39 @@ namespace pl {
         return this->m_fileResolver.addVirtualFile(code, source, mainSource);
     }
 
+    std::map<std::string, std::string> PatternLanguage::getPragmaValues(const std::string &code, const std::string &source) const {
+        std::map<std::string, std::string> pragmaValues;
+
+        const api::Source plSource(code, source);
+        const auto result = m_internals.lexer->lex(&plSource);
+        if (result.isOk()) {
+            const auto tokens = result.unwrap();
+            for (auto it = tokens.begin(); it != tokens.end(); ++it) {
+                if (it->type == core::Token::Type::Directive && std::get<core::Token::Directive>(it->value) == core::Token::Directive::Pragma) {
+                    ++it;
+                    if (it != tokens.end() && it->type == core::Token::Type::String) {
+                        auto literal = std::get<core::Token::Literal>(it->value);
+                        auto string = std::get_if<std::string>(&literal);
+                        if (string != nullptr) {
+                            auto pragmaKey = *string;
+                            ++it;
+                            if (it != tokens.end() && it->type == core::Token::Type::String) {
+                                literal = std::get<core::Token::Literal>(it->value);
+                                string = std::get_if<std::string>(&literal);
+                                if (string != nullptr) {
+                                    pragmaValues.emplace(pragmaKey, *string);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return pragmaValues;
+    }
+
+
     void PatternLanguage::abort() {
         this->m_internals.evaluator->abort();
         this->m_aborted = true;
