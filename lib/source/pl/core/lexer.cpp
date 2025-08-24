@@ -22,6 +22,10 @@
 #include <string_view>
 #include <vector>
 #include <unordered_map>
+// DEBUGGING
+#include <chrono>
+#include <fstream>
+//
 
 namespace pl::core {
 
@@ -203,6 +207,10 @@ namespace pl::core {
     std::optional<Token> Lexer::parseStringLiteral(std::string_view literal, const auto &location)
     {
         std::string result;
+
+        if (literal.size()==0) {
+            return Token{Token::Type::String, Token::Literal(result), location()};
+        }
 
         const char *p = &literal.front();
         const char *e = &literal.back(); // inclusive
