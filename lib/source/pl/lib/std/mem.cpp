@@ -65,14 +65,14 @@ namespace pl::lib::libstd::mem {
                     section = ctx->getUserSectionId();
 
                 if (section != ptrn::Pattern::MainSectionId)
-                    return 0;
+                    return u128(0x00);
 
                 return u128(ctx->getDataBaseAddress());
             });
 
             /* size() */
             runtime.addFunction(nsStdMem, "size", FunctionParameterCount::between(0, 1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto section = params.size() == 1 ? params[0].toUnsigned() : ptrn::Pattern::MainSectionId;
+                auto section = params.size() == 1 ? u64(params[0].toUnsigned()) : ptrn::Pattern::MainSectionId;
                 if (section == 0xFFFF'FFFF'FFFF'FFFF)
                     section = ctx->getUserSectionId();
 
@@ -81,9 +81,9 @@ namespace pl::lib::libstd::mem {
 
             /* find_sequence_in_range(occurrence_index, start_offset, end_offset, bytes...) */
             runtime.addFunction(nsStdMem, "find_sequence_in_range", FunctionParameterCount::moreThan(3), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                const u64 occurrenceIndex = params[0].toUnsigned();
-                const u64 offsetFrom      = params[1].toUnsigned();
-                const u64 offsetTo        = params[2].toUnsigned();
+                const auto occurrenceIndex = u64(params[0].toUnsigned());
+                const auto offsetFrom      = u64(params[1].toUnsigned());
+                const auto offsetTo        = u64(params[2].toUnsigned());
 
                 std::vector<u8> sequence;
                 for (u32 i = 3; i < params.size(); i++) {
@@ -100,20 +100,20 @@ namespace pl::lib::libstd::mem {
 
             /* find_string_in_range(occurrence_index, start_offset, end_offset, string) */
             runtime.addFunction(nsStdMem, "find_string_in_range", FunctionParameterCount::exactly(4), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                const u64 occurrenceIndex = params[0].toUnsigned();
-                const u64 offsetFrom      = params[1].toUnsigned();
-                const u64 offsetTo        = params[2].toUnsigned();
-                const auto string         = params[3].toString(false);
+                const auto occurrenceIndex = u64(params[0].toUnsigned());
+                const auto offsetFrom      = u64(params[1].toUnsigned());
+                const auto offsetTo        = u64(params[2].toUnsigned());
+                const auto string          = params[3].toString(false);
 
                 return findSequence(ctx, occurrenceIndex, offsetFrom, offsetTo, ctx->getUserSectionId(), std::vector<u8>(string.data(), string.data() + string.size())).value_or(-1);
             });
 
             /* read_unsigned(address, size, endian, section) */
             runtime.addFunction(nsStdMem, "read_unsigned", FunctionParameterCount::between(3, 4), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                const u64 address            = params[0].toUnsigned();
-                const size_t size            = params[1].toSigned();
+                const auto address           = u64(params[0].toUnsigned());
+                const auto size              = std::size_t(params[1].toSigned());
                 const types::Endian endian   = params[2].toUnsigned();
-                u64 section                  = params.size() == 4 ? params[3].toUnsigned() : ptrn::Pattern::MainSectionId;
+                u64 section                  = params.size() == 4 ? u64(params[3].toUnsigned()) : ptrn::Pattern::MainSectionId;
                 if (section == 0xFFFF'FFFF'FFFF'FFFF)
                     section = ctx->getUserSectionId();
 
@@ -129,10 +129,10 @@ namespace pl::lib::libstd::mem {
 
             /* read_signed(address, size, endian, section) */
             runtime.addFunction(nsStdMem, "read_signed", FunctionParameterCount::between(3, 4), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                const u64 address            = params[0].toUnsigned();
-                const size_t size            = params[1].toSigned();
+                const auto address           = u64(params[0].toUnsigned());
+                const auto size              = std::size_t(params[1].toSigned());
                 const types::Endian endian   = params[2].toUnsigned();
-                u64 section                  = params.size() == 4 ? params[3].toUnsigned() : ptrn::Pattern::MainSectionId;
+                u64 section                  = params.size() == 4 ? u64(params[3].toUnsigned()) : ptrn::Pattern::MainSectionId;
                 if (section == 0xFFFF'FFFF'FFFF'FFFF)
                     section = ctx->getUserSectionId();
 
@@ -149,9 +149,9 @@ namespace pl::lib::libstd::mem {
 
             /* read_string(address, size, endian, section) */
             runtime.addFunction(nsStdMem, "read_string", FunctionParameterCount::between(2, 3), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                const u64 address            = params[0].toUnsigned();
-                const size_t size            = params[1].toSigned();
-                u64 section                  = params.size() == 3 ? params[2].toUnsigned() : ptrn::Pattern::MainSectionId;
+                const auto address           = u64(params[0].toUnsigned());
+                const auto size              = std::size_t(params[1].toSigned());
+                u64 section                  = params.size() == 3 ? u64(params[2].toUnsigned()) : ptrn::Pattern::MainSectionId;
                 if (section == 0xFFFF'FFFF'FFFF'FFFF)
                     section = ctx->getUserSectionId();
 
