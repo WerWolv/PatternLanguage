@@ -338,8 +338,8 @@ namespace pl {
         return this->m_fileResolver.addVirtualFile(code, source, mainSource);
     }
 
-    std::map<std::string, std::string> PatternLanguage::getPragmaValues(const std::string &code, const std::string &source) const {
-        std::map<std::string, std::string> pragmaValues;
+    std::multimap<std::string, std::string> PatternLanguage::getPragmaValues(const std::string &code, const std::string &source) const {
+        std::multimap<std::string, std::string> pragmaValues;
 
         const api::Source plSource(code, source);
         const auto result = m_internals.lexer->lex(&plSource);
