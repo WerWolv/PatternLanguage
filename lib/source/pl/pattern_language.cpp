@@ -187,15 +187,12 @@ namespace pl {
         return m_currAST;
     }
 
-    bool PatternLanguage::executeString(std::string code, const std::string& source, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
+    bool PatternLanguage::executeString(const std::string& code, const std::string& source, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
 	   	const auto startTime = std::chrono::high_resolution_clock::now();
         ON_SCOPE_EXIT {
             const auto endTime = std::chrono::high_resolution_clock::now();
             this->m_runningTime = std::chrono::duration_cast<std::chrono::duration<double>>(endTime - startTime).count();
         };
-
-        code = wolv::util::replaceStrings(code, "\r\n", "\n");
-        code = wolv::util::replaceStrings(code, "\t", "    ");
 
         const auto &evaluator = this->m_internals.evaluator;
 
@@ -272,7 +269,7 @@ namespace pl {
                 if (node == nullptr)
                     continue;
 
-                auto location = node->getLocation();
+                const auto &location = node->getLocation();
                 if (lastLine == location.line)
                     continue;
 
@@ -340,6 +337,39 @@ namespace pl {
     api::Source* PatternLanguage::addVirtualSource(const std::string &code, const std::string &source, bool mainSource) const {
         return this->m_fileResolver.addVirtualFile(code, source, mainSource);
     }
+
+    std::multimap<std::string, std::string> PatternLanguage::getPragmaValues(const std::string &code, const std::string &source) const {
+        std::multimap<std::string, std::string> pragmaValues;
+
+        const api::Source plSource(code, source);
+        const auto result = m_internals.lexer->lex(&plSource);
+        if (result.isOk()) {
+            const auto tokens = result.unwrap();
+            for (auto it = tokens.begin(); it != tokens.end(); ++it) {
+                if (it->type == core::Token::Type::Directive && std::get<core::Token::Directive>(it->value) == core::Token::Directive::Pragma) {
+                    ++it;
+                    if (it != tokens.end() && it->type == core::Token::Type::String) {
+                        auto literal = std::get<core::Token::Literal>(it->value);
+                        auto string = std::get_if<std::string>(&literal);
+                        if (string != nullptr) {
+                            auto pragmaKey = *string;
+                            ++it;
+                            if (it != tokens.end() && it->type == core::Token::Type::String) {
+                                literal = std::get<core::Token::Literal>(it->value);
+                                string = std::get_if<std::string>(&literal);
+                                if (string != nullptr) {
+                                    pragmaValues.emplace(pragmaKey, *string);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return pragmaValues;
+    }
+
 
     void PatternLanguage::abort() {
         this->m_internals.evaluator->abort();
@@ -473,6 +503,9 @@ namespace pl {
         this->m_parserManager.reset();
         this->m_internals.validator->setRecursionDepth(32);
 
+        this->m_internals.preprocessor->reset();
+        this->m_internals.lexer->reset();
+        this->m_internals.parser->reset();
         this->m_internals.evaluator->getConsole().clear();
         this->m_internals.evaluator->setDefaultEndian(this->m_defaultEndian);
         this->m_internals.evaluator->setEvaluationDepth(32);

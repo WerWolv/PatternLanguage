@@ -220,8 +220,10 @@ namespace pl::core {
             constexpr bool operator==(const Comment &) const = default;
         };
 
+        using LiteralVariantType = std::variant<char, bool, u128, i128, double, std::string, std::shared_ptr<ptrn::Pattern>>;
 
-        struct Literal : std::variant<char, bool, u128, i128, double, std::string, std::shared_ptr<ptrn::Pattern>> {
+
+        struct Literal : LiteralVariantType {
             using variant::variant;
 
             [[nodiscard]] std::shared_ptr<ptrn::Pattern> toPattern() const;
@@ -248,7 +250,7 @@ namespace pl::core {
 
         using ValueTypes = std::variant<Keyword, Identifier, Operator, Literal, ValueType, Separator, Comment, DocComment, Directive>;
 
-        constexpr Token(const Type type, auto value, const Location location) : type(type), value(std::move(value)), location(location) {}
+        constexpr Token(const Type type, auto value, const Location &location) : type(type), value(std::move(value)), location(location) {}
 
         [[nodiscard]] constexpr static bool isInteger(const ValueType &type) {
             return isUnsigned(type) || isSigned(type);
@@ -278,9 +280,9 @@ namespace pl::core {
         bool operator==(const ValueTypes &other) const;
         bool operator!=(const ValueTypes &other) const;
 
-        Type type;
-        ValueTypes value;
-        Location location;
+        Type type = {};
+        ValueTypes value = {};
+        Location location = {};
 
     };
 

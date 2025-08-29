@@ -720,6 +720,19 @@ namespace pl::core {
         return this->m_sectionIdStack.back();
     }
 
+    u64 Evaluator::getUserSectionId() const {
+        if (this->m_sectionIdStack.empty())
+            return 0;
+
+        for (auto it = this->m_sectionIdStack.rbegin(); it != this->m_sectionIdStack.rend(); ++it) {
+            if (*it != ptrn::Pattern::MainSectionId && *it != ptrn::Pattern::HeapSectionId && *it != ptrn::Pattern::PatternLocalSectionId && *it != ptrn::Pattern::InstantiationSectionId)
+                return *it;
+        }
+
+        return 0;
+    }
+
+
     u64 Evaluator::createSection(const std::string &name) {
         auto id = this->m_sectionId;
         this->m_sectionId++;

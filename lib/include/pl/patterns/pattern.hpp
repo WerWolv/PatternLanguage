@@ -297,9 +297,9 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] virtual core::Token::Literal getValue() const {
-            auto clone = this->clone();
+            auto pattern = this->clone();
 
-            return this->transformValue(std::move(clone));
+            return this->transformValue(std::move(pattern));
         }
 
         [[nodiscard]] virtual std::vector<std::pair<u64, Pattern*>> getChildren() {

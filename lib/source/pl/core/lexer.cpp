@@ -146,7 +146,7 @@ namespace pl::core {
         m_cursor++; // Skip space
         auto location = this->location();
 
-        while (m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\0') {
+        while (m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\r' && m_sourceCode[m_cursor] != '\0') {
 
             auto character = parseCharacter();
             if (!character.has_value()) {
@@ -170,7 +170,7 @@ namespace pl::core {
 
         while (m_sourceCode[m_cursor] != '\"') {
             char c = peek(0);
-            if (c == '\n') {
+            if (c == '\n' || c == '\r') {
                 m_errorLength = 1;
                 error("Unexpected newline in string literal");
                 m_line++;
@@ -311,7 +311,7 @@ namespace pl::core {
         m_cursor += 2;
 
         std::string result;
-        while(m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\0') {
+        while(m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\r' && m_sourceCode[m_cursor] != '\0') {
             result += m_sourceCode[m_cursor];
             m_cursor++;
         }
@@ -329,7 +329,7 @@ namespace pl::core {
         m_cursor += 3;
 
         std::string result;
-        while(m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\0') {
+        while(m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\r' && m_sourceCode[m_cursor] != '\0') {
             result += m_sourceCode[m_cursor];
             m_cursor++;
         }
@@ -473,14 +473,10 @@ namespace pl::core {
     hlp::CompileResult<std::vector<Token>> Lexer::lex(const api::Source *source) {
         this->m_sourceCode = source->content;
         this->m_source = source;
-        this->m_cursor = 0;
-        this->m_line = 1;
-        this->m_lineBegin = 0;
-        this->m_longestLineLength = 0;
+
+        this->reset();
 
         const size_t end = this->m_sourceCode.size();
-
-        m_tokens.clear();
 
         while (this->m_cursor < end) {
             const char& c = this->m_sourceCode[this->m_cursor];
@@ -656,6 +652,15 @@ namespace pl::core {
 
         return { m_tokens, collectErrors() };
     }
+
+    void Lexer::reset() {
+        this->m_cursor = 0;
+        this->m_line = 1;
+        this->m_lineBegin = 0;
+        this->m_longestLineLength = 0;
+        this->m_tokens.clear();
+    }
+
 
     inline char Lexer::peek(const size_t p) const {
         return m_cursor + p < m_sourceCode.size() ? m_sourceCode[m_cursor + p] : '\0';

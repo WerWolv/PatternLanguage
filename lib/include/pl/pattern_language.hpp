@@ -93,7 +93,7 @@ namespace pl {
          * @param checkResult Whether to check the result of the execution
          * @return True if the execution was successful, false otherwise. Call PatternLanguage#getCompileErrors() AND PatternLanguage#getEvalError() to get the compilation or runtime errors if false is returned
          */
-        [[nodiscard]] bool executeString(std::string code, const std::string& source = api::Source::DefaultSource, const std::map<std::string, core::Token::Literal> &envVars = {}, const std::map<std::string, core::Token::Literal> &inVariables = {}, bool checkResult = true);
+        [[nodiscard]] bool executeString(const std::string& code, const std::string& source = api::Source::DefaultSource, const std::map<std::string, core::Token::Literal> &envVars = {}, const std::map<std::string, core::Token::Literal> &inVariables = {}, bool checkResult = true);
 
         /**
          * @brief Executes a pattern language file
@@ -116,9 +116,18 @@ namespace pl {
          * @brief Adds a virtual source file under the path
          * @param code the code of the source
          * @param source the source of the code
+         * @param mainSource whether this is the main source (the one that gets executed first)
          * @return the source that was added or that already existed
          */
         [[nodiscard]] api::Source* addVirtualSource(const std::string& code, const std::string& source, bool mainSource = false) const;
+
+        /**
+         * @brief Runs a minimal lexer and preprocess step on the code and returns key-value pairs of all pragmas that were set
+         * @param code the code of the source
+         * @param source the source of the code
+         * @return Key-value pairs of all pragmas that were set
+         */
+        [[nodiscard]] std::multimap<std::string, std::string> getPragmaValues(const std::string &code, const std::string &source = api::Source::DefaultSource) const;
 
         /**
          * @brief Aborts the currently running execution asynchronously

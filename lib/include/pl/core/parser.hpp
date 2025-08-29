@@ -37,6 +37,7 @@ namespace pl::core {
         ~Parser() override = default;
 
         hlp::CompileResult<std::vector<std::shared_ptr<ast::ASTNode>>> parse(std::vector<Token> &tokens);
+        void reset();
 
         const auto &getTypes() { return this->m_types; }
 
@@ -249,7 +250,7 @@ namespace pl::core {
             this->m_matchedOptionals.clear();
         }
 
-        void reset() {
+        void resetTokens() {
             this->m_curr = this->m_originalPosition;
         }
 
@@ -258,7 +259,7 @@ namespace pl::core {
         }
 
         bool resetIfFailed(const bool value) {
-            if (!value) reset();
+            if (!value) resetTokens();
 
             return value;
         }

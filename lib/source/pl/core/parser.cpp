@@ -2211,6 +2211,7 @@ namespace pl::core {
             } else if (MATCHES(sequence(tkn::Literal::Identifier, tkn::Separator::LeftBracket) && sequence<Not>(tkn::Separator::LeftBracket))){
                 // (parseType) Identifier[[(parseMathematicalExpression)|(parseWhileStatement)]];
                 auto fieldName = getValue<Token::Identifier>(-2).get();
+                auto identifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
 
                 hlp::safe_unique_ptr<ast::ASTNode> size;
                 if (sequence(tkn::Keyword::While, tkn::Separator::LeftParenthesis))
@@ -2225,7 +2226,8 @@ namespace pl::core {
                     error("Expected ']' at end of array declaration, got {}.", getFormattedToken(0));
                     return nullptr;
                 }
-
+                if (identifier != nullptr)
+                    identifier->setType(Token::Identifier::IdentifierType::PatternVariable);
                 member = create<ast::ASTNodeBitfieldArrayVariableDecl>(fieldName, std::move(type), std::move(size));
             } else if (sequence(tkn::Literal::Identifier)) {
                 // (parseType) Identifier;
@@ -2791,13 +2793,8 @@ namespace pl::core {
         this->m_curr = this->m_startToken = this->m_originalPosition = this->m_partOriginalPosition
             = TokenIter(tokens.begin(), tokens.end());
 
-        this->m_types.clear();
-        this->m_currTemplateType.clear();
-        this->m_matchedOptionals.clear();
-        this->m_processedDocComments.clear();
+        this->reset();
 
-        this->m_currNamespace.clear();
-        this->m_currNamespace.emplace_back();
         if (!this->m_aliasNamespace.empty())
             this->m_currNamespace.push_back(this->m_aliasNamespace);
 
@@ -2822,6 +2819,16 @@ namespace pl::core {
         }
 
         return { std::nullopt, this->collectErrors() };
+    }
+
+    void Parser::reset() {
+        this->m_types.clear();
+        this->m_currTemplateType.clear();
+        this->m_matchedOptionals.clear();
+        this->m_processedDocComments.clear();
+
+        this->m_currNamespace.clear();
+        this->m_currNamespace.emplace_back();
     }
 
     Location Parser::location() {

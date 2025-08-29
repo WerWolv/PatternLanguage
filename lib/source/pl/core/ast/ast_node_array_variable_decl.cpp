@@ -224,7 +224,8 @@ namespace pl::core::ast {
         } else if (dynamic_cast<ptrn::PatternWideCharacter *>(templatePattern.get())) {
             outputPattern = std::make_unique<ptrn::PatternWideString>(evaluator, startOffset, 0, getLocation().line);
         } else {
-            auto arrayPattern = std::make_unique<ptrn::PatternArrayStatic>(evaluator, startOffset, 0, getLocation().line);
+            auto arrayPattern = std::make_shared<ptrn::PatternArrayStatic>(evaluator, startOffset, 0, getLocation().line);
+            templatePattern->setParent(arrayPattern);
             arrayPattern->setEntries(templatePattern->clone(), size_t(entryCount));
             arrayPattern->setSection(templatePattern->getSection());
             outputPattern = std::move(arrayPattern);
@@ -256,7 +257,7 @@ namespace pl::core::ast {
         };
 
         evaluator->alignToByte();
-        auto arrayPattern = std::make_unique<ptrn::PatternArrayDynamic>(evaluator, evaluator->getReadOffset(), 0, getLocation().line);
+        auto arrayPattern = std::make_shared<ptrn::PatternArrayDynamic>(evaluator, evaluator->getReadOffset(), 0, getLocation().line);
         arrayPattern->setVariableName(this->m_name);
         arrayPattern->setSection(evaluator->getSectionId());
 
@@ -279,6 +280,7 @@ namespace pl::core::ast {
             for (auto &pattern : patterns) {
                 pattern->setArrayIndex(entryIndex);
                 pattern->setEndian(arrayPattern->getEndian());
+                pattern->setParent(arrayPattern->reference());
                 if (pattern->getSection() == ptrn::Pattern::MainSectionId)
                     pattern->setSection(arrayPattern->getSection());
 

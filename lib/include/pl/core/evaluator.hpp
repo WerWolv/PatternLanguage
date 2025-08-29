@@ -159,6 +159,7 @@ namespace pl::core {
         void pushSectionId(u64 id);
         void popSectionId();
         [[nodiscard]] u64 getSectionId() const;
+        [[nodiscard]] u64 getUserSectionId() const;
         [[nodiscard]] u64 createSection(const std::string &name);
         void removeSection(u64 id);
         [[nodiscard]] std::vector<u8>& getSection(u64 id);
@@ -328,7 +329,6 @@ namespace pl::core {
 
         [[nodiscard]] std::optional<Token::Literal> getEnvVariable(const std::string &name) const {
             if (this->m_envVariables.contains(name)) {
-                auto value = this->m_envVariables.at(name);
                 return this->m_envVariables.at(name);
             } else
                 return std::nullopt;
@@ -477,7 +477,7 @@ namespace pl::core {
         }
 
     private:
-        PatternLanguage *m_patternLanguage;
+        PatternLanguage *m_patternLanguage = nullptr;
         std::list<PatternLanguage> m_subRuntimes;
 
         u64 m_currOffset = 0x00;
