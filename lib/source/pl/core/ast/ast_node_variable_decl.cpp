@@ -127,7 +127,7 @@ namespace pl::core::ast {
         auto startOffset = evaluator->getBitwiseReadOffset();
 
         evaluator->createVariable(this->getName(), this->getType().get(), { }, this->m_outVariable, false, false, this->m_constant);
-        auto &variable = evaluator->getScope(0).scope->back();
+        auto variableIndex = evaluator->getScope(0).scope->size() - 1;
 
         std::vector<std::shared_ptr<ptrn::Pattern>> initValues;
         if (this->m_placementOffset == nullptr) {
@@ -146,6 +146,7 @@ namespace pl::core::ast {
         }
 
         if (!initValues.empty()) {
+            auto &variable = (*evaluator->getScope(0).scope)[variableIndex];
             auto &initValue = initValues.front();
             if (variable->getSection() == ptrn::Pattern::PatternLocalSectionId) {
                 evaluator->changePatternSection(initValue.get(), ptrn::Pattern::PatternLocalSectionId);

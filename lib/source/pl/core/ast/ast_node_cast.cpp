@@ -164,13 +164,6 @@ namespace pl::core::ast {
             }
 
             typePattern->setLocal(true);
-            auto &heap = evaluator->getHeap();
-            typePattern->setOffset(u64(heap.size()) << 32);
-            auto &data = heap.emplace_back();
-
-            data.resize(typePattern->getSize());
-
-            std::memcpy(data.data(), bytes.data(), data.size());
 
             return std::make_unique<ASTNodeLiteral>(typePattern);
         }

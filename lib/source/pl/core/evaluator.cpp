@@ -125,7 +125,7 @@ namespace pl::core {
         return value;
     }
 
-    void Evaluator::writeBits(u128 byteOffset, u8 bitOffset, u64 bitSize, u64 section, std::endian endianness, u128 value) {
+    void Evaluator::writeBits(ptrn::Pattern *pattern, u8 bitOffset, u64 bitSize, u64 section, std::endian endianness, u128 value) {
         size_t writeSize = (bitOffset + bitSize + 7) / 8;
         writeSize = std::min(writeSize, sizeof(value));
         value = hlp::changeEndianess(value, writeSize, endianness);
@@ -135,14 +135,14 @@ namespace pl::core {
         value = (value & mask) << offset;
 
         u128 oldValue = 0;
-        this->readData(u64(byteOffset), &oldValue, writeSize, section);
+        this->readData(u64(pattern->getOffset()), &oldValue, writeSize, section);
         oldValue = hlp::changeEndianess(oldValue, sizeof(oldValue), endianness);
 
         oldValue &= ~(mask << offset);
         oldValue |= value;
 
         oldValue = hlp::changeEndianess(oldValue, sizeof(oldValue), endianness);
-        this->writeData(u64(byteOffset), &oldValue, writeSize, section);
+        this->writeData(pattern, &oldValue, writeSize, section);
     }
 
 
@@ -251,10 +251,6 @@ namespace pl::core {
                 auto entryPattern = typePattern->clone();
                 entryPattern->setLocal(true);
 
-                auto &heap = this->getHeap();
-                entryPattern->setOffset(u64(heap.size()) << 32);
-                heap.emplace_back();
-
                 entries.push_back(std::move(entryPattern));
             }
             pattern->setEntries(entries);
@@ -352,7 +348,7 @@ namespace pl::core {
         }
     }*/
 
-    std::shared_ptr<ptrn::Pattern> Evaluator::createVariable(const std::string &name, const ast::ASTNodeTypeDecl *type, const std::optional<Token::Literal> &value, bool outVariable, bool /*reference*/, bool /*templateVariable*/, bool constant) {
+    std::shared_ptr<ptrn::Pattern> Evaluator::createVariable(const std::string &name, const ast::ASTNodeTypeDecl *type, const std::optional<Token::Literal> &value, bool outVariable, bool reference, bool templateVariable, bool constant) {
         auto startPos = this->getBitwiseReadOffset();
         ON_SCOPE_EXIT { this->setBitwiseReadOffset(startPos); };
 
@@ -360,12 +356,24 @@ namespace pl::core {
         if (name == "_")
             return nullptr;
 
+        if (reference) {
+            if (value.has_value() && value->isPattern()) {
+                auto pattern = value->toPattern();
+                pattern->setVariableName(name);
+                pattern->setReference(true);
+                this->getScope(0).scope->push_back(pattern);
+
+                return pattern;
+            }
+        }
+
         std::vector<std::shared_ptr<ptrn::Pattern>> results;
         type->createPatterns(this, results);
         if (results.empty()) {
             std::shared_ptr<ptrn::Pattern> pattern = std::make_shared<ptrn::PatternPadding>(this, 0x00, 0x00, 0);
             pattern->setVariableName(name);
-            this->setVariable(pattern, value.value());
+            if (value.has_value())
+                this->setVariable(pattern, *value);
             results.push_back(pattern);
         }
 
@@ -373,16 +381,15 @@ namespace pl::core {
         if (outVariable)
             m_outVariables[name] = result;
         if (constant) {
-            if (!value.has_value()) {
-                err::E0007.throwError("Constant values must be initialized at definition");
-            }
-
             result->setConstant(true);
-            this->setVariable(result, value.value());
         }
 
         result->setLocal(true);
         result->setVariableName(name);
+
+        if (templateVariable)
+            result->setVisibility(ptrn::Visibility::Hidden);
+
         this->getScope(0).scope->push_back(result);
 
         return result;
@@ -406,7 +413,7 @@ namespace pl::core {
         const auto pointer = pattern.get();
         return std::visit(wolv::util::overloaded {
             [&](auto &value) -> Token::Literal {
-               if (dynamic_cast<const ptrn::PatternUnsigned*>(pointer) || dynamic_cast<const ptrn::PatternEnum*>(pointer))
+               if (dynamic_cast<const ptrn::PatternUnsigned*>(pointer) || dynamic_cast<const ptrn::PatternEnum*>(pointer) || dynamic_cast<const ptrn::PatternWideCharacter*>(pointer))
                    return truncateValue<u128>(pattern->getSize(), u128(value));
                else if (dynamic_cast<const ptrn::PatternSigned*>(pointer))
                    return truncateValue<i128>(pattern->getSize(), i128(value));
@@ -417,8 +424,8 @@ namespace pl::core {
                        return double(value);
                } else if (dynamic_cast<const ptrn::PatternBoolean*>(pointer))
                    return value == 0 ? u128(0) : u128(1);
-               else if (dynamic_cast<const ptrn::PatternCharacter*>(pointer) || dynamic_cast<const ptrn::PatternWideCharacter*>(pointer))
-                   return truncateValue(pattern->getSize(), u128(value));
+               else if (dynamic_cast<const ptrn::PatternCharacter*>(pointer))
+                   return char(truncateValue(pattern->getSize(), u128(value)));
                else if (dynamic_cast<const ptrn::PatternString*>(pointer))
                    return Token::Literal(value).toString(false);
                else if (dynamic_cast<const ptrn::PatternPadding*>(pointer))
@@ -445,7 +452,7 @@ namespace pl::core {
                     err::E0004.throwError(fmt::format("Cannot cast from type 'string' to type '{}'.", pattern->getTypeName()));
             },
             [&](const std::shared_ptr<ptrn::Pattern>& value) -> Token::Literal {
-                if (value->getTypeName() == pattern->getTypeName() || value->getTypeName().empty())
+                if (value->getTypeName() == pattern->getTypeName() || value->getTypeName().empty() || pattern->getTypeName().empty())
                     return value;
                 else
                     err::E0004.throwError(fmt::format("Cannot cast from type '{}' to type '{}'.", value->getTypeName(), pattern->getTypeName()));
@@ -467,14 +474,19 @@ namespace pl::core {
         }
     }
 
-    std::shared_ptr<ptrn::Pattern>& Evaluator::getVariableByName(const std::string &name) {
+    std::shared_ptr<ptrn::Pattern>* Evaluator::getVariableByNameImpl(const std::string &name) {
         // Search for variable in current scope
         {
-            auto &variables = *this->getScope(0).scope;
-            for (auto &variable : variables) {
-                if (variable->getVariableName() == name) {
-                    return variable;
+            for (u32 i = 0; i < this->m_scopes.size(); i++) {
+                auto &scope = this->getScope(-i);
+                for (auto &variable : *scope.scope) {
+                    if (variable->getVariableName() == name) {
+                        return &variable;
+                    }
                 }
+
+                if (scope.isolated)
+                    break;
             }
         }
 
@@ -483,7 +495,7 @@ namespace pl::core {
             auto &variables = this->m_templateParameters.back();
             for (auto &variable : variables) {
                 if (variable->getVariableName() == name) {
-                    return variable;
+                    return &variable;
                 }
             }
         }
@@ -492,11 +504,24 @@ namespace pl::core {
         auto &variables = *this->getGlobalScope().scope;
         for (auto &variable : variables) {
             if (variable->getVariableName() == name) {
-                return variable;
+                return &variable;
             }
         }
 
-        err::E0003.throwError(fmt::format("Cannot find variable '{}' in this scope.", name));
+        return nullptr;
+    }
+
+    bool Evaluator::isVariableInScope(const std::string &name) {
+        return this->getVariableByNameImpl(name) != nullptr;
+    }
+
+    std::shared_ptr<ptrn::Pattern>& Evaluator::getVariableByName(const std::string &name) {
+        auto result = this->getVariableByNameImpl(name);
+
+        if (result == nullptr)
+            err::E0003.throwError(fmt::format("Cannot find variable '{}' in this scope.", name));
+        else
+            return *result;
     }
 
     void Evaluator::setVariable(const std::string &name, const Token::Literal &variableValue) {
@@ -532,7 +557,7 @@ namespace pl::core {
             pattern = std::make_shared<T>(evaluator, 0x00, 0);
 
         pattern->setLocal(true);
-        evaluator->writeData(pattern->getOffset(), &value, sizeof(value), pattern->getSection());
+        evaluator->writeData(pattern.get(), &value, sizeof(value), pattern->getSection());
 
         return pattern;
     }
@@ -561,7 +586,7 @@ namespace pl::core {
                 [this](std::string value) -> std::shared_ptr<ptrn::Pattern> {
                     auto pattern = std::make_shared<ptrn::PatternString>(this, 0x00, value.size(), 0);
                     pattern->setLocal(true);
-                    this->writeData(pattern->getOffset(), value.data(), value.size(), pattern->getSection());
+                    this->writeData(pattern.get(), value.data(), value.size(), pattern->getSection());
                     return pattern;
                 },
                 [&](std::shared_ptr<ptrn::Pattern> value) -> std::shared_ptr<ptrn::Pattern> {
@@ -597,18 +622,16 @@ namespace pl::core {
         variable->setSection(section);
     }
 
-    void Evaluator::pushScope(const std::shared_ptr<ptrn::Pattern> &parent, std::vector<std::shared_ptr<ptrn::Pattern>> &scope) {
+    void Evaluator::pushScope(const std::shared_ptr<ptrn::Pattern> &parent, std::vector<std::shared_ptr<ptrn::Pattern>> &scope, bool isolated) {
         if (this->m_scopes.size() > this->getEvaluationDepth())
             err::E0007.throwError(fmt::format("Evaluation depth exceeded set limit of '{}'.", this->getEvaluationDepth()), "If this is intended, try increasing the limit using '#pragma eval_depth <new_limit>'.");
 
         this->handleAbort();
 
-        const auto &heap = this->getHeap();
-
-        this->m_scopes.emplace_back(std::make_unique<Scope>(parent, &scope, heap.size()));
+        this->m_scopes.emplace_back(std::make_unique<Scope>(parent, &scope, isolated));
 
         if (this->isDebugModeEnabled())
-            this->getConsole().log(LogConsole::Level::Debug, fmt::format("Entering new scope #{}. Parent: '{}', Heap Size: {}.", this->m_scopes.size(), parent == nullptr ? "None" : parent->getVariableName(), heap.size()));
+            this->getConsole().log(LogConsole::Level::Debug, fmt::format("Entering new scope #{}. Parent: '{}'.", this->m_scopes.size(), parent == nullptr ? "None" : parent->getVariableName()));
     }
 
     void Evaluator::popScope() {
@@ -617,12 +640,8 @@ namespace pl::core {
 
         auto &currScope = this->getScope(0);
 
-        auto &heap = this->getHeap();
-
-        heap.resize(currScope.heapStartSize);
-
         if (this->isDebugModeEnabled())
-            this->getConsole().log(LogConsole::Level::Debug, fmt::format("Exiting scope #{}. Parent: '{}', Heap Size: {}.", this->m_scopes.size(), currScope.parent == nullptr ? "None" : currScope.parent->getVariableName(), heap.size()));
+            this->getConsole().log(LogConsole::Level::Debug, fmt::format("Exiting scope #{}. Parent: '{}'.", this->m_scopes.size(), currScope.parent == nullptr ? "None" : currScope.parent->getVariableName()));
 
         this->m_scopes.pop_back();
     }
@@ -643,7 +662,7 @@ namespace pl::core {
         return result;
     }
 
-    void Evaluator::accessData(u64 address, void *buffer, size_t size, u64 sectionId, bool write) {
+    void Evaluator::accessData(ptrn::Pattern *pattern, u64 address, void *buffer, size_t size, u64 sectionId, bool write) {
         if (size == 0 || buffer == nullptr)
             return;
 
@@ -655,13 +674,13 @@ namespace pl::core {
                     this->m_writerFunction(address, static_cast<u8*>(buffer), size);
             }
         } else if (sectionId == ptrn::Pattern::HeapSectionId) {
-            auto *patternData = reinterpret_cast<std::vector<u8>*>(address);
             if (!write) {
-                std::memmove(buffer, patternData->data(), size);
+                std::memmove(buffer, reinterpret_cast<u8*>(address), size);
             } else {
-                if (patternData->size() != size)
-                    patternData->resize(size);
-                std::memmove(patternData->data(), buffer, size);
+                auto &patternData = pattern->getHeapData();
+                if (patternData.size() != size)
+                    patternData.resize(size);
+                std::memmove(patternData.data(), buffer, size);
             }
         } else if (sectionId == ptrn::Pattern::PatternLocalSectionId) {
             auto &patternLocal = this->m_patternLocalStorage;
@@ -703,6 +722,13 @@ namespace pl::core {
 
         if (this->isDebugModeEnabled()) [[unlikely]]
             this->m_console.log(LogConsole::Level::Debug, fmt::format("{} {} bytes from address 0x{:02X} in section {:02X}", write ? "Writing" : "Reading", size, address, sectionId));
+    }
+
+    void Evaluator::readData(u64 address, void *buffer, size_t size, u64 sectionId) {
+        this->accessData(nullptr, address, buffer, size, sectionId, false);
+    }
+    void Evaluator::writeData(ptrn::Pattern *pattern, const void *buffer, size_t size, u64 sectionId) {
+        this->accessData(pattern, pattern->getOffset(), const_cast<void*>(buffer), size, sectionId, true);
     }
 
     void Evaluator::pushSectionId(u64 id) {
@@ -747,9 +773,9 @@ namespace pl::core {
 
     std::vector<u8>& Evaluator::getSection(u64 id) {
         if (id == ptrn::Pattern::MainSectionId)
-            err::E0011.throwError("Cannot access main section.");
+            err::E0011.throwError("Cannot access main section directly.");
         else if (id == ptrn::Pattern::HeapSectionId)
-            return this->m_heap.back();
+            err::E0011.throwError("Cannot access heap section directly.");
         else if (this->m_sections.contains(id))
             return this->m_sections[id].data;
         else if (id == ptrn::Pattern::InstantiationSectionId)
@@ -788,7 +814,6 @@ namespace pl::core {
 
         this->m_scopes.clear();
         this->m_callStack.clear();
-        this->m_heap.clear();
         this->m_patternLocalStorage.clear();
         this->m_templateParameters.clear();
         this->m_stringPool.clear();
@@ -834,7 +859,7 @@ namespace pl::core {
 
         try {
             this->setCurrentControlFlowStatement(ControlFlowStatement::None);
-            this->pushScope(nullptr, this->m_patterns);
+            this->pushScope(nullptr, this->m_patterns, true);
             this->pushTemplateParameters();
 
             for (auto &topLevelNode : ast) {

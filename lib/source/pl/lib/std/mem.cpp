@@ -60,7 +60,7 @@ namespace pl::lib::libstd::mem {
 
             /* base_address() */
             runtime.addFunction(nsStdMem, "base_address", FunctionParameterCount::between(0, 1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto section = params.size() == 1 ? params[0].toUnsigned() : ptrn::Pattern::MainSectionId;
+                auto section = params.size() == 1 ? params[0].toUnsigned() : u128(ptrn::Pattern::MainSectionId);
                 if (section == 0xFFFF'FFFF'FFFF'FFFF)
                     section = ctx->getUserSectionId();
 
@@ -72,7 +72,7 @@ namespace pl::lib::libstd::mem {
 
             /* size() */
             runtime.addFunction(nsStdMem, "size", FunctionParameterCount::between(0, 1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto section = params.size() == 1 ? u64(params[0].toUnsigned()) : ptrn::Pattern::MainSectionId;
+                auto section = params.size() == 1 ? u64(params[0].toUnsigned()) : u128(ptrn::Pattern::MainSectionId);
                 if (section == 0xFFFF'FFFF'FFFF'FFFF)
                     section = ctx->getUserSectionId();
 

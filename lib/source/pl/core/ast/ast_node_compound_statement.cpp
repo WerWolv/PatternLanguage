@@ -48,14 +48,14 @@ namespace pl::core::ast {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
         FunctionResult result;
-        auto variables         = *evaluator->getScope(0).scope;
+        std::vector<std::shared_ptr<ptrn::Pattern>> variables;
 
         auto scopeGuard = SCOPE_GUARD {
             evaluator->popScope();
         };
 
         if (this->m_newScope) {
-            evaluator->pushScope(nullptr, variables);
+            evaluator->pushScope(nullptr, variables, false);
         } else {
             scopeGuard.release();
         }

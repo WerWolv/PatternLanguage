@@ -58,7 +58,7 @@ namespace pl::core::ast {
             std::vector<std::shared_ptr<ptrn::Pattern>> variables;
 
             auto startOffset = ctx->getBitwiseReadOffset();
-            ctx->pushScope(nullptr, variables);
+            ctx->pushScope(nullptr, variables, true);
             ctx->pushSectionId(ptrn::Pattern::HeapSectionId);
             ON_SCOPE_EXIT {
                 ctx->popScope();
@@ -91,15 +91,8 @@ namespace pl::core::ast {
 
                     auto variable = ctx->createVariable(name, typeNode, params[paramIndex], false, reference);
 
-                    if (reference && params[paramIndex].isPattern()) {
-                        auto pattern = params[paramIndex].toPattern();
-                        variable->setSection(pattern->getSection());
-                        variable->setOffset(pattern->getOffset());
-                        variable = pattern;
-                        originalNames.emplace_back(pattern, pattern->getVariableName());
-                    }
-
-                    ctx->setVariable(name, params[paramIndex]);
+                    if (!reference)
+                        ctx->setVariable(name, params[paramIndex]);
                     variable->setVariableName(name);
 
                     ctx->setCurrentControlFlowStatement(ControlFlowStatement::None);
@@ -121,22 +114,7 @@ namespace pl::core::ast {
 
                     ctx->setCurrentControlFlowStatement(ControlFlowStatement::None);
 
-                    if (!result.has_value())
-                        return std::nullopt;
-                    else
-                        return std::visit(wolv::util::overloaded {
-                                [](const auto &value) -> FunctionResult {
-                                    return value;
-                                },
-                                [ctx](const std::shared_ptr<ptrn::Pattern> &pattern) -> FunctionResult {
-                                    auto &prevScope = ctx->getScope(-1);
-                                    auto &currScope = ctx->getScope(0);
-
-                                    prevScope.heapStartSize = currScope.heapStartSize = ctx->getHeap().size();
-
-                                    return pattern;
-                                }
-                        }, result.value());
+                    return result;
                 }
             }
 

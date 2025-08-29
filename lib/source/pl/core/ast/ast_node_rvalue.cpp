@@ -168,13 +168,8 @@ namespace pl::core::ast {
             std::copy(templateParameters.begin(), templateParameters.end(), std::back_inserter(searchScope));
         }
 
-        {
-            const auto &currScope = evaluator->getScope(0);
-            std::copy(currScope.scope->begin(), currScope.scope->end(), std::back_inserter(searchScope));
-        }
-
+        bool firstPart = true;
         for (const auto &part : this->getPath()) {
-
             if (!iterable)
                 err::E0001.throwError("Member access of a non-iterable type.", "Try using a struct-like object or an array instead.", this->getLocation());
 
@@ -212,11 +207,21 @@ namespace pl::core::ast {
                     continue;
                 } else {
                     bool found = false;
-                    for (auto iter = searchScope.crbegin(); iter != searchScope.crend(); ++iter) {
-                        if ((*iter)->getVariableName() == name) {
-                            currPattern = *iter;
-                            found       = true;
-                            break;
+
+                    if (firstPart) {
+                        if (evaluator->isVariableInScope(name)) {
+                            currPattern = evaluator->getVariableByName(name);
+                            found = true;
+                        }
+                    }
+
+                    if (!found) {
+                        for (auto iter = searchScope.crbegin(); iter != searchScope.crend(); ++iter) {
+                            if ((*iter)->getVariableName() == name) {
+                                currPattern = *iter;
+                                found       = true;
+                                break;
+                            }
                         }
                     }
 
@@ -225,8 +230,9 @@ namespace pl::core::ast {
                     else if (name == "null")
                         err::E0003.throwError("Invalid use of 'null' keyword in rvalue.", {}, this->getLocation());
 
-                    if (!found)
-                        err::E0003.throwError(fmt::format("No variable named '{}' found.", name), {}, this->getLocation());
+                    if (!found) {
+                        err::E0003.throwError(fmt::format("Cannot find variable '{}' in this scope.", name));
+                    }
                 }
             } else {
                 // Array indexing
@@ -267,6 +273,7 @@ namespace pl::core::ast {
             else
                 iterable = false;
 
+            firstPart = false;
         }
 
         if (currPattern == nullptr)

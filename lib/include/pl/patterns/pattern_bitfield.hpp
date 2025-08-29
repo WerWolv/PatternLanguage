@@ -144,7 +144,7 @@ namespace pl::ptrn {
                 u128 writeValue = 0;
                 std::memcpy(&writeValue, result.data(), result.size());
 
-                this->getEvaluator()->writeBits(this->getOffset(), this->getBitOffset(), this->getBitSize(), this->getSection(), this->getEndian(), writeValue);
+                this->getEvaluator()->writeBits(this, this->getBitOffset(), this->getBitSize(), this->getSection(), this->getEndian(), writeValue);
 
                 this->clearFormatCache();
                 this->getParent()->clearFormatCache();

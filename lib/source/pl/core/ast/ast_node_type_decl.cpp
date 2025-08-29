@@ -148,7 +148,7 @@ namespace pl::core::ast {
 
                         auto templateVariable = variable->clone();
                         templateVariable->setVisibility(ptrn::Visibility::Hidden);
-                        templatePatterns.emplace_back(std::move(templateVariable));
+                        evaluator->getTemplateParameters().emplace_back(std::move(templateVariable));
                     }
                 }
             }
@@ -179,7 +179,7 @@ namespace pl::core::ast {
                 auto scope = iterable->getEntries();
                 std::move(templatePatterns.begin(), templatePatterns.end(), std::back_inserter(scope));
 
-                evaluator->pushScope(pattern, scope);
+                evaluator->pushScope(pattern, scope, true);
                 ON_SCOPE_EXIT { evaluator->popScope(); };
                 applyTypeAttributes(evaluator, this, pattern);
 

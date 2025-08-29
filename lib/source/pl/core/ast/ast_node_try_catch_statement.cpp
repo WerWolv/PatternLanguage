@@ -23,7 +23,6 @@ namespace pl::core::ast {
         auto &scope = evaluator->getScope(0);
 
         auto startScopeSize = scope.scope->size();
-        auto startHeapSize = scope.heapStartSize;
 
 
         try {
@@ -42,7 +41,6 @@ namespace pl::core::ast {
             evaluator->setReadOffset(startOffset);
 
             scope.scope->resize(startScopeSize);
-            scope.heapStartSize = startHeapSize;
 
             for (auto &node : this->m_catchBody) {
                 std::vector<std::shared_ptr<ptrn::Pattern>> newPatterns;
@@ -62,10 +60,10 @@ namespace pl::core::ast {
     ASTNode::FunctionResult ASTNodeTryCatchStatement::execute(Evaluator *evaluator) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
-        auto variables     = *evaluator->getScope(0).scope;
+        std::vector<std::shared_ptr<ptrn::Pattern>> variables;
         auto parameterPack = evaluator->getScope(0).parameterPack;
 
-        evaluator->pushScope(nullptr, variables);
+        evaluator->pushScope(nullptr, variables, false);
         evaluator->getScope(0).parameterPack = parameterPack;
         ON_SCOPE_EXIT {
             evaluator->popScope();
@@ -76,22 +74,7 @@ namespace pl::core::ast {
                 auto result = statement->execute(evaluator);
 
                 if (auto ctrlStatement = evaluator->getCurrentControlFlowStatement(); ctrlStatement != ControlFlowStatement::None) {
-                    if (!result.has_value())
-                        return std::nullopt;
-
-                    return std::visit(wolv::util::overloaded {
-                            [](const auto &value) -> FunctionResult {
-                                return value;
-                            },
-                            [evaluator](const std::shared_ptr<ptrn::Pattern> &pattern) -> FunctionResult {
-                                auto &prevScope = evaluator->getScope(-1);
-                                auto &currScope = evaluator->getScope(0);
-
-                                prevScope.heapStartSize = currScope.heapStartSize = evaluator->getHeap().size();
-
-                                return pattern;
-                            }
-                    }, result.value());
+                    return result;
                 }
             }
         } catch (err::EvaluatorError::Exception &error) {
@@ -99,22 +82,7 @@ namespace pl::core::ast {
                 auto result = statement->execute(evaluator);
 
                 if (auto ctrlStatement = evaluator->getCurrentControlFlowStatement(); ctrlStatement != ControlFlowStatement::None) {
-                    if (!result.has_value())
-                        return std::nullopt;
-
-                    return std::visit(wolv::util::overloaded {
-                            [](const auto &value) -> FunctionResult {
-                                return value;
-                            },
-                            [evaluator](const std::shared_ptr<ptrn::Pattern> &pattern) -> FunctionResult {
-                                auto &prevScope = evaluator->getScope(-1);
-                                auto &currScope = evaluator->getScope(0);
-
-                                prevScope.heapStartSize = currScope.heapStartSize = evaluator->getHeap().size();
-
-                                return pattern;
-                            }
-                    }, result.value());
+                    return result;
                 }
             }
         }

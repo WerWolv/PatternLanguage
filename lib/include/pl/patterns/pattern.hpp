@@ -104,8 +104,7 @@ namespace pl::ptrn {
             this->m_line = other.m_line;
 
             if (other.m_heapData != nullptr) {
-                this->m_heapData = std::make_unique<std::vector<u8>>(*other.m_heapData);
-                this->m_offset = reinterpret_cast<u64>(this->m_heapData.get());
+                this->setHeapData(*other.m_heapData);
             }
 
             if (other.m_cachedDisplayValue != nullptr)
@@ -362,8 +361,7 @@ namespace pl::ptrn {
                 this->setSection(Section::HeapSectionId);
 
                 if (this->m_heapData == nullptr) {
-                    this->m_heapData = std::make_unique<std::vector<u8>>(this->m_size, 0x00);
-                    this->m_offset = reinterpret_cast<u64>(this->m_heapData.get());
+                    this->setHeapData(std::vector<u8>(this->m_size, 0x00));
                 }
             } else {
                 this->m_section = Section::MainSectionId;
@@ -469,9 +467,6 @@ namespace pl::ptrn {
                 try {
                     const auto function = this->m_evaluator->findFunction(formatterFunctionName);
                     if (function.has_value()) {
-                        auto startHeap = this->m_evaluator->getHeap();
-                        ON_SCOPE_EXIT { this->m_evaluator->getHeap() = startHeap; };
-
                         auto formatterResult = function->func(this->m_evaluator, { value });
                         if (formatterResult.has_value()) {
                             result = this->getBytesOf(*formatterResult);
@@ -483,7 +478,7 @@ namespace pl::ptrn {
             }
 
             if (!result.empty()) {
-                this->getEvaluator()->writeData(this->getOffset(), result.data(), result.size(), u64(this->getSection()));
+                this->getEvaluator()->writeData(this, result.data(), result.size(), u64(this->getSection()));
                 this->clearFormatCache();
             }
         }
@@ -583,6 +578,18 @@ namespace pl::ptrn {
 
         [[nodiscard]] virtual std::string formatDisplayValue() = 0;
 
+        void setHeapData(std::vector<u8> heapData) {
+            this->m_heapData = std::make_unique<std::vector<u8>>(std::move(heapData));
+            this->m_offset = reinterpret_cast<u64>(this->m_heapData->data());
+        }
+
+        std::vector<u8>& getHeapData() const {
+            if (this->m_heapData == nullptr)
+                core::err::E0011.throwError("Pattern does not have heap data");
+
+            return *this->m_heapData;
+        }
+
     protected:
         std::optional<std::endian> m_endian;
 
@@ -590,9 +597,6 @@ namespace pl::ptrn {
             auto evaluator = this->getEvaluator();
 
             if (auto transformFunc = evaluator->findFunction(this->getTransformFunction()); transformFunc.has_value()) {
-                auto startHeap = this->m_evaluator->getHeap();
-                ON_SCOPE_EXIT { this->m_evaluator->getHeap() = startHeap; };
-
                 if (auto result = transformFunc->func(evaluator, { value }); result.has_value())
                     return *result;
             }
@@ -610,9 +614,6 @@ namespace pl::ptrn {
             else {
                 const auto function = this->m_evaluator->findFunction(formatterFunctionName);
                 if (function.has_value()) {
-                    auto startHeap = this->m_evaluator->getHeap();
-                    ON_SCOPE_EXIT { this->m_evaluator->getHeap() = startHeap; };
-
                     auto result = function->func(this->m_evaluator, { literal });
                     if (result.has_value()) {
                         if (fromCast && result->isPattern() && result->toPattern()->getTypeName() == this->getTypeName()) {

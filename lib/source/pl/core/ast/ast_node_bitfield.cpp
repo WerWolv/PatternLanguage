@@ -92,7 +92,7 @@ namespace pl::core::ast {
         std::vector<std::shared_ptr<ptrn::Pattern>> potentialPatterns;
         auto initialPosition = evaluator->getBitwiseReadOffset();
 
-        evaluator->pushScope(bitfieldPattern, potentialPatterns);
+        evaluator->pushScope(bitfieldPattern, potentialPatterns, true);
 
         ON_SCOPE_EXIT {
             bitfieldPattern->setReversed(evaluator->isReadOrderReversed());

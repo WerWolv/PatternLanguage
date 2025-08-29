@@ -104,20 +104,26 @@ namespace pl::cli::sub {
             formatter->enableMetaInformation(metaInformation);
 
             // Call selected formatter to format the results
-            auto result = formatter->format(runtime);
+            try {
+                auto result = formatter->format(runtime);
 
-            if (outputFilePath.empty()) {
-                fwrite(result.data(), 1, result.size(), stdout);
-            } else {
-                // Write results to output file
-                wolv::io::File outputFile(outputFilePath, wolv::io::File::Mode::Create);
-                if (!outputFile.isValid()) {
-                    ::fmt::print("Failed to create output file: {}\n", outputFilePath.string());
-                    std::exit(EXIT_FAILURE);
+                if (outputFilePath.empty()) {
+                    fwrite(result.data(), 1, result.size(), stdout);
+                } else {
+                    // Write results to output file
+                    wolv::io::File outputFile(outputFilePath, wolv::io::File::Mode::Create);
+                    if (!outputFile.isValid()) {
+                        ::fmt::print("Failed to create output file: {}\n", outputFilePath.string());
+                        std::exit(EXIT_FAILURE);
+                    }
+
+                    outputFile.writeVector(result);
                 }
-
-                outputFile.writeVector(result);
+            } catch (const std::exception &e) {
+                ::fmt::print("Failed to format data: {}\n", e.what());
+                std::exit(EXIT_FAILURE);
             }
+
         });
     }
 

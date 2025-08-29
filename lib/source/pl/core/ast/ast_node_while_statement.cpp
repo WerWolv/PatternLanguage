@@ -27,10 +27,10 @@ namespace pl::core::ast {
         while (evaluateCondition(evaluator)) {
             evaluator->handleAbort();
 
-            auto variables         = *evaluator->getScope(0).scope;
+            std::vector<std::shared_ptr<ptrn::Pattern>> variables;
             auto parameterPack     = evaluator->getScope(0).parameterPack;
 
-            evaluator->pushScope(nullptr, variables);
+            evaluator->pushScope(nullptr, variables, false);
             evaluator->getScope(0).parameterPack = parameterPack;
             ON_SCOPE_EXIT {
                               evaluator->popScope();

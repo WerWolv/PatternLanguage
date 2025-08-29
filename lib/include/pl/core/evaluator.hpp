@@ -78,15 +78,15 @@ namespace pl::core {
         struct Scope {
             Scope(const std::shared_ptr<pl::ptrn::Pattern>& parentPattern,
                 std::vector<std::shared_ptr<pl::ptrn::Pattern>>* scopePatterns,
-                size_t heapSize)
+                bool isolated)
                 : parent(parentPattern),
                 scope(scopePatterns),
-                heapStartSize(heapSize) {}
+                isolated(isolated) {}
 
             std::shared_ptr<ptrn::Pattern> parent;
             std::vector<std::shared_ptr<ptrn::Pattern>> *scope;
             std::optional<ParameterPack> parameterPack;
-            size_t heapStartSize;
+            bool isolated;
         };
 
         struct PatternLocalData {
@@ -106,7 +106,7 @@ namespace pl::core {
             u64 cursorAddress;
         };
 
-        void pushScope(const std::shared_ptr<ptrn::Pattern> &parent, std::vector<std::shared_ptr<ptrn::Pattern>> &scope);
+        void pushScope(const std::shared_ptr<ptrn::Pattern> &parent, std::vector<std::shared_ptr<ptrn::Pattern>> &scope, bool isolated);
         void popScope();
 
         [[nodiscard]] Scope &getScope(i32 index) {
@@ -138,10 +138,7 @@ namespace pl::core {
         }
 
         void pushTemplateParameters() {
-            if (this->m_templateParameters.empty())
-                this->m_templateParameters.emplace_back();
-            else
-                this->m_templateParameters.push_back(this->m_templateParameters.back());
+            this->m_templateParameters.emplace_back();
         }
 
         void popTemplateParameters() {
@@ -192,13 +189,9 @@ namespace pl::core {
             return this->m_dataSize;
         }
 
-        void accessData(u64 address, void *buffer, size_t size, u64 sectionId, bool write);
-        void readData(u64 address, void *buffer, size_t size, u64 sectionId) {
-            this->accessData(address, buffer, size, sectionId, false);
-        }
-        void writeData(u64 address, const void *buffer, size_t size, u64 sectionId) {
-            this->accessData(address, const_cast<void*>(buffer), size, sectionId, true);
-        }
+        void accessData(ptrn::Pattern *pattern, u64 address, void *buffer, size_t size, u64 sectionId, bool write);
+        void readData(u64 address, void *buffer, size_t size, u64 sectionId);
+        void writeData(ptrn::Pattern *pattern, const void *buffer, size_t size, u64 sectionId);
 
         void setDefaultEndian(std::endian endian) {
             this->m_defaultEndian = endian;
@@ -270,7 +263,7 @@ namespace pl::core {
         }
 
         [[nodiscard]] u128 readBits(u128 byteOffset, u8 bitOffset, u64 bitSize, u64 section, std::endian endianness);
-        void writeBits(u128 byteOffset, u8 bitOffset, u64 bitSize, u64 section, std::endian endianness, u128 value);
+        void writeBits(ptrn::Pattern *pattern, u8 bitOffset, u64 bitSize, u64 section, std::endian endianness, u128 value);
 
         bool addBuiltinFunction(const std::string &name, api::FunctionParameterCount numParams, std::vector<Token::Literal> defaultParameters, const api::FunctionCallback &function, bool dangerous);
         bool addCustomFunction(const std::string &name, api::FunctionParameterCount numParams, std::vector<Token::Literal> defaultParameters, const api::FunctionCallback &function);
@@ -285,14 +278,6 @@ namespace pl::core {
 
         [[nodiscard]] std::optional<api::Function> findFunction(const std::string &name) const;
 
-        [[nodiscard]] std::vector<std::vector<u8>> &getHeap() {
-            return this->m_heap;
-        }
-
-        [[nodiscard]] const std::vector<std::vector<u8>> &getHeap() const {
-            return this->m_heap;
-        }
-
         [[nodiscard]] std::map<u32, PatternLocalData> &getPatternLocalStorage() {
             return this->m_patternLocalStorage;
         }
@@ -305,7 +290,8 @@ namespace pl::core {
 
         void createArrayVariable(const std::string &name, const ast::ASTNode *type, size_t entryCount, u64 section, bool constant = false);
         std::shared_ptr<ptrn::Pattern> createVariable(const std::string &name, const ast::ASTNodeTypeDecl *type, const std::optional<Token::Literal> &value = std::nullopt, bool outVariable = false, bool reference = false, bool templateVariable = false, bool constant = false);
-        std::shared_ptr<ptrn::Pattern>& getVariableByName(const std::string &name);
+        [[nodiscard]] std::shared_ptr<ptrn::Pattern>& getVariableByName(const std::string &name);
+        [[nodiscard]] bool isVariableInScope(const std::string &name);
         void setVariable(const std::string &name, const Token::Literal &value);
         void setVariable(std::shared_ptr<ptrn::Pattern> &pattern, const Token::Literal &value);
         void setVariableAddress(const std::string &variableName, u64 address, u64 section = 0);
@@ -476,6 +462,8 @@ namespace pl::core {
                 it->second.erase(pattern);
         }
 
+        std::shared_ptr<ptrn::Pattern>* getVariableByNameImpl(const std::string &name);
+
     private:
         PatternLanguage *m_patternLanguage = nullptr;
         std::list<PatternLanguage> m_subRuntimes;
@@ -503,7 +491,6 @@ namespace pl::core {
         std::map<u64, api::Section> m_sections;
         u64 m_sectionId = 0;
 
-        std::vector<std::vector<u8>> m_heap;
         std::map<u32, PatternLocalData> m_patternLocalStorage;
 
         std::map<std::string, std::set<ptrn::Pattern*>> m_attributedPatterns;

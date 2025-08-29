@@ -49,10 +49,10 @@ namespace pl::core::ast {
 
         auto &currScope = evaluator->getScope(0);
 
-        auto variables     = *currScope.scope;
+        std::vector<std::shared_ptr<ptrn::Pattern>> variables;
         auto parameterPack = currScope.parameterPack;
 
-        evaluator->pushScope(nullptr, variables);
+        evaluator->pushScope(nullptr, variables, false);
         evaluator->getScope(0).parameterPack = parameterPack;
         ON_SCOPE_EXIT {
             evaluator->popScope();
@@ -62,22 +62,7 @@ namespace pl::core::ast {
             auto result = statement->execute(evaluator);
 
             if (auto ctrlStatement = evaluator->getCurrentControlFlowStatement(); ctrlStatement != ControlFlowStatement::None) {
-                if (!result.has_value())
-                    return std::nullopt;
-
-                return std::visit(wolv::util::overloaded {
-                        [](const auto &value) -> FunctionResult {
-                            return value;
-                        },
-                        [evaluator](const std::shared_ptr<ptrn::Pattern> &pattern) -> FunctionResult {
-                            auto &prevScope = evaluator->getScope(-1);
-                            auto &currScope = evaluator->getScope(0);
-
-                            prevScope.heapStartSize = currScope.heapStartSize = evaluator->getHeap().size();
-
-                            return pattern;
-                        }
-                }, result.value());
+                return result;
             }
         }
 

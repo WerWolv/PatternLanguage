@@ -23,7 +23,7 @@ namespace pl::core::ast {
 
         pattern->setSection(evaluator->getSectionId());
 
-        evaluator->pushScope(pattern, memberPatterns);
+        evaluator->pushScope(pattern, memberPatterns, true);
         ON_SCOPE_EXIT {
             size_t size = 0;
             for (auto &memberPattern : memberPatterns) {

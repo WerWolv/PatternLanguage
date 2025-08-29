@@ -396,8 +396,8 @@ namespace pl::core::ast {
             }
         };
 
-        auto thisScope = evaluator->getScope(0).scope;
-        evaluator->pushScope(pattern, *thisScope);
+        std::vector<std::shared_ptr<ptrn::Pattern>> variables;
+        evaluator->pushScope(pattern, variables, false);
         ON_SCOPE_EXIT {
             evaluator->popScope();
         };
