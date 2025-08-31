@@ -427,6 +427,10 @@ namespace pl::core {
             return *m_patternLanguage;
         }
 
+        const PatternLanguage& getRuntime() const {
+            return *m_patternLanguage;
+        }
+
         void setPatternColorPalette(std::span<const u32> palette) {
             m_patternColorPalette.clear();
             m_patternColorPalette.reserve(palette.size());
@@ -491,8 +495,6 @@ namespace pl::core {
         std::atomic<u64> m_currPatternCount = 0;
 
         std::atomic<bool> m_aborted;
-
-        std::vector<u64> m_sectionIdStack;
 
         std::vector<std::vector<u8>> m_heap;
         std::map<u32, PatternLocalData> m_patternLocalStorage;

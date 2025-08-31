@@ -74,8 +74,7 @@ namespace pl::core::ast {
 
                     pattern->setVariableName(this->m_name);
 
-                    if (this->m_placementSection != nullptr)
-                        pattern->setSection(evaluator->getSectionId());
+                    pattern->setSection(evaluator->getSectionId());
 
                     applyVariableAttributes(evaluator, this, pattern);
 
@@ -83,7 +82,7 @@ namespace pl::core::ast {
                         evaluator->setBitwiseReadOffset(startOffset);
                     }
 
-                    if (this->m_placementSection != nullptr && !evaluator->isGlobalScope()) {
+                    if (evaluator->getSectionId() != ptrn::Pattern::MainSectionId && !evaluator->isGlobalScope()) {
                         evaluator->addPattern(std::move(pattern));
                     } else {
                         resultPatterns = hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));

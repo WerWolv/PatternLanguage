@@ -929,25 +929,27 @@ namespace pl::core {
     }
 
     void Evaluator::pushSectionId(u64 id) {
-        this->m_sectionIdStack.push_back(id);
+        this->getRuntime().m_sectionData->sectionIdStack.push_back(id);
     }
 
     void Evaluator::popSectionId() {
-        this->m_sectionIdStack.pop_back();
+        this->getRuntime().m_sectionData->sectionIdStack.pop_back();
     }
 
     [[nodiscard]] u64 Evaluator::getSectionId() const {
-        if (this->m_sectionIdStack.empty())
+        const auto &sectionIdStack = this->getRuntime().m_sectionData->sectionIdStack;
+        if (sectionIdStack.empty())
             return 0;
 
-        return this->m_sectionIdStack.back();
+        return sectionIdStack.back();
     }
 
     u64 Evaluator::getUserSectionId() const {
-        if (this->m_sectionIdStack.empty())
+        const auto &sectionIdStack = this->getRuntime().m_sectionData->sectionIdStack;
+        if (sectionIdStack.empty())
             return 0;
 
-        for (auto it = this->m_sectionIdStack.rbegin(); it != this->m_sectionIdStack.rend(); ++it) {
+        for (auto it = sectionIdStack.rbegin(); it != sectionIdStack.rend(); ++it) {
             if (*it != ptrn::Pattern::MainSectionId && *it != ptrn::Pattern::HeapSectionId && *it != ptrn::Pattern::PatternLocalSectionId && *it != ptrn::Pattern::InstantiationSectionId)
                 return *it;
         }
@@ -959,7 +961,6 @@ namespace pl::core {
         this->m_readOrderReversed = false;
         this->m_currBitOffset = 0;
 
-        this->m_sectionIdStack.clear();
         this->m_outVariables.clear();
         this->m_outVariableValues.clear();
 
@@ -977,6 +978,8 @@ namespace pl::core {
         this->m_aborted = false;
         this->m_evaluated = false;
         this->m_attributedPatterns.clear();
+
+        this->m_subRuntimes.clear();
 
         this->setPatternColorPalette(DefaultPatternColorPalette);
 

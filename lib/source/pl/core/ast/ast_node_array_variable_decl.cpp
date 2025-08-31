@@ -101,7 +101,7 @@ namespace pl::core::ast {
                 evaluator->setBitwiseReadOffset(startOffset);
             }
 
-            if (this->m_placementSection != nullptr && !evaluator->isGlobalScope()) {
+            if (evaluator->getSectionId() != ptrn::Pattern::MainSectionId && !evaluator->isGlobalScope()) {
                 evaluator->addPattern(std::move(pattern));
                 resultPatterns.pop_back();
             }

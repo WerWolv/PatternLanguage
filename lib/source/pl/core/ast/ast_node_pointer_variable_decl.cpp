@@ -100,8 +100,7 @@ namespace pl::core::ast {
                 err::E0005.throwError("'auto' can only be used with parameters.", { }, this->getLocation());
         }
 
-        if (this->m_placementSection != nullptr)
-            pattern->setSection(evaluator->getSectionId());
+        pattern->setSection(evaluator->getSectionId());
 
         if (this->m_placementOffset != nullptr && !evaluator->isGlobalScope()) {
             evaluator->setBitwiseReadOffset(startOffset);
@@ -114,7 +113,7 @@ namespace pl::core::ast {
             this->execute(evaluator);
             resultPatterns.clear();
         } else {
-            if (this->m_placementSection != nullptr && !evaluator->isGlobalScope()) {
+            if (evaluator->getSectionId() != ptrn::Pattern::MainSectionId && !evaluator->isGlobalScope()) {
                 evaluator->addPattern(std::move(pattern));
                 resultPatterns.clear();
             }

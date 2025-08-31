@@ -424,6 +424,7 @@ namespace pl {
         struct SectionData {
             std::map<u64, api::Section> sections;
             u64 nextSectionId = 0;
+            std::vector<u64> sectionIdStack;
         };
 
     private:

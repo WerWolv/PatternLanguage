@@ -555,6 +555,7 @@ namespace pl {
         if (!this->m_subRuntime) {
             this->m_sectionData->nextSectionId = 1;
             this->m_sectionData->sections.clear();
+            this->m_sectionData->sectionIdStack.clear();
         }
 
         this->m_resolvers.setDefaultResolver([this](const std::string& path) {
