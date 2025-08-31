@@ -265,11 +265,11 @@ namespace pl::lib::libstd::mem {
                         if (auto iterable = dynamic_cast<ptrn::IIterable*>(pattern.get())) {
                             iterable->forEachEntry(0, iterable->getEntryCount(), [&](u64, ptrn::Pattern *entry) {
                                 auto entrySize = entry->getSize();
-                                ctx->readData(entry->getOffset(), section.data() + toAddr, entrySize, entry->getSection());
+                                pattern->getEvaluator()->readData(entry->getOffset(), section.data() + toAddr, entrySize, entry->getSection());
                                 toAddr += entrySize;
                             });
                         } else {
-                            ctx->readData(pattern->getOffset(), section.data() + toAddr, pattern->getSize(), pattern->getSection());
+                            pattern->getEvaluator()->readData(pattern->getOffset(), section.data() + toAddr, pattern->getSize(), pattern->getSection());
                         }
                         break;
                     }

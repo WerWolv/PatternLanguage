@@ -199,8 +199,8 @@ namespace pl::core::ast {
                     if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize() + 1))
                         err::E0004.throwError("Array expanded past end of the data before a null-entry was found.", "Try using a while-sized array instead to limit the size of the array.", this->getLocation());
 
-                evaluator->readData(evaluator->getReadOffset(), buffer.data(), buffer.size(), templatePattern->getSection());
-                evaluator->getReadOffsetAndIncrement(buffer.size());
+                templatePattern->getEvaluator()->readData(evaluator->getReadOffset(), buffer.data(), buffer.size(), templatePattern->getSection());
+                templatePattern->getEvaluator()->getReadOffsetAndIncrement(buffer.size());
 
                 entryCount++;
 
@@ -213,7 +213,7 @@ namespace pl::core::ast {
                 }
 
                 if (reachedEnd) break;
-                evaluator->handleAbort();
+                templatePattern->getEvaluator()->handleAbort();
             }
         }
 
@@ -394,7 +394,7 @@ namespace pl::core::ast {
                             err::E0004.throwError("Array expanded past end of the data before a null-entry was found.", "Try using a while-sized array instead to limit the size of the array.", this->getLocation());
 
                     const auto patternSize = pattern->getSize();
-                    evaluator->readData(evaluator->getReadOffset() - patternSize, buffer.data(), buffer.size(), pattern->getSection());
+                    pattern->getEvaluator()->readData(evaluator->getReadOffset() - patternSize, buffer.data(), buffer.size(), pattern->getSection());
 
                     addEntries(hlp::moveToVector(std::move(pattern)));
 

@@ -117,8 +117,8 @@ namespace pl::core::ast {
             [&, this](const std::shared_ptr<ptrn::Pattern> &left, const std::shared_ptr<ptrn::Pattern> &right) -> ASTNode * {
                 std::vector<u8> leftBytes(left->getSize()), rightBytes(right->getSize());
 
-                evaluator->readData(left->getOffset(), leftBytes.data(), leftBytes.size(), left->getSection());
-                evaluator->readData(right->getOffset(), rightBytes.data(), rightBytes.size(), right->getSection());
+                left->getEvaluator()->readData(left->getOffset(), leftBytes.data(), leftBytes.size(), left->getSection());
+                right->getEvaluator()->readData(right->getOffset(), rightBytes.data(), rightBytes.size(), right->getSection());
                 switch (this->getOperator()) {
                    case Token::Operator::BoolEqual:
                        return new ASTNodeLiteral(leftBytes == rightBytes);

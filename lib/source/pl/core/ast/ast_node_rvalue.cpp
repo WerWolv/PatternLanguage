@@ -35,14 +35,14 @@ namespace pl::core::ast {
         }
     }
 
-    static void readVariable(Evaluator *evaluator, auto &value, ptrn::Pattern *variablePattern) {
+    static void readVariable(auto &value, ptrn::Pattern *variablePattern) {
         constexpr bool isString = std::same_as<std::remove_cvref_t<decltype(value)>, std::string>;
 
         if constexpr (isString) {
             value.resize(variablePattern->getSize());
-            evaluator->readData(variablePattern->getOffset(), value.data(), value.size(), variablePattern->getSection());
+            variablePattern->getEvaluator()->readData(variablePattern->getOffset(), value.data(), value.size(), variablePattern->getSection());
         } else {
-            evaluator->readData(variablePattern->getOffset(), &value, variablePattern->getSize(), variablePattern->getSection());
+            variablePattern->getEvaluator()->readData(variablePattern->getOffset(), &value, variablePattern->getSize(), variablePattern->getSection());
         }
 
         if constexpr (!isString)
@@ -91,39 +91,39 @@ namespace pl::core::ast {
         Token::Literal literal;
         if (dynamic_cast<ptrn::PatternUnsigned *>(pattern.get()) != nullptr) {
             u128 value = 0;
-            readVariable(evaluator, value, pattern.get());
+            readVariable(value, pattern.get());
             literal = value;
         } else if (dynamic_cast<ptrn::PatternSigned *>(pattern.get()) != nullptr) {
             i128 value = 0;
-            readVariable(evaluator, value, pattern.get());
+            readVariable(value, pattern.get());
             value   = hlp::signExtend(pattern->getSize() * 8, value);
             literal = value;
         } else if (dynamic_cast<ptrn::PatternFloat *>(pattern.get()) != nullptr) {
             if (pattern->getSize() == sizeof(u16)) {
                 u16 value = 0;
-                readVariable(evaluator, value, pattern.get());
+                readVariable(value, pattern.get());
                 literal = double(hlp::float16ToFloat32(value));
             } else if (pattern->getSize() == sizeof(float)) {
                 float value = 0;
-                readVariable(evaluator, value, pattern.get());
+                readVariable(value, pattern.get());
                 literal = double(value);
             } else if (pattern->getSize() == sizeof(double)) {
                 double value = 0;
-                readVariable(evaluator, value, pattern.get());
+                readVariable(value, pattern.get());
                 literal = value;
             } else
                 err::E0001.throwError("Invalid floating point type.");
         } else if (dynamic_cast<ptrn::PatternCharacter *>(pattern.get()) != nullptr) {
             char value = 0;
-            readVariable(evaluator, value, pattern.get());
+            readVariable(value, pattern.get());
             literal = value;
         } else if (dynamic_cast<ptrn::PatternBoolean *>(pattern.get()) != nullptr) {
             bool value = false;
-            readVariable(evaluator, value, pattern.get());
+            readVariable(value, pattern.get());
             literal = value;
         } else if (dynamic_cast<ptrn::PatternString *>(pattern.get()) != nullptr) {
             std::string value;
-            readVariable(evaluator, value, pattern.get());
+            readVariable(value, pattern.get());
             literal = value;
         } else if (auto bitfieldFieldPatternBoolean = dynamic_cast<ptrn::PatternBitfieldFieldBoolean *>(pattern.get()); bitfieldFieldPatternBoolean != nullptr) {
             literal = bool(bitfieldFieldPatternBoolean->readValue());

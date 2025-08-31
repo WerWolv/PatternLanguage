@@ -142,10 +142,10 @@ namespace pl::core::ast {
             auto type = dynamic_cast<ASTNodeBuiltinType *>(evaluatedType.get())->getType();
 
             value = std::visit(wolv::util::overloaded {
-                [&evaluator, &type](const std::shared_ptr<ptrn::Pattern> &value) -> Token::Literal {
+                [&type](const std::shared_ptr<ptrn::Pattern> &value) -> Token::Literal {
                     if (Token::isInteger(type) && value->getSize() <= Token::getTypeSize(type)) {
                         u128 result = 0;
-                        evaluator->readData(value->getOffset(), &result, value->getSize(), value->getSection());
+                        value->getEvaluator()->readData(value->getOffset(), &result, value->getSize(), value->getSection());
 
                         return result;
                     } else {
