@@ -699,7 +699,7 @@ namespace pl::core {
                     else
                         err::E0011.throwError(fmt::format("Tried accessing out of bounds pattern local cell {}. This is a bug.", pattern->getHeapAddress()));
                 } else {
-                    return this->getSection(pattern->getSection());
+                    return this->m_patternLanguage->getSection(pattern->getSection());
                 }
             };
 
@@ -912,20 +912,16 @@ namespace pl::core {
         } else if (sectionId == ptrn::Pattern::InstantiationSectionId) {
             err::E0012.throwError("Cannot access data of type that hasn't been placed in memory.");
         } else {
-            if (this->m_sections.contains(sectionId)) {
-                auto &section = this->m_sections[sectionId];
-
-                if (!write) {
-                    if ((address + size) <= section.data.size())
-                        std::memmove(buffer, section.data.data() + address, size);
-                    else
-                        std::memset(buffer, 0x00, size);
-                } else {
-                    if ((address + size) <= section.data.size())
-                        std::memmove(section.data.data() + address, buffer, size);
-                }
-            } else
-                err::E0012.throwError(fmt::format("Tried accessing a non-existing section with id {}.", sectionId));
+            auto &section = this->getRuntime().getSection(sectionId);
+            if (!write) {
+                if ((address + size) <= section.size())
+                    std::memmove(buffer, section.data() + address, size);
+                else
+                    std::memset(buffer, 0x00, size);
+            } else {
+                if ((address + size) <= section.size())
+                    std::memmove(section.data() + address, buffer, size);
+            }
         }
 
         if (this->isDebugModeEnabled()) [[unlikely]]
@@ -959,54 +955,11 @@ namespace pl::core {
         return 0;
     }
 
-
-    u64 Evaluator::createSection(const std::string &name) {
-        auto id = this->m_sectionId;
-        this->m_sectionId++;
-
-        this->m_sections.insert({ id, { name, { } } });
-        return id;
-    }
-
-    void Evaluator::removeSection(u64 id) {
-        this->m_sections.erase(id);
-    }
-
-    std::vector<u8>& Evaluator::getSection(u64 id) {
-        if (id == ptrn::Pattern::MainSectionId)
-            err::E0011.throwError("Cannot access main section.");
-        else if (id == ptrn::Pattern::HeapSectionId)
-            return this->m_heap.back();
-        else if (this->m_sections.contains(id))
-            return this->m_sections[id].data;
-        else if (id == ptrn::Pattern::InstantiationSectionId)
-            err::E0012.throwError("Cannot access data of type that hasn't been placed in memory.");
-        else
-            err::E0011.throwError(fmt::format("Tried accessing a non-existing section with id {}.", id));
-    }
-
-    u64 Evaluator::getSectionSize(u64 id) {
-        if (id == ptrn::Pattern::MainSectionId)
-            return this->getDataSize();
-        else
-            return this->getSection(id).size();
-    }
-
-    const std::map<u64, api::Section> &Evaluator::getSections() const {
-        return this->m_sections;
-    }
-
-    u64 Evaluator::getSectionCount() const {
-        return this->m_sections.size();
-    }
-
     bool Evaluator::evaluate(const std::vector<std::shared_ptr<ast::ASTNode>> &ast) {
         this->m_readOrderReversed = false;
         this->m_currBitOffset = 0;
 
-        this->m_sections.clear();
         this->m_sectionIdStack.clear();
-        this->m_sectionId = 1;
         this->m_outVariables.clear();
         this->m_outVariableValues.clear();
 

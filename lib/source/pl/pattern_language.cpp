@@ -18,6 +18,8 @@
 #include <wolv/io/file.hpp>
 #include <wolv/utils/string.hpp>
 
+#include <pl/core/errors/runtime_errors.hpp>
+
 namespace pl {
 
     static std::string getFunctionName(const api::Namespace &ns, const std::string &name) {
@@ -42,6 +44,8 @@ namespace pl {
         };
 
         this->m_internals.evaluator->setRuntime(this);
+
+        this->m_sectionData = std::make_shared<SectionData>();
 
         if (addLibStd)
             lib::libstd::registerFunctions(*this);
@@ -97,6 +101,8 @@ namespace pl {
         this->m_runId.exchange(other.m_runId.load());
         this->m_subRuntime = other.m_subRuntime;
 
+        this->m_sectionData = std::move(other.m_sectionData);
+
         m_startAddress  = std::move(other.m_startAddress);
         m_defaultEndian = other.m_defaultEndian;
         m_runningTime   = other.m_runningTime;
@@ -124,6 +130,7 @@ namespace pl {
 
         runtime.m_functions = this->m_functions;
         runtime.m_subRuntime = true;
+        runtime.m_sectionData = this->m_sectionData;
 
         return runtime;
     }
@@ -470,16 +477,45 @@ namespace pl {
         return this->m_internals.evaluator->getPatternLimit();
     }
 
-    const std::vector<u8>& PatternLanguage::getSection(u64 id) const {
+    std::vector<u8>& PatternLanguage::getSection(u64 id) {
         static std::vector<u8> empty;
-        if (id > this->m_internals.evaluator->getSectionCount() || id == ptrn::Pattern::MainSectionId || id == ptrn::Pattern::HeapSectionId)
-            return empty;
+        if (id == ptrn::Pattern::MainSectionId)
+            core::err::E0012.throwError("Cannot access main section.");
+        else if (id == ptrn::Pattern::HeapSectionId)
+            return this->getInternals().evaluator->m_heap.back();
+        else if (id == ptrn::Pattern::InstantiationSectionId)
+            core::err::E0012.throwError("Cannot access data of type that hasn't been placed in memory.");
+        else if (this->m_sectionData->sections.contains(id))
+            return this->m_sectionData->sections.at(id).data;
         else
-            return this->m_internals.evaluator->getSection(id);
+            core::err::E0012.throwError(fmt::format("Tried accessing a non-existing section with id {}.", id));
     }
 
     [[nodiscard]] const std::map<u64, api::Section>& PatternLanguage::getSections() const {
-        return this->m_internals.evaluator->getSections();
+        return this->m_sectionData->sections;
+    }
+
+    u64 PatternLanguage::createSection(const std::string &name) {
+        auto id = this->m_sectionData->nextSectionId;
+        this->m_sectionData->nextSectionId++;
+
+        this->m_sectionData->sections.insert({ id, { name, { } } });
+        return id;
+    }
+
+    void PatternLanguage::removeSection(u64 id) {
+        this->m_sectionData->sections.erase(id);
+    }
+
+    u64 PatternLanguage::getSectionSize(u64 id) {
+        if (id == ptrn::Pattern::MainSectionId)
+            return this->m_dataSize;
+        else
+            return this->getSection(id).size();
+    }
+
+    u64 PatternLanguage::getSectionCount() const {
+        return this->m_sectionData->sections.size();
     }
 
     [[nodiscard]] const std::vector<std::shared_ptr<ptrn::Pattern>> &PatternLanguage::getPatterns(u64 section) const {
@@ -515,6 +551,11 @@ namespace pl {
         this->m_internals.evaluator->setDebugMode(false);
         this->m_internals.parser->setParserManager(&m_parserManager);
         this->m_patternsValid = false;
+
+        if (!this->m_subRuntime) {
+            this->m_sectionData->nextSectionId = 1;
+            this->m_sectionData->sections.clear();
+        }
 
         this->m_resolvers.setDefaultResolver([this](const std::string& path) {
             return this->m_fileResolver.resolve(path);

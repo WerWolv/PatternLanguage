@@ -76,7 +76,7 @@ namespace pl::lib::libstd::mem {
                 if (section == 0xFFFF'FFFF'FFFF'FFFF)
                     section = ctx->getUserSectionId();
 
-                return u128(ctx->getSectionSize(section));
+                return u128(ctx->getRuntime().getSectionSize(section));
             });
 
             /* find_sequence_in_range(occurrence_index, start_offset, end_offset, bytes...) */
@@ -181,14 +181,14 @@ namespace pl::lib::libstd::mem {
             runtime.addFunction(nsStdMem, "create_section", FunctionParameterCount::exactly(1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 auto name = params[0].toString(false);
 
-                return u128(ctx->createSection(name));
+                return u128(ctx->getRuntime().createSection(name));
             });
 
             /* delete_section(id) */
             runtime.addFunction(nsStdMem, "delete_section", FunctionParameterCount::exactly(1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 auto id = u64(params[0].toUnsigned());
 
-                ctx->removeSection(id);
+                ctx->getRuntime().removeSection(id);
 
                 return std::nullopt;
             });
@@ -197,7 +197,7 @@ namespace pl::lib::libstd::mem {
             runtime.addFunction(nsStdMem, "get_section_size", FunctionParameterCount::exactly(1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 auto id = u64(params[0].toUnsigned());
 
-                return u128(ctx->getSection(id).size());
+                return u128(ctx->getRuntime().getSection(id).size());
             });
 
             /* set_section_size(id, size) */
@@ -205,7 +205,7 @@ namespace pl::lib::libstd::mem {
                 auto id   = u64(params[0].toUnsigned());
                 auto size = size_t(params[1].toUnsigned());
 
-                ctx->getSection(id).resize(size);
+                ctx->getRuntime().getSection(id).resize(size);
 
                 return std::nullopt;
             });
@@ -225,7 +225,7 @@ namespace pl::lib::libstd::mem {
                 else if (toId == ptrn::Pattern::HeapSectionId)
                     err::E0012.throwError("Invalid section id.");
 
-                auto& section = ctx->getSection(toId);
+                auto& section = ctx->getRuntime().getSection(toId);
                 if (section.size() < toAddr + size)
                     section.resize(toAddr + size);
                 std::memcpy(section.data() + toAddr, data.data(), size);
@@ -243,7 +243,7 @@ namespace pl::lib::libstd::mem {
                 else if (toId == ptrn::Pattern::HeapSectionId)
                     err::E0012.throwError("Invalid section id.");
 
-                auto& section = ctx->getSection(toId);
+                auto& section = ctx->getRuntime().getSection(toId);
 
                 switch (params[0].getType()) {
                     using enum Token::ValueType;

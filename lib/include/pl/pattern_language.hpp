@@ -257,7 +257,7 @@ namespace pl {
          * @param id ID of the section
          * @return Memory of the section
          */
-        [[nodiscard]] const std::vector<u8>& getSection(u64 id) const;
+        [[nodiscard]] std::vector<u8>& getSection(u64 id);
 
         /**
          * @brief Gets all custom sections that were created
@@ -411,8 +411,20 @@ namespace pl {
 
         [[nodiscard]] const std::set<pl::ptrn::Pattern*>& getPatternsWithAttribute(const std::string &attribute) const;
 
+        [[nodiscard]] u64 getSectionSize(u64 id);
+        [[nodiscard]] u64 getSectionCount() const;
+        [[nodiscard]] u64 createSection(const std::string &name);
+        void removeSection(u64 id);
+
     private:
         void flattenPatterns();
+
+        friend class core::Evaluator;
+
+        struct SectionData {
+            std::map<u64, api::Section> sections;
+            u64 nextSectionId = 0;
+        };
 
     private:
         Internals m_internals;
@@ -449,6 +461,8 @@ namespace pl {
 
         std::function<bool()> m_dangerousFunctionCallCallback;
         core::LogConsole::Callback m_logCallback;
+
+        std::shared_ptr<SectionData> m_sectionData;
 
         struct Function {
             api::Namespace nameSpace;
