@@ -24,7 +24,7 @@ namespace pl::core::ast {
             err::E0005.throwError(fmt::format("Error while processing imported type '{}'.", m_importedTypeName), "Check the imported pattern for errors.", getLocation());
         }
 
-        auto patterns = runtime.getPatterns();
+        auto patterns = runtime.getPatterns(evaluator->getSectionId());
 
         auto &result = resultPatterns.emplace_back();
         if (patterns.size() == 1) {

@@ -113,7 +113,7 @@ namespace pl::core::ast {
             this->execute(evaluator);
             resultPatterns.clear();
         } else {
-            if (evaluator->isInUserSection() && !evaluator->isGlobalScope()) {
+            if (this->m_placementOffset != nullptr && !evaluator->isGlobalScope()) {
                 evaluator->addPattern(std::move(pattern));
                 resultPatterns.clear();
             }
