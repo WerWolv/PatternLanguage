@@ -413,7 +413,7 @@ namespace pl {
 
         [[nodiscard]] u64 getSectionSize(u64 id);
         [[nodiscard]] u64 getSectionCount() const;
-        [[nodiscard]] u64 createSection(const std::string &name);
+        [[nodiscard]] u64 createSection(const std::string &name, bool hidden = false);
         void removeSection(u64 id);
 
     private:

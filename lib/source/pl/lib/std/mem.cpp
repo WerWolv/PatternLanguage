@@ -184,6 +184,11 @@ namespace pl::lib::libstd::mem {
                 return u128(ctx->getRuntime().createSection(name));
             });
 
+            /* create_hidden_section(name) -> id */
+            runtime.addFunction(nsStdMem, "create_hidden_section", FunctionParameterCount::none(), [](Evaluator *ctx, auto) -> std::optional<Token::Literal> {
+                return u128(ctx->getRuntime().createSection("", true));
+            });
+
             /* delete_section(id) */
             runtime.addFunction(nsStdMem, "delete_section", FunctionParameterCount::exactly(1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 auto id = u64(params[0].toUnsigned());

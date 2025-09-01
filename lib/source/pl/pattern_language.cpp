@@ -495,11 +495,11 @@ namespace pl {
         return this->m_sectionData->sections;
     }
 
-    u64 PatternLanguage::createSection(const std::string &name) {
+    u64 PatternLanguage::createSection(const std::string &name, bool hidden) {
         auto id = this->m_sectionData->nextSectionId;
         this->m_sectionData->nextSectionId++;
 
-        this->m_sectionData->sections.insert({ id, { name, { } } });
+        this->m_sectionData->sections.insert({ id, { name, hidden, { } } });
         return id;
     }
 

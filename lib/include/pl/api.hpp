@@ -67,6 +67,7 @@ namespace pl::api {
      */
     struct Section {
         std::string name;
+        bool hidden;
         std::vector<u8> data;
     };
 
