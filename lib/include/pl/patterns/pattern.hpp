@@ -376,6 +376,9 @@ namespace pl::ptrn {
             if (this->m_section == id)
                 return;
 
+            if (this->m_section.has_value())
+                return;
+
             if (this->m_section != PatternLocalSectionId && this->m_section != HeapSectionId) {
                 if (this->m_evaluator != nullptr)
                     this->m_evaluator->patternDestroyed(this);
@@ -386,7 +389,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] u64 getSection() const {
-            return this->m_section;
+            return this->m_section.value_or(m_evaluator->getDefaultSection());
         }
 
         virtual void sort(const std::function<bool(const Pattern *left, const Pattern *right)> &comparator) {
@@ -638,7 +641,7 @@ namespace pl::ptrn {
 
         u64 m_offset  = 0x00;
         size_t m_size = 0x00;
-        u64 m_section = 0x00;
+        std::optional<u64> m_section;
 
         u32 m_color = 0x00;
 

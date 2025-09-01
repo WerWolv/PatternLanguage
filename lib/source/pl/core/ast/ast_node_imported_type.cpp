@@ -20,6 +20,7 @@ namespace pl::core::ast {
 
         const auto startAddress = evaluator->getReadOffset();
         runtime.setStartAddress(evaluator->getStartAddress() + startAddress);
+        runtime.setDataSize(evaluator->getDataSize() - (evaluator->getStartAddress() + startAddress));
         if (!runtime.executeString(source->content, source->source)) {
             err::E0005.throwError(fmt::format("Error while processing imported type '{}'.", m_importedTypeName), "Check the imported pattern for errors.", getLocation());
         }

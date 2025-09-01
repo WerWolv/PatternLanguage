@@ -655,6 +655,8 @@ namespace pl {
             auto visibility = pattern->getVisibility();
             if (visibility == pl::ptrn::Visibility::Hidden || visibility == pl::ptrn::Visibility::HighlightHidden)
                 continue;
+            if (pattern->getSection() != ptrn::Pattern::MainSectionId)
+                continue;
 
             results.push_back(pattern->getColor());
         }

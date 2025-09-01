@@ -678,6 +678,9 @@ namespace pl::core {
         if (pattern->getSize() > 0xFFFF'FFFF)
             err::E0003.throwError(fmt::format("Value is too large to place into local variable '{}'.", pattern->getVariableName()));
 
+        if (pattern->isReference() && pattern->getSection() == this->getDefaultSection())
+            return;
+
         // Cast values to type given by pattern
         Token::Literal castedValue = castLiteral(pattern.get(), variableValue);
 
@@ -989,6 +992,11 @@ namespace pl::core {
 
         this->m_subRuntimes.clear();
 
+        if (auto &sectionIds = this->getRuntime().m_sectionData->sectionIdStack; !sectionIds.empty())
+            this->m_defaultSection = sectionIds.back();
+        else
+            this->m_defaultSection = ptrn::Pattern::MainSectionId;
+
         this->setPatternColorPalette(DefaultPatternColorPalette);
 
         if (this->m_allowDangerousFunctions == DangerousFunctionPermission::Deny)
@@ -1142,6 +1150,9 @@ namespace pl::core {
             }
 
             stop_evaluation:
+
+            for (auto &pattern : this->m_patterns)
+                pattern->setSection(this->getDefaultSection());
 
             if (!this->m_mainResult.has_value() && this->m_customFunctions.contains("main")) {
                 auto mainFunction = this->m_customFunctions["main"];

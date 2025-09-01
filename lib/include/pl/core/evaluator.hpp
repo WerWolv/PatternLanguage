@@ -453,6 +453,8 @@ namespace pl::core {
             }
         }
 
+        u64 getDefaultSection() const { return m_defaultSection; }
+
     private:
         void patternCreated(ptrn::Pattern *pattern);
         void patternDestroyed(ptrn::Pattern *pattern);
@@ -482,6 +484,7 @@ namespace pl::core {
         i8 m_currBitOffset = 0;
         bool m_readOrderReversed = false;
         u64 m_startAddress = 0x00;
+        u64 m_defaultSection = 0;
 
         bool m_evaluated = false;
         bool m_debugMode = false;
