@@ -113,7 +113,7 @@ namespace pl::core::ast {
             this->execute(evaluator);
             resultPatterns.clear();
         } else {
-            if (evaluator->getSectionId() != ptrn::Pattern::MainSectionId && !evaluator->isGlobalScope()) {
+            if (evaluator->isInUserSection() && !evaluator->isGlobalScope()) {
                 evaluator->addPattern(std::move(pattern));
                 resultPatterns.clear();
             }

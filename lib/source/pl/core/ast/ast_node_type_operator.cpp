@@ -26,10 +26,10 @@ namespace pl::core::ast {
         if (this->m_providerOperation) {
             switch (this->getOperator()) {
                 case Token::Operator::AddressOf:
-                    if (evaluator->getSectionId() != ptrn::Pattern::MainSectionId)
-                        result = u128(0x00);
-                    else
+                    if (evaluator->getSectionId() == ptrn::Pattern::MainSectionId)
                         result = u128(evaluator->getDataBaseAddress());
+                    else
+                        result = u128(0x00);
                     break;
                 case Token::Operator::SizeOf:
                     result = u128(evaluator->getRuntime().getSectionSize(evaluator->getSectionId()));

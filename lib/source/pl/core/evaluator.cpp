@@ -944,6 +944,14 @@ namespace pl::core {
         return sectionIdStack.back();
     }
 
+    bool Evaluator::isInUserSection() const {
+        auto sectionId = this->getSectionId();
+
+        if (sectionId == ptrn::Pattern::MainSectionId || sectionId == ptrn::Pattern::HeapSectionId || sectionId == ptrn::Pattern::PatternLocalSectionId || sectionId == ptrn::Pattern::InstantiationSectionId)
+            return false;
+        return true;
+    }
+
     u64 Evaluator::getUserSectionId() const {
         const auto &sectionIdStack = this->getRuntime().m_sectionData->sectionIdStack;
         if (sectionIdStack.empty())

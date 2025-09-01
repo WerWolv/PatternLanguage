@@ -82,7 +82,7 @@ namespace pl::core::ast {
                         evaluator->setBitwiseReadOffset(startOffset);
                     }
 
-                    if (evaluator->getSectionId() != ptrn::Pattern::MainSectionId && !evaluator->isGlobalScope()) {
+                    if (evaluator->isInUserSection() && !evaluator->isGlobalScope()) {
                         evaluator->addPattern(std::move(pattern));
                     } else {
                         resultPatterns = hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));

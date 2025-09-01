@@ -160,6 +160,7 @@ namespace pl::core {
         void popSectionId();
         [[nodiscard]] u64 getSectionId() const;
         [[nodiscard]] u64 getUserSectionId() const;
+        [[nodiscard]] bool isInUserSection() const;
 
         void setInVariables(const std::map<std::string, Token::Literal> &inVariables) {
             this->m_inVariables = inVariables;
