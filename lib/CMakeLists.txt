@@ -11,6 +11,22 @@ else ()
     message(STATUS "libpl static library is being created")
 endif ()
 
+add_subdirectory(lexer_gen)
+
+set(PL_STATICLEXERPATH "${CMAKE_CURRENT_SOURCE_DIR}/include/pl/core/lexer_static.hpp")
+
+add_custom_command(
+    OUTPUT ${PL_STATICLEXERPATH}
+    COMMAND $<TARGET_FILE:lexer_gen> ${PL_STATICLEXERPATH}
+    DEPENDS lexer_gen
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Generating lexertl17 static lexer"
+)
+
+add_custom_target(run_lexer_gen
+    DEPENDS ${PL_STATICLEXERPATH}
+)
+
 add_library(libpl ${LIBRARY_TYPE}
         source/pl/helpers/utils.cpp
 
@@ -52,7 +68,11 @@ add_library(libpl ${LIBRARY_TYPE}
 
         source/pl/core/token.cpp
         source/pl/core/evaluator.cpp
+
         source/pl/core/lexer.cpp
+        $<$<NOT:$<CONFIG:Debug>>:${PL_STATICLEXERPATH}>
+        $<$<CONFIG:Debug>:source/pl/core/lexer_sm.cpp>
+
         source/pl/core/parser.cpp
         source/pl/core/preprocessor.cpp
         source/pl/core/validator.cpp
@@ -102,6 +122,7 @@ endif ()
 
 target_include_directories(libpl PUBLIC include ../external/throwing_ptr/include)
 target_include_directories(libpl_includes INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include ../external/throwing_ptr/include)
+target_include_directories(libpl PRIVATE include ../external/lexertl17/include)
 target_link_libraries(libpl PRIVATE ${FMT_LIBRARIES})
 target_link_libraries(libpl PUBLIC wolv::types wolv::io wolv::utils wolv::hash wolv::containers)
 
