@@ -10,15 +10,25 @@ step to optimize application start-up time.
 #include <lexertl/generate_cpp.hpp>
 
 #include <fstream>
-#include <iostream>
+#include <filesystem>
 
 int main(int argc, char *argv[])
 {
     if (argc!=2)
         return 1;
 
-    lexertl::state_machine sm;
+    try
+    {
+        std::filesystem::path argPath(argv[1]);
+        std::filesystem::path genDir = argPath.parent_path();
+        std::filesystem::create_directory(genDir);
+    }
+    catch (const std::filesystem::filesystem_error &fse)
+    {
+        return 1;
+    }
 
+    lexertl::state_machine sm;
     pl::core::newLexerBuild(sm);
     sm.minimise();
 

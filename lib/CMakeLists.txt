@@ -13,7 +13,7 @@ endif ()
 
 add_subdirectory(lexer_gen)
 
-set(PL_STATICLEXERPATH "${CMAKE_CURRENT_SOURCE_DIR}/include/pl/core/lexer_static.hpp")
+set(PL_STATICLEXERPATH "${CMAKE_CURRENT_SOURCE_DIR}/include/pl/core/generated/lexer_static.hpp")
 
 add_custom_command(
     OUTPUT ${PL_STATICLEXERPATH}

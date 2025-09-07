@@ -13,7 +13,7 @@
 #include <lexertl/generator.hpp>
 
 #if defined(NDEBUG)
-    #include <pl/core/lexer_static.hpp>
+    #include <pl/core/generated/lexer_static.hpp>
 #endif
 
 #include <cstddef>
