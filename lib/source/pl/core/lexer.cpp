@@ -305,10 +305,11 @@ namespace pl::core {
             g_lexerStaticInitDone = true;
             initNewLexer();
         }
+        m_longestLineLength = 0;
     }
 
     void Lexer::reset() {
-        this->m_longestLineLength = 0;
+        m_longestLineLength = 0;
         this->m_tokens.clear();
     }
 
@@ -537,6 +538,10 @@ namespace pl::core {
             lexertl::lookup(g_sm, results);
 #endif
         }
+
+        std::size_t len = results.first - lineStart;
+        m_longestLineLength = std::max(len, m_longestLineLength);
+        lineStart = results.second;
 
         const auto &eop = tkn::Separator::EndOfProgram;
         m_tokens.emplace_back(eop.type, eop.value, location());
