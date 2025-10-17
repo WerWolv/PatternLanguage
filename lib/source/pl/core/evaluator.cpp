@@ -937,6 +937,9 @@ namespace pl::core {
     }
 
     void Evaluator::popSectionId() {
+        if (this->m_sectionIdStack.empty())
+            return;
+
         this->m_sectionIdStack.pop_back();
     }
 
