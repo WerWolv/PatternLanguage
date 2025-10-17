@@ -36,8 +36,10 @@ namespace pl::core::ast {
         if (this->m_placementSection != nullptr) {
             const auto node = this->m_placementSection->evaluate(evaluator);
             const auto id = dynamic_cast<ASTNodeLiteral *>(node.get());
-            if (id == nullptr)
+            if (id == nullptr) {
+                scopeGuard.release();
                 err::E0010.throwError("Cannot use void expression as section identifier.", {}, this->getLocation());
+            }
 
             evaluator->pushSectionId(u64(id->getValue().toUnsigned()));
         } else {
@@ -89,9 +91,11 @@ namespace pl::core::ast {
 
             std::vector<std::shared_ptr<ptrn::Pattern>> pointedAtPatterns;
             ON_SCOPE_EXIT {
-                auto &pointedAtPattern = pointedAtPatterns.front();
+                if (!pointedAtPatterns.empty()) {
+                    auto &pointedAtPattern = pointedAtPatterns.front();
+                    pattern->setPointedAtPattern(std::move(pointedAtPattern));
+                }
 
-                pattern->setPointedAtPattern(std::move(pointedAtPattern));
                 pattern->setSection(evaluator->getSectionId());
             };
 
