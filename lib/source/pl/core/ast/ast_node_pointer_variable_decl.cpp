@@ -91,9 +91,11 @@ namespace pl::core::ast {
 
             std::vector<std::shared_ptr<ptrn::Pattern>> pointedAtPatterns;
             ON_SCOPE_EXIT {
-                auto &pointedAtPattern = pointedAtPatterns.front();
+                if (!pointedAtPatterns.empty()) {
+                    auto &pointedAtPattern = pointedAtPatterns.front();
+                    pattern->setPointedAtPattern(std::move(pointedAtPattern));
+                }
 
-                pattern->setPointedAtPattern(std::move(pointedAtPattern));
                 pattern->setSection(evaluator->getSectionId());
             };
 
