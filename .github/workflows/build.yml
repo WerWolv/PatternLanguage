@@ -108,7 +108,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX="./install"        \
             -G Ninja                                  \
             ..
-          ninja install
+          ninja -v install
 
       - name: ⬆️ Upload Artifact
         uses: actions/upload-artifact@v4
