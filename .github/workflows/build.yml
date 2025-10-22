@@ -92,19 +92,21 @@ jobs:
         run: |
           mkdir -p build
           cd build
-          CC=$(brew --prefix llvm)/bin/clang        \
-          CXX=$(brew --prefix llvm)/bin/clang++     \
-          OBJC=$(brew --prefix llvm)/bin/clang      \
-          OBJCXX=$(brew --prefix llvm)/bin/clang++  \
-          cmake                                     \
-            -DCMAKE_BUILD_TYPE=Debug                \
-            -DCMAKE_INSTALL_PREFIX="$PWD/install"   \
-            -DLIBPL_ENABLE_TESTS=OFF                \
-            -DLIBPL_ENABLE_CLI=ON                   \
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache      \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache    \
-            -DCMAKE_INSTALL_PREFIX="./install"      \
-            -G Ninja                                \
+          CC=$(brew --prefix llvm)/bin/clang          \
+          CXX=$(brew --prefix llvm)/bin/clang++       \
+          OBJC=$(brew --prefix llvm)/bin/clang        \
+          OBJCXX=$(brew --prefix llvm)/bin/clang++    \
+          cmake                                       \
+            -DCMAKE_BUILD_TYPE=Debug                  \
+            -DCMAKE_INSTALL_PREFIX="$PWD/install"     \
+            -DLIBPL_ENABLE_TESTS=OFF                  \
+            -DLIBPL_ENABLE_CLI=ON                     \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache        \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache      \
+            -DCMAKE_CXX_FLAGS="-stdlib=libc++"        \
+            -DCMAKE_EXE_LINKER_FLAGS="-stdlib=libc++" \
+            -DCMAKE_INSTALL_PREFIX="./install"        \
+            -G Ninja                                  \
             ..
           ninja install
 
