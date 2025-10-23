@@ -79,7 +79,7 @@ jobs:
 
       - name: ⬇️ Install dependencies
         run: |
-          brew install llvm ccache ninja
+          brew install llvm@20 ccache ninja
 
       - name: 📜 Setup ccache
         uses: hendrikmuhs/ccache-action@v1
@@ -92,10 +92,10 @@ jobs:
         run: |
           mkdir -p build
           cd build
-          CC=$(brew --prefix llvm)/bin/clang          \
-          CXX=$(brew --prefix llvm)/bin/clang++       \
-          OBJC=$(brew --prefix llvm)/bin/clang        \
-          OBJCXX=$(brew --prefix llvm)/bin/clang++    \
+          CC=$(brew --prefix llvm@20)/bin/clang          \
+          CXX=$(brew --prefix llvm@20)/bin/clang++       \
+          OBJC=$(brew --prefix llvm@20)/bin/clang        \
+          OBJCXX=$(brew --prefix llvm@20)/bin/clang++    \
           cmake                                       \
             -DCMAKE_BUILD_TYPE=Debug                  \
             -DCMAKE_INSTALL_PREFIX="$PWD/install"     \
@@ -103,12 +103,10 @@ jobs:
             -DLIBPL_ENABLE_CLI=ON                     \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache        \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache      \
-            -DCMAKE_CXX_FLAGS="-stdlib=libc++"        \
-            -DCMAKE_EXE_LINKER_FLAGS="-lc++ -lc++abi -L$(brew --prefix llvm)/lib -Wl,-rpath,$(brew --prefix llvm)/lib" \
             -DCMAKE_INSTALL_PREFIX="./install"        \
             -G Ninja                                  \
             ..
-          ninja -v install
+          ninja install
 
       - name: ⬆️ Upload Artifact
         uses: actions/upload-artifact@v4
