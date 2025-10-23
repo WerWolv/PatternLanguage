@@ -67,12 +67,26 @@ namespace pl::core::ast {
         };
 
         auto leftNode  = this->getLeftOperand()->evaluate(evaluator);
-        auto rightNode = this->getRightOperand()->evaluate(evaluator);
-
         auto leftLiteral  = dynamic_cast<ASTNodeLiteral *>(leftNode.get());
-        auto rightLiteral = dynamic_cast<ASTNodeLiteral *>(rightNode.get());
+        if (leftLiteral == nullptr)
+            throwInvalidOperandError();
 
-        if (leftLiteral == nullptr || rightLiteral == nullptr)
+        if (this->getOperator() == Token::Operator::BoolAnd || this->getOperator() == Token::Operator::BoolOr) {
+            auto leftBool =  std::visit(wolv::util::overloaded {
+                    [](const std::string &value) -> bool { return !value.empty(); },
+                    [this](ptrn::Pattern *const &pattern) -> bool { err::E0004.throwError(fmt::format("Cannot cast value of type '{}' to type 'bool'.", pattern->getTypeName()), {}, this->getLocation()); },
+                    [](auto &&value) -> bool { return value != 0; }
+            }, leftLiteral->getValue());
+
+            if (this->getOperator() == Token::Operator::BoolAnd && !leftBool)
+                return std::unique_ptr<ASTNode>(new ASTNodeLiteral(false));
+            if (this->getOperator() == Token::Operator::BoolOr && leftBool)
+                return std::unique_ptr<ASTNode>(new ASTNodeLiteral(true));
+        }
+
+        auto rightNode = this->getRightOperand()->evaluate(evaluator);
+        auto rightLiteral = dynamic_cast<ASTNodeLiteral *>(rightNode.get());
+        if (rightLiteral == nullptr)
             throwInvalidOperandError();
 
         auto leftValue = leftLiteral->getValue();
