@@ -83,7 +83,7 @@ namespace pl::core {
                         return static_cast<char>(std::stoul(hex, nullptr, 16));
                     } catch (const std::invalid_argument&) {
                         m_errorLength = 2;
-                        error("Invalid hex escape sequence: {}", hex);
+                        error(fmt::format("Invalid hex escape sequence: {}", hex));
                         return std::nullopt;
                     }
                 }
@@ -95,13 +95,13 @@ namespace pl::core {
                         return static_cast<char>(std::stoul(hex, nullptr, 16));
                     } catch (const std::invalid_argument&) {
                         m_errorLength = 4;
-                        error("Invalid unicode escape sequence: {}", hex);
+                        error(fmt::format("Invalid unicode escape sequence: {}", hex));
                         return std::nullopt;
                     }
                 }
                 default:
                     m_errorLength = 1;
-                    error("Unknown escape sequence: {}", m_sourceCode[m_cursor-1]);
+                    error(fmt::format("Unknown escape sequence: {}", m_sourceCode[m_cursor-1]));
                 return std::nullopt;
             }
         }
@@ -114,7 +114,7 @@ namespace pl::core {
             return makeToken(directiveToken->second, identifier.length());
         }
         m_errorLength = identifier.length();
-        error("Unknown directive: {}", identifier);
+        error(fmt::format("Unknown directive: {}", identifier));
         return std::nullopt;
     }
 
@@ -233,7 +233,7 @@ namespace pl::core {
 
             if (!isIntegerCharacter(c, base)) {
                 m_errorLength = literal.size();
-                error("Invalid integer literal: {}", literal);
+                error(fmt::format("Invalid integer literal: {}", literal));
                 return std::nullopt;
             }
             value = value * base + characterValue(c);
@@ -248,7 +248,7 @@ namespace pl::core {
 
         if(end != literal.data() + literal.size()) {
             m_errorLength = literal.size();
-            error("Invalid float literal: {}", literal);
+            error(fmt::format("Invalid float literal: {}", literal));
             return std::nullopt;
         }
 
@@ -639,7 +639,7 @@ namespace pl::core {
                 }
             } else {
                 m_errorLength = 1;
-                error("Unexpected character: {}", c);
+                error(fmt::format("Unexpected character: {}", c));
                 m_cursor++;
 
                 break;

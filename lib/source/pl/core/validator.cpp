@@ -92,7 +92,7 @@ namespace pl::core {
     bool Validator::validateNode(ast::ASTNode* node, std::unordered_set<std::string>& identifiers) {
         if (const auto variableDeclNode = dynamic_cast<ast::ASTNodeVariableDecl *>(node); variableDeclNode != nullptr) {
             if (!identifiers.insert(variableDeclNode->getName()).second) {
-                error("Redeclaration of identifier '{}'", variableDeclNode->getName());
+                error(fmt::format("Redeclaration of identifier '{}'", variableDeclNode->getName()));
                 return false;
             }
 
@@ -100,7 +100,7 @@ namespace pl::core {
                 return false;
         } else if (const auto arrayVariableDeclNode = dynamic_cast<ast::ASTNodeArrayVariableDecl *>(node); arrayVariableDeclNode != nullptr) {
             if (!identifiers.insert(arrayVariableDeclNode->getName()).second) {
-                error("Redeclaration of identifier '{}'", arrayVariableDeclNode->getName());
+                error(fmt::format("Redeclaration of identifier '{}'", arrayVariableDeclNode->getName()));
                 return false;
             }
 
@@ -108,7 +108,7 @@ namespace pl::core {
                 return false;
         } else if (const auto pointerVariableDecl = dynamic_cast<ast::ASTNodePointerVariableDecl *>(node); pointerVariableDecl != nullptr) {
             if (!identifiers.insert(pointerVariableDecl->getName()).second) {
-                error("Redeclaration of identifier '{}'", pointerVariableDecl->getName());
+                error(fmt::format("Redeclaration of identifier '{}'", pointerVariableDecl->getName()));
                 return false;
             }
 
@@ -116,7 +116,7 @@ namespace pl::core {
                 return false;
         } else if (const auto bitfieldFieldDecl = dynamic_cast<ast::ASTNodeBitfieldField *>(node); bitfieldFieldDecl != nullptr) {
             if (!identifiers.insert(bitfieldFieldDecl->getName()).second) {
-                error("Redefinition of identifier '{}'", bitfieldFieldDecl->getName());
+                error(fmt::format("Redefinition of identifier '{}'", bitfieldFieldDecl->getName()));
                 return false;
             }
         } else if (const auto multiVariableDecl = dynamic_cast<ast::ASTNodeMultiVariableDecl *>(node); multiVariableDecl != nullptr) {
@@ -139,7 +139,7 @@ namespace pl::core {
             std::unordered_set<std::string> enumIdentifiers;
             for (const auto &[name, value] : enumNode->getEntries()) {
                 if (!enumIdentifiers.insert(name).second) {
-                    error("Redeclaration of enum entry '{}'", name);
+                    error(fmt::format("Redeclaration of enum entry '{}'", name));
                     return false;
                 }
             }
@@ -153,14 +153,14 @@ namespace pl::core {
             identifiers = prevIdentifiers;
         } else if (const auto functionNode = dynamic_cast<ast::ASTNodeFunctionDefinition *>(node); functionNode != nullptr) {
             if (!identifiers.insert(functionNode->getName()).second) {
-                error("Redefinition of identifier '{}'", functionNode->getName());
+                error(fmt::format("Redefinition of identifier '{}'", functionNode->getName()));
                 return false;
             }
 
             std::unordered_set<std::string> parameterIdentifiers;
             for (const auto &[name, type] : functionNode->getParams()) {
                 if (!parameterIdentifiers.insert(name).second) {
-                    error("Redefinition of function parameter '{}'", name);
+                    error(fmt::format("Redefinition of function parameter '{}'", name));
                     return false;
                 }
             }

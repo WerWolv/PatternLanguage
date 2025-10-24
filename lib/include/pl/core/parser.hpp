@@ -107,7 +107,7 @@ namespace pl::core {
 
             if (value == nullptr) {
                 std::visit([&](auto &&) {
-                    errorDesc("Expected {}, got {}.", "This is a serious parsing bug. Please open an issue on GitHub!", typeid(T).name(), typeid(value).name());
+                    errorDesc(fmt::format("Expected {}, got {}.", "This is a serious parsing bug. Please open an issue on GitHub!", typeid(T).name()), typeid(value).name());
                     throw UnrecoverableParserException();
                 }, token.value);
             }
