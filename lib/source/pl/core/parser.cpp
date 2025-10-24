@@ -78,13 +78,13 @@ namespace pl::core {
             params.push_back(std::move(param));
 
             if (sequence(tkn::Separator::Comma, tkn::Separator::RightParenthesis)) {
-                error("Expected ')' at end of parameter list, got {}.", getFormattedToken(0));
+                error(fmt::format("Expected ')' at end of parameter list, got {}.", getFormattedToken(0)));
                 break;
             }
             if (sequence(tkn::Separator::RightParenthesis))
                 break;
             if (!sequence(tkn::Separator::Comma)) {
-                error("Expected ',' in-between parameters, got {}.", getFormattedToken(0));
+                error(fmt::format("Expected ',' in-between parameters, got {}.", getFormattedToken(0)));
                 break;
             }
         }
@@ -100,7 +100,7 @@ namespace pl::core {
             functionIdentifier->setType(Token::Identifier::IdentifierType::Function);
 
         if (!sequence(tkn::Separator::LeftParenthesis)) {
-            error("Expected '(' after function name, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected '(' after function name, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -200,7 +200,7 @@ namespace pl::core {
         if (MATCHES(sequence(tkn::Separator::LeftBracket) && !peek(tkn::Separator::LeftBracket))) {
             path.emplace_back(std::move(parseMathematicalExpression().unwrap()));
             if (!sequence(tkn::Separator::RightBracket)) {
-                error("Expected ']' at end of array indexing, got {}.", getFormattedToken(0));
+                error(fmt::format("Expected ']' at end of array indexing, got {}.", getFormattedToken(0)));
                 return nullptr;
             }
         }
@@ -345,7 +345,7 @@ namespace pl::core {
             return result;
         }
 
-        error("Expected value, got {}.", getFormattedToken(0));
+        error(fmt::format("Expected value, got {}.", getFormattedToken(0)));
         next();
         return nullptr;
     }
@@ -376,7 +376,7 @@ namespace pl::core {
             }
 
             if (!peek(tkn::Separator::LeftParenthesis)) {
-                error("Expected '(' after type cast, got {}.", getFormattedToken(0));
+                error(fmt::format("Expected '(' after type cast, got {}.", getFormattedToken(0)));
                 return nullptr;
             }
 
@@ -655,7 +655,7 @@ namespace pl::core {
             auto second = this->parseBooleanOr(inTemplate, inMatchRange);
 
             if (!sequence(tkn::Operator::Colon)) {
-                error("Expected ':' after ternary condition, got {}", getFormattedToken(0));
+                error(fmt::format("Expected ':' after ternary condition, got {}", getFormattedToken(0)));
                 return nullptr;
             }
 
@@ -683,7 +683,7 @@ namespace pl::core {
 
         do {
             if (!sequence(tkn::Literal::Identifier)) {
-                error("Expected attribute instruction name, got {}", getFormattedToken(0));
+                error(fmt::format("Expected attribute instruction name, got {}", getFormattedToken(0)));
                 return;
             }
 
@@ -704,7 +704,7 @@ namespace pl::core {
                 } while (sequence(tkn::Separator::Comma));
 
                 if (!sequence(tkn::Separator::RightParenthesis)) {
-                    error("Expected ')', got {}", getFormattedToken(0));
+                    error(fmt::format("Expected ')', got {}", getFormattedToken(0)));
                     return;
                 }
 
@@ -714,7 +714,7 @@ namespace pl::core {
         } while (sequence(tkn::Separator::Comma));
 
         if (!sequence(tkn::Separator::RightBracket, tkn::Separator::RightBracket))
-            error("Expected ']]' after attribute, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected ']]' after attribute, got {}.", getFormattedToken(0)));
     }
 
     /* Functions */
@@ -730,7 +730,7 @@ namespace pl::core {
         std::optional<std::string> parameterPack;
 
         if (!sequence(tkn::Separator::LeftParenthesis)) {
-            error("Expected '(' after function declaration, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected '(' after function declaration, got {}.", getFormattedToken(0)));
         }
 
         // Parse parameter list
@@ -771,7 +771,7 @@ namespace pl::core {
                 defaultParameters.push_back(std::move(expression));
             } else {
                 if (!defaultParameters.empty()) {
-                    error("Expected default argument value for parameter '{}', got {}.", params.back().first,  getFormattedToken(0));
+                    error(fmt::format("Expected default argument value for parameter '{}', got {}.", params.back().first,  getFormattedToken(0)));
                     break;
                 }
             }
@@ -782,12 +782,12 @@ namespace pl::core {
         }
 
         if (!sequence(tkn::Separator::RightParenthesis)) {
-            error("Expected ')' after parameter list, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected ')' after parameter list, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
         if (!sequence(tkn::Separator::LeftBrace)) {
-            error("Expected '{{' after function head, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected '{{' after function head, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -813,7 +813,7 @@ namespace pl::core {
 
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseArrayInitExpression(std::string identifier) {
         if (!sequence(tkn::Separator::LeftBrace)) {
-            error("Expected '{{' after array assignment, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected '{{' after array assignment, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -831,13 +831,13 @@ namespace pl::core {
 
             if (sequence(tkn::Separator::Comma)) {
                 if (sequence(tkn::Separator::RightBrace)) {
-                    error("Expected value after ',' in array assignment, got {}.", getFormattedToken(0));
+                    error(fmt::format("Expected value after ',' in array assignment, got {}.", getFormattedToken(0)));
                     return nullptr;
                 }
             } else if (sequence(tkn::Separator::RightBrace)) {
                 break;
             } else {
-                error("Expected ',' or '}}' in array assignment, got {}.", getFormattedToken(0));
+                error(fmt::format("Expected ',' or '}}' in array assignment, got {}.", getFormattedToken(0)));
                 return nullptr;
             }
         }
@@ -919,7 +919,7 @@ namespace pl::core {
                 }
             }
         } else {
-            error("Expected identifier in variable declaration, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected identifier in variable declaration, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -978,7 +978,7 @@ namespace pl::core {
         }
 
         if (needsSemicolon && !sequence(tkn::Separator::Semicolon)) {
-            error("Expected ';' at end of statement, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected ';' at end of statement, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -1065,7 +1065,7 @@ namespace pl::core {
             return nullptr;
 
         if (!sequence(tkn::Separator::RightParenthesis)) {
-            error("Expected ')' at end of while head, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected ')' at end of while head, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -1078,7 +1078,7 @@ namespace pl::core {
         auto preExpression = parseFunctionStatement(false);
 
         if (!sequence(tkn::Separator::Comma)) {
-            error("Expected ',' after for loop expression, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected ',' after for loop expression, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -1087,14 +1087,14 @@ namespace pl::core {
             return nullptr;
 
         if (!sequence(tkn::Separator::Comma)) {
-            error("Expected ',' after for loop expression, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected ',' after for loop expression, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
         auto postExpression = parseFunctionStatement(false);
 
         if (!sequence(tkn::Separator::RightParenthesis)) {
-            error("Expected ')' at end of for loop head, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected ')' at end of for loop head, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -1114,7 +1114,7 @@ namespace pl::core {
     // if ((parseMathematicalExpression)) { (parseMember) }
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseConditional(const std::function<hlp::safe_unique_ptr<ast::ASTNode>()> &memberParser) {
         if (!sequence(tkn::Separator::LeftParenthesis)) {
-            error("Expected '(' after 'if', got {}.", getFormattedToken(0));
+            error(fmt::format("Expected '(' after 'if', got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -1123,7 +1123,7 @@ namespace pl::core {
             return nullptr;
 
         if (!sequence(tkn::Separator::RightParenthesis)) {
-            error("Expected ')' after if head, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected ')' after if head, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -1195,13 +1195,13 @@ namespace pl::core {
 
             caseIndex++;
             if (sequence(tkn::Separator::Comma, tkn::Separator::RightParenthesis)) {
-                error("Expected ')' at end of parameter list, got {}.", getFormattedToken(0));
+                error(fmt::format("Expected ')' at end of parameter list, got {}.", getFormattedToken(0)));
                 return {};
             }
             if (sequence(tkn::Separator::RightParenthesis))
                 break;
             if (!sequence(tkn::Separator::Comma)) {
-                error("Expected ',' in-between parameters, got {}.", getFormattedToken(0));
+                error(fmt::format("Expected ',' in-between parameters, got {}.", getFormattedToken(0)));
                 return {};
             }
         }
@@ -1217,14 +1217,14 @@ namespace pl::core {
     // match ((parseParameters)) { (parseParameters { (parseMember) })*, default { (parseMember) } }
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMatchStatement(const std::function<hlp::safe_unique_ptr<ast::ASTNode>()> &memberParser) {
         if (!sequence(tkn::Separator::LeftParenthesis)) {
-            error("Expected '(' after 'match', got {}.", getFormattedToken(0));
+            error(fmt::format("Expected '(' after 'match', got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
         const auto condition = parseParameters();
 
         if (!sequence(tkn::Separator::LeftBrace)) {
-            error("Expected '{{' after match head, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected '{{' after match head, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -1233,7 +1233,7 @@ namespace pl::core {
 
         while (!sequence(tkn::Separator::RightBrace)) {
             if (!sequence(tkn::Separator::LeftParenthesis)) {
-                error("Expected '(', got {}.", getFormattedToken(0));
+                error(fmt::format("Expected '(', got {}.", getFormattedToken(0)));
                 break;
             }
 
@@ -1242,7 +1242,7 @@ namespace pl::core {
                 return nullptr;
 
             if (!sequence(tkn::Operator::Colon)) {
-                error("Expected ':' after case condition, got {}.", getFormattedToken(0));
+                error(fmt::format("Expected ':' after case condition, got {}.", getFormattedToken(0)));
                 break;
             }
 
@@ -1273,7 +1273,7 @@ namespace pl::core {
 
         if (sequence(tkn::Keyword::Catch)) {
             if (!sequence(tkn::Separator::LeftBrace)) {
-                error("Expected '{{' after catch, got {}.", getFormattedToken(0));
+                error(fmt::format("Expected '{{' after catch, got {}.", getFormattedToken(0)));
                 return nullptr;
             }
 
@@ -1297,7 +1297,7 @@ namespace pl::core {
             return nullptr;
 
         if (!sequence(tkn::Separator::RightParenthesis)) {
-            error("Expected ')' after while head, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected ')' after while head, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -1345,7 +1345,7 @@ namespace pl::core {
                 u32 index = 0;
                 do {
                     if (index >= templateTypes.size()) {
-                        error("Provided more template parameters than expected. Type only has {} parameters", templateTypes.size());
+                        error(fmt::format("Provided more template parameters than expected. Type only has {} parameters", templateTypes.size()));
                         return;
                     }
 
@@ -1375,12 +1375,12 @@ namespace pl::core {
                 } while (sequence(tkn::Separator::Comma));
 
                 if (index < templateTypes.size()) {
-                    error("Not enough template parameters provided, expected {} parameters.", templateTypes.size());
+                    error(fmt::format("Not enough template parameters provided, expected {} parameters.", templateTypes.size()));
                     return;
                 }
 
                 if (!sequence(tkn::Operator::BoolGreaterThan)) {
-                    error("Expected '>' to close template list, got {}.", getFormattedToken(0));
+                    error(fmt::format("Expected '>' to close template list, got {}.", getFormattedToken(0)));
                     return;
                 }
 
@@ -1423,7 +1423,7 @@ namespace pl::core {
         }
 
         if (result == nullptr) {
-            error("Invalid type. Expected built-in type or custom type name, got {}.", getFormattedToken(0));
+            error(fmt::format("Invalid type. Expected built-in type or custom type name, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -1452,13 +1452,13 @@ namespace pl::core {
                         templateIdentifier->setType(Token::Identifier::IdentifierType::TemplateArgument);
                 }
                 else {
-                    error("Expected identifier for template type, got {}.", getFormattedToken(0));
+                    error(fmt::format("Expected identifier for template type, got {}.", getFormattedToken(0)));
                     return { };
                 }
             } while (sequence(tkn::Separator::Comma));
 
             if (!sequence(tkn::Operator::BoolGreaterThan)) {
-                error("Expected '>' after template declaration, got {}.", getFormattedToken(0));
+                error(fmt::format("Expected '>' after template declaration, got {}.", getFormattedToken(0)));
                 return { };
             }
         }
@@ -1488,7 +1488,7 @@ namespace pl::core {
             while (sequence(tkn::Separator::Dot, tkn::Literal::Identifier))
                 path += "/" + getValue<Token::Identifier>(-1).get();
         } else {
-            error("Expected string or identifier after 'import', got {}.", getFormattedToken(0));
+            error(fmt::format("Expected string or identifier after 'import', got {}.", getFormattedToken(0)));
         }
 
         if (importAll) {
@@ -1498,7 +1498,7 @@ namespace pl::core {
             }
 
             if (!sequence(tkn::Literal::Identifier)) {
-                error("Expected identifier after 'as', got {}.", getFormattedToken(0));
+                error(fmt::format("Expected identifier after 'as', got {}.", getFormattedToken(0)));
                 return nullptr;
             }
 
@@ -1513,7 +1513,7 @@ namespace pl::core {
 
         if (sequence(tkn::Keyword::As)) {
             if (!sequence(tkn::Literal::Identifier)) {
-                error("Expected identifier after 'as', got {}.", getFormattedToken(0));
+                error(fmt::format("Expected identifier after 'as', got {}.", getFormattedToken(0)));
                 return nullptr;
             }
 
@@ -1529,7 +1529,7 @@ namespace pl::core {
         auto [resolvedSource, resolverErrors] = resolver(path);
         if (!resolverErrors.empty()) {
             for (const auto & resolverError : resolverErrors)
-                error("Failed to resolve import: {}", resolverError);
+                error(fmt::format("Failed to resolve import: {}", resolverError));
             return nullptr;
         }
 
@@ -1559,7 +1559,7 @@ namespace pl::core {
         auto templateList = this->parseTemplateList();
 
         if (!sequence(tkn::Operator::Assign)) {
-            error("Expected '=' after using declaration type name, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected '=' after using declaration type name, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -1602,7 +1602,7 @@ namespace pl::core {
             return nullptr;
 
         if (!sequence(tkn::Separator::RightBracket)) {
-            error("Expected ']' at end of array declaration, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -1715,7 +1715,7 @@ namespace pl::core {
                 return nullptr;
 
             if (!sequence(tkn::Separator::RightBracket)) {
-                error("Expected ']' at end of array declaration, got {}.", getFormattedToken(0));
+                error(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)));
                 return nullptr;
             }
         }
@@ -1830,13 +1830,13 @@ namespace pl::core {
                 return nullptr;
 
             if (!sequence(tkn::Separator::RightBracket)) {
-                error("Expected ']' at end of array declaration, got {}.", getFormattedToken(0));
+                error(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)));
                 return nullptr;
             }
         }
 
         if (!sequence(tkn::Operator::Colon)) {
-            errorDesc("Expected ':' after pointer definition, got {}.", "A pointer requires a integral type to specify its own size.", getFormattedToken(0));
+            errorDesc(fmt::format("Expected ':' after pointer definition, got {}.", "A pointer requires a integral type to specify its own size."), getFormattedToken(0));
             return nullptr;
         }
 
@@ -1941,7 +1941,7 @@ namespace pl::core {
             parseAttribute(dynamic_cast<ast::Attributable *>(member.get()));
 
         if (!sequence(tkn::Separator::Semicolon)) {
-            error("Expected ';' at end of statement, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected ';' at end of statement, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -1979,7 +1979,7 @@ namespace pl::core {
                     return nullptr;
                 }
                 if (!sequence(tkn::Literal::Identifier)) {
-                    error("Expected type to inherit from, got {}.", getFormattedToken(0));
+                    error(fmt::format("Expected type to inherit from, got {}.", getFormattedToken(0)));
                     return nullptr;
                 }
 
@@ -1992,7 +1992,7 @@ namespace pl::core {
         }
 
         if (!sequence(tkn::Separator::LeftBrace)) {
-            error("Expected '{{' after struct declaration, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected '{{' after struct declaration, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -2028,7 +2028,7 @@ namespace pl::core {
         typeDecl->setTemplateParameters(unwrapSafePointerVector(this->parseTemplateList()));
 
         if (!sequence(tkn::Separator::LeftBrace)) {
-            error("Expected '{{' after union declaration, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected '{{' after union declaration, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -2053,7 +2053,7 @@ namespace pl::core {
             userDefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UDT);
 
         if (!sequence(tkn::Operator::Colon)) {
-            error("Expected ':' after enum declaration, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected ':' after enum declaration, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -2075,7 +2075,7 @@ namespace pl::core {
             return nullptr;
 
         if (!sequence(tkn::Separator::LeftBrace)) {
-            error("Expected '{{' after enum declaration, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected '{{' after enum declaration, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -2125,7 +2125,7 @@ namespace pl::core {
                 if (sequence(tkn::Separator::RightBrace))
                     break;
 
-                error("Expected ',' at end of enum entry, got {}.", getFormattedToken(0));
+                error(fmt::format("Expected ',' at end of enum entry, got {}.", getFormattedToken(0)));
                 break;
             }
         }
@@ -2199,7 +2199,7 @@ namespace pl::core {
                     if (userDefinedTypeIdentifier != nullptr)
                         userDefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UDT);
                     if (type == nullptr) {
-                        error("Expected a variable name followed by ':', a function call or a bitfield type name, got '{}'.", name);
+                        error(fmt::format("Expected a variable name followed by ':', a function call or a bitfield type name, got '{}'.", name));
                         return nullptr;
                     }
                     parseCustomTypeParameters(type);
@@ -2223,7 +2223,7 @@ namespace pl::core {
                     return nullptr;
 
                 if (!sequence(tkn::Separator::RightBracket)) {
-                    error("Expected ']' at end of array declaration, got {}.", getFormattedToken(0));
+                    error(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)));
                     return nullptr;
                 }
                 if (identifier != nullptr)
@@ -2250,7 +2250,7 @@ namespace pl::core {
                 } else
                     member = parseMemberVariable(std::move(type), false, variableName);
             } else {
-                error("Expected a variable name, got {}.", getFormattedToken(0));
+                error(fmt::format("Expected a variable name, got {}.", getFormattedToken(0)));
                 return nullptr;
             }
         } else if (sequence(tkn::Keyword::If))
@@ -2272,7 +2272,7 @@ namespace pl::core {
         }
 
         if (!sequence(tkn::Separator::Semicolon)) {
-            error("Expected ';' at end of statement, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected ';' at end of statement, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -2470,7 +2470,7 @@ namespace pl::core {
             return nullptr;
 
         if (!sequence(tkn::Operator::At)) {
-            error("Expected '@' after pointer placement, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected '@' after pointer placement, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -2508,13 +2508,13 @@ namespace pl::core {
                 return nullptr;
 
             if (!sequence(tkn::Separator::RightBracket)) {
-                error("Expected ']' at end of array declaration, got {}.", getFormattedToken(0));
+                error(fmt::format("Expected ']' at end of array declaration, got {}.", getFormattedToken(0)));
                 return nullptr;
             }
         }
 
         if (!sequence(tkn::Operator::Colon)) {
-            error("Expected ':' after pointer definition, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected ':' after pointer definition, got {}.", getFormattedToken(0)));
             return nullptr;
         }
 
@@ -2523,7 +2523,7 @@ namespace pl::core {
             return nullptr;
 
         if (!sequence(tkn::Operator::At)) {
-            error("Expected '@' after pointer placement, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected '@' after pointer placement, got {}.", getFormattedToken(0)));
             return nullptr;
         }
         if (placedIdentifier != nullptr)
@@ -2551,7 +2551,7 @@ namespace pl::core {
         }
 
         if (!sequence(tkn::Literal::Identifier)) {
-            error("Expected identifier after 'namespace', got {}.", getFormattedToken(0));
+            error(fmt::format("Expected identifier after 'namespace', got {}.", getFormattedToken(0)));
             return { };
         }
 
@@ -2578,7 +2578,7 @@ namespace pl::core {
         }
 
         if (!sequence(tkn::Separator::LeftBrace)) {
-            error("Expected '{{' at beginning of namespace, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected '{{' at beginning of namespace, got {}.", getFormattedToken(0)));
             return { };
         }
 
@@ -2681,7 +2681,7 @@ namespace pl::core {
             parseAttribute(dynamic_cast<ast::Attributable *>(statement.get()));
 
         if (requiresSemicolon && !sequence(tkn::Separator::Semicolon)) {
-            error("Expected ';' at end of statement, got {}.", getFormattedToken(0));
+            error(fmt::format("Expected ';' at end of statement, got {}.", getFormattedToken(0)));
             return { };
         }
 
@@ -2733,7 +2733,7 @@ namespace pl::core {
             return typeDecl;
         }
 
-        error("Type with name '{}' has already been declared.", typeName);
+        error(fmt::format("Type with name '{}' has already been declared.", typeName));
         return nullptr;
     }
 

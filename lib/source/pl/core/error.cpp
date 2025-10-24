@@ -1,6 +1,7 @@
 #include <pl/core/errors/error.hpp>
 #include <pl/api.hpp>
 
+#include <fmt/core.h>
 #include <wolv/utils/string.hpp>
 
 namespace pl::core::err::impl {

@@ -3,8 +3,6 @@
 #include <pl/helpers/types.hpp>
 #include <pl/core/location.hpp>
 
-#include <fmt/core.h>
-
 #include <string>
 #include <utility>
 #include <vector>
@@ -137,22 +135,12 @@ namespace pl::core::err {
 
         virtual Location location() = 0;
 
-        template <typename... Args>
-        void error(const fmt::format_string<Args...>& fmt, Args&&... args) {
-            this->m_errors.emplace_back(fmt::format(fmt, std::forward<Args>(args)...), location());
-        }
-
         void error(const std::string &message) {
             this->m_errors.emplace_back(message, location());
         }
 
         void errorDesc(const std::string &message, const std::string &description) {
             this->m_errors.emplace_back(message, description, location());
-        }
-
-        template<typename... Args>
-        void errorDesc(const fmt::format_string<Args...>& message, const std::string &description, Args&&... args) {
-            this->m_errors.emplace_back(fmt::format(message, std::forward<Args>(args)...), description, location());
         }
 
         void error(CompileError& error) {
@@ -166,11 +154,6 @@ namespace pl::core::err {
 
         void errorAtDesc(const Location& location, const std::string &message, const std::string &description) {
             this->m_errors.emplace_back(message, description, location);
-        }
-
-        template<typename... Args>
-        void errorAt(const Location& location, const fmt::format_string<Args...>& message, Args&&... args) {
-            this->m_errors.emplace_back(fmt::format(message, std::forward<Args>(args)...), location);
         }
 
         [[nodiscard]] bool hasErrors() const {
