@@ -7,12 +7,12 @@
 
 namespace pl::core::ast {
 
-    ASTNodeVariableDecl::ASTNodeVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeDecl> type, std::unique_ptr<ASTNode> &&placementOffset, std::unique_ptr<ASTNode> &&placementSection, bool inVariable, bool outVariable, bool constant)
+    ASTNodeVariableDecl::ASTNodeVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeApplication> type, std::unique_ptr<ASTNode> &&placementOffset, std::unique_ptr<ASTNode> &&placementSection, bool inVariable, bool outVariable, bool constant)
         : ASTNode(), m_name(std::move(name)), m_type(std::move(type)), m_placementOffset(std::move(placementOffset)), m_placementSection(std::move(placementSection)), m_inVariable(inVariable), m_outVariable(outVariable), m_constant(constant) { }
 
     ASTNodeVariableDecl::ASTNodeVariableDecl(const ASTNodeVariableDecl &other) : ASTNode(other), Attributable(other) {
         this->m_name = other.m_name;
-        this->m_type = std::shared_ptr<ASTNodeTypeDecl>(static_cast<ASTNodeTypeDecl*>(other.m_type->clone().release()));
+        this->m_type = std::shared_ptr<ASTNodeTypeApplication>(static_cast<ASTNodeTypeApplication*>(other.m_type->clone().release()));
 
         if (other.m_placementOffset != nullptr)
             this->m_placementOffset = other.m_placementOffset->clone();

@@ -32,6 +32,7 @@ set(AVAILABLE_TESTS
         PragmasFail
         Format
         RValuesAssignmentInStruct
+        TemplateParametersScope
 )
 
 

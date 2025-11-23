@@ -4,13 +4,14 @@
 #include <pl/core/ast/ast_node_attribute.hpp>
 #include <pl/core/ast/ast_node_literal.hpp>
 #include <pl/core/ast/ast_node_type_decl.hpp>
+#include <pl/core/ast/ast_node_type_appilication.hpp>
 
 namespace pl::core::ast {
 
     class ASTNodeVariableDecl : public ASTNode,
                                 public Attributable {
     public:
-        ASTNodeVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeDecl> type, std::unique_ptr<ASTNode> &&placementOffset = nullptr, std::unique_ptr<ASTNode> &&placementSection = nullptr, bool inVariable = false, bool outVariable = false, bool constant = false);
+        ASTNodeVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeApplication> type, std::unique_ptr<ASTNode> &&placementOffset = nullptr, std::unique_ptr<ASTNode> &&placementSection = nullptr, bool inVariable = false, bool outVariable = false, bool constant = false);
 
         ASTNodeVariableDecl(const ASTNodeVariableDecl &other);
 
@@ -19,7 +20,7 @@ namespace pl::core::ast {
         }
 
         [[nodiscard]] const std::string &getName() const { return this->m_name; }
-        [[nodiscard]] constexpr const std::shared_ptr<ASTNodeTypeDecl> &getType() const { return this->m_type; }
+        [[nodiscard]] constexpr const std::shared_ptr<ASTNodeTypeApplication> &getType() const { return this->m_type; }
         [[nodiscard]] constexpr const std::unique_ptr<ASTNode> &getPlacementOffset() const { return this->m_placementOffset; }
 
         [[nodiscard]] constexpr bool isInVariable() const { return this->m_inVariable; }
@@ -39,7 +40,7 @@ namespace pl::core::ast {
 
     private:
         std::string m_name;
-        std::shared_ptr<ASTNodeTypeDecl> m_type;
+        std::shared_ptr<ASTNodeTypeApplication> m_type;
         std::unique_ptr<ASTNode> m_placementOffset, m_placementSection;
 
         bool m_inVariable = false, m_outVariable = false;

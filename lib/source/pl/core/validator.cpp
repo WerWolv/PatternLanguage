@@ -13,6 +13,7 @@
 #include <pl/core/ast/ast_node_bitfield.hpp>
 #include <pl/core/ast/ast_node_bitfield_field.hpp>
 #include <pl/core/ast/ast_node_conditional_statement.hpp>
+#include <pl/core/ast/ast_node_compound_statement.hpp>
 
 #include <unordered_set>
 #include <string>
@@ -123,17 +124,38 @@ namespace pl::core {
             if (!this->validateNodes(multiVariableDecl->getVariables()))
                 return false;
         } else if (const auto typeDeclNode = dynamic_cast<ast::ASTNodeTypeDecl *>(node); typeDeclNode != nullptr) {
-            if (!typeDeclNode->isForwardDeclared())
-                if (!this->validateNode(typeDeclNode->getType()))
+            if (!typeDeclNode->isForwardDeclared()) {
+                std::unordered_set<std::string> typeParameterIdentifiers;
+                std::unordered_set<std::string> nonTypeParameterIdentifiers;
+                for (const auto & parameter : typeDeclNode->getTemplateParameters()) {
+                    auto name = parameter->getName().get();
+                    auto isType = parameter->isType();
+                    if (isType && !typeParameterIdentifiers.insert(name).second) {
+                        error("Redefinition of type template parameter '{}'", name);
+                        return false;
+                    }
+                    if (!isType && !nonTypeParameterIdentifiers.insert(name).second) {
+                        error("Redefinition of non-type template parameter '{}'", name);
+                        return false;
+                    }
+                }    
+
+                this->m_identifiers.push_back(std::move(nonTypeParameterIdentifiers));
+                ON_SCOPE_EXIT {
+                        this->m_identifiers.pop_back();
+                };
+
+                if (!this->validateNode(typeDeclNode->getType(), false))
                     return false;
+            }
         } else if (const auto structNode = dynamic_cast<ast::ASTNodeStruct *>(node); structNode != nullptr) {
-            if (!this->validateNodes(structNode->getMembers()))
+            if (!this->validateNodes(structNode->getMembers(), false))
                 return false;
         } else if (const auto unionNode = dynamic_cast<ast::ASTNodeUnion *>(node); unionNode != nullptr) {
-            if (!this->validateNodes(unionNode->getMembers()))
+            if (!this->validateNodes(unionNode->getMembers(), false))
                 return false;
         } else if (const auto bitfieldNode = dynamic_cast<ast::ASTNodeBitfield *>(node); bitfieldNode != nullptr) {
-            if (!this->validateNodes(bitfieldNode->getEntries()))
+            if (!this->validateNodes(bitfieldNode->getEntries(), false))
                 return false;
         } else if (const auto enumNode = dynamic_cast<ast::ASTNodeEnum *>(node); enumNode != nullptr) {
             std::unordered_set<std::string> enumIdentifiers;
@@ -164,6 +186,9 @@ namespace pl::core {
                     return false;
                 }
             }
+        } else if(const auto compoundNode = dynamic_cast<ast::ASTNodeCompoundStatement *>(node); compoundNode != nullptr) {
+            if (!this->validateNodes(compoundNode->getStatements(), false))
+                return false;
         }
 
         this->m_validatedNodes.insert(node);

@@ -86,9 +86,9 @@ namespace pl::core {
         if (parameterCount.min != parameterCount.max)
             throw std::runtime_error("Types cannot have a variable amount of parameters");
 
-        std::vector<std::shared_ptr<ast::ASTNode>> templateParameters;
+        std::vector<std::shared_ptr<ast::ASTNodeTemplateParameter>> templateParameters;
         for (u32 i = 0; i < parameterCount.max; i += 1) {
-            templateParameters.emplace_back(std::make_shared<ast::ASTNodeLValueAssignment>(fmt::format("$param{}$", i), nullptr));
+            templateParameters.push_back(std::make_shared<ast::ASTNodeTemplateParameter>(Token::Identifier(fmt::format("$param{}$", i), Token::Identifier::IdentifierType::TemplateArgument), false));
         }
         type->setTemplateParameters(std::move(templateParameters));
 

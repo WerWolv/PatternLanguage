@@ -16,6 +16,7 @@
 #include <pl/api.hpp>
 
 #include <pl/core/errors/runtime_errors.hpp>
+#include <pl/core/ast/ast_node_type_appilication.hpp>
 
 #include <fmt/core.h>
 #include <fmt/ranges.h>
@@ -138,10 +139,7 @@ namespace pl::core {
         }
 
         void pushTemplateParameters() {
-            if (this->m_templateParameters.empty())
                 this->m_templateParameters.emplace_back();
-            else
-                this->m_templateParameters.push_back(this->m_templateParameters.back());
         }
 
         void popTemplateParameters() {
@@ -154,6 +152,34 @@ namespace pl::core {
 
         [[nodiscard]] std::vector<std::shared_ptr<ptrn::Pattern>>& getTemplateParameters() {
             return this->m_templateParameters.back();
+        }
+
+        void pushTypeTemplateParameters() {
+            this->m_typeTemplateParameters.emplace_back();
+        }
+
+        void popTypeTemplateParameters() {
+            this->m_typeTemplateParameters.pop_back();
+        }
+
+        [[nodiscard]] const std::vector<std::shared_ptr<ast::ASTNode>>& getTypeTemplateParameters() const {
+            return this->m_typeTemplateParameters.back();
+        }
+
+        [[nodiscard]] std::vector<std::shared_ptr<ast::ASTNode>>& getTypeTemplateParameters() {
+            return this->m_typeTemplateParameters.back();
+        }
+
+        void setCurrentTemplateArguments(std::vector<std::unique_ptr<ast::ASTNode>> &&args) {
+            this->m_currentTemplateArguments = std::move(args);
+        }
+
+        [[nodiscard]] const std::vector<std::unique_ptr<ast::ASTNode>>& getCurrentTemplateArguments() const {
+            return this->m_currentTemplateArguments;
+        }
+
+        [[nodiscard]] std::vector<std::unique_ptr<ast::ASTNode>>& getCurrentTemplateArguments() {
+            return this->m_currentTemplateArguments;
         }
 
         void pushSectionId(u64 id);
@@ -304,7 +330,7 @@ namespace pl::core {
         void createParameterPack(const std::string &name, const std::vector<Token::Literal> &values);
 
         void createArrayVariable(const std::string &name, const ast::ASTNode *type, size_t entryCount, u64 section, bool constant = false);
-        std::shared_ptr<ptrn::Pattern> createVariable(const std::string &name, const ast::ASTNodeTypeDecl *type, const std::optional<Token::Literal> &value = std::nullopt, bool outVariable = false, bool reference = false, bool templateVariable = false, bool constant = false);
+        std::shared_ptr<ptrn::Pattern> createVariable(const std::string &name, const ast::ASTNodeTypeApplication *type, const std::optional<Token::Literal> &value = std::nullopt, bool outVariable = false, bool reference = false, bool templateVariable = false, bool constant = false);
         std::shared_ptr<ptrn::Pattern>& getVariableByName(const std::string &name);
         void setVariable(const std::string &name, const Token::Literal &value);
         void setVariable(std::shared_ptr<ptrn::Pattern> &pattern, const Token::Literal &value);
@@ -465,7 +491,6 @@ namespace pl::core {
             this->m_patternLanguage = runtime;
         }
 
-        std::optional<std::string> findTypeName(const ast::ASTNodeTypeDecl *type);
 
         void addAttributedPattern(const std::string &attribute, ptrn::Pattern *pattern) {
             m_attributedPatterns[attribute].insert(pattern);
@@ -521,6 +546,8 @@ namespace pl::core {
         std::map<std::string, std::shared_ptr<ptrn::Pattern>> m_outVariables;
         std::map<std::string, Token::Literal> m_outVariableValues;
         std::vector<std::vector<std::shared_ptr<ptrn::Pattern>>> m_templateParameters;
+        std::vector<std::vector<std::shared_ptr<ast::ASTNode>>> m_typeTemplateParameters;
+        std::vector<std::unique_ptr<ast::ASTNode>> m_currentTemplateArguments;
 
         std::function<bool()> m_dangerousFunctionCalledCallback = []{ return false; };
         std::function<void()> m_breakpointHitCallback = []{ };

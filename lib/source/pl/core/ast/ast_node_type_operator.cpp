@@ -57,17 +57,8 @@ namespace pl::core::ast {
                     result = u128(pattern->getSize());
                     break;
                 case Token::Operator::TypeNameOf: {
-                    if (auto typeDecl = dynamic_cast<ASTNodeTypeDecl*>(this->m_expression.get()); typeDecl != nullptr) {
-                        ASTNodeTypeDecl *node;
-                        while (true) {
-                            node = dynamic_cast<ASTNodeTypeDecl*>(typeDecl->getType().get());
-                            if (node != nullptr)
-                                typeDecl = node;
-                            else
-                                break;
-                        }
-
-                        result = typeDecl->getName();
+                    if (auto typeApp = dynamic_cast<ASTNodeTypeApplication*>(this->m_expression.get()); typeApp != nullptr) {
+                        result = typeApp->getTypeName();
                     } else {
                         result = pattern->getTypeName();
                     }

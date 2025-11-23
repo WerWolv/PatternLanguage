@@ -32,7 +32,6 @@
 #include <pl/core/ast/ast_node_union.hpp>
 #include <pl/core/ast/ast_node_variable_decl.hpp>
 #include <pl/core/ast/ast_node_while_statement.hpp>
-
 #include <stdexcept>
 #include <wolv/utils/string.hpp>
 
@@ -152,10 +151,10 @@ namespace pl::core {
                     continue;
                 }
                 if (this->m_types.contains(typeName))
-                    return create<ast::ASTNodeScopeResolution>(this->m_types[typeName].unwrap(), getValue<Token::Identifier>(-1).get());
+                    return create<ast::ASTNodeScopeResolution>(std::shared_ptr<ast::ASTNodeTypeDecl>(this->m_types[typeName].unwrap()), getValue<Token::Identifier>(-1).get());
                 for (auto &potentialName : getNamespacePrefixedNames(typeName)) {
                     if (this->m_types.contains(potentialName)) {
-                        return create<ast::ASTNodeScopeResolution>(this->m_types[potentialName].unwrap(), getValue<Token::Identifier>(-1).get());
+                        return create<ast::ASTNodeScopeResolution>(std::shared_ptr<ast::ASTNodeTypeDecl>(this->m_types[potentialName].unwrap()), getValue<Token::Identifier>(-1).get());
                     }
                 }
 
@@ -1306,12 +1305,20 @@ namespace pl::core {
 
     /* Type declarations */
 
-    hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> Parser::getCustomType(const std::string &baseTypeName) {
+    hlp::safe_unique_ptr<ast::ASTNodeTypeApplication> Parser::getCustomType(const std::string &baseTypeName) {
         if (!this->m_currTemplateType.empty()) {
+            size_t index = 0;
             for (const auto &templateParameter : this->m_currTemplateType.front()->getTemplateParameters()) {
-                if (const auto templateType = dynamic_cast<ast::ASTNodeTypeDecl*>(templateParameter.get()); templateType != nullptr)
-                    if (templateType->getName() == baseTypeName)
-                        return create<ast::ASTNodeTypeDecl>("", templateParameter);
+                if (const auto templateType = dynamic_cast<ast::ASTNodeTemplateParameter*>(templateParameter.get()); templateType != nullptr){
+                    if (templateType->getName().get() == baseTypeName) {
+                        auto type = create<ast::ASTNodeTypeApplication>(nullptr);
+                        type->setTemplateParameterIndex(index);
+                        return type;
+                    }
+                    if(templateType->isType()){
+                        index++;
+                    }
+                }
             }
         }
 
@@ -1326,7 +1333,7 @@ namespace pl::core {
                     return nullptr;
                 }
 
-                return create<ast::ASTNodeTypeDecl>("", type.unwrapUnchecked());
+                return create<ast::ASTNodeTypeApplication>(type.unwrapUnchecked());
             }
         }
 
@@ -1334,13 +1341,15 @@ namespace pl::core {
     }
 
     // <Identifier[, Identifier]>
-    void Parser::parseCustomTypeParameters(hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> &type) {
+    void Parser::parseCustomTypeParameters(hlp::safe_unique_ptr<ast::ASTNodeTypeApplication> &type) {
         if (const auto actualType = dynamic_cast<ast::ASTNodeTypeDecl*>(type->getType().get()); actualType != nullptr)
             if (const auto &templateTypes = actualType->getTemplateParameters(); !templateTypes.empty()) {
                 if (!sequence(tkn::Operator::BoolLessThan)) {
                     error("Cannot use template type without template parameters.");
                     return;
                 }
+
+                std::vector<std::unique_ptr<ast::ASTNode>> templateArguments;
 
                 u32 index = 0;
                 do {
@@ -1350,25 +1359,18 @@ namespace pl::core {
                     }
 
                     auto parameter = templateTypes[index];
-                    if (const auto typeDecl = dynamic_cast<ast::ASTNodeTypeDecl*>(parameter.get()); typeDecl != nullptr) {
+                    if (parameter->isType()) {
                         auto newType = parseType();
                         if (newType == nullptr)
                             return;
-                        if (newType->isForwardDeclared()) {
-                            error("Cannot use forward declared type as template parameter.");
-                        }
 
-                        typeDecl->setType(std::move(newType), true);
-                        typeDecl->setName("");
-                    } else if (const auto value = dynamic_cast<ast::ASTNodeLValueAssignment*>(parameter.get()); value != nullptr) {
-                        auto rvalue = parseMathematicalExpression(true);
-                        if (rvalue == nullptr)
+                        templateArguments.emplace_back(newType.unwrapUnchecked().release());
+                    } else {
+                        auto value = parseMathematicalExpression(true);
+                        if (value == nullptr)
                             return;
 
-                        value->setRValue(std::move(rvalue));
-                    } else {
-                        error("Invalid template parameter type.");
-                        return;
+                        templateArguments.push_back(std::move(value.unwrapUnchecked()));
                     }
 
                     index++;
@@ -1383,13 +1385,12 @@ namespace pl::core {
                     error("Expected '>' to close template list, got {}.", getFormattedToken(0));
                     return;
                 }
-
-                type = hlp::safe_unique_ptr<ast::ASTNodeTypeDecl>(dynamic_cast<ast::ASTNodeTypeDecl*>(type->clone().release()));
+                type->setTemplateArguments(std::move(templateArguments));
             }
     }
 
     // Identifier
-    hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> Parser::parseCustomType() {
+    hlp::safe_unique_ptr<ast::ASTNodeTypeApplication> Parser::parseCustomType() {
         auto baseTypeName = parseNamespaceResolution();
         auto type = getCustomType(baseTypeName);
 
@@ -1404,7 +1405,7 @@ namespace pl::core {
     }
 
     // [be|le] <Identifier|u8|u16|u24|u32|u48|u64|u96|u128|s8|s16|s24|s32|s48|s64|s96|s128|float|double|str>
-    hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> Parser::parseType() {
+    hlp::safe_unique_ptr<ast::ASTNodeTypeApplication> Parser::parseType() {
         const bool reference = sequence(tkn::Keyword::Reference);
 
         std::optional<std::endian> endian;
@@ -1413,13 +1414,13 @@ namespace pl::core {
         else if (sequence(tkn::Keyword::BigEndian))
             endian = std::endian::big;
 
-        hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> result = nullptr;
+        hlp::safe_unique_ptr<ast::ASTNodeTypeApplication> result = nullptr;
         if (sequence(tkn::Literal::Identifier)) {    // Custom type
 
             result = parseCustomType();
         } else if (sequence(tkn::ValueType::Any)) {    // Builtin type
             auto type = getValue<Token::ValueType>(-1);
-            result = create<ast::ASTNodeTypeDecl>(Token::getTypeName(type), create<ast::ASTNodeBuiltinType>(type));
+            result = create<ast::ASTNodeTypeApplication>(createShared<ast::ASTNodeBuiltinType>(type));
         }
 
         if (result == nullptr) {
@@ -1435,18 +1436,17 @@ namespace pl::core {
     }
 
     // <(parseType), ...>
-    std::vector<hlp::safe_shared_ptr<ast::ASTNode>> Parser::parseTemplateList() {
-        std::vector<hlp::safe_shared_ptr<ast::ASTNode>> result;
-
+    std::vector<hlp::safe_shared_ptr<ast::ASTNodeTemplateParameter>> Parser::parseTemplateList() {
+        std::vector<hlp::safe_shared_ptr<ast::ASTNodeTemplateParameter>> result;
         if (sequence(tkn::Operator::BoolLessThan)) {
             do {
                 if (sequence(tkn::Literal::Identifier)) {
-                    result.emplace_back(createShared<ast::ASTNodeTypeDecl>(getValue<Token::Identifier>(-1).get()));
+                    result.push_back(createShared<ast::ASTNodeTemplateParameter>(getValue<Token::Identifier>(-1), true));
                     auto templateIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
                     if (templateIdentifier != nullptr)
                         templateIdentifier->setType(Token::Identifier::IdentifierType::TemplateArgument);
                 } else if (sequence(tkn::ValueType::Auto, tkn::Literal::Identifier)) {
-                    result.emplace_back(createShared<ast::ASTNodeLValueAssignment>(getValue<Token::Identifier>(-1).get(), nullptr));
+                    result.push_back(createShared<ast::ASTNodeTemplateParameter>(getValue<Token::Identifier>(-1), false));
                     auto templateIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
                     if (templateIdentifier != nullptr)
                         templateIdentifier->setType(Token::Identifier::IdentifierType::TemplateArgument);
@@ -1553,15 +1553,28 @@ namespace pl::core {
     hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseUsingDeclaration() {
         const auto name = getValue<Token::Identifier>(-1).get();
         auto typedefIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-        if (typedefIdentifier != nullptr)
-            typedefIdentifier->setType(Token::Identifier::IdentifierType::Typedef);
 
         auto templateList = this->parseTemplateList();
 
         if (!sequence(tkn::Operator::Assign)) {
-            error("Expected '=' after using declaration type name, got {}.", getFormattedToken(0));
+            // Forward declaration
+
+            auto typeName = getNamespacePrefixedNames(name).back();
+            if (typedefIdentifier != nullptr)
+                typedefIdentifier->setType(Token::Identifier::IdentifierType::UDT);
+
+            if (this->m_types.contains(name)) {
+                return nullptr;
+            }
+
+            auto typeDecl = createShared<ast::ASTNodeTypeDecl>(name);
+            typeDecl->setTemplateParameters(unwrapSafePointerVector(std::move(templateList)));
+            this->m_types.insert({ typeName, typeDecl });
             return nullptr;
         }
+
+        if (typedefIdentifier != nullptr)
+            typedefIdentifier->setType(Token::Identifier::IdentifierType::Typedef);
 
         auto type = addType(name, nullptr);
         if (type == nullptr)
@@ -1576,17 +1589,7 @@ namespace pl::core {
             return nullptr;
 
         this->m_currTemplateType.pop_back();
-
-
-        if (const auto containedType = replaceType.get(); containedType != nullptr && !containedType->isTemplateType())
-            replaceType->setType(containedType->clone());
-
-        const auto endian = replaceType->getEndian();
         type->setType(std::move(replaceType));
-
-        if (endian.has_value())
-            type->setEndian(*endian);
-
         return type;
     }
 
@@ -1606,11 +1609,11 @@ namespace pl::core {
             return nullptr;
         }
 
-        return create<ast::ASTNodeArrayVariableDecl>("$padding$", createShared<ast::ASTNodeTypeDecl>("", createShared<ast::ASTNodeBuiltinType>(Token::ValueType::Padding)), std::move(size));
+        return create<ast::ASTNodeArrayVariableDecl>("$padding$", createShared<ast::ASTNodeTypeApplication>(createShared<ast::ASTNodeBuiltinType>(Token::ValueType::Padding)), std::move(size));
     }
 
     // (parseType) Identifier
-    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMemberVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool constant, const std::string &identifier) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMemberVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeApplication> &type, bool constant, const std::string &identifier) {
         auto memberIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
 
         if (peek(tkn::Separator::Comma)) {
@@ -1699,7 +1702,7 @@ namespace pl::core {
     }
 
     // (parseType) Identifier[(parseMathematicalExpression)]
-    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMemberArrayVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool constant) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMemberArrayVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeApplication> &type, bool constant) {
         auto name = getValue<Token::Identifier>(-2).get();
         auto memberIdentifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
 
@@ -1782,7 +1785,7 @@ namespace pl::core {
     }
 
     // (parseType) *Identifier : (parseType)
-    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMemberPointerVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMemberPointerVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeApplication> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
         auto memberIdentifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
 
@@ -1814,7 +1817,7 @@ namespace pl::core {
     }
 
     // (parseType) *Identifier[[(parseMathematicalExpression)]]  : (parseType)
-    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMemberPointerArrayVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseMemberPointerArrayVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeApplication> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
         auto memberIdentifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
 
@@ -2175,7 +2178,7 @@ namespace pl::core {
 
             member = create<ast::ASTNodeBitfieldField>("$padding$", std::move(bitfieldSize));
         } else if (peek(tkn::Literal::Identifier) || peek(tkn::ValueType::Any)) {
-            hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> type = nullptr;
+            hlp::safe_unique_ptr<ast::ASTNodeTypeApplication> type = nullptr;
 
             if (sequence(tkn::ValueType::Any)) {
                 const auto typeToken = getValue<Token::ValueType>(-1);
@@ -2184,7 +2187,7 @@ namespace pl::core {
                     if (userDefinedTypeIdentifier != nullptr)
                         userDefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UDT);
                 }
-                type = create<ast::ASTNodeTypeDecl>(Token::getTypeName(typeToken), create<ast::ASTNodeBuiltinType>(typeToken));
+                type = create<ast::ASTNodeTypeApplication>(createShared<ast::ASTNodeBuiltinType>(typeToken));
             } else if (sequence(tkn::Literal::Identifier)) {
                 const auto originalPosition = m_curr;
                 auto name = parseNamespaceResolution();
@@ -2319,21 +2322,9 @@ namespace pl::core {
         return typeDecl;
     }
 
-    // using Identifier;
-    void Parser::parseForwardDeclaration() {
-        std::string typeName = getNamespacePrefixedNames(getValue<Token::Identifier>(-1).get()).back();
-
-        auto userDefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-        if (userDefinedTypeIdentifier != nullptr)
-            userDefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UDT);
-        if (this->m_types.contains(typeName))
-            return;
-
-        this->m_types.insert({ typeName, createShared<ast::ASTNodeTypeDecl>(typeName) });
-    }
 
     // (parseType) Identifier @ Integer
-    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeApplication> &type) {
         bool inVariable  = false;
         bool outVariable = false;
 
@@ -2400,7 +2391,7 @@ namespace pl::core {
     }
 
     // (parseType) Identifier[[(parseMathematicalExpression)]] @ Integer
-    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseArrayVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseArrayVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeApplication> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
         auto typedefIdentifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
 
@@ -2461,7 +2452,7 @@ namespace pl::core {
     }
 
     // (parseType) *Identifier : (parseType) @ Integer
-    hlp::safe_unique_ptr<ast::ASTNode> Parser::parsePointerVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parsePointerVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeApplication> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
         auto typedefIdentifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
 
@@ -2492,7 +2483,7 @@ namespace pl::core {
     }
 
     // (parseType) *Identifier[[(parseMathematicalExpression)]] : (parseType) @ Integer
-    hlp::safe_unique_ptr<ast::ASTNode> Parser::parsePointerArrayVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type) {
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parsePointerArrayVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeApplication> &type) {
         auto name = getValue<Token::Identifier>(-2).get();
         auto placedIdentifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
 
@@ -2639,10 +2630,8 @@ namespace pl::core {
             statement = parseFunctionVariableAssignment("$");
         else if (const auto identifierOffset = parseCompoundAssignment(tkn::Literal::Identifier); identifierOffset.has_value())
             statement = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(*identifierOffset).get());
-        else if (MATCHES(sequence(tkn::Keyword::Using, tkn::Literal::Identifier) && (peek(tkn::Operator::Assign) || peek(tkn::Operator::BoolLessThan))))
+        else if (MATCHES(sequence(tkn::Keyword::Using, tkn::Literal::Identifier)))
             statement = parseUsingDeclaration();
-        else if (sequence(tkn::Keyword::Using, tkn::Literal::Identifier))
-            parseForwardDeclaration();
         else if (sequence(tkn::Keyword::Import))
             statement = parseImportStatement();
         else if (peek(tkn::Keyword::BigEndian) || peek(tkn::Keyword::LittleEndian) || peek(tkn::ValueType::Any))
@@ -2717,17 +2706,19 @@ namespace pl::core {
         return std::nullopt;
     }
 
-    hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::addType(const std::string &name, hlp::safe_unique_ptr<ast::ASTNode> &&node, std::optional<std::endian> endian) {
+    hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::addType(const std::string &name, hlp::safe_unique_ptr<ast::ASTNode> &&node) {
         auto typeName = getNamespacePrefixedNames(name).back();
 
         if (this->m_types.contains(typeName) && this->m_types.at(typeName)->isForwardDeclared()) {
-            this->m_types.at(typeName)->setType(std::move(node));
+            if(node != nullptr) {
+                this->m_types.at(typeName)->setType(std::move(node));
+            }
 
             return this->m_types.at(typeName);
         }
 
         if (!this->m_types.contains(typeName)) {
-            auto typeDecl = createShared<ast::ASTNodeTypeDecl>(typeName, std::move(std::move(node).unwrapUnchecked()), endian);
+            auto typeDecl = createShared<ast::ASTNodeTypeDecl>(typeName, std::move(std::move(node).unwrapUnchecked()));
             this->m_types.insert({typeName, typeDecl});
 
             return typeDecl;

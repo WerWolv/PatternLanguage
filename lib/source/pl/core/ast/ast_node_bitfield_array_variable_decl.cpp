@@ -5,15 +5,12 @@
 
 namespace pl::core::ast {
 
-    ASTNodeBitfieldArrayVariableDecl::ASTNodeBitfieldArrayVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeDecl> type, std::unique_ptr<ASTNode> &&size)
+    ASTNodeBitfieldArrayVariableDecl::ASTNodeBitfieldArrayVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeApplication> type, std::unique_ptr<ASTNode> &&size)
     : ASTNode(), m_name(std::move(name)), m_type(std::move(type)), m_size(std::move(size)) { }
 
     ASTNodeBitfieldArrayVariableDecl::ASTNodeBitfieldArrayVariableDecl(const ASTNodeBitfieldArrayVariableDecl &other) : ASTNode(other), Attributable(other) {
         this->m_name = other.m_name;
-        if (other.m_type->isForwardDeclared())
-            this->m_type = other.m_type;
-        else
-            this->m_type = std::shared_ptr<ASTNodeTypeDecl>(static_cast<ASTNodeTypeDecl*>(other.m_type->clone().release()));
+        this->m_type = std::shared_ptr<ASTNodeTypeApplication>(static_cast<ASTNodeTypeApplication*>(other.m_type->clone().release()));
 
         if (other.m_size != nullptr)
             this->m_size = other.m_size->clone();
@@ -24,11 +21,11 @@ namespace pl::core::ast {
 
         auto startOffset = evaluator->getBitwiseReadOffset();
 
-        auto type = this->m_type->evaluate(evaluator);
+        auto type = this->m_type->getTypeDefinition(evaluator);
 
         auto &pattern = resultPatterns.emplace_back();
-        if (dynamic_cast<ASTNodeBitfield *>(type.get()) != nullptr
-            || dynamic_cast<ASTNodeBitfieldField *>(type.get()) != nullptr) {
+        if (dynamic_cast<const ASTNodeBitfield *>(type) != nullptr
+            || dynamic_cast<const ASTNodeBitfieldField *>(type) != nullptr) {
             createArray(evaluator, pattern);
         } else {
             err::E0001.throwError("Bitfield arrays may only contain bitwise fields.", { }, this->getLocation());

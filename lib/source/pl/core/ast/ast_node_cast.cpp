@@ -105,11 +105,11 @@ namespace pl::core::ast {
         literal));
     }
 
-    ASTNodeCast::ASTNodeCast(std::unique_ptr<ASTNode> &&value, std::unique_ptr<ASTNode> &&type, bool reinterpret) : m_value(std::move(value)), m_type(std::move(type)), m_reinterpret(reinterpret) { }
+    ASTNodeCast::ASTNodeCast(std::unique_ptr<ASTNode> &&value, std::unique_ptr<ASTNodeTypeApplication> &&type, bool reinterpret) : m_value(std::move(value)), m_type(std::move(type)), m_reinterpret(reinterpret) { }
 
     ASTNodeCast::ASTNodeCast(const ASTNodeCast &other) : ASTNode(other) {
         this->m_value = other.m_value->clone();
-        this->m_type  = other.m_type->clone();
+        this->m_type = std::unique_ptr<ASTNodeTypeApplication>(dynamic_cast<ASTNodeTypeApplication*>(other.m_type->clone().release()));
         this->m_reinterpret = other.m_reinterpret;
     }
 
@@ -123,7 +123,7 @@ namespace pl::core::ast {
         ON_SCOPE_EXIT { evaluator->popSectionId(); };
 
         auto evaluatedValue = this->m_value->evaluate(evaluator);
-        auto evaluatedType  = this->m_type->evaluate(evaluator);
+        auto evaluatedType  = this->m_type->getTypeDefinition(evaluator);
 
         auto literal = dynamic_cast<ASTNodeLiteral *>(evaluatedValue.get());
         if (literal == nullptr)
@@ -139,7 +139,7 @@ namespace pl::core::ast {
         auto value = literal->getValue();
 
         if (!m_reinterpret) {
-            auto type = dynamic_cast<ASTNodeBuiltinType *>(evaluatedType.get())->getType();
+            auto type = dynamic_cast<const ASTNodeBuiltinType *>(evaluatedType)->getType();
 
             value = std::visit(wolv::util::overloaded {
                 [&evaluator, &type](const std::shared_ptr<ptrn::Pattern> &value) -> Token::Literal {

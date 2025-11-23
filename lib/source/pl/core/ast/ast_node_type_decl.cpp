@@ -1,4 +1,6 @@
 #include <pl/core/ast/ast_node_type_decl.hpp>
+#include <pl/core/ast/ast_node_template_parameter.hpp>
+#include <pl/core/ast/ast_node_type_appilication.hpp>
 
 #include <pl/core/evaluator.hpp>
 #include <pl/patterns/pattern.hpp>
@@ -8,10 +10,10 @@
 
 namespace pl::core::ast {
 
-    ASTNodeTypeDecl::ASTNodeTypeDecl(std::string name) : m_forwardDeclared(true), m_valid(false), m_name(std::move(name)) { }
+    ASTNodeTypeDecl::ASTNodeTypeDecl(std::string name) : m_forwardDeclared(true), m_name(std::move(name)) { }
 
-    ASTNodeTypeDecl::ASTNodeTypeDecl(std::string name, std::shared_ptr<ASTNode> type, std::optional<std::endian> endian)
-    : m_name(std::move(name)), m_type(std::move(type)), m_endian(endian) { }
+    ASTNodeTypeDecl::ASTNodeTypeDecl(std::string name, std::shared_ptr<ASTNode> type)
+    : m_name(std::move(name)), m_type(std::move(type)){ }
 
     ASTNodeTypeDecl::ASTNodeTypeDecl(const ASTNodeTypeDecl &other) : ASTNode(other), Attributable(other) {
         this->m_name                = other.m_name;
@@ -26,15 +28,14 @@ namespace pl::core::ast {
             }
         }
 
-        this->m_endian              = other.m_endian;
         this->m_forwardDeclared     = other.m_forwardDeclared;
-        this->m_reference           = other.m_reference;
         this->m_completed           = other.m_completed;
-        this->m_valid               = other.m_valid;
-        this->m_templateType        = other.m_templateType;
 
         for (const auto &templateParameter : other.m_templateParameters) {
-            this->m_templateParameters.push_back(templateParameter->clone());
+            this->m_templateParameters.push_back(std::shared_ptr<ASTNodeTemplateParameter>(dynamic_cast<ASTNodeTemplateParameter*>(templateParameter->clone().release())));
+        }
+        for (const auto &templateArguments : other.m_templateArguments) {
+            this->m_templateArguments.push_back(templateArguments->clone());
         }
     }
 
@@ -45,80 +46,29 @@ namespace pl::core::ast {
         return this->m_type;
     }
 
-    [[nodiscard]] std::unique_ptr<ASTNode> ASTNodeTypeDecl::evaluate(Evaluator *evaluator) const {
-        [[maybe_unused]] auto context = evaluator->updateRuntime(this);
-
-        auto type = this->getType()->evaluate(evaluator);
-
-        if (auto attributable = dynamic_cast<Attributable *>(type.get())) {
-            for (auto &attribute : this->getAttributes()) {
-                auto copy = attribute->clone();
-                if (auto node = dynamic_cast<ASTNodeAttribute *>(copy.get())) {
-                    attributable->addAttribute(std::unique_ptr<ASTNodeAttribute>(node));
-                    (void)copy.release();
-                }
-            }
-        }
-
-        return type;
-    }
-
     void ASTNodeTypeDecl::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
-        std::vector<std::unique_ptr<ASTNodeLiteral>> templateParamLiterals(this->m_templateParameters.size());
+        std::vector<std::shared_ptr<ptrn::Pattern>> dummyPatterns;
 
-        // Get template parameter values before pushing a new template parameter scope so that variables from the parent scope are used before being overwritten.
-        std::string templateTypeString;
-        for (size_t i = 0; i < this->m_templateParameters.size(); i++) {
-            auto &templateParameter = this->m_templateParameters[i];
-            if (auto lvalue = dynamic_cast<ASTNodeLValueAssignment *>(templateParameter.get())) {
-                if (!lvalue->getRValue())
-                    err::E0003.throwError(fmt::format("No value set for non-type template parameter {}. This is a bug.", lvalue->getLValueName()), {}, this->getLocation());
-                auto valueNode = lvalue->getRValue()->evaluate(evaluator);
-                if (auto literal = dynamic_cast<ASTNodeLiteral*>(valueNode.get()); literal != nullptr) {
-                    const auto &value = literal->getValue();
-
-                    if (value.isString()) {
-                        auto string = value.toString();
-                        if (string.size() > 32)
-                            string = "...";
-                        templateTypeString += fmt::format("\"{}\", ", hlp::encodeByteString({ string.begin(), string.end() }));
-                    }
-                    else if (value.isPattern()) {
-                        templateTypeString += fmt::format("{}{{ }}, ", value.toPattern()->getTypeName());
-                    }
-                    else {
-                        templateTypeString += fmt::format("{}, ", value.toString(true));
-                    }
-
-                    templateParamLiterals[i] = std::make_unique<ASTNodeLiteral>(value);
-                } else {
-                    err::E0003.throwError(fmt::format("Template parameter {} is not a literal. This is a bug.", lvalue->getLValueName()), {}, this->getLocation());
-                }
-            } else if (const auto *typeNode = dynamic_cast<ASTNodeTypeDecl*>(templateParameter.get())) {
-                const ASTNode *node = typeNode->getType().get();
-                while (node != nullptr) {
-                    if (const auto *innerNode = dynamic_cast<const ASTNodeTypeDecl*>(node)) {
-                        if (const auto name = innerNode->getName(); !name.empty()) {
-                            templateTypeString += fmt::format("{}, ", name);
-                            break;
-                        }
-                        node = innerNode->getType().get();
-                    }
-                    if (const auto *innerNode = dynamic_cast<const ASTNodeBuiltinType*>(node)) {
-                        templateTypeString += fmt::format("{}, ", Token::getTypeName(innerNode->getType()));
-
-                        break;
-                    }
-                }
-            }
-        }
+        bool requiresNewScope = dynamic_cast<ASTNodeTypeApplication*>(this->getType().get()) != nullptr;
 
         evaluator->pushTemplateParameters();
+        evaluator->pushTypeTemplateParameters();
+
+        if(requiresNewScope) {
+            evaluator->pushScope(nullptr, dummyPatterns);
+        }
+
         ON_SCOPE_EXIT {
-            evaluator->popTemplateParameters();
+                evaluator->popTemplateParameters();
+                evaluator->popTypeTemplateParameters();
+                if (requiresNewScope) {
+                    evaluator->popScope();
+                }
         };
+
+        auto& templateArguments = evaluator->getCurrentTemplateArguments();
 
         std::vector<std::shared_ptr<ptrn::Pattern>> templatePatterns;
 
@@ -130,18 +80,22 @@ namespace pl::core::ast {
 
             for (size_t i = 0; i < this->m_templateParameters.size(); i++) {
                 auto &templateParameter = this->m_templateParameters[i];
-                if (auto lvalue = dynamic_cast<ASTNodeLValueAssignment *>(templateParameter.get())) {
-                    auto value = templateParamLiterals[i]->getValue();
+                if(i >= templateArguments.size()) {
 
+                    break;
+                }
+                if (!templateParameter->isType()) {
+                    auto& argument = templateArguments[i];
+                    auto literal = dynamic_cast<ASTNodeLiteral*>(argument.get());
+                    auto value = literal->getValue();
                     // Allow the evaluator to throw an error at the correct source location.
                     if (this->m_currTemplateParameterType == nullptr) {
-                        this->m_currTemplateParameterType = std::make_unique<ASTNodeTypeDecl>("");
-                        this->m_currTemplateParameterType->setType(std::make_unique<ASTNodeBuiltinType>(Token::ValueType::Auto));
+                        this->m_currTemplateParameterType = std::make_unique<ASTNodeTypeApplication>(std::make_shared<ASTNodeBuiltinType>(Token::ValueType::Auto));
                     }
 
-                    this->m_currTemplateParameterType->setLocation(lvalue->getLocation());
+                    this->m_currTemplateParameterType->setLocation(templateParameter->getLocation());
 
-                    auto variable = evaluator->createVariable(lvalue->getLValueName(), this->m_currTemplateParameterType.get(), value, false, value.isPattern(), true, true);
+                    auto variable = evaluator->createVariable(templateParameter->getName().get(), this->m_currTemplateParameterType.get(), value, false, value.isPattern(), true, true);
                     if (variable != nullptr) {
                         variable->setInitialized(false);
                         evaluator->setVariable(variable, value);
@@ -150,30 +104,20 @@ namespace pl::core::ast {
                         templateVariable->setVisibility(ptrn::Visibility::Hidden);
                         templatePatterns.emplace_back(std::move(templateVariable));
                     }
+                } else {
+                    auto& argument = templateArguments[i];
+                    evaluator->getTypeTemplateParameters().emplace_back(std::move(argument));
                 }
             }
         }
 
-        auto currEndian = evaluator->getDefaultEndian();
-        ON_SCOPE_EXIT { evaluator->setDefaultEndian(currEndian); };
+        auto type = this->getType();
 
-        evaluator->setDefaultEndian(this->m_endian.value_or(currEndian));
-        this->getType()->createPatterns(evaluator, resultPatterns);
+        type->createPatterns(evaluator, resultPatterns);
 
         for (auto &pattern : resultPatterns) {
             if (pattern == nullptr)
                 continue;
-
-            if (!pattern->hasOverriddenEndian())
-                pattern->setEndian(evaluator->getDefaultEndian());
-
-            if (!this->m_name.empty()) {
-                if (this->m_templateParameters.empty()) {
-                    pattern->setTypeName(this->m_name);
-                } else if (templateTypeString.size() >= 2) {
-                    pattern->setTypeName(fmt::format("{}<{}>", this->m_name, templateTypeString.substr(0, templateTypeString.size() - 2)));
-                }
-            }
 
             if (auto iterable = dynamic_cast<ptrn::IIterable *>(pattern.get()); iterable != nullptr) {
                 auto scope = iterable->getEntries();
@@ -193,13 +137,34 @@ namespace pl::core::ast {
     }
 
     void ASTNodeTypeDecl::addAttribute(std::unique_ptr<ASTNodeAttribute> &&attribute) {
-        if (this->isValid()) {
-            if (auto attributable = dynamic_cast<Attributable *>(this->getType().get()); attributable != nullptr) {
-                attributable->addAttribute(std::unique_ptr<ASTNodeAttribute>(static_cast<ASTNodeAttribute *>(attribute->clone().release())));
-            }
+        if(auto attributable = dynamic_cast<Attributable*>(this->m_type.get()); attributable != nullptr) {
+            attributable->addAttribute(std::unique_ptr<ASTNodeAttribute>(dynamic_cast<ASTNodeAttribute*>(attribute->clone().release())));
         }
-
         Attributable::addAttribute(std::move(attribute));
     }
 
+    const ASTNode* ASTNodeTypeDecl::getTypeDefinition(Evaluator *evaluator) const {
+        if(m_type == nullptr)
+            err::E0004.throwError(fmt::format("Cannot use incomplete type '{}' before it has been defined.", this->m_name), "Try defining this type further up in your code before trying to instantiate it.", this->getLocation());
+        else if(auto typeApp = dynamic_cast<ASTNodeTypeApplication*>(m_type.get()); typeApp != nullptr)
+            return typeApp->getTypeDefinition(evaluator);
+        else
+            return m_type.get();
+    }
+
+    [[nodiscard]] const std::string ASTNodeTypeDecl::getTypeName() const {
+        if(this->isTemplateType()) {
+            std::string typeName = this->m_name + "<";
+            for(const auto& param : this->m_templateParameters) {
+                typeName += param->getName().get() + ", ";
+            }
+            if(!this->m_templateParameters.empty()) {
+                typeName = typeName.substr(0, typeName.size() - 2);
+            }
+            typeName += ">";
+            return typeName;
+        } else {
+            return this->m_name;
+        }
+    }
 }
