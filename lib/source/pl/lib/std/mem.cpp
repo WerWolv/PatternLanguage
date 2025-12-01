@@ -263,7 +263,7 @@ namespace pl::lib::libstd::mem {
                             section.resize(toAddr + pattern->getSize());
 
                         if (auto iterable = dynamic_cast<ptrn::IIterable*>(pattern.get())) {
-                            iterable->forEachEntry(0, iterable->getEntryCount(), [&](u64, ptrn::Pattern *entry) {
+                            iterable->forEachEntry(0, iterable->getEntryCount(), [&](u64, const auto &entry) {
                                 auto entrySize = entry->getSize();
                                 ctx->readData(entry->getOffset(), section.data() + toAddr, entrySize, entry->getSection());
                                 toAddr += entrySize;

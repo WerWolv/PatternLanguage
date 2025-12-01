@@ -33,7 +33,7 @@ namespace pl::ptrn {
         virtual void setEntries(const std::vector<std::shared_ptr<Pattern>> &entries) = 0;
 
         [[nodiscard]] virtual std::shared_ptr<Pattern> getEntry(size_t index) const = 0;
-        virtual void forEachEntry(u64 start, u64 end, const std::function<void(u64, Pattern*)> &callback) = 0;
+        virtual void forEachEntry(u64 start, u64 end, const std::function<void(u64, const std::shared_ptr<Pattern>&)> &callback) = 0;
 
         [[nodiscard]] virtual size_t getEntryCount() const = 0;
 
@@ -479,7 +479,7 @@ namespace pl::ptrn {
             this->m_cachedBytes.reset();
 
             if (auto *iterable = dynamic_cast<IIterable*>(this); iterable != nullptr) [[unlikely]] {
-                iterable->forEachEntry(0, iterable->getEntryCount(), [](u64, Pattern *pattern) {
+                iterable->forEachEntry(0, iterable->getEntryCount(), [](u64, const auto &pattern) {
                     pattern->clearByteCache();
                 });
             }

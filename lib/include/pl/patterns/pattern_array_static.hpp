@@ -32,7 +32,7 @@ namespace pl::ptrn {
             return { this->getTemplate()->clone() };
         }
 
-        void forEachEntry(u64 start, u64 end, const std::function<void(u64, Pattern*)>& fn) override {
+        void forEachEntry(u64 start, u64 end, const std::function<void(u64, const std::shared_ptr<Pattern>&)>& fn) override {
             auto evaluator = this->getEvaluator();
             auto startArrayIndex = evaluator->getCurrentArrayIndex();
             ON_SCOPE_EXIT {
@@ -52,7 +52,7 @@ namespace pl::ptrn {
                 entry->setOffset(this->getOffset() + index * entry->getSize());
                 evaluator->setCurrentArrayIndex(index);
 
-                fn(index, entry.get());
+                fn(index, entry);
             }
         }
 
@@ -233,7 +233,7 @@ namespace pl::ptrn {
                 result.resize(this->getSize());
                 this->getEvaluator()->readData(this->getOffset(), result.data(), result.size(), this->getSection());
             } else {
-                this->forEachEntry(0, this->getEntryCount(), [&](u64, pl::ptrn::Pattern *entry) {
+                this->forEachEntry(0, this->getEntryCount(), [&](u64, const auto &entry) {
                     auto bytes = entry->getBytes();
                     std::copy(bytes.begin(), bytes.end(), std::back_inserter(result));
                 });
