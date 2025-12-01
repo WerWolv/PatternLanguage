@@ -2813,6 +2813,11 @@ namespace pl::core {
     }
 
     void Parser::reset() {
+        for(const auto &[_, type] : this->m_types) {
+            if(type != nullptr) {
+                type->setType(nullptr);
+            }
+        }
         this->m_types.clear();
         this->m_currTemplateType.clear();
         this->m_matchedOptionals.clear();

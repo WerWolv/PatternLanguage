@@ -36,6 +36,11 @@ namespace pl::core {
 
         void reset() {
             this->m_onceIncluded.clear();
+            for(const auto &[_, types] : this->m_parsedTypes) {
+                for(const auto &[_, type] : types) {
+                    type->setType(nullptr);
+                }
+            }
             this->m_parsedTypes.clear();
         }
 
