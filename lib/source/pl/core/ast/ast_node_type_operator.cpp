@@ -58,7 +58,8 @@ namespace pl::core::ast {
                     break;
                 case Token::Operator::TypeNameOf: {
                     if (auto typeApp = dynamic_cast<ASTNodeTypeApplication*>(this->m_expression.get()); typeApp != nullptr) {
-                        result = typeApp->getTypeName();
+                        auto evaluatedType = typeApp->evaluate(evaluator);
+                        result = dynamic_cast<ASTNodeTypeApplication*>(evaluatedType.get())->getTypeName();
                     } else {
                         result = pattern->getTypeName();
                     }

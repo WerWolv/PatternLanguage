@@ -33,6 +33,7 @@ set(AVAILABLE_TESTS
         Format
         RValuesAssignmentInStruct
         TemplateParametersScope
+        TypeNameOf
 )
 
 
