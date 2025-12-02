@@ -84,7 +84,7 @@ namespace pl::gen::fmt {
 
             addLine(pattern->getVariableName(), "[");
             pushIndent();
-            pattern->forEachEntry(0, pattern->getEntryCount(), [&](u64, auto member) {
+            pattern->forEachEntry(0, pattern->getEntryCount(), [&](u64, const auto &member) {
                 this->m_inArray = true;
                 member->accept(*this);
             });
@@ -117,7 +117,7 @@ namespace pl::gen::fmt {
                 for (const auto &[name, value] : this->getMetaInformation(pattern))
                     addLine(name, ::fmt::format("\"{}\",", value));
 
-                pattern->forEachEntry(0, pattern->getEntryCount(), [&](u64, auto member) {
+                pattern->forEachEntry(0, pattern->getEntryCount(), [&](u64, const auto &member) {
                     member->accept(*this);
                 });
                 popIndent();

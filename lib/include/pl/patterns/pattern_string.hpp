@@ -77,6 +77,7 @@ namespace pl::ptrn {
 
         std::shared_ptr<Pattern> getEntry(size_t index) const override {
             auto result = std::make_shared<PatternCharacter>(this->getEvaluator(), this->getOffset() + index, getLine());
+            result->setVariableName(fmt::format("{}[{}]", this->getVariableName(), index));
             result->setSection(this->getSection());
 
             return result;
@@ -86,15 +87,15 @@ namespace pl::ptrn {
             return this->getSize();
         }
 
-        void forEachEntry(u64 start, u64 end, const std::function<void (u64, Pattern *)> &callback) override {
+        void forEachEntry(u64 start, u64 end, const std::function<void (u64, const std::shared_ptr<Pattern>&)> &callback) override {
             for (auto i = start; i < end; i++)
-                callback(i, this->getEntry(i).get());
+                callback(i, this->getEntry(i));
         }
 
         std::vector<u8> getRawBytes() override {
             std::vector<u8> result;
 
-            this->forEachEntry(0, this->getEntryCount(), [&](u64, pl::ptrn::Pattern *entry) {
+            this->forEachEntry(0, this->getEntryCount(), [&](u64, const auto &entry) {
                 auto bytes = entry->getBytes();
                 std::copy(bytes.begin(), bytes.end(), std::back_inserter(result));
             });

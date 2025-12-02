@@ -55,14 +55,14 @@ namespace pl::ptrn {
                 this->setBaseColor(this->m_members.front()->getColor());
         }
 
-        void forEachEntry(u64 start, u64 end, const std::function<void(u64, Pattern*)>& fn) override {
+        void forEachEntry(u64 start, u64 end, const std::function<void(u64, const std::shared_ptr<Pattern>&)>& fn) override {
             if (this->isSealed())
                 return;
 
             for (u64 i = start; i < this->m_members.size() && i < end; i++) {
                 auto &pattern = this->m_members[i];
                 if (!pattern->isPatternLocal() || pattern->hasAttribute("export"))
-                    fn(i, pattern.get());
+                    fn(i, pattern);
             }
         }
 
@@ -208,7 +208,7 @@ namespace pl::ptrn {
                 result.resize(this->getSize());
                 this->getEvaluator()->readData(this->getOffset(), result.data(), result.size(), this->getSection());
             } else {
-                this->forEachEntry(0, this->getEntryCount(), [&](u64, pl::ptrn::Pattern *entry) {
+                this->forEachEntry(0, this->getEntryCount(), [&](u64, const auto &entry) {
                     auto bytes = entry->getBytes();
                     std::copy(bytes.begin(), bytes.end(), std::back_inserter(result));
                 });
@@ -218,7 +218,7 @@ namespace pl::ptrn {
         }
 
         void clearFormatCache() override {
-            this->forEachEntry(0, this->getEntryCount(), [&](u64, pl::ptrn::Pattern *entry) {
+            this->forEachEntry(0, this->getEntryCount(), [&](u64, const auto &entry) {
                 entry->clearFormatCache();
             });
 
