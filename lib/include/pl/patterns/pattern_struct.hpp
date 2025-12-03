@@ -100,6 +100,7 @@ namespace pl::ptrn {
 
                 for (const auto &member : this->m_members) {
                     auto children = member->getChildren();
+                    result.reserve(result.size() + children.size());
                     std::move(children.begin(), children.end(), std::back_inserter(result));
                 }
 
