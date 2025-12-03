@@ -4,6 +4,7 @@
 #include <pl/api.hpp>
 
 #include <optional>
+#include <wolv/utils/charconv.hpp>
 
 namespace pl::core {
     using namespace tkn;
@@ -243,10 +244,9 @@ namespace pl::core {
     }
 
     std::optional<double> Lexer::parseFloatingPoint(std::string_view literal, const char suffix) {
-        char *end = nullptr;
-        double val = std::strtod(literal.data(), &end);
+        const auto value = wolv::util::from_chars<double>(literal);
 
-        if(end != literal.data() + literal.size()) {
+        if(!value.has_value()) {
             m_errorLength = literal.size();
             error("Invalid float literal: {}", literal);
             return std::nullopt;
@@ -255,11 +255,11 @@ namespace pl::core {
         switch (suffix) {
             case 'f':
             case 'F':
-                return float(val);
+                return float(*value);
             case 'd':
             case 'D':
             default:
-                return val;
+                return *value;
         }
     }
 
