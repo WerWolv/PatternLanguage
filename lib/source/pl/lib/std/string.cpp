@@ -65,7 +65,11 @@ namespace pl::lib::libstd::string {
                 auto string = params[0].toString(false);
                 auto base   = u64(params[1].toUnsigned());
 
-                return wolv::util::from_chars<i128>(string, base).value_or(0);
+                if constexpr (std::integral<i128>)
+                    return wolv::util::from_chars<i128>(string, base).value_or(0);
+                else
+                    return wolv::util::from_chars<i64>(string, base).value_or(0);
+
             });
 
             /* parse_float(string) */
