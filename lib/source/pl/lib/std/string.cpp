@@ -11,6 +11,8 @@
 
 #include <fmt/args.h>
 
+#include <wolv/utils/charconv.hpp>
+
 namespace pl::lib::libstd::string {
 
     void registerFunctions(pl::PatternLanguage &runtime) {
@@ -63,16 +65,18 @@ namespace pl::lib::libstd::string {
                 auto string = params[0].toString(false);
                 auto base   = u64(params[1].toUnsigned());
 
-                // TODO: support 128-bit integers
+                if constexpr (std::integral<i128>)
+                    return wolv::util::from_chars<i128>(string, base).value_or(0);
+                else
+                    return wolv::util::from_chars<i64>(string, base).value_or(0);
 
-                return i128(std::strtoll(string.c_str(), nullptr, base));
             });
 
             /* parse_float(string) */
             runtime.addFunction(nsStdString, "parse_float", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 auto string = params[0].toString(false);
 
-                return double(std::strtod(string.c_str(), nullptr));
+                return wolv::util::from_chars<double>(string).value_or(0.0);
             });
         }
 

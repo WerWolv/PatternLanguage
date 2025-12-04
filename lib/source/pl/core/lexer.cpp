@@ -7,6 +7,7 @@
 #include <pl/api.hpp>
 #include <pl/core/token.hpp>
 #include <pl/core/tokens.hpp>
+#include <wolv/utils/charconv.hpp>
 
 #include <lexertl/lookup.hpp>
 #include <lexertl/state_machine.hpp>
@@ -121,10 +122,9 @@ namespace pl::core {
     }
 
     std::optional<double> Lexer::parseFloatingPoint(std::string_view literal, const char suffix, const auto &location) {
-        char *end = nullptr;
-        double val = std::strtod(literal.data(), &end);
+        const auto value = wolv::util::from_chars<double>(literal);
 
-        if(end != literal.data() + literal.size()) {
+        if(!value.has_value()) {
             error(location(), "Invalid float literal: {}", literal);
             return std::nullopt;
         }
@@ -132,11 +132,11 @@ namespace pl::core {
         switch (suffix) {
             case 'f':
             case 'F':
-                return float(val);
+                return float(*value);
             case 'd':
             case 'D':
             default:
-                return val;
+                return *value;
         }
     }
 
@@ -546,3 +546,4 @@ namespace pl::core {
     }
 
 } // namespace pl::core
+

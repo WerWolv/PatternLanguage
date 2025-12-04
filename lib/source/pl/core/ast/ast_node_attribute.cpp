@@ -10,6 +10,7 @@
 #include <pl/patterns/pattern_bitfield.hpp>
 
 #include <bit>
+#include <wolv/utils/charconv.hpp>
 
 namespace pl::core::ast {
 
@@ -348,7 +349,7 @@ namespace pl::core::ast {
         if (!pattern->hasOverriddenColor()) {
             if (const auto &arguments = attributable->getAttributeArguments("color"); arguments.size() == 1) {
                 auto colorString = getAttributeValueAsString(arguments.front(), evaluator);
-                u32 color = strtoul(colorString.c_str(), nullptr, 16);
+                u32 color = wolv::util::from_chars<u32>(colorString, 16).value_or(0);
                 pattern->setColor(hlp::changeEndianess(color, std::endian::big) >> 8);
             } else if (auto singleColor = attributable->hasAttribute("single_color", false); singleColor) {
                 pattern->setColor(pattern->getColor());
@@ -406,7 +407,7 @@ namespace pl::core::ast {
 
         if (const auto &arguments = attributable->getAttributeArguments("color"); arguments.size() == 1) {
             auto colorString = getAttributeValueAsString(arguments.front(), evaluator);
-            u32 color = strtoul(colorString.c_str(), nullptr, 16);
+            u32 color = wolv::util::from_chars<u32>(colorString, 16).value_or(0);
             pattern->setColor(hlp::changeEndianess(color, std::endian::big) >> 8);
         } else if (auto singleColor = attributable->hasAttribute("single_color", false); singleColor) {
             pattern->setColor(pattern->getColor());
