@@ -79,7 +79,7 @@ jobs:
 
       - name: ⬇️ Install dependencies
         run: |
-          brew install llvm@20 ccache ninja
+          brew install llvm ccache ninja
 
       - name: 📜 Setup ccache
         uses: hendrikmuhs/ccache-action@v1
@@ -92,10 +92,10 @@ jobs:
         run: |
           mkdir -p build
           cd build
-          CC=$(brew --prefix llvm@20)/bin/clang        \
-          CXX=$(brew --prefix llvm@20)/bin/clang++     \
-          OBJC=$(brew --prefix llvm@20)/bin/clang      \
-          OBJCXX=$(brew --prefix llvm@20)/bin/clang++  \
+          CC=$(brew --prefix llvm)/bin/clang        \
+          CXX=$(brew --prefix llvm)/bin/clang++     \
+          OBJC=$(brew --prefix llvm)/bin/clang      \
+          OBJCXX=$(brew --prefix llvm)/bin/clang++  \
           cmake                                     \
             -DCMAKE_BUILD_TYPE=Debug                \
             -DCMAKE_INSTALL_PREFIX="$PWD/install"   \
