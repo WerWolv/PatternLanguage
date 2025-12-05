@@ -1,5 +1,6 @@
 #include <pl/core/preprocessor.hpp>
 
+#include <fmt/format.h>
 #include <wolv/utils/string.hpp>
 
 #include <pl/pattern_language.hpp>
@@ -196,8 +197,8 @@ namespace pl::core {
                     ourLocation = values[0].location;
                 }
 
-                errorAt(ourLocation, "Previous definition occurs at line '{}'.", defineLocation.line);
-                errorAt(defineLocation, "Macro '{}' is redefined in line '{}'.", name, defineLocation.line);
+                errorAt(ourLocation, fmt::format("Previous definition occurs at line '{}'.", defineLocation.line));
+                errorAt(defineLocation, fmt::format("Macro '{}' is redefined in line '{}'.", name, defineLocation.line));
 
                 m_defines[name] = { token, values };
 
@@ -457,7 +458,7 @@ namespace pl::core {
         if (auto *directive = std::get_if<Token::Directive>(&m_token->value); directive != nullptr ) {
             auto handler = m_directiveHandlers.find(*directive);
             if (handler == m_directiveHandlers.end()) {
-                error("Unknown directive '{}'", m_token->getFormattedValue());
+                error(fmt::format("Unknown directive '{}'", m_token->getFormattedValue()));
                 m_token++;
                 return;
             } else {
@@ -469,7 +470,7 @@ namespace pl::core {
         } else  if (auto *statement = std::get_if<Token::Keyword>(&m_token->value); statement != nullptr && *statement == Token::Keyword::Import) {
             auto handler = m_statementHandlers.find(*statement);
             if (handler == m_statementHandlers.end()) {
-                error("Unknown statement '{}'", m_token->getFormattedValue());
+                error(fmt::format("Unknown statement '{}'", m_token->getFormattedValue()));
                 m_token++;
                 return;
             } else {
@@ -622,7 +623,7 @@ namespace pl::core {
 
                 if (this->m_pragmaHandlers.contains(type)) {
                     if (!this->m_pragmaHandlers[type](*m_runtime, value))
-                        errorAt(Location { m_source, line, 1, value.length() }, "Value '{}' cannot be used with the '{}' pragma directive.", value, type);
+                        errorAt(Location { m_source, line, 1, value.length() }, fmt::format("Value '{}' cannot be used with the '{}' pragma directive.", value, type));
                 }
             }
         }

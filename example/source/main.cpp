@@ -1,5 +1,7 @@
 #include <pl.hpp>
 
+#include <format>
+
 const static std::map<pl::core::LogConsole::Level, std::string> LogLevels = {
         { pl::core::LogConsole::Level::Debug,     "Debug"     },
         { pl::core::LogConsole::Level::Info,      "Info"      },
@@ -36,7 +38,7 @@ int main() {
 
     // Create a normal builtin function called `test::normal_function` that takes a single parameter
     patternLanguage.addFunction({ "test" }, "normal_function", pl::api::FunctionParameterCount::exactly(1), [](pl::core::Evaluator *ctx, const std::vector<pl::core::Token::Literal> &params) -> std::optional<pl::core::Token::Literal>{
-        fmt::print("normal_function {}\n", std::get<pl::i128>(params[0]));
+        printf("%s", std::format("normal_function {}\n", std::get<pl::i128>(params[0])).c_str());
         return std::nullopt;
     });
 

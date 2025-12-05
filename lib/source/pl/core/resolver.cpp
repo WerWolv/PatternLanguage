@@ -1,5 +1,7 @@
 #include <pl/core/resolver.hpp>
 
+#include <fmt/core.h>
+
 namespace pl::core {
     Resolver::Result Resolver::resolve(const std::string &path) const {
         hlp::Result<api::Source, std::string> result;
