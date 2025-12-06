@@ -61,11 +61,11 @@ namespace pl::core::ast {
     }
 
 
-    ASTNodeBitfieldFieldSizedType::ASTNodeBitfieldFieldSizedType(std::string name, std::unique_ptr<ASTNodeTypeDecl> &&type, std::unique_ptr<ASTNode> &&size)
+    ASTNodeBitfieldFieldSizedType::ASTNodeBitfieldFieldSizedType(std::string name, std::unique_ptr<ASTNodeTypeApplication> &&type, std::unique_ptr<ASTNode> &&size)
     : ASTNodeBitfieldField(std::move(name), std::move(size)), m_type(std::move(type)) { }
 
     ASTNodeBitfieldFieldSizedType::ASTNodeBitfieldFieldSizedType(const ASTNodeBitfieldFieldSizedType &other) : ASTNodeBitfieldField(other) {
-        this->m_type = std::unique_ptr<ASTNodeTypeDecl>(static_cast<ASTNodeTypeDecl*>(other.m_type->clone().release()));
+        this->m_type = std::unique_ptr<ASTNodeTypeApplication>(static_cast<ASTNodeTypeApplication*>(other.m_type->clone().release()));
     }
 
 [[nodiscard]] std::shared_ptr<ptrn::PatternBitfieldField> ASTNodeBitfieldFieldSizedType::createBitfield(Evaluator *evaluator, u64 byteOffset, u8 bitOffset, u8 bitSize) const {

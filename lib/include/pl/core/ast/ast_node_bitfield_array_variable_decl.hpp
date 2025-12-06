@@ -5,7 +5,7 @@
 #include <pl/core/ast/ast_node_bitfield.hpp>
 #include <pl/core/ast/ast_node_bitfield_field.hpp>
 #include <pl/core/ast/ast_node_literal.hpp>
-#include <pl/core/ast/ast_node_type_decl.hpp>
+#include <pl/core/ast/ast_node_type_appilication.hpp>
 #include <pl/core/ast/ast_node_while_statement.hpp>
 
 #include <pl/patterns/pattern_array_dynamic.hpp>
@@ -15,7 +15,7 @@ namespace pl::core::ast {
     class ASTNodeBitfieldArrayVariableDecl : public ASTNode,
                                              public Attributable {
     public:
-        ASTNodeBitfieldArrayVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeDecl> type, std::unique_ptr<ASTNode> &&size);
+        ASTNodeBitfieldArrayVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeApplication> type, std::unique_ptr<ASTNode> &&size);
         ASTNodeBitfieldArrayVariableDecl(const ASTNodeBitfieldArrayVariableDecl &other);
 
         [[nodiscard]] std::unique_ptr<ASTNode> clone() const override {
@@ -28,7 +28,7 @@ namespace pl::core::ast {
             return this->m_name;
         }
 
-        [[nodiscard]] const std::shared_ptr<ASTNodeTypeDecl> &getType() const {
+        [[nodiscard]] const std::shared_ptr<ASTNodeTypeApplication> &getType() const {
             return this->m_type;
         }
 
@@ -38,7 +38,7 @@ namespace pl::core::ast {
 
     private:
         std::string m_name;
-        std::shared_ptr<ASTNodeTypeDecl> m_type;
+        std::shared_ptr<ASTNodeTypeApplication> m_type;
         std::unique_ptr<ASTNode> m_size;
 
         void createArray(Evaluator *evaluator, std::shared_ptr<ptrn::Pattern> &resultPattern) const;

@@ -280,79 +280,7 @@ namespace pl::core {
         variables.push_back(std::unique_ptr<ptrn::Pattern>(pattern));
     }
 
-    std::optional<std::string> Evaluator::findTypeName(const ast::ASTNodeTypeDecl *type) {
-        const ast::ASTNodeTypeDecl *typeDecl = type;
-        while (true) {
-            if (auto name = typeDecl->getName(); !name.empty()) {
-                if (const auto &templateParams = typeDecl->getTemplateParameters(); templateParams.empty()) {
-                    return name;
-                } else {
-                    std::string templateTypeString;
-                    for (const auto &templateParameter : templateParams) {
-                        if (auto lvalue = dynamic_cast<ast::ASTNodeLValueAssignment *>(templateParameter.get())) {
-                            if (!lvalue->getRValue())
-                                err::E0003.throwError(fmt::format("No value set for non-type template parameter {}. This is a bug.", lvalue->getLValueName()), {}, type->getLocation());
-                            auto valueNode = lvalue->getRValue()->evaluate(this);
-                            if (auto literal = dynamic_cast<ast::ASTNodeLiteral*>(valueNode.get()); literal != nullptr) {
-                                const auto &value = literal->getValue();
-
-                                if (value.isString()) {
-                                    auto string = value.toString();
-                                    if (string.size() > 32)
-                                        string = "...";
-                                    templateTypeString += fmt::format("\"{}\", ", hlp::encodeByteString({ string.begin(), string.end() }));
-                                } else if (value.isPattern()) {
-                                    templateTypeString += fmt::format("{}{{ }}, ", value.toPattern()->getTypeName());
-                                } else {
-                                    templateTypeString += fmt::format("{}, ", value.toString(true));
-                                }
-                            } else {
-                                err::E0003.throwError(fmt::format("Template parameter {} is not a literal. This is a bug.", lvalue->getLValueName()), {}, type->getLocation());
-                            }
-                        } else if (const auto *typeNode = dynamic_cast<ast::ASTNodeTypeDecl*>(templateParameter.get())) {
-                            const auto *node = typeNode->getType().get();
-                            while (node != nullptr) {
-                                if (const auto *innerNode = dynamic_cast<const ast::ASTNodeTypeDecl*>(node)) {
-                                    if (const auto &innerNodeName = innerNode->getName(); !innerNodeName.empty()) {
-                                        templateTypeString += fmt::format("{}, ", innerNodeName);
-                                        break;
-                                    }
-                                    node = innerNode->getType().get();
-                                }
-                                if (const auto *innerNode = dynamic_cast<const ast::ASTNodeBuiltinType*>(node)) {
-                                    templateTypeString += fmt::format("{}, ", Token::getTypeName(innerNode->getType()));
-
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    templateTypeString = templateTypeString.substr(0, templateTypeString.size() - 2);
-
-                    return fmt::format("{}<{}>", name, templateTypeString);
-                }
-            }
-            else if (auto innerType = dynamic_cast<ast::ASTNodeTypeDecl*>(typeDecl->getType().get()); innerType != nullptr)
-                typeDecl = innerType;
-            else
-                return std::nullopt;
-        }
-    }
-
-    static ast::ASTNodeBuiltinType* getBuiltinType(const ast::ASTNodeTypeDecl *type) {
-        const ast::ASTNodeTypeDecl *typeDecl = type;
-        while (true) {
-            if (auto innerType = dynamic_cast<ast::ASTNodeTypeDecl*>(typeDecl->getType().get()); innerType != nullptr)
-                typeDecl = innerType;
-            else if (auto builtinType = dynamic_cast<ast::ASTNodeBuiltinType*>(typeDecl->getType().get()); builtinType != nullptr)
-                return builtinType;
-            else
-                return nullptr;
-        }
-    }
-
-    std::shared_ptr<ptrn::Pattern> Evaluator::createVariable(const std::string &name, const ast::ASTNodeTypeDecl *type, const std::optional<Token::Literal> &value, bool outVariable, bool reference, bool templateVariable, bool constant) {
+    std::shared_ptr<ptrn::Pattern> Evaluator::createVariable(const std::string &name, const ast::ASTNodeTypeApplication *type, const std::optional<Token::Literal> &value, bool outVariable, bool reference, bool templateVariable, bool constant) {
         auto startPos = this->getBitwiseReadOffset();
         ON_SCOPE_EXIT { this->setBitwiseReadOffset(startPos); };
 
@@ -393,7 +321,8 @@ namespace pl::core {
 
         this->setBitwiseReadOffset(startOffset);
 
-        if (auto builtinType = getBuiltinType(type); builtinType != nullptr && builtinType->getType() == Token::ValueType::Auto) {
+        auto typeDefinition = type->getTypeDefinition(this);
+        if (auto builtinType = dynamic_cast<const ast::ASTNodeBuiltinType*>(typeDefinition); builtinType != nullptr && builtinType->getType() == Token::ValueType::Auto) {
             // Handle auto variables
             if (!value.has_value())
                 pattern = std::make_shared<ptrn::PatternPadding>(this, 0, 0, 0);
@@ -425,11 +354,7 @@ namespace pl::core {
             }
             else {
                 pattern = std::make_shared<ptrn::PatternPadding>(this, 0, 0, 0);
-
-                if (auto typeName = findTypeName(type); typeName.has_value())
-                    pattern->setTypeName(typeName.value());
-                else
-                    err::E0003.throwError("Cannot determine type.", "", type->getLocation());
+                pattern->setTypeName(type->getTypeName());
             }
         }
 

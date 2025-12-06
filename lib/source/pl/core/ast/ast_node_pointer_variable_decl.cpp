@@ -10,13 +10,13 @@
 
 namespace pl::core::ast {
 
-    ASTNodePointerVariableDecl::ASTNodePointerVariableDecl(std::string name, std::shared_ptr<ASTNode> type, std::shared_ptr<ASTNodeTypeDecl> sizeType, std::unique_ptr<ASTNode> &&placementOffset, std::unique_ptr<ASTNode> &&placementSection)
+    ASTNodePointerVariableDecl::ASTNodePointerVariableDecl(std::string name, std::shared_ptr<ASTNode> type, std::shared_ptr<ASTNodeTypeApplication> sizeType, std::unique_ptr<ASTNode> &&placementOffset, std::unique_ptr<ASTNode> &&placementSection)
     : ASTNode(), m_name(std::move(name)), m_type(std::move(type)), m_sizeType(std::move(sizeType)), m_placementOffset(std::move(placementOffset)), m_placementSection(std::move(placementSection)) { }
 
     ASTNodePointerVariableDecl::ASTNodePointerVariableDecl(const ASTNodePointerVariableDecl &other) : ASTNode(other), Attributable(other) {
         this->m_name     = other.m_name;
         this->m_type     = other.m_type->clone();
-        this->m_sizeType = std::shared_ptr<ASTNodeTypeDecl>(static_cast<ASTNodeTypeDecl*>(other.m_sizeType->clone().release()));
+        this->m_sizeType = std::shared_ptr<ASTNodeTypeApplication>(static_cast<ASTNodeTypeApplication*>(other.m_sizeType->clone().release()));
 
         if (other.m_placementOffset != nullptr)
             this->m_placementOffset = other.m_placementOffset->clone();

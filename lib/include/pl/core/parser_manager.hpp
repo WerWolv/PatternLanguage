@@ -36,6 +36,20 @@ namespace pl::core {
 
         void reset() {
             this->m_onceIncluded.clear();
+            for (const auto &[_, types] : this->m_parsedTypes) {
+                for (const auto &[_, type] : types) {
+                    if (type != nullptr && type->isValid()) {
+                        if (auto builtinType = dynamic_cast<ast::ASTNodeBuiltinType*>(type->getType().get()); builtinType != nullptr) {
+                            if (builtinType->getType() != Token::ValueType::CustomType) {
+                                type->setType(nullptr);
+                            }
+                        }
+                    } else {
+                        type->setType(nullptr);
+                    }
+                }
+            }
+
             this->m_parsedTypes.clear();
         }
 

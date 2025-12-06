@@ -8,7 +8,7 @@
 
 namespace pl::core::ast {
 
-    ASTNodeScopeResolution::ASTNodeScopeResolution(std::shared_ptr<ASTNode> &&type, std::string name)
+    ASTNodeScopeResolution::ASTNodeScopeResolution(std::shared_ptr<ASTNodeTypeDecl> &&type, std::string name)
         : m_type(std::move(type)), m_name(std::move(name)) { }
 
     ASTNodeScopeResolution::ASTNodeScopeResolution(const ASTNodeScopeResolution &other) : ASTNode(other) {
@@ -20,9 +20,9 @@ namespace pl::core::ast {
     [[nodiscard]] std::unique_ptr<ASTNode> ASTNodeScopeResolution::evaluate(Evaluator *evaluator) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
-        auto type = this->m_type->evaluate(evaluator);
+        auto type = this->m_type->getTypeDefinition(evaluator);
 
-        if (auto enumType = dynamic_cast<ASTNodeEnum *>(type.get())) {
+        if (auto enumType = dynamic_cast<const ASTNodeEnum *>(type)) {
             const auto &[min, max] = enumType->getEnumValue(evaluator, m_name);
             return std::make_unique<ASTNodeLiteral>(min);
         } else {
