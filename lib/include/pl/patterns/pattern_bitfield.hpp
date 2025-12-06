@@ -713,7 +713,7 @@ namespace pl::ptrn {
                     valueString += fmt::format("{} = {} | ", bitfield->getVariableName(), bitfield->formatDisplayValue());
                 }
 
-                if(valueString.size() - 3 > 64) {
+                if (valueString.size() - 3 > 64) {
                     break;
                 }
             }
