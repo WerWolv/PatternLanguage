@@ -89,4 +89,4 @@ jobs:
     uses: WerWolv/ImHex-Patterns/.github/workflows/tests.yml@master
     with:
       pattern_language_git_repo: ${{ github.server_url }}/${{ github.repository }}
-      pattern_language_git_hash: ${{ github.sha }}
+      pattern_language_git_hash: ${{ github.ref }}
