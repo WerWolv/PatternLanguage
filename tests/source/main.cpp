@@ -109,7 +109,7 @@ int runTests(int argc, char **argv) {
     test->m_runtime = &runtime;
     test->setup();
 
-    for(size_t i = 0; i < test->repeatTimes(); i++) {
+    for (size_t i = 0; i < test->repeatTimes(); i++) {
         auto result = runtime.executeString(test->getSourceCode());
 
         // Check if compilation succeeded

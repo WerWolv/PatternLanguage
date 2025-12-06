@@ -186,7 +186,7 @@ namespace pl::core {
                     return false;
                 }
             }
-        } else if(const auto compoundNode = dynamic_cast<ast::ASTNodeCompoundStatement *>(node); compoundNode != nullptr) {
+        } else if (const auto compoundNode = dynamic_cast<ast::ASTNodeCompoundStatement *>(node); compoundNode != nullptr) {
             if (!this->validateNodes(compoundNode->getStatements(), false))
                 return false;
         }

@@ -57,9 +57,9 @@ namespace pl::core::ast {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
         auto evaluatedTemplateArguments = this->evaluateTemplateArguments(evaluator);
         auto evaluatedType = std::make_unique<ASTNodeTypeApplication>(this->m_type);
-        if(this->m_type == nullptr) {
+        if (this->m_type == nullptr) {
             auto& templateTypeParameters = evaluator->getTypeTemplateParameters();
-            if(this->m_templateParameterIndex >= templateTypeParameters.size()) {
+            if (this->m_templateParameterIndex >= templateTypeParameters.size()) {
                 err::E0004.throwError("Template parameter index out of bounds.", {}, this->getLocation());
             } else {
                 evaluatedType->m_type = templateTypeParameters[this->m_templateParameterIndex];
@@ -78,14 +78,14 @@ namespace pl::core::ast {
     void ASTNodeTypeApplication::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
         auto actualType = this->m_type;
-        if(actualType == nullptr) {
+        if (actualType == nullptr) {
             auto& templateTypeParameters = evaluator->getTypeTemplateParameters();
-            if(this->m_templateParameterIndex >= templateTypeParameters.size()) {
+            if (this->m_templateParameterIndex >= templateTypeParameters.size()) {
                 err::E0004.throwError("Template parameter index out of bounds.", {}, this->getLocation());
             }
             actualType = templateTypeParameters[this->m_templateParameterIndex];
 
-            if(actualType.get() == this) {
+            if (actualType.get() == this) {
                 err::E0004.throwError("Recursive type definition detected.", {}, this->getLocation());
             }
         }
@@ -101,9 +101,9 @@ namespace pl::core::ast {
         for(auto& pattern : resultPatterns) {
             if (!pattern->hasOverriddenEndian())
                 pattern->setEndian(evaluator->getDefaultEndian());
-            if(auto typeDecl = dynamic_cast<ASTNodeTypeDecl*>(actualType.get()); typeDecl != nullptr) {
+            if (auto typeDecl = dynamic_cast<ASTNodeTypeDecl*>(actualType.get()); typeDecl != nullptr) {
                 if (!typeDecl->getName().empty()) {
-                    if(this->m_templateArguments.empty()) {
+                    if (this->m_templateArguments.empty()) {
                         pattern->setTypeName(typeDecl->getName());
                     } else {
                         pattern->setTypeName(fmt::format("{}<{}>", typeDecl->getName(), templateTypeString));
@@ -114,13 +114,13 @@ namespace pl::core::ast {
     }
 
     const ast::ASTNode* ASTNodeTypeApplication::getTypeDefinition(Evaluator *evaluator) const{
-        if(this->m_type == nullptr) {
+        if (this->m_type == nullptr) {
             auto& templateTypeParameters = evaluator->getTypeTemplateParameters();
-            if(this->m_templateParameterIndex >= templateTypeParameters.size()) {
+            if (this->m_templateParameterIndex >= templateTypeParameters.size()) {
                 err::E0004.throwError("Template parameter index out of bounds.", {}, this->getLocation());
             }
             auto type = templateTypeParameters[this->m_templateParameterIndex].get();
-            if(auto typeApp = dynamic_cast<ASTNodeTypeApplication*>(type); typeApp != nullptr) {
+            if (auto typeApp = dynamic_cast<ASTNodeTypeApplication*>(type); typeApp != nullptr) {
                 return typeApp->getTypeDefinition(evaluator);
             }
         }
@@ -138,7 +138,7 @@ namespace pl::core::ast {
     [[nodiscard]] const std::string ASTNodeTypeApplication::getTypeName() const {
         if(auto typeDecl = dynamic_cast<const ASTNodeTypeDecl*>(this->m_type.get()); typeDecl != nullptr) {
             std::string typeName = typeDecl->getName();
-            if(this->m_templateArguments.empty()) {
+            if (this->m_templateArguments.empty()) {
                 return typeName;
             } else {
                 return fmt::format("{}<{}>", typeName, computeTemplateTypeString(this->m_templateArguments));

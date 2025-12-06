@@ -53,7 +53,7 @@ namespace pl {
         if (this->m_flattenThread.joinable())
             this->m_flattenThread.join();
         this->m_parserManager.reset();
-        if(this->m_internals.parser)
+        if (this->m_internals.parser)
             this->m_internals.parser->reset();
         this->m_patterns.clear();
         this->m_flattenedPatterns.clear();

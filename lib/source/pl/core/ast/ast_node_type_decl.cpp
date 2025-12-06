@@ -80,10 +80,10 @@ namespace pl::core::ast {
 
             for (size_t i = 0; i < this->m_templateParameters.size(); i++) {
                 auto &templateParameter = this->m_templateParameters[i];
-                if(i >= templateArguments.size()) {
-
+                if (i >= templateArguments.size()) {
                     break;
                 }
+
                 if (!templateParameter->isType()) {
                     auto& argument = templateArguments[i];
                     auto literal = dynamic_cast<ASTNodeLiteral*>(argument.get());
@@ -144,21 +144,21 @@ namespace pl::core::ast {
     }
 
     const ASTNode* ASTNodeTypeDecl::getTypeDefinition(Evaluator *evaluator) const {
-        if(m_type == nullptr)
+        if (m_type == nullptr)
             err::E0004.throwError(fmt::format("Cannot use incomplete type '{}' before it has been defined.", this->m_name), "Try defining this type further up in your code before trying to instantiate it.", this->getLocation());
-        else if(auto typeApp = dynamic_cast<ASTNodeTypeApplication*>(m_type.get()); typeApp != nullptr)
+        else if (auto typeApp = dynamic_cast<ASTNodeTypeApplication*>(m_type.get()); typeApp != nullptr)
             return typeApp->getTypeDefinition(evaluator);
         else
             return m_type.get();
     }
 
     [[nodiscard]] const std::string ASTNodeTypeDecl::getTypeName() const {
-        if(this->isTemplateType()) {
+        if (this->isTemplateType()) {
             std::string typeName = this->m_name + "<";
-            for(const auto& param : this->m_templateParameters) {
+            for (const auto& param : this->m_templateParameters) {
                 typeName += param->getName().get() + ", ";
             }
-            if(!this->m_templateParameters.empty()) {
+            if (!this->m_templateParameters.empty()) {
                 typeName = typeName.substr(0, typeName.size() - 2);
             }
             typeName += ">";

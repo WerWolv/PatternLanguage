@@ -1315,7 +1315,7 @@ namespace pl::core {
                         type->setTemplateParameterIndex(index);
                         return type;
                     }
-                    if(templateType->isType()){
+                    if (templateType->isType()){
                         index++;
                     }
                 }
@@ -1558,7 +1558,6 @@ namespace pl::core {
 
         if (!sequence(tkn::Operator::Assign)) {
             // Forward declaration
-
             auto typeName = getNamespacePrefixedNames(name).back();
             if (typedefIdentifier != nullptr)
                 typedefIdentifier->setType(Token::Identifier::IdentifierType::UDT);
@@ -2813,10 +2812,10 @@ namespace pl::core {
     }
 
     void Parser::reset() {
-        for(const auto &[_, type] : this->m_types) {
-            if(type != nullptr && type->isValid()) {
-                if(auto builtinType = dynamic_cast<ast::ASTNodeBuiltinType*>(type->getType().get()); builtinType != nullptr) {
-                    if(builtinType->getType() != Token::ValueType::CustomType) {
+        for (const auto &[_, type] : this->m_types) {
+            if (type != nullptr && type->isValid()) {
+                if (auto builtinType = dynamic_cast<ast::ASTNodeBuiltinType*>(type->getType().get()); builtinType != nullptr) {
+                    if (builtinType->getType() != Token::ValueType::CustomType) {
                         type->setType(nullptr);
                     }
                 } else {
@@ -2824,6 +2823,7 @@ namespace pl::core {
                 }
             }
         }
+
         this->m_types.clear();
         this->m_currTemplateType.clear();
         this->m_matchedOptionals.clear();

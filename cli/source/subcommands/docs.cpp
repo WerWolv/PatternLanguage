@@ -35,7 +35,7 @@ namespace pl::cli::sub {
         }
 
         std::string getTypeName(const core::ast::ASTNode *type) {
-            if(auto typeApp = dynamic_cast<const core::ast::ASTNodeTypeApplication*>(type); typeApp != nullptr) {
+            if (auto typeApp = dynamic_cast<const core::ast::ASTNodeTypeApplication*>(type); typeApp != nullptr) {
                 return fmt::format("{}{}", getTypeEndian(typeApp), getTypeName(typeApp->getType().get()));
             } else if (auto typeDecl = dynamic_cast<const core::ast::ASTNodeTypeDecl*>(type); typeDecl != nullptr) {
                 return typeDecl->getName();
