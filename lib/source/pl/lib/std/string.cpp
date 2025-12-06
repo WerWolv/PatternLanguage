@@ -68,7 +68,7 @@ namespace pl::lib::libstd::string {
                 if constexpr (std::integral<i128>)
                     return wolv::util::from_chars<i128>(string, base).value_or(0);
                 else
-                    return wolv::util::from_chars<i64>(string, base).value_or(0);
+                    return i128(wolv::util::from_chars<i64>(string, base).value_or(0));
 
             });
 

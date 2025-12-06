@@ -573,6 +573,17 @@ namespace pl::ptrn {
                 auto startHeap = this->m_evaluator->getHeap();
                 ON_SCOPE_EXIT { this->m_evaluator->getHeap() = startHeap; };
 
+                // Preserve pattern variable name
+                std::string patternName;
+                if (value.isPattern()) {
+                    patternName = value.toPattern()->getVariableName();
+                }
+                ON_SCOPE_EXIT {
+                    if (!patternName.empty())
+                        value.toPattern()->setVariableName(patternName);
+                };
+
+
                 if (auto result = transformFunc->func(evaluator, { value }); result.has_value())
                     return *result;
             }
@@ -592,6 +603,16 @@ namespace pl::ptrn {
                 if (function.has_value()) {
                     auto startHeap = this->m_evaluator->getHeap();
                     ON_SCOPE_EXIT { this->m_evaluator->getHeap() = startHeap; };
+
+                    // Preserve pattern variable name
+                    std::string patternName;
+                    if (literal.isPattern()) {
+                        patternName = literal.toPattern()->getVariableName();
+                    }
+                    ON_SCOPE_EXIT {
+                        if (!patternName.empty())
+                            literal.toPattern()->setVariableName(patternName);
+                    };
 
                     auto result = function->func(this->m_evaluator, { literal });
                     if (result.has_value()) {
