@@ -34,6 +34,7 @@ set(AVAILABLE_TESTS
         RValuesAssignmentInStruct
         TemplateParametersScope
         TypeNameOf
+        CustomBuiltInType
 )
 
 

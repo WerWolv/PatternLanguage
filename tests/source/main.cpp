@@ -108,20 +108,23 @@ int runTests(int argc, char **argv) {
     auto &test = testPatterns[testName];
     test->m_runtime = &runtime;
     test->setup();
-    auto result = runtime.executeString(test->getSourceCode());
 
-    // Check if compilation succeeded
-    if (!result) {
-        fmt::print("Error during test!\n");
+    for(size_t i = 0; i < test->repeatTimes(); i++) {
+        auto result = runtime.executeString(test->getSourceCode());
 
-        if (auto error = runtime.getEvalError(); error.has_value())
-            fmt::print("Error: {}:{} : {}\n", error->line, error->column, error->message);
+        // Check if compilation succeeded
+        if (!result) {
+            fmt::print("Error during test!\n");
 
-        for (const auto& error : runtime.getCompileErrors()) {
-            fmt::print("{}", error.format());
+            if (auto error = runtime.getEvalError(); error.has_value())
+                fmt::print("Error: {}:{} : {}\n", error->line, error->column, error->message);
+
+            for (const auto& error : runtime.getCompileErrors()) {
+                fmt::print("{}", error.format());
+            }
+
+            return failing ? EXIT_SUCCESS : EXIT_FAILURE;
         }
-
-        return failing ? EXIT_SUCCESS : EXIT_FAILURE;
     }
 
     const auto &evaluatedPatterns = runtime.getPatterns();

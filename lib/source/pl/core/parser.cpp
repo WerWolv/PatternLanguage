@@ -2814,8 +2814,14 @@ namespace pl::core {
 
     void Parser::reset() {
         for(const auto &[_, type] : this->m_types) {
-            if(type != nullptr) {
-                type->setType(nullptr);
+            if(type != nullptr && type->isValid()) {
+                if(auto builtinType = dynamic_cast<ast::ASTNodeBuiltinType*>(type->getType().get()); builtinType != nullptr) {
+                    if(builtinType->getType() != Token::ValueType::CustomType) {
+                        type->setType(nullptr);
+                    }
+                } else {
+                    type->setType(nullptr);
+                }
             }
         }
         this->m_types.clear();
