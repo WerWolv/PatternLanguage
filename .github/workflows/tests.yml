@@ -88,15 +88,5 @@ jobs:
     needs: tests
     uses: WerWolv/ImHex-Patterns/.github/workflows/tests.yml@master
     with:
-      pattern_language_git_repo: |
-        ${{ github.server_url }}/${{
-          github.event_name == 'pull_request'
-          && github.event.pull_request.head.repo.full_name
-          || github.repository
-        }}
-      pattern_language_git_hash: |
-        ${{
-          github.event_name == 'pull_request'
-          && github.event.pull_request.head.sha
-          || github.sha
-        }}
+      pattern_language_git_repo: ${{ github.server_url }}/${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
+      pattern_language_git_hash: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
