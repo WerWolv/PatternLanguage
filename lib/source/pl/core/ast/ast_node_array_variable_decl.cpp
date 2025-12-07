@@ -18,15 +18,12 @@
 
 namespace pl::core::ast {
 
-    ASTNodeArrayVariableDecl::ASTNodeArrayVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeDecl> type, std::unique_ptr<ASTNode> &&size, std::unique_ptr<ASTNode> &&placementOffset, std::unique_ptr<ASTNode> &&placementSection, bool constant)
+    ASTNodeArrayVariableDecl::ASTNodeArrayVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeApplication> type, std::unique_ptr<ASTNode> &&size, std::unique_ptr<ASTNode> &&placementOffset, std::unique_ptr<ASTNode> &&placementSection, bool constant)
         :m_name(std::move(name)), m_type(std::move(type)), m_size(std::move(size)), m_placementOffset(std::move(placementOffset)), m_placementSection(std::move(placementSection)), m_constant(constant) { }
 
     ASTNodeArrayVariableDecl::ASTNodeArrayVariableDecl(const ASTNodeArrayVariableDecl &other) : ASTNode(other), Attributable(other) {
         this->m_name = other.m_name;
-        if (other.m_type->isForwardDeclared())
-            this->m_type = other.m_type;
-        else
-            this->m_type = std::shared_ptr<ASTNodeTypeDecl>(static_cast<ASTNodeTypeDecl*>(other.m_type->clone().release()));
+        this->m_type = std::shared_ptr<ASTNodeTypeApplication>(static_cast<ASTNodeTypeApplication*>(other.m_type->clone().release()));
 
         if (other.m_size != nullptr)
             this->m_size = other.m_size->clone();
@@ -79,14 +76,14 @@ namespace pl::core::ast {
             evaluator->setBitwiseReadOffset(startOffset);
             this->execute(evaluator);
         } else {
-            auto type = this->m_type->evaluate(evaluator);
+            auto type = this->m_type->getTypeDefinition(evaluator);
 
             auto &pattern = resultPatterns.emplace_back();
-            if (auto builtinType = dynamic_cast<ASTNodeBuiltinType *>(type.get()); builtinType != nullptr && builtinType->getType() != Token::ValueType::CustomType)
+            if (auto builtinType = dynamic_cast<const ASTNodeBuiltinType *>(type); builtinType != nullptr && builtinType->getType() != Token::ValueType::CustomType)
                 createStaticArray(evaluator, pattern);
             else {
                 bool isStaticType = false;
-                if (auto attributable = dynamic_cast<Attributable *>(type.get()))
+                if (auto attributable = dynamic_cast<const Attributable *>(type))
                     isStaticType = attributable->hasAttribute("static", false);
 
                 if (isStaticType)

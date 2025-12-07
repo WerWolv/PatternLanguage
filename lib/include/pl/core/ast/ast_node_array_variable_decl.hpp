@@ -2,6 +2,7 @@
 
 #include <pl/core/ast/ast_node.hpp>
 #include <pl/core/ast/ast_node_attribute.hpp>
+#include <pl/core/ast/ast_node_type_appilication.hpp>
 
 namespace pl::core::ast {
 
@@ -10,7 +11,7 @@ namespace pl::core::ast {
     class ASTNodeArrayVariableDecl : public ASTNode,
                                      public Attributable {
     public:
-        ASTNodeArrayVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeDecl> type, std::unique_ptr<ASTNode> &&size, std::unique_ptr<ASTNode> &&placementOffset = {}, std::unique_ptr<ASTNode> &&placementSection = {}, bool constant = false);
+        ASTNodeArrayVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeApplication> type, std::unique_ptr<ASTNode> &&size, std::unique_ptr<ASTNode> &&placementOffset = {}, std::unique_ptr<ASTNode> &&placementSection = {}, bool constant = false);
         ASTNodeArrayVariableDecl(const ASTNodeArrayVariableDecl &other);
 
         [[nodiscard]] std::unique_ptr<ASTNode> clone() const override {
@@ -24,7 +25,7 @@ namespace pl::core::ast {
             return this->m_name;
         }
 
-        [[nodiscard]] const std::shared_ptr<ASTNodeTypeDecl> &getType() const {
+        [[nodiscard]] const std::shared_ptr<ASTNodeTypeApplication> &getType() const {
             return this->m_type;
         }
 
@@ -42,7 +43,7 @@ namespace pl::core::ast {
 
     private:
         std::string m_name;
-        std::shared_ptr<ASTNodeTypeDecl> m_type;
+        std::shared_ptr<ASTNodeTypeApplication> m_type;
         std::unique_ptr<ASTNode> m_size;
         std::unique_ptr<ASTNode> m_placementOffset, m_placementSection;
         bool m_constant;

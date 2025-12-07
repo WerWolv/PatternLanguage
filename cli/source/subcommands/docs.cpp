@@ -21,8 +21,8 @@ namespace pl::cli::sub {
 
     namespace {
 
-        std::string getTypeEndian(const core::ast::ASTNodeTypeDecl *typeDecl) {
-            auto endian = typeDecl->getEndian();
+        std::string getTypeEndian(const core::ast::ASTNodeTypeApplication *typeApp) {
+            auto endian = typeApp->getEndian();
 
             if (!endian.has_value())
                 return "";
@@ -35,15 +35,12 @@ namespace pl::cli::sub {
         }
 
         std::string getTypeName(const core::ast::ASTNode *type) {
-            if (auto builtinType = dynamic_cast<const core::ast::ASTNodeBuiltinType*>(type))
-                return core::Token::getTypeName(builtinType->getType());
-            else if (auto typeDecl = dynamic_cast<const core::ast::ASTNodeTypeDecl*>(type)) {
-                if (typeDecl->getName().empty())
-                    return getTypeEndian(typeDecl) + getTypeName(typeDecl->getType().get());
-                else
-                    return getTypeEndian(typeDecl) + typeDecl->getName();
+            if (auto typeApp = dynamic_cast<const core::ast::ASTNodeTypeApplication*>(type); typeApp != nullptr) {
+                return fmt::format("{}{}", getTypeEndian(typeApp), getTypeName(typeApp->getType().get()));
+            } else if (auto typeDecl = dynamic_cast<const core::ast::ASTNodeTypeDecl*>(type); typeDecl != nullptr) {
+                return typeDecl->getName();
             } else {
-                return "???";
+                return "";
             }
         }
 
@@ -72,12 +69,10 @@ namespace pl::cli::sub {
 
             std::string result = "<";
             for (const auto &templateParam : templateParams) {
-                if (auto typeDecl = dynamic_cast<const core::ast::ASTNodeTypeDecl*>(templateParam.get()); typeDecl != nullptr)
-                    result += typeDecl->getName();
-                else if (auto lvalue = dynamic_cast<const core::ast::ASTNodeLValueAssignment*>(templateParam.get()); lvalue != nullptr)
-                    result += fmt::format("auto {}", lvalue->getLValueName());
-                else
-                    continue;
+                if (templateParam->isType())
+                    result += templateParam->getName().get();
+                else 
+                    result += fmt::format("auto {}", templateParam->getName().get());
 
                 result += ", ";
             }
@@ -89,8 +84,8 @@ namespace pl::cli::sub {
         }
 
         std::string generateTypeDocumentation(const std::string &name, const core::ast::ASTNodeTypeDecl *type) {
-            if (auto typeDecl = dynamic_cast<core::ast::ASTNodeTypeDecl*>(type->getType().get())) {
-                return fmt::format("```rust\nusing {}{} = {}{};\n```", name, generateTemplateParams(type), getTypeName(typeDecl), generateAttributes(typeDecl));
+            if (auto typeApp = dynamic_cast<core::ast::ASTNodeTypeApplication*>(type->getType().get())) {
+                return fmt::format("```rust\nusing {}{} = {}{};\n```", name, generateTemplateParams(type), getTypeName(typeApp), generateAttributes(type));
             } else if (dynamic_cast<core::ast::ASTNodeStruct*>(type->getType().get())) {
                 return fmt::format("```rust\nstruct {}{} {{ ... }}{};\n```", name, generateTemplateParams(type), generateAttributes(type));
             } else if (dynamic_cast<core::ast::ASTNodeUnion*>(type->getType().get())) {

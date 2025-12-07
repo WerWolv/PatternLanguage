@@ -60,6 +60,7 @@ add_library(libpl ${LIBRARY_TYPE}
         source/pl/core/ast/ast_node_struct.cpp
         source/pl/core/ast/ast_node_ternary_expression.cpp
         source/pl/core/ast/ast_node_try_catch_statement.cpp
+        source/pl/core/ast/ast_node_type_application.cpp
         source/pl/core/ast/ast_node_type_decl.cpp
         source/pl/core/ast/ast_node_type_operator.cpp
         source/pl/core/ast/ast_node_union.cpp

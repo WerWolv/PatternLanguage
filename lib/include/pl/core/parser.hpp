@@ -13,6 +13,8 @@
 #include <pl/core/ast/ast_node_rvalue.hpp>
 #include <pl/core/ast/ast_node_attribute.hpp>
 #include <pl/core/ast/ast_node_type_decl.hpp>
+#include <pl/core/ast/ast_node_type_appilication.hpp>
+#include <pl/core/ast/ast_node_template_parameter.hpp>
 
 #include <pl/core/errors/result.hpp>
 
@@ -182,29 +184,28 @@ namespace pl::core {
         hlp::safe_unique_ptr<ast::ASTNode> parseMatchStatement(const std::function<hlp::safe_unique_ptr<ast::ASTNode>()> &memberParser);
         hlp::safe_unique_ptr<ast::ASTNode> parseTryCatchStatement(const std::function<hlp::safe_unique_ptr<ast::ASTNode>()> &memberParser);
         hlp::safe_unique_ptr<ast::ASTNode> parseWhileStatement();
-        hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> getCustomType(const std::string &baseTypeName);
-        hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> parseCustomType();
-        void parseCustomTypeParameters(hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> &type);
-        hlp::safe_unique_ptr<ast::ASTNodeTypeDecl> parseType();
-        std::vector<hlp::safe_shared_ptr<ast::ASTNode>> parseTemplateList();
+        hlp::safe_unique_ptr<ast::ASTNodeTypeApplication> getCustomType(const std::string &baseTypeName);
+        hlp::safe_unique_ptr<ast::ASTNodeTypeApplication> parseCustomType();
+        void parseCustomTypeParameters(hlp::safe_unique_ptr<ast::ASTNodeTypeApplication> &type);
+        hlp::safe_unique_ptr<ast::ASTNodeTypeApplication> parseType();
+        std::vector<hlp::safe_shared_ptr<ast::ASTNodeTemplateParameter>> parseTemplateList();
         hlp::safe_shared_ptr<ast::ASTNode> parseImportStatement();
         hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> parseUsingDeclaration();
         hlp::safe_unique_ptr<ast::ASTNode> parsePadding();
-        hlp::safe_unique_ptr<ast::ASTNode> parseMemberVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool constant, const std::string &identifier);
-        hlp::safe_unique_ptr<ast::ASTNode> parseMemberArrayVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type, bool constant);
-        hlp::safe_unique_ptr<ast::ASTNode> parseMemberPointerVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type);
-        hlp::safe_unique_ptr<ast::ASTNode> parseMemberPointerArrayVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type);
+        hlp::safe_unique_ptr<ast::ASTNode> parseMemberVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeApplication> &type, bool constant, const std::string &identifier);
+        hlp::safe_unique_ptr<ast::ASTNode> parseMemberArrayVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeApplication> &type, bool constant);
+        hlp::safe_unique_ptr<ast::ASTNode> parseMemberPointerVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeApplication> &type);
+        hlp::safe_unique_ptr<ast::ASTNode> parseMemberPointerArrayVariable(const hlp::safe_shared_ptr<ast::ASTNodeTypeApplication> &type);
         hlp::safe_unique_ptr<ast::ASTNode> parseMember();
         hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> parseStruct();
         hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> parseUnion();
         hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> parseEnum();
         hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> parseBitfield();
         hlp::safe_unique_ptr<ast::ASTNode> parseBitfieldEntry();
-        void parseForwardDeclaration();
-        hlp::safe_unique_ptr<ast::ASTNode> parseVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type);
-        hlp::safe_unique_ptr<ast::ASTNode> parseArrayVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type);
-        hlp::safe_unique_ptr<ast::ASTNode> parsePointerVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type);
-        hlp::safe_unique_ptr<ast::ASTNode> parsePointerArrayVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> &type);
+        hlp::safe_unique_ptr<ast::ASTNode> parseVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeApplication> &type);
+        hlp::safe_unique_ptr<ast::ASTNode> parseArrayVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeApplication> &type);
+        hlp::safe_unique_ptr<ast::ASTNode> parsePointerVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeApplication> &type);
+        hlp::safe_unique_ptr<ast::ASTNode> parsePointerArrayVariablePlacement(const hlp::safe_shared_ptr<ast::ASTNodeTypeApplication> &type);
         hlp::safe_unique_ptr<ast::ASTNode> parsePlacement();
         std::vector<hlp::safe_shared_ptr<ast::ASTNode>> parseNamespace();
         std::vector<hlp::safe_shared_ptr<ast::ASTNode>> parseStatements();
@@ -213,7 +214,7 @@ namespace pl::core {
 
         std::optional<Token::DocComment> parseDocComment(bool global);
 
-        hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> addType(const std::string &name, hlp::safe_unique_ptr<ast::ASTNode> &&node, std::optional<std::endian> endian = std::nullopt);
+        hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> addType(const std::string &name, hlp::safe_unique_ptr<ast::ASTNode> &&node);
 
         void includeGuard();
 

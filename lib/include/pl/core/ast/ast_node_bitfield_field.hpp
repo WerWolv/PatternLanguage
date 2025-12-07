@@ -1,7 +1,7 @@
 #pragma once
 
 #include <pl/core/ast/ast_node.hpp>
-#include <pl/core/ast/ast_node_type_decl.hpp>
+#include <pl/core/ast/ast_node_type_appilication.hpp>
 #include <pl/core/ast/ast_node_attribute.hpp>
 
 #include <pl/patterns/pattern_bitfield.hpp>
@@ -42,7 +42,7 @@ namespace pl::core::ast {
 
     class ASTNodeBitfieldFieldSizedType : public ASTNodeBitfieldField {
     public:
-        ASTNodeBitfieldFieldSizedType(std::string name, std::unique_ptr<ASTNodeTypeDecl> &&type, std::unique_ptr<ASTNode> &&size);
+        ASTNodeBitfieldFieldSizedType(std::string name, std::unique_ptr<ASTNodeTypeApplication> &&type, std::unique_ptr<ASTNode> &&size);
         ASTNodeBitfieldFieldSizedType(const ASTNodeBitfieldFieldSizedType &other);
 
         [[nodiscard]] std::unique_ptr<ASTNode> clone() const override {
@@ -52,7 +52,7 @@ namespace pl::core::ast {
         [[nodiscard]] std::shared_ptr<ptrn::PatternBitfieldField> createBitfield(Evaluator *evaluator, u64 byteOffset, u8 bitOffset, u8 bitSize) const override;
 
     private:
-        std::unique_ptr<ASTNodeTypeDecl> m_type;
+        std::unique_ptr<ASTNodeTypeApplication> m_type;
     };
 
 }

@@ -59,6 +59,10 @@ namespace pl::test {
             return true;
         }
 
+        [[nodiscard]] virtual size_t repeatTimes() const {
+            return 1;
+        }
+
     private:
         std::vector<std::shared_ptr<ptrn::Pattern>> m_patterns;
         core::Evaluator *m_evaluator;
