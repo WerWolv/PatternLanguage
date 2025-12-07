@@ -25,6 +25,8 @@ namespace pl::core::ast {
                     }
             } else if (auto typeNode = dynamic_cast<ASTNodeTypeApplication*>(templateArgument.get()); typeNode != nullptr) {
                 templateTypeString += fmt::format("{}, ", typeNode->getTypeName());
+            } else {
+                templateTypeString += ", ";
             }
         }
 

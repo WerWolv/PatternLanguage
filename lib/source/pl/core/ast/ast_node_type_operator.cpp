@@ -43,6 +43,14 @@ namespace pl::core::ast {
             };
 
             std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
+            if (this->getOperator() == Token::Operator::TypeNameOf) {
+                if (auto typeApp = dynamic_cast<ASTNodeTypeApplication*>(this->m_expression.get()); typeApp != nullptr) {
+                    auto evaluatedType = typeApp->evaluate(evaluator);
+                    result = dynamic_cast<ASTNodeTypeApplication*>(evaluatedType.get())->getTypeName();
+                    return std::unique_ptr<ASTNode>(new ASTNodeLiteral(result));
+                }
+            }
+
             this->m_expression->createPatterns(evaluator, patterns);
             if (patterns.empty())
                 err::E0005.throwError("'auto' can only be used with parameters.", { }, this->getLocation());
@@ -56,16 +64,9 @@ namespace pl::core::ast {
                 case Token::Operator::SizeOf:
                     result = u128(pattern->getSize());
                     break;
-                case Token::Operator::TypeNameOf: {
-                    if (auto typeApp = dynamic_cast<ASTNodeTypeApplication*>(this->m_expression.get()); typeApp != nullptr) {
-                        auto evaluatedType = typeApp->evaluate(evaluator);
-                        result = dynamic_cast<ASTNodeTypeApplication*>(evaluatedType.get())->getTypeName();
-                    } else {
-                        result = pattern->getTypeName();
-                    }
-
+                case Token::Operator::TypeNameOf:
+                    result = pattern->getTypeName();
                     break;
-                }
                 default:
                     err::E0001.throwError("Invalid type operation.", {}, this->getLocation());
             }
