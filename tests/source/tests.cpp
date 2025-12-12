@@ -30,6 +30,7 @@
 #include "test_patterns/test_pattern_template_parameters_scope.hpp"
 #include "test_patterns/test_pattern_typenameof.hpp"
 #include "test_patterns/test_pattern_custom_builtin_type.hpp"
+#include "test_patterns/test_pattern_using.hpp"
 
 static pl::core::Evaluator s_evaluator;
 
@@ -65,4 +66,5 @@ std::array Tests = {
     TEST(TemplateParametersScope),
     TEST(TypeNameOf),
     TEST(CustomBuiltinType),
+    TEST(Using),
 };
