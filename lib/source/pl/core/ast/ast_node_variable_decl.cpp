@@ -128,13 +128,14 @@ namespace pl::core::ast {
 
         auto startOffset = evaluator->getBitwiseReadOffset();
 
-        evaluator->createVariable(this->getName(), this->getType().get(), { }, this->m_outVariable, false, false, this->m_constant);
+        auto evaluatedType = std::unique_ptr<ASTNodeTypeApplication>(dynamic_cast<ast::ASTNodeTypeApplication*>(this->getType()->evaluate(evaluator).release()));
+        evaluator->createVariable(this->getName(), evaluatedType.get(), { }, this->m_outVariable, false, false, this->m_constant);
         auto &variable = evaluator->getScope(0).scope->back();
 
         std::vector<std::shared_ptr<ptrn::Pattern>> initValues;
         if (this->m_placementOffset == nullptr) {
             evaluator->pushSectionId(ptrn::Pattern::InstantiationSectionId);
-            this->getType()->createPatterns(evaluator, initValues);
+            evaluatedType->createPatterns(evaluator, initValues);
             evaluator->popSectionId();
         } else {
             evaluator->pushSectionId(this->m_placementSection == nullptr ? ptrn::Pattern::MainSectionId : evaluator->getSectionId());
@@ -143,7 +144,7 @@ namespace pl::core::ast {
             ON_SCOPE_EXIT { evaluator->setBitwiseReadOffset(currOffset); };
 
             evaluator->setReadOffset(u64(this->evaluatePlacementOffset(evaluator)));
-            this->getType()->createPatterns(evaluator, initValues);
+            evaluatedType->createPatterns(evaluator, initValues);
             evaluator->popSectionId();
         }
 

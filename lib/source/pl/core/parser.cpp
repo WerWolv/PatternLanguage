@@ -1310,7 +1310,7 @@ namespace pl::core {
             size_t index = 0;
             for (const auto &templateParameter : this->m_currTemplateType.front()->getTemplateParameters()) {
                 if (const auto templateType = dynamic_cast<ast::ASTNodeTemplateParameter*>(templateParameter.get()); templateType != nullptr){
-                    if (templateType->getName().get() == baseTypeName) {
+                    if (templateType->getName().get() == baseTypeName && templateType->isType()) {
                         auto type = create<ast::ASTNodeTypeApplication>(nullptr);
                         type->setTemplateParameterIndex(index);
                         return type;
