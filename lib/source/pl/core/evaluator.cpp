@@ -944,14 +944,19 @@ namespace pl::core {
         this->m_scopes.clear();
         this->m_callStack.clear();
         this->m_heap.clear();
-        this->m_patternLocalStorage.clear();
+
         this->m_templateParameters.clear();
+        this->m_currentTemplateArguments.clear();
+        this->m_typeTemplateParameters.clear();
+        this->m_attributedPatterns.clear();
+
+        this->m_patternLocalStorage.clear();
+
         this->m_stringPool.clear();
 
         this->m_mainResult.reset();
         this->m_aborted = false;
         this->m_evaluated = false;
-        this->m_attributedPatterns.clear();
 
         this->setPatternColorPalette(DefaultPatternColorPalette);
 
