@@ -153,25 +153,9 @@ namespace pl::core::ast {
     void ASTNodeRValue::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
-        std::vector<std::shared_ptr<ptrn::Pattern>> searchScope;
         std::shared_ptr<ptrn::Pattern> currPattern;
         i32 scopeIndex = 0;
         bool iterable = true;
-
-        if (!evaluator->isGlobalScope()) {
-            const auto &globalScope = evaluator->getGlobalScope().scope;
-            std::copy(globalScope->begin(), globalScope->end(), std::back_inserter(searchScope));
-        }
-
-        {
-            const auto &templateParameters = evaluator->getTemplateParameters();
-            std::copy(templateParameters.begin(), templateParameters.end(), std::back_inserter(searchScope));
-        }
-
-        {
-            const auto &currScope = evaluator->getScope(0);
-            std::copy(currScope.scope->begin(), currScope.scope->end(), std::back_inserter(searchScope));
-        }
 
         for (const auto &part : this->getPath()) {
 
@@ -180,7 +164,7 @@ namespace pl::core::ast {
 
             if (part.index() == 0) {
                 // Variable access
-                auto name = std::get<std::string>(part);
+                const auto &name = std::get<std::string>(part);
 
                 if (name == "parent") {
                     do {
@@ -190,7 +174,6 @@ namespace pl::core::ast {
                             err::E0003.throwError("Cannot access parent of global scope.", {}, this->getLocation());
                     } while (evaluator->getScope(scopeIndex).parent == nullptr);
 
-                    searchScope     = *evaluator->getScope(scopeIndex).scope;
                     auto currParent = evaluator->getScope(scopeIndex).parent;
 
                     if (currParent == nullptr) {
@@ -201,8 +184,6 @@ namespace pl::core::ast {
 
                     continue;
                 } else if (name == "this") {
-                    searchScope = *evaluator->getScope(scopeIndex).scope;
-
                     auto currParent = evaluator->getScope(0).parent;
 
                     if (currParent == nullptr)
@@ -211,13 +192,33 @@ namespace pl::core::ast {
                     currPattern = currParent;
                     continue;
                 } else {
-                    bool found = false;
-                    for (auto iter = searchScope.crbegin(); iter != searchScope.crend(); ++iter) {
-                        if ((*iter)->getVariableName() == name) {
-                            currPattern = *iter;
-                            found       = true;
-                            break;
-                        }
+                    using namespace std::views;
+                    using std::ranges::find;
+                    std::shared_ptr<ptrn::Pattern> pattern;
+
+                    if (currPattern == nullptr) {
+                        auto currScope = *evaluator->getScope(0).scope | all;
+                        auto templateParameters = evaluator->getTemplateParameters() | all;
+                        auto globalScope = *evaluator->getGlobalScope().scope | all;
+                        auto allScopes = {globalScope, templateParameters, currScope};
+                        auto searchScopes = allScopes | drop(evaluator->isGlobalScope() ? 1 : 0);
+                        auto view = searchScopes | join | reverse;
+                        if (auto result = find(view, name, &ptrn::Pattern::getVariableName); result != view.end())
+                            pattern = *result;
+                    } else if (auto currParent = evaluator->getScope(scopeIndex).parent; currParent == currPattern) {
+                        auto view = *evaluator->getScope(scopeIndex).scope | reverse;
+                        if (auto result = find(view, name, &ptrn::Pattern::getVariableName); result != view.end())
+                            pattern = *result;
+                    } else if (auto indexablePattern = dynamic_cast<ptrn::IIndexable *>(currPattern.get()); indexablePattern != nullptr) {
+                        auto iota_view = iota((size_t)0, indexablePattern->getEntryCount());
+                        auto view = iota_view | transform(std::bind_front(&ptrn::IIndexable::getEntry, indexablePattern)) | reverse;
+                        if (auto result = find(view, name, &ptrn::Pattern::getVariableName); result != view.end())
+                            pattern = *result;
+                    } else if (auto iterablePattern = dynamic_cast<ptrn::IIterable *>(currPattern.get()); iterablePattern != nullptr) {
+                        auto scope = iterablePattern->getEntries();
+                        auto view =  scope | reverse;
+                        if (auto result = find(view, name, &ptrn::Pattern::getVariableName); result != view.end())
+                            pattern = *result;
                     }
 
                     if (name == "$")
@@ -225,8 +226,10 @@ namespace pl::core::ast {
                     else if (name == "null")
                         err::E0003.throwError("Invalid use of 'null' keyword in rvalue.", {}, this->getLocation());
 
-                    if (!found)
+                    if (pattern == nullptr)
                         err::E0003.throwError(fmt::format("No variable named '{}' found.", name), {}, this->getLocation());
+
+                    currPattern = std::move(pattern);
                 }
             } else {
                 // Array indexing
@@ -262,9 +265,7 @@ namespace pl::core::ast {
 
             auto indexPattern = currPattern.get();
 
-            if (auto iterablePattern = dynamic_cast<ptrn::IIterable *>(indexPattern); iterablePattern != nullptr)
-                searchScope = iterablePattern->getEntries();
-            else
+            if (auto iterablePattern = dynamic_cast<ptrn::IIterable *>(indexPattern); iterablePattern == nullptr)
                 iterable = false;
 
         }
