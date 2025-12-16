@@ -957,6 +957,7 @@ namespace pl::core {
         this->m_mainResult.reset();
         this->m_aborted = false;
         this->m_evaluated = false;
+        this->m_shouldPauseNextLine = false;
 
         this->setPatternColorPalette(DefaultPatternColorPalette);
 
