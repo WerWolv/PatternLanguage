@@ -24,9 +24,7 @@ namespace pl::cli::sub {
         std::string getTypeEndian(const core::ast::ASTNodeTypeApplication *typeApp) {
             auto endian = typeApp->getEndian();
 
-            if (!endian.has_value())
-                return "";
-            else if (endian == std::endian::little)
+            if (endian == std::endian::little)
                 return "le ";
             else if (endian == std::endian::big)
                 return "be ";
@@ -144,7 +142,7 @@ namespace pl::cli::sub {
             auto ast = runtime.parseString(patternFile.readString(), wolv::util::toUTF8String(patternFile.getPath()));
             if (!ast.has_value()) {
                 auto compileErrors = runtime.getCompileErrors();
-                if (compileErrors.size()>0) {
+                if (!compileErrors.empty()) {
                     fmt::print("Compilation failed\n");
                     for (const auto &error : compileErrors) {
                         fmt::print("{}\n", error.format());
