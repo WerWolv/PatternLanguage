@@ -267,7 +267,7 @@ namespace pl {
 
             const auto &callStack = evaluator->getCallStack();
             u32 lastLine = 0;
-            for (const auto &entry : callStack | std::views::reverse) {
+            for (const auto &entry : callStack) {
                 const auto &[node, address] = entry;
                 if (node == nullptr)
                     continue;
