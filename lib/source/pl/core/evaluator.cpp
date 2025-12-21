@@ -1155,7 +1155,8 @@ namespace pl::core {
                         evaluator->m_lastPauseLine = std::nullopt;
                 }
             }
-            evaluator->m_callStack.emplace_back(node->clone(), evaluator->getReadOffset());
+            this->node = node;
+            this->offset = evaluator->getReadOffset();
         }
     }
 
@@ -1163,12 +1164,9 @@ namespace pl::core {
         if (evaluator->m_evaluated)
             return;
 
-        // Don't pop scopes if an exception is currently being thrown so we can generate
-        // a stack trace
-        if (std::uncaught_exceptions() > 0)
-            return;
-
-        evaluator->m_callStack.pop_back();
+        if (std::uncaught_exceptions() > 0) [[unlikely]]
+            if (node != nullptr)
+                evaluator->m_callStack.emplace_back(node->clone(), offset);
     }
 
     Evaluator::UpdateHandler Evaluator::updateRuntime(const ast::ASTNode *node) {

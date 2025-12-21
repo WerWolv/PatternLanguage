@@ -100,6 +100,8 @@ namespace pl::core {
             ~UpdateHandler();
 
             Evaluator *evaluator;
+            const ast::ASTNode *node = nullptr;
+            u64 offset = 0;
         };
 
         struct StackTrace {
