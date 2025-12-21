@@ -113,7 +113,7 @@ int runTests(int argc, char **argv) {
         auto result = runtime.executeString(test->getSourceCode());
 
         // Check if compilation succeeded
-        if (!result) {
+        if (result != 0) {
             fmt::print("Error during test!\n");
 
             if (auto error = runtime.getEvalError(); error.has_value())
