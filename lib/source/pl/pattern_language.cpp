@@ -296,7 +296,7 @@ namespace pl {
             if (checkResult && returnCode != 0) {
                 this->m_currError = core::err::PatternLanguageError(core::err::E0009.format(fmt::format("Pattern exited with non-zero result: {}", i64(returnCode))), 0, 1);
 
-                evaluationResult = returnCode;
+                evaluationResult = static_cast<int>(returnCode);
             }
         }
 
