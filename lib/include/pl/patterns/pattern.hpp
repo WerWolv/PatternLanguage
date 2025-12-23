@@ -30,16 +30,26 @@ namespace pl::ptrn {
     public:
         virtual ~IIterable() = default;
         [[nodiscard]] virtual std::vector<std::shared_ptr<Pattern>> getEntries() = 0;
+        [[nodiscard]] virtual std::vector<std::shared_ptr<Pattern>> getSortedEntries() = 0;
         virtual void setEntries(const std::vector<std::shared_ptr<Pattern>> &entries) = 0;
 
         [[nodiscard]] virtual std::shared_ptr<Pattern> getEntry(size_t index) const = 0;
-        virtual void forEachEntry(u64 start, u64 end, const std::function<void(u64, const std::shared_ptr<Pattern>&)> &callback) = 0;
+        void forEachEntry(u64 start, u64 end, const std::function<void(u64, const std::shared_ptr<Pattern>&)> &callback) {
+            forEachEntryImpl(this->getEntries(), start, end, callback);
+        }
+
+        void forEachEntrySorted(u64 start, u64 end, const std::function<void(u64, const std::shared_ptr<Pattern>&)> &callback) {
+            forEachEntryImpl(this->getSortedEntries(), start, end, callback);
+        }
 
         [[nodiscard]] virtual size_t getEntryCount() const = 0;
 
         virtual void addEntry(const std::shared_ptr<Pattern> &) {
             core::err::E0012.throwError("Cannot add entry to this pattern");
         }
+
+    protected:
+        virtual void forEachEntryImpl(const std::vector<std::shared_ptr<Pattern>> &patterns, u64 start, u64 end, const std::function<void(u64, const std::shared_ptr<Pattern>&)> &callback) = 0;
     };
 
     enum class Visibility : u8 {

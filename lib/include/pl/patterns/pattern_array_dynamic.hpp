@@ -108,7 +108,11 @@ namespace pl::ptrn {
             return this->m_entries;
         }
 
-        void forEachEntry(u64 start, u64 end, const std::function<void(u64, const std::shared_ptr<Pattern>&)>& fn) override {
+        [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getSortedEntries() override {
+            return this->m_entries;
+        }
+
+        void forEachEntryImpl(const std::vector<std::shared_ptr<Pattern>> &patterns, u64 start, u64 end, const std::function<void(u64, const std::shared_ptr<Pattern>&)>& fn) override {
             auto evaluator = this->getEvaluator();
             auto startArrayIndex = evaluator->getCurrentArrayIndex();
 
@@ -119,10 +123,10 @@ namespace pl::ptrn {
                     evaluator->clearCurrentArrayIndex();
             };
 
-            for (u64 i = start; i < std::min<u64>(end, this->m_entries.size()); i++) {
+            for (u64 i = start; i < std::min<u64>(end, patterns.size()); i++) {
                 evaluator->setCurrentArrayIndex(i);
 
-                auto &entry = this->m_entries[i];
+                auto &entry = patterns[i];
                 if (!entry->isPatternLocal() || entry->hasAttribute("export"))
                     fn(i, entry);
             }

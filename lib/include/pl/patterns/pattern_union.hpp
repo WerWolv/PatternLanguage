@@ -15,7 +15,6 @@ namespace pl::ptrn {
             for (const auto &member : other.m_members) {
                 auto copy = member->clone();
 
-                this->m_sortedMembers.push_back(copy.get());
                 this->m_members.push_back(std::move(copy));
             }
         }
@@ -36,10 +35,13 @@ namespace pl::ptrn {
             return this->m_members;
         }
 
+        [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getSortedEntries() override {
+            return this->m_sortedMembers;
+        }
+
         void addEntry(const std::shared_ptr<Pattern> &entry) override {
             if (entry == nullptr) return;
 
-            this->m_sortedMembers.push_back(entry.get());
             this->m_members.push_back(entry);
         }
 
@@ -54,12 +56,12 @@ namespace pl::ptrn {
                 this->setBaseColor(this->m_members.front()->getColor());
         }
 
-        void forEachEntry(u64 start, u64 end, const std::function<void(u64, const std::shared_ptr<Pattern>&)>& fn) override {
+        void forEachEntryImpl(const std::vector<std::shared_ptr<Pattern>> &patterns, u64 start, u64 end, const std::function<void(u64, const std::shared_ptr<Pattern>&)>& fn) override {
             if (this->isSealed())
                 return;
 
-            for (u64 i = start; i < this->m_members.size() && i < end; i++) {
-                auto &pattern = this->m_members[i];
+            for (u64 i = start; i < patterns.size() && i < end; i++) {
+                auto &pattern = patterns[i];
                 if (!pattern->isPatternLocal() || pattern->hasAttribute("export"))
                     fn(i, pattern);
             }
@@ -158,9 +160,11 @@ namespace pl::ptrn {
         void sort(const std::function<bool (const Pattern *, const Pattern *)> &comparator) override {
             this->m_sortedMembers.clear();
             for (auto &member : this->m_members)
-                this->m_sortedMembers.push_back(member.get());
+                this->m_sortedMembers.push_back(member);
 
-            std::sort(this->m_sortedMembers.begin(), this->m_sortedMembers.end(), comparator);
+            std::ranges::sort(this->m_sortedMembers, [&](const auto & a, const auto & b) {
+                return comparator(a.get(), b.get());
+            });
 
             for (auto &member : this->m_members)
                 member->sort(comparator);
@@ -220,7 +224,7 @@ namespace pl::ptrn {
 
     private:
         std::vector<std::shared_ptr<Pattern>> m_members;
-        std::vector<Pattern *> m_sortedMembers;
+        std::vector<std::shared_ptr<Pattern>> m_sortedMembers;
     };
 
 }

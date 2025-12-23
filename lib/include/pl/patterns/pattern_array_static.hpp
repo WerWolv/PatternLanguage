@@ -32,7 +32,13 @@ namespace pl::ptrn {
             return { this->getTemplate()->clone() };
         }
 
-        void forEachEntry(u64 start, u64 end, const std::function<void(u64, const std::shared_ptr<Pattern>&)>& fn) override {
+        [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getSortedEntries() override {
+            return { this->getTemplate()->clone() };
+        }
+
+        void forEachEntryImpl(const std::vector<std::shared_ptr<Pattern>> &patterns, u64 start, u64 end, const std::function<void(u64, const std::shared_ptr<Pattern>&)>& fn) override {
+            std::ignore = patterns;
+
             auto evaluator = this->getEvaluator();
             auto startArrayIndex = evaluator->getCurrentArrayIndex();
             ON_SCOPE_EXIT {

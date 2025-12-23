@@ -382,6 +382,10 @@ namespace pl::ptrn {
             return this->m_entries;
         }
 
+        [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getSortedEntries() override {
+            return this->m_sortedEntries;
+        }
+
         void setOffset(u64 offset) override {
             for (auto &entry : this->m_entries) {
                 if (entry->getSection() == this->getSection() && entry->getSection() != ptrn::Pattern::PatternLocalSectionId)
@@ -391,7 +395,7 @@ namespace pl::ptrn {
             PatternBitfieldMember::setOffset(offset);
         }
 
-        void forEachEntry(u64 start, u64 end, const std::function<void(u64, const std::shared_ptr<Pattern>&)>& fn) override {
+        void forEachEntryImpl(const std::vector<std::shared_ptr<Pattern>> &patterns, u64 start, u64 end, const std::function<void(u64, const std::shared_ptr<Pattern>&)>& fn) override {
             auto evaluator = this->getEvaluator();
             auto startArrayIndex = evaluator->getCurrentArrayIndex();
 
@@ -402,10 +406,10 @@ namespace pl::ptrn {
                                   evaluator->clearCurrentArrayIndex();
                           };
 
-            for (u64 i = start; i < std::min<u64>(end, this->m_entries.size()); i++) {
+            for (u64 i = start; i < std::min<u64>(end, patterns.size()); i++) {
                 evaluator->setCurrentArrayIndex(i);
 
-                auto &entry = this->m_entries[i];
+                auto &entry = patterns[i];
                 if (!entry->isPatternLocal() || entry->hasAttribute("export"))
                     fn(i, entry);
             }
@@ -417,8 +421,6 @@ namespace pl::ptrn {
             for (auto &entry : this->m_entries) {
                 if (!entry->hasOverriddenColor())
                     entry->setBaseColor(this->getColor());
-
-                this->m_sortedEntries.push_back(entry.get());
             }
 
             if (!this->m_entries.empty())
@@ -495,11 +497,14 @@ namespace pl::ptrn {
         void sort(const std::function<bool (const Pattern *, const Pattern *)> &comparator) override {
             this->m_sortedEntries.clear();
             for (auto &member : this->m_entries)
-                this->m_sortedEntries.push_back(member.get());
+                this->m_sortedEntries.push_back(member);
 
-            std::sort(this->m_sortedEntries.begin(), this->m_sortedEntries.end(), comparator);
+            std::ranges::sort(this->m_sortedEntries, [&](const auto & a, const auto & b) {
+                return comparator(a.get(), b.get());
+            });
+
             if (this->isReversed())
-                std::reverse(this->m_sortedEntries.begin(), this->m_sortedEntries.end());
+                std::ranges::reverse(this->m_sortedEntries);
 
             for (auto &member : this->m_entries)
                 member->sort(comparator);
@@ -511,7 +516,7 @@ namespace pl::ptrn {
 
             this->getEvaluator()->readData(this->getOffset(), result.data(), result.size(), this->getSection());
             if (this->getEndian() != std::endian::native)
-                std::reverse(result.begin(), result.end());
+                std::ranges::reverse(result);
 
             return result;
         }
@@ -526,7 +531,7 @@ namespace pl::ptrn {
 
     private:
         std::vector<std::shared_ptr<Pattern>> m_entries;
-        std::vector<Pattern *> m_sortedEntries;
+        std::vector<std::shared_ptr<Pattern>> m_sortedEntries;
         u8 m_firstBitOffset = 0;
         u128 m_totalBitSize = 0;
         bool m_reversed = false;
@@ -638,7 +643,7 @@ namespace pl::ptrn {
 
             for (const auto &field : this->m_fields) {
                 field->setParent(this->reference());
-                this->m_sortedFields.push_back(field.get());
+                this->m_sortedFields.push_back(field);
             }
         }
 
@@ -745,6 +750,10 @@ namespace pl::ptrn {
             return this->m_fields;
         }
 
+        [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getSortedEntries() override {
+            return this->m_sortedFields;
+        }
+
         void setEntries(const std::vector<std::shared_ptr<Pattern>> &entries) override {
             this->m_fields = entries;
         }
@@ -758,12 +767,12 @@ namespace pl::ptrn {
             PatternBitfieldMember::setOffset(offset);
         }
 
-        void forEachEntry(u64 start, u64 end, const std::function<void (u64, const std::shared_ptr<Pattern>&)> &fn) override {
+        void forEachEntryImpl(const std::vector<std::shared_ptr<Pattern>> &patterns, u64 start, u64 end, const std::function<void (u64, const std::shared_ptr<Pattern>&)> &fn) override {
             if (this->isSealed())
                 return;
 
             for (auto i = start; i < end; i++) {
-                auto &pattern = this->m_fields[i];
+                auto &pattern = patterns[i];
                 if (!pattern->isPatternLocal() || pattern->hasAttribute("export"))
                     fn(i, pattern);
             }
@@ -772,11 +781,13 @@ namespace pl::ptrn {
         void sort(const std::function<bool (const Pattern *, const Pattern *)> &comparator) override {
             this->m_sortedFields.clear();
             for (auto &member : this->m_fields)
-                this->m_sortedFields.push_back(member.get());
+                this->m_sortedFields.push_back(member);
 
-            std::sort(this->m_sortedFields.begin(), this->m_sortedFields.end(), comparator);
+            std::ranges::sort(this->m_sortedFields, [&](const auto & a, const auto & b) {
+                return comparator(a.get(), b.get());
+            });
             if (this->isReversed())
-                std::reverse(this->m_sortedFields.begin(), this->m_sortedFields.end());
+                std::ranges::reverse(this->m_sortedFields);
 
             for (auto &member : this->m_fields)
                 member->sort(comparator);
@@ -788,7 +799,7 @@ namespace pl::ptrn {
 
             this->getEvaluator()->readData(this->getOffset(), result.data(), result.size(), this->getSection());
             if (this->getEndian() != std::endian::native)
-                std::reverse(result.begin(), result.end());
+                std::ranges::reverse(result);
 
             return result;
         }
@@ -803,7 +814,7 @@ namespace pl::ptrn {
 
     private:
         std::vector<std::shared_ptr<Pattern>> m_fields;
-        std::vector<Pattern *> m_sortedFields;
+        std::vector<std::shared_ptr<Pattern>> m_sortedFields;
 
         u8 m_firstBitOffset = 0;
         u64 m_totalBitSize = 0;
