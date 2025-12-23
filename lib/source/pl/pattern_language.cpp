@@ -555,8 +555,14 @@ namespace pl {
                 if (this->m_aborted)
                     return;
 
+                if (pattern->getVisibility() == ptrn::Visibility::Hidden || pattern->getVisibility() == ptrn::Visibility::HighlightHidden)
+                    continue;
+
                 if (auto staticArray = dynamic_cast<ptrn::PatternArrayStatic*>(pattern.get()); staticArray != nullptr) {
                     if (staticArray->getEntryCount() > 0 && staticArray->getEntry(0)->getChildren().empty()) {
+                        if (this->m_aborted)
+                            return;
+
                         const auto address = staticArray->getOffset();
                         const auto size = staticArray->getSize();
                         sectionTree.insert({ address, address + size - 1 }, staticArray);
@@ -570,6 +576,9 @@ namespace pl {
                         return;
 
                     if (child->getSize() == 0)
+                        continue;
+
+                    if (child->getVisibility() == ptrn::Visibility::Hidden || child->getVisibility() == ptrn::Visibility::HighlightHidden)
                         continue;
 
                     sectionTree.insert({ address, address + child->getSize() - 1 }, child);
