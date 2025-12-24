@@ -128,21 +128,30 @@ namespace pl::core::ast {
 
         std::string getAttributeValueAsString(const auto &value, Evaluator *evaluator) {
             auto literalNode = value->evaluate(evaluator);
-            auto literal = static_cast<ASTNodeLiteral*>(literalNode.get());
+            auto literal = dynamic_cast<ASTNodeLiteral*>(literalNode.get());
+            if (literal == nullptr) {
+                err::E0002.throwError("Void expression used as attribute value", { }, literalNode->getLocation());
+            }
 
             return literal->getValue().toString(true);
         }
 
         u128 getAttributeValueAsInteger(const auto &value, Evaluator *evaluator) {
             auto literalNode = value->evaluate(evaluator);
-            auto literal = static_cast<ASTNodeLiteral*>(literalNode.get());
+            auto literal = dynamic_cast<ASTNodeLiteral*>(literalNode.get());
+            if (literal == nullptr) {
+                err::E0002.throwError("Void expression used as attribute value", { }, literalNode->getLocation());
+            }
 
             return literal->getValue().toUnsigned();
         }
 
         std::string getAttributeValueAsFunctionName(const auto &value, const Attributable *attributable, Evaluator *evaluator) {
             auto literalNode = value->evaluate(evaluator);
-            auto literal = static_cast<ASTNodeLiteral*>(literalNode.get());
+            auto literal = dynamic_cast<ASTNodeLiteral*>(literalNode.get());
+            if (literal == nullptr) {
+                err::E0002.throwError("Void expression used as attribute value", { }, literalNode->getLocation());
+            }
 
             auto result = literal->getValue().toString(true);
 
