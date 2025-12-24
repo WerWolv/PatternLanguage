@@ -13,10 +13,11 @@ namespace pl::ptrn {
 
         PatternArrayDynamic(const PatternArrayDynamic &other) : Pattern(other) {
             std::vector<std::shared_ptr<Pattern>> entries;
+            entries.reserve(other.m_entries.size());
             for (const auto &entry : other.m_entries)
                 entries.push_back(entry->clone());
 
-            this->setEntries(entries);
+            PatternArrayDynamic::setEntries(entries);
         }
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
@@ -76,7 +77,7 @@ namespace pl::ptrn {
 
             for (const auto &entry : this->m_entries) {
                 auto children = entry->getChildren();
-                std::move(children.begin(), children.end(), std::back_inserter(result));
+                std::ranges::move(children, std::back_inserter(result));
             }
 
             return result;
@@ -130,6 +131,11 @@ namespace pl::ptrn {
                 if (!entry->isPatternLocal() || entry->hasAttribute("export"))
                     fn(i, entry);
             }
+        }
+
+        void sort(const std::function<bool (const Pattern *, const Pattern *)> &comparator) override {
+            for (auto &member : this->m_entries)
+                member->sort(comparator);
         }
 
         void addEntry(const std::shared_ptr<Pattern> &entry) override {
