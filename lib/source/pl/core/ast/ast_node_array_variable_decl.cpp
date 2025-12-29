@@ -78,7 +78,7 @@ namespace pl::core::ast {
         } else {
             auto type = this->m_type->getTypeDefinition(evaluator);
 
-            auto &pattern = resultPatterns.emplace_back();
+            std::shared_ptr<ptrn::Pattern> pattern;
             if (auto builtinType = dynamic_cast<const ASTNodeBuiltinType *>(type); builtinType != nullptr && builtinType->getType() != Token::ValueType::CustomType)
                 createStaticArray(evaluator, pattern);
             else {
@@ -102,7 +102,8 @@ namespace pl::core::ast {
 
             if (this->m_placementSection != nullptr && !evaluator->isGlobalScope()) {
                 evaluator->addPattern(std::move(pattern));
-                resultPatterns.pop_back();
+            } else {
+                resultPatterns.emplace_back(std::move(pattern));
             }
         }
     }

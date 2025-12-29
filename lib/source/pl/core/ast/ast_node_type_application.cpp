@@ -25,6 +25,8 @@ namespace pl::core::ast {
                     }
             } else if (auto typeNode = dynamic_cast<ASTNodeTypeApplication*>(templateArgument.get()); typeNode != nullptr) {
                 templateTypeString += fmt::format("{}, ", typeNode->getTypeName());
+            } else {
+                templateTypeString += ", ";
             }
         }
 
@@ -127,9 +129,20 @@ namespace pl::core::ast {
 
         ast::ASTNode* type = this->getType().get();
         if (auto typDecl = dynamic_cast<ast::ASTNodeTypeDecl*>(type); typDecl != nullptr) {
+            std::vector<std::unique_ptr<ASTNode>> templateArgs(this->m_templateArguments.size());
+            for (size_t i = 0; i < this->m_templateArguments.size(); i++) {
+                auto &templateArgument = this->m_templateArguments[i];
+                if (auto typeApp = dynamic_cast<ast::ASTNodeTypeApplication*>(templateArgument.get()); typeApp != nullptr) {
+                    templateArgs[i] = templateArgument->evaluate(evaluator);
+                }
+            }
+
+            evaluator->setCurrentTemplateArguments(std::move(templateArgs));
             return typDecl->getTypeDefinition(evaluator);
         } else if(auto builtinType = dynamic_cast<ast::ASTNodeBuiltinType*>(type); builtinType != nullptr) {
             return builtinType;
+        } else if(auto typeApp = dynamic_cast<ast::ASTNodeTypeApplication*>(type); typeApp != nullptr) {
+            return typeApp->getTypeDefinition(evaluator);
         }
     
         return nullptr;

@@ -75,6 +75,10 @@ namespace pl::ptrn {
             return { };
         }
 
+        [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getSortedEntries() override {
+            return { };
+        }
+
         void setEntries(const std::vector<std::shared_ptr<Pattern>> &) override {
 
         }
@@ -90,7 +94,9 @@ namespace pl::ptrn {
             return this->getSize() / sizeof(char16_t);
         }
 
-        void forEachEntry(u64 start, u64 end, const std::function<void (u64, const std::shared_ptr<Pattern>&)> &callback) override {
+        void forEachEntryImpl(const std::vector<std::shared_ptr<Pattern>> &patterns, u64 start, u64 end, const std::function<void (u64, const std::shared_ptr<Pattern>&)> &callback) override {
+            std::ignore = patterns;
+
             for (auto i = start; i < end; i++)
                 callback(i, this->getEntry(i));
         }

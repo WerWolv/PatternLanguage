@@ -91,9 +91,9 @@ namespace pl {
          * @param envVars List of environment variables to set
          * @param inVariables List of input variables
          * @param checkResult Whether to check the result of the execution
-         * @return True if the execution was successful, false otherwise. Call PatternLanguage#getCompileErrors() AND PatternLanguage#getEvalError() to get the compilation or runtime errors if false is returned
+         * @return 0 if the execution was successful, result returned from the runtime otherwise. Call PatternLanguage#getCompileErrors() AND PatternLanguage#getEvalError() to get the compilation or runtime errors if non-zero is returned
          */
-        [[nodiscard]] bool executeString(const std::string& code, const std::string& source = api::Source::DefaultSource, const std::map<std::string, core::Token::Literal> &envVars = {}, const std::map<std::string, core::Token::Literal> &inVariables = {}, bool checkResult = true);
+        [[nodiscard]] int executeString(const std::string& code, const std::string& source = api::Source::DefaultSource, const std::map<std::string, core::Token::Literal> &envVars = {}, const std::map<std::string, core::Token::Literal> &inVariables = {}, bool checkResult = true);
 
         /**
          * @brief Executes a pattern language file
@@ -101,16 +101,16 @@ namespace pl {
          * @param envVars List of environment variables to set
          * @param inVariables List of input variables
          * @param checkResult Whether to check the result of the execution
-         * @return True if the execution was successful, false otherwise
+         * @return 0 if the execution was successful, result returned from the runtime otherwise. Call PatternLanguage#getCompileErrors() AND PatternLanguage#getEvalError() to get the compilation or runtime errors if non-zero is returned
          */
-        [[nodiscard]] bool executeFile(const std::filesystem::path &path, const std::map<std::string, core::Token::Literal> &envVars = {}, const std::map<std::string, core::Token::Literal> &inVariables = {}, bool checkResult = true);
+        [[nodiscard]] int executeFile(const std::filesystem::path &path, const std::map<std::string, core::Token::Literal> &envVars = {}, const std::map<std::string, core::Token::Literal> &inVariables = {}, bool checkResult = true);
 
         /**
          * @brief Executes code as if it was run inside of a function
          * @param code Code to execute
-         * @return Pair of a boolean indicating whether the execution was successful and an optional literal containing the return value
+         * @return Pair of an int stating the return code of the runtime and an optional literal containing the return value
          */
-        [[nodiscard]] std::pair<bool, std::optional<core::Token::Literal>> executeFunction(const std::string &code);
+        [[nodiscard]] std::pair<int, std::optional<core::Token::Literal>> executeFunction(const std::string &code);
 
         /**
          * @brief Adds a virtual source file under the path
@@ -428,7 +428,7 @@ namespace pl {
 
         std::map<u64, std::vector<std::shared_ptr<ptrn::Pattern>>> m_patterns;
         std::atomic<bool> m_flattenedPatternsValid = false;
-        std::map<u64, wolv::container::IntervalTree<ptrn::Pattern*, u64, 5>> m_flattenedPatterns;
+        std::map<u64, wolv::container::IntervalTree<ptrn::Pattern*, u64, 8>> m_flattenedPatterns;
         std::thread m_flattenThread;
         std::vector<std::function<void(PatternLanguage&)>> m_cleanupCallbacks;
         std::vector<std::shared_ptr<core::ast::ASTNode>> m_currAST;

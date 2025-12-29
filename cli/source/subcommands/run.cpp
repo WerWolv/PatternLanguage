@@ -76,7 +76,7 @@ namespace pl::cli::sub {
             });
 
             // Execute pattern file
-            if (!runtime.executeFile(patternFilePath)) {
+            if (int result = runtime.executeFile(patternFilePath); result != 0) {
                 auto compileErrors = runtime.getCompileErrors();
                 if (compileErrors.size()>0) {
                     fmt::print("Compilation failed\n");
@@ -87,7 +87,7 @@ namespace pl::cli::sub {
                     auto error = runtime.getEvalError().value();
                     fmt::print("Pattern Error: {}:{} -> {}\n", error.line, error.column, error.message);
                 }
-                std::exit(EXIT_FAILURE);
+                std::exit(result);
             }
         });
     }

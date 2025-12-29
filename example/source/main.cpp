@@ -51,7 +51,7 @@ int main() {
     });
 
     // Evaluate some pattern language source code
-    bool result = patternLanguage.executeString(R"(
+    int result = patternLanguage.executeString(R"(
         fn main() {
             s32 x = test::dangerous_function();
             test::normal_function(x);
@@ -59,7 +59,7 @@ int main() {
     )");
 
     // Check if execution completed successfully
-    if (!result) {
+    if (result != 0) {
         // If not, print the error string
         auto error = patternLanguage.getEvalError();
         printf("Error: %d:%d %s\n", error->line, error->column, error->message.c_str());

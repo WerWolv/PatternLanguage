@@ -108,6 +108,7 @@ namespace pl::core::err {
     class CompileError {
 
     public:
+        CompileError() = default;
         CompileError(std::string message, const Location& location) : m_message(std::move(message)), m_location(location) { }
         CompileError(std::string message, std::string description, const Location& location) : m_message(std::move(message)), m_description(std::move(description)),
                                                                                               m_location(location) { }

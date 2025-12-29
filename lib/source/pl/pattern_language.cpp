@@ -190,7 +190,7 @@ namespace pl {
         return m_currAST;
     }
 
-    bool PatternLanguage::executeString(const std::string& code, const std::string& source, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
+    int PatternLanguage::executeString(const std::string& code, const std::string& source, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
 	   	const auto startTime = std::chrono::high_resolution_clock::now();
         ON_SCOPE_EXIT {
             const auto endTime = std::chrono::high_resolution_clock::now();
@@ -228,10 +228,10 @@ namespace pl {
 
         auto ast = this->parseString(code, source);
         if (!ast.has_value())
-            return false;
+            return EXIT_FAILURE;
         // do not continue execution if there are any compile errors
         if (!this->m_compileErrors.empty())
-            return false;
+            return EXIT_FAILURE;
 
         this->m_currAST = std::move(*ast);
 
@@ -257,8 +257,8 @@ namespace pl {
         evaluator->setReadOffset(evaluator->getDataBaseAddress());
         evaluator->setDangerousFunctionCallHandler(this->m_dangerousFunctionCallCallback);
 
-        bool evaluationResult = evaluator->evaluate(this->m_currAST);
-        if (!evaluationResult) {
+        int evaluationResult = EXIT_SUCCESS;
+        if (!evaluator->evaluate(this->m_currAST)) {
             auto &console = evaluator->getConsole();
 
             this->m_currError = console.getLastHardError();
@@ -267,7 +267,7 @@ namespace pl {
 
             const auto &callStack = evaluator->getCallStack();
             u32 lastLine = 0;
-            for (const auto &entry : callStack | std::views::reverse) {
+            for (const auto &entry : callStack) {
                 const auto &[node, address] = entry;
                 if (node == nullptr)
                     continue;
@@ -285,6 +285,7 @@ namespace pl {
                 console.log(core::LogConsole::Level::Error, fmt::format("Error happened with cursor at address 0x{:04X}", *cursor + m_startAddress.value_or(0x00)));
 
             console.log(core::LogConsole::Level::Error, "\n");
+            evaluationResult = EXIT_FAILURE;
         } else {
             auto returnCode = evaluator->getMainResult().value_or(i128(0)).toSigned();
 
@@ -295,7 +296,7 @@ namespace pl {
             if (checkResult && returnCode != 0) {
                 this->m_currError = core::err::PatternLanguageError(core::err::E0009.format(fmt::format("Pattern exited with non-zero result: {}", i64(returnCode))), 0, 1);
 
-                evaluationResult = false;
+                evaluationResult = static_cast<int>(returnCode);
             }
         }
 
@@ -319,22 +320,22 @@ namespace pl {
         return evaluationResult;
     }
 
-    bool PatternLanguage::executeFile(const std::fs::path &path, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
+    int PatternLanguage::executeFile(const std::fs::path &path, const std::map<std::string, core::Token::Literal> &envVars, const std::map<std::string, core::Token::Literal> &inVariables, bool checkResult) {
         wolv::io::File file(path, wolv::io::File::Mode::Read);
         if (!file.isValid())
-            return false;
+            return EXIT_FAILURE;
 
         return this->executeString(file.readString(), path.string(), envVars, inVariables, checkResult);
     }
 
-    std::pair<bool, std::optional<core::Token::Literal>> PatternLanguage::executeFunction(const std::string &code) {
+    std::pair<int, std::optional<core::Token::Literal>> PatternLanguage::executeFunction(const std::string &code) {
 
         const auto functionContent = fmt::format("fn main() {{ {0} }};", code);
 
-        auto success = this->executeString(functionContent, api::Source::DefaultSource, {}, {}, false);
+        int exitCode = this->executeString(functionContent, api::Source::DefaultSource, {}, {}, false);
         auto result  = this->m_internals.evaluator->getMainResult();
 
-        return { success, std::move(result) };
+        return { exitCode, std::move(result) };
     }
 
     api::Source* PatternLanguage::addVirtualSource(const std::string &code, const std::string &source, bool mainSource) const {
@@ -554,8 +555,14 @@ namespace pl {
                 if (this->m_aborted)
                     return;
 
+                if (pattern->getVisibility() == ptrn::Visibility::Hidden || pattern->getVisibility() == ptrn::Visibility::HighlightHidden)
+                    continue;
+
                 if (auto staticArray = dynamic_cast<ptrn::PatternArrayStatic*>(pattern.get()); staticArray != nullptr) {
                     if (staticArray->getEntryCount() > 0 && staticArray->getEntry(0)->getChildren().empty()) {
+                        if (this->m_aborted)
+                            return;
+
                         const auto address = staticArray->getOffset();
                         const auto size = staticArray->getSize();
                         sectionTree.insert({ address, address + size - 1 }, staticArray);
@@ -569,6 +576,9 @@ namespace pl {
                         return;
 
                     if (child->getSize() == 0)
+                        continue;
+
+                    if (child->getVisibility() == ptrn::Visibility::Hidden || child->getVisibility() == ptrn::Visibility::HighlightHidden)
                         continue;
 
                     sectionTree.insert({ address, address + child->getSize() - 1 }, child);

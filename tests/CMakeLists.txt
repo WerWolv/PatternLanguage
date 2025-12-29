@@ -35,6 +35,7 @@ set(AVAILABLE_TESTS
         TemplateParametersScope
         TypeNameOf
         CustomBuiltInType
+        Using
 )
 
 
