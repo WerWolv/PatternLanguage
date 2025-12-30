@@ -367,7 +367,7 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] bool isLocal() const {
-            return this->m_section != MainSectionId;
+            return this->m_section != MainSectionId && this->m_section != InstantiationSectionId;
         }
 
         [[nodiscard]] bool isPatternLocal() const {
