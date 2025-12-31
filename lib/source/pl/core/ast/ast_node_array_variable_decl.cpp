@@ -70,6 +70,9 @@ namespace pl::core::ast {
                     [this](const std::shared_ptr<ptrn::Pattern>&) -> u64 { err::E0005.throwError("Cannot use string as placement offset.", "Try using a integral value instead.", this->getLocation()); },
                     [](auto &&offset) -> u64 { return u64(offset); }
             }, offset->getValue()));
+
+            if (evaluator->getReadOffset() < evaluator->getDataBaseAddress() || evaluator->getReadOffset() > evaluator->getDataBaseAddress() + evaluator->getDataSize())
+                err::E0005.throwError(fmt::format("Cannot place variable '{}' at out of bounds address 0x{:08X}", this->m_name, evaluator->getReadOffset()), { }, this->getLocation());
         }
 
         if (evaluator->getSectionId() == ptrn::Pattern::PatternLocalSectionId || evaluator->getSectionId() == ptrn::Pattern::HeapSectionId) {
