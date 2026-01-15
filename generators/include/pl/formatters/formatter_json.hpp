@@ -142,23 +142,27 @@ namespace pl::gen::fmt {
             }
         }
 
+        std::string formatLiteral(const core::Token::Literal &literal) {
+            return std::visit(wolv::util::overloaded {
+                [&](integral auto value)            -> std::string { return ::fmt::format("{}", value); },
+                [&](std::floating_point auto value) -> std::string { return ::fmt::format("{}", value); },
+                [&](const std::string &value)       -> std::string { return ::fmt::format("\"{}\"", value); },
+                [&](bool value)                     -> std::string { return value ? "true" : "false"; },
+                [&](char value)                     -> std::string { return ::fmt::format("\"{}\"", value); },
+                [&](const std::shared_ptr<ptrn::Pattern> &value) -> std::string { return ::fmt::format("\"{}\"", value->toString()); },
+            }, literal);
+        }
+
         void formatValue(pl::ptrn::Pattern *pattern) {
             if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
             if (pattern->getVisibility() == ptrn::Visibility::TreeHidden) return;
 
-            if (const auto &functionName = pattern->getReadFormatterFunction(); !functionName.empty())
+            if (!pattern->getReadFormatterFunction().empty())
                 formatString(pattern);
-            else if (!pattern->isSealed()) {
+            else if (pattern->isSealed()) {
                 auto literal = pattern->getValue();
 
-                addLine(pattern->getVariableName(), std::visit(wolv::util::overloaded {
-                    [&](integral auto value)            -> std::string { return ::fmt::format("{}", value); },
-                    [&](std::floating_point auto value) -> std::string { return ::fmt::format("{}", value); },
-                    [&](const std::string &value)       -> std::string { return ::fmt::format("\"{}\"", value); },
-                    [&](bool value)                     -> std::string { return value ? "true" : "false"; },
-                    [&](char value)                     -> std::string { return ::fmt::format("\"{}\"", value); },
-                    [&](const std::shared_ptr<ptrn::Pattern> &value) -> std::string { return ::fmt::format("\"{}\"", value->toString()); },
-                }, literal) + ",");
+                addLine(pattern->getVariableName(), formatLiteral(literal) + ",");
             }
         }
 

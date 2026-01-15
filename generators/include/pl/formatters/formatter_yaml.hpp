@@ -85,7 +85,7 @@ namespace pl::gen::fmt {
             if (pattern->getVisibility() == ptrn::Visibility::TreeHidden) return;
 
             if (pattern->isSealed()) {
-                formatString(pattern);
+                formatValue(pattern);
             } else {
                 addLine(pattern->getVariableName());
                 pushIndent();
@@ -110,19 +110,36 @@ namespace pl::gen::fmt {
             addLine(pattern->getVariableName(), ::fmt::format("\"{}\"", hlp::encodeByteString({ result.begin(), result.end() })));
         }
 
-        void formatValue(pl::ptrn::Pattern *pattern) {
-            if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
-            if (pattern->getVisibility() == ptrn::Visibility::TreeHidden) return;
-
-            auto result = pattern->toString();
+        std::string formatLiteral(const core::Token::Literal &literal) {
+            auto result = std::visit(wolv::util::overloaded {
+                [&](integral auto value)            -> std::string { return ::fmt::format("{}", value); },
+                [&](std::floating_point auto value) -> std::string { return ::fmt::format("{}", value); },
+                [&](const std::string &value)       -> std::string { return ::fmt::format("\"{}\"", value); },
+                [&](bool value)                     -> std::string { return value ? "true" : "false"; },
+                [&](char value)                     -> std::string { return ::fmt::format("\"{}\"", value); },
+                [&](const std::shared_ptr<ptrn::Pattern> &value) -> std::string { return ::fmt::format("\"{}\"", value->toString()); },
+            }, literal);
 
             const bool number = std::ranges::all_of(result, [](char c) { return std::isdigit(c) || c == '.' || c == '-' || c == '+'; });
             const bool needsEscape = std::ranges::any_of(result, [](char c) { return std::ispunct(c) || !std::isprint(c); });
 
             if (!number && needsEscape)
-                formatString(pattern);
+                return result;
             else
-                addLine(pattern->getVariableName(), wolv::util::replaceStrings(result, "\n", " "));
+                return wolv::util::replaceStrings(result, "\n", " ");
+        }
+
+        void formatValue(pl::ptrn::Pattern *pattern) {
+            if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
+            if (pattern->getVisibility() == ptrn::Visibility::TreeHidden) return;
+
+            if (!pattern->getReadFormatterFunction().empty())
+                formatString(pattern);
+            else {
+                auto literal = pattern->getValue();
+
+                addLine(pattern->getVariableName(), wolv::util::replaceStrings(formatLiteral(literal), "\n", " "));
+            }
         }
 
     private:
