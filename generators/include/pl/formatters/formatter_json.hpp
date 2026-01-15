@@ -67,11 +67,28 @@ namespace pl::gen::fmt {
             const auto string = pattern->toString();
 
             std::string result;
-            for (char c : string) {
-                if (std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~')
-                    result += c;
-                else
-                    result += ::fmt::format("%{:02X}", c);
+            for (const auto &ch : wolv::util::utf8ToUtf32(string, true).value()) {
+                switch (ch) {
+                    case U'"':  result += "\\\""; break;
+                    case U'\\': result += "\\\\"; break;
+                    case U'\b': result += "\\b";  break;
+                    case U'\f': result += "\\f";  break;
+                    case U'\n': result += "\\n";  break;
+                    case U'\r': result += "\\r";  break;
+                    case U'\t': result += "\\t";  break;
+                    default:
+                        if (ch < 0x20) {
+                            result += ::fmt::format("\\u{:04x}", static_cast<u32>(ch));
+                        } else if (ch <= 0xFFFF) {
+                            result += static_cast<char>(ch);
+                        } else {
+                            u32 code = static_cast<u32>(ch) - 0x10000;
+                            u16 highSurrogate = 0xD800 + ((code >> 10) & 0x3FF);
+                            u16 lowSurrogate = 0xDC00 + (code & 0x3FF);
+                            result += ::fmt::format("\\u{:04x}\\u{:04x}", highSurrogate, lowSurrogate);
+                        }
+                        break;
+                }
             }
 
             addLine(pattern->getVariableName(), ::fmt::format("\"{}\",", result));
