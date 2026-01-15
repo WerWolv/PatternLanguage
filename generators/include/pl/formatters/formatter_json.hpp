@@ -67,7 +67,8 @@ namespace pl::gen::fmt {
             const auto string = pattern->toString();
 
             std::string result;
-            for (const auto &ch : wolv::util::utf8ToUtf32(string, true).value()) {
+            const auto decodedString = wolv::util::utf8ToUtf32(string, true).value();
+            for (const auto &ch : decodedString) {
                 switch (ch) {
                     case U'"':  result += "\\\""; break;
                     case U'\\': result += "\\\\"; break;
