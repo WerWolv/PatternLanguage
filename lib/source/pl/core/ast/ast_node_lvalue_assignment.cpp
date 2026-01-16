@@ -29,20 +29,24 @@ namespace pl::core::ast {
         if (literal == nullptr)
             err::E0010.throwError("Cannot assign void expression to variable.", {}, this->getLocation());
 
-        auto value = literal->getValue();
+        const auto &value = literal->getValue();
         if (this->getLValueName() == "$")
             evaluator->setReadOffset(u64(value.toUnsigned()));
         else {
-            auto variable = evaluator->getVariableByName(this->getLValueName());
-            applyVariableAttributes(evaluator, this, variable);
+            if (m_cachedVariable == nullptr) {
+                m_cachedVariable = evaluator->getVariableByName(this->getLValueName());
+                applyTypeAttributes(evaluator, this, m_cachedVariable);
+            }
 
             if (value.isPattern()) {
                 auto decayedValue = value.toPattern()->getValue();
                 if (!decayedValue.isPattern())
-                    value = std::move(decayedValue);
+                    evaluator->setVariable(m_cachedVariable, decayedValue);
+                else
+                    evaluator->setVariable(m_cachedVariable, value);
+            } else {
+                evaluator->setVariable(m_cachedVariable, value);
             }
-
-            evaluator->setVariable(this->getLValueName(), value);
         }
 
         return {};
