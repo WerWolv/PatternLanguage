@@ -1838,15 +1838,13 @@ namespace pl::core {
         }
 
         if (!sequence(tkn::Operator::Colon)) {
-            errorDesc("Expected ':' after pointer definition, got {}.", "A pointer requires a integral type to specify its own size.", getFormattedToken(0));
+            error("Expected ':' after pointer definition, got {}.", getFormattedToken(0));
             return nullptr;
         }
 
         auto sizeType = parseType();
         if (sizeType == nullptr)
             return nullptr;
-
-        auto arrayType = createShared<ast::ASTNodeArrayVariableDecl>("", type.unwrapUnchecked(), std::move(size.unwrapUnchecked()));
 
         if (sequence(tkn::Operator::At)) {
             auto expression = parseMathematicalExpression();
@@ -1858,7 +1856,7 @@ namespace pl::core {
                 else
                     memberIdentifier->setType(Token::Identifier::IdentifierType::CalculatedPointer);
             }
-            return create<ast::ASTNodePointerVariableDecl>(name, std::move(arrayType), std::move(sizeType), std::move(expression));
+            return create<ast::ASTNodePointerVariableDecl>(name, createShared<ast::ASTNodeArrayVariableDecl>("", type.unwrapUnchecked(), std::move(size.unwrapUnchecked())), std::move(sizeType), std::move(expression));
         }
         if (memberIdentifier != nullptr) {
             if (m_currTemplateType.empty())
@@ -1866,7 +1864,7 @@ namespace pl::core {
             else
                 memberIdentifier->setType(Token::Identifier::IdentifierType::PatternVariable);
         }
-        return create<ast::ASTNodePointerVariableDecl>(name, std::move(arrayType), std::move(sizeType));
+        return create<ast::ASTNodePointerVariableDecl>(name, createShared<ast::ASTNodeArrayVariableDecl>("", type.unwrapUnchecked(), std::move(size.unwrapUnchecked())), std::move(sizeType));
     }
 
     // [(parsePadding)|(parseMemberVariable)|(parseMemberArrayVariable)|(parseMemberPointerVariable)|(parseMemberArrayPointerVariable)]
@@ -1883,6 +1881,50 @@ namespace pl::core {
             member = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(*identifierOffset).get());
         else if (MATCHES(sequence(tkn::Literal::Identifier) && (peek(tkn::Separator::Dot) || (peek(tkn::Separator::LeftBracket, 0) && !peek(tkn::Separator::LeftBracket, 1)))))
             member = parseRValueAssignment();
+        // --- Begin nested struct support ---
+        else if (sequence(tkn::Keyword::Struct, tkn::Literal::Identifier) ||
+                sequence(tkn::Keyword::Struct, tkn::Separator::LeftBrace)) {
+            // Parse nested struct and add as member
+            auto nestedStructType = parseStruct();
+            if (nestedStructType == nullptr)
+                return nullptr;
+            // Check for identifier
+            if (peek(tkn::Literal::Identifier)) {
+                std::string nextName = getValue<Token::Identifier>(0).get();
+                if (nestedStructType->getName().starts_with("__anon_struct_")) {
+                    nestedStructType->setName(nextName);
+                }
+                next(); // consume the identifier
+            }
+            // Add the actual struct AST node as a member
+            auto structNode = nestedStructType->getType();
+            if (structNode == nullptr)
+                return nullptr;
+            member = hlp::safe_unique_ptr<ast::ASTNode>(structNode->clone());
+        }
+        // --- End nested struct support ---
+        // --- Begin nested union support ---
+        else if (sequence(tkn::Keyword::Union, tkn::Literal::Identifier) ||
+                sequence(tkn::Keyword::Union, tkn::Separator::LeftBrace)) {
+            // Parse nested union and add as member
+            auto nestedUnionType = parseUnion();
+            if (nestedUnionType == nullptr)
+                return nullptr;
+            // Check for identifier
+            if (peek(tkn::Literal::Identifier)) {
+                std::string nextName = getValue<Token::Identifier>(0).get();
+                if (nestedUnionType->getName().starts_with("__anon_union_")) {
+                    nestedUnionType->setName(nextName);
+                }
+                next(); // consume the identifier
+            }
+            // Add the actual union AST node as a member
+            auto unionNode = nestedUnionType->getType();
+            if (unionNode == nullptr)
+                return nullptr;
+            member = hlp::safe_unique_ptr<ast::ASTNode>(unionNode->clone());
+        }
+        // --- End nested union support ---
         else if (peek(tkn::Keyword::Const) || peek(tkn::Keyword::BigEndian) || peek(tkn::Keyword::LittleEndian) || peek(tkn::ValueType::Any) || peek(tkn::Literal::Identifier)) {
             // Some kind of variable definition
 
@@ -1956,10 +1998,19 @@ namespace pl::core {
 
     // struct Identifier { <(parseMember)...> }
     hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseStruct() {
-        const auto &typeName = getValue<Token::Identifier>(-1).get();
-        auto userDefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-        if (userDefinedTypeIdentifier != nullptr)
-            userDefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UDT);
+        std::string typeName;
+        bool anon = false;
+        if (peek(tkn::Literal::Identifier, -1)) {
+            typeName = getValue<Token::Identifier>(-1).get();
+            auto userDefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+            if (userDefinedTypeIdentifier != nullptr)
+                userDefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UDT);
+        } else {
+            // No identifier, generate a unique name
+            static int anonStructCounter = 0;
+            typeName = fmt::format("__anon_struct_{}", anonStructCounter++);
+            anon = true;
+        }
 
         auto typeDecl   = addType(typeName, create<ast::ASTNodeStruct>());
         if(typeDecl == nullptr)
@@ -1993,7 +2044,7 @@ namespace pl::core {
             } while (sequence(tkn::Separator::Comma));
         }
 
-        if (!sequence(tkn::Separator::LeftBrace)) {
+        if (!anon && !sequence(tkn::Separator::LeftBrace)) {
             error("Expected '{{' after struct declaration, got {}.", getFormattedToken(0));
             return nullptr;
         }
@@ -2014,10 +2065,19 @@ namespace pl::core {
 
     // union Identifier { <(parseMember)...> }
     hlp::safe_shared_ptr<ast::ASTNodeTypeDecl> Parser::parseUnion() {
-        const auto &typeName = getValue<Token::Identifier>(-1).get();
-        auto userDefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
-        if (userDefinedTypeIdentifier != nullptr)
-            userDefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UDT);
+        std::string typeName;
+        bool anon = false;
+        if (peek(tkn::Literal::Identifier, -1)) {
+            typeName = getValue<Token::Identifier>(-1).get();
+            auto userDefinedTypeIdentifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
+            if (userDefinedTypeIdentifier != nullptr)
+                userDefinedTypeIdentifier->setType(Token::Identifier::IdentifierType::UDT);
+        } else {
+            // No identifier, generate a unique name
+            static int anonUnionCounter = 0;
+            typeName = fmt::format("__anon_union_{}", anonUnionCounter++);
+            anon = true;
+        }
 
         auto typeDecl  = addType(typeName, create<ast::ASTNodeUnion>());
         if (typeDecl == nullptr)
@@ -2029,7 +2089,7 @@ namespace pl::core {
 
         typeDecl->setTemplateParameters(unwrapSafePointerVector(this->parseTemplateList()));
 
-        if (!sequence(tkn::Separator::LeftBrace)) {
+        if (!anon && !sequence(tkn::Separator::LeftBrace)) {
             error("Expected '{{' after union declaration, got {}.", getFormattedToken(0));
             return nullptr;
         }
@@ -2437,8 +2497,7 @@ namespace pl::core {
                 auto initStatement = parseArrayInitExpression(name);
                 if (initStatement == nullptr)
                     return nullptr;
-                if (typedefIdentifier != nullptr)
-                    typedefIdentifier->setType(Token::Identifier::IdentifierType::GlobalVariable);
+
                 compoundStatement.emplace_back(std::move(initStatement));
             }
 
