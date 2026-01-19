@@ -160,10 +160,14 @@ namespace pl::gen::fmt {
 
             if (!pattern->getReadFormatterFunction().empty())
                 formatString(pattern);
-            else if (pattern->isSealed()) {
-                auto literal = pattern->getValue();
+            else {
+                try {
+                    auto literal = pattern->getValue();
 
-                addLine(pattern->getVariableName(), formatLiteral(literal) + ",");
+                    addLine(pattern->getVariableName(), formatLiteral(literal) + ",");
+                } catch (const std::exception &e) {
+                    addLine(pattern->getVariableName(), ::fmt::format("\"<error: {}>\",", e.what()));
+                }
             }
         }
 

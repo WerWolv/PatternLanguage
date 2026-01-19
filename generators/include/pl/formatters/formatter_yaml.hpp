@@ -136,9 +136,13 @@ namespace pl::gen::fmt {
             if (!pattern->getReadFormatterFunction().empty())
                 formatString(pattern);
             else {
-                auto literal = pattern->getValue();
+                try {
+                    auto literal = pattern->getValue();
 
-                addLine(pattern->getVariableName(), wolv::util::replaceStrings(formatLiteral(literal), "\n", " "));
+                    addLine(pattern->getVariableName(), wolv::util::replaceStrings(formatLiteral(literal), "\n", " "));
+                } catch (std::exception &e) {
+                    addLine(pattern->getVariableName(), ::fmt::format("\"<Error: {}>\"", wolv::util::replaceStrings(e.what(), "\n", " ")));
+                }
             }
         }
 
