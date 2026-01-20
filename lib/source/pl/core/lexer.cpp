@@ -1,21 +1,57 @@
-#include <pl/core/lexer.hpp>
-#include <pl/core/tokens.hpp>
-#include <pl/helpers/utils.hpp>
-#include <pl/api.hpp>
+// new_lexer.cpp
+//
 
-#include <optional>
+#include <pl/core/lexer_sm.hpp>
+#include <pl/core/lexer.hpp>
+
+#include <pl/api.hpp>
+#include <pl/core/token.hpp>
+#include <pl/core/tokens.hpp>
 #include <wolv/utils/charconv.hpp>
 
+#include <lexertl/lookup.hpp>
+#include <lexertl/state_machine.hpp>
+#include <lexertl/generator.hpp>
+
+#if defined(NDEBUG)
+    #include <pl/core/generated/lexer_static.hpp>
+#endif
+
+#include <cstddef>
+#include <cctype>
+#include <string>
+#include <string_view>
+#include <vector>
+#include <unordered_map>
+
 namespace pl::core {
-    using namespace tkn;
 
-    static constexpr char integerSeparator = '\'';
+    // TODO:
+    //  "integerSeparator_" is defined in "lexer.cpp".
+    //  Remove trailing underscore when it's removed.
+    static constexpr char integerSeparator_ = '\'';
 
-    static bool isIdentifierCharacter(const char c) {
-        return std::isalnum(c) || c == '_';
+    // TODO:
+    //  "characterValue" is defined in "lexer.cpp".
+    //  Remove trailing underscore when it's removed.
+    static int characterValue_(const char c) {
+        if (c >= '0' && c <= '9') {
+            return c - '0';
+        }
+        if (c >= 'a' && c <= 'f') {
+            return c - 'a' + 10;
+        }
+        if (c >= 'A' && c <= 'F') {
+            return c - 'A' + 10;
+        }
+
+        return 0;
     }
 
-    static bool isIntegerCharacter(const char c, const int base) {
+    // TODO:
+    //  "isIntegerCharacter" is defined in "lexer.cpp".
+    //  Remove trailing underscore when it's removed.
+    static bool isIntegerCharacter_(const char c, const int base) {
         switch (base) {
             case 16:
                 return std::isxdigit(c);
@@ -30,177 +66,16 @@ namespace pl::core {
         }
     }
 
-    static int characterValue(const char c) {
-        if (c >= '0' && c <= '9') {
-            return c - '0';
-        }
-        if (c >= 'a' && c <= 'f') {
-            return c - 'a' + 10;
-        }
-        if (c >= 'A' && c <= 'F') {
-            return c - 'A' + 10;
+    // TODO:
+    //  Consider making 'location' not use templates. Here and in other functions below.
+    std::optional<Token::Literal> Lexer::parseInteger(std::string_view literal, const auto &location) {
+        const bool isUnsigned = hlp::stringEndsWithOneOf(literal, { "u", "U" });
+        if(isUnsigned) {
+            // remove suffix
+            literal = literal.substr(0, literal.size() - 1);
         }
 
-        return 0;
-    }
-
-    static size_t getIntegerLiteralLength(const std::string_view& literal) {
-        const auto count = literal.find_first_not_of("0123456789ABCDEFabcdef'xXoOpP.uU+-");
-        const std::string_view intLiteral = count == std::string_view::npos ? literal : literal.substr(0, count);
-        if (const auto signPos = intLiteral.find_first_of("+-"); signPos != std::string_view::npos && ((literal.at(signPos-1) != 'e' && literal.at(signPos-1) != 'E')  || literal.starts_with("0x")))
-            return signPos;
-        return intLiteral.size();
-    }
-
-
-    std::optional<char> Lexer::parseCharacter() {
-        const char& c = m_sourceCode[m_cursor++];
-        if (c == '\\') {
-            switch (m_sourceCode[m_cursor++]) {
-                case 'a':
-                    return '\a';
-                case 'b':
-                    return '\b';
-                case 'f':
-                    return '\f';
-                case 'n':
-                    return '\n';
-                case 't':
-                    return '\t';
-                case 'r':
-                    return '\r';
-                case '0':
-                    return '\0';
-                case '\'':
-                    return '\'';
-                case '"':
-                    return '"';
-                case '\\':
-                    return '\\';
-                case 'x': {
-                    const char hex[3] = { m_sourceCode[m_cursor], m_sourceCode[m_cursor + 1], 0 };
-                    m_cursor += 2;
-                    try {
-                        return static_cast<char>(std::stoul(hex, nullptr, 16));
-                    } catch (const std::invalid_argument&) {
-                        m_errorLength = 2;
-                        error("Invalid hex escape sequence: {}", hex);
-                        return std::nullopt;
-                    }
-                }
-                case 'u': {
-                    const char hex[5] = { m_sourceCode[m_cursor], m_sourceCode[m_cursor + 1], m_sourceCode[m_cursor + 2],
-                                    m_sourceCode[m_cursor + 3], 0 };
-                    m_cursor += 4;
-                    try {
-                        return static_cast<char>(std::stoul(hex, nullptr, 16));
-                    } catch (const std::invalid_argument&) {
-                        m_errorLength = 4;
-                        error("Invalid unicode escape sequence: {}", hex);
-                        return std::nullopt;
-                    }
-                }
-                default:
-                    m_errorLength = 1;
-                    error("Unknown escape sequence: {}", m_sourceCode[m_cursor-1]);
-                return std::nullopt;
-            }
-        }
-        return c;
-    }
-
-    std::optional<Token> Lexer::parseDirectiveName(const std::string_view &identifier) {
-        const auto &directives = Token::Directives();
-        if (const auto directiveToken = directives.find(identifier); directiveToken != directives.end()) {
-            return makeToken(directiveToken->second, identifier.length());
-        }
-        m_errorLength = identifier.length();
-        error("Unknown directive: {}", identifier);
-        return std::nullopt;
-    }
-
-    std::optional<Token> Lexer::parseDirectiveValue() {
-        std::string result;
-
-        m_cursor++; // Skip space
-        auto location = this->location();
-
-        while (!std::isblank(m_sourceCode[m_cursor]) && !std::isspace(m_sourceCode[m_cursor]) && m_sourceCode[m_cursor] != '\0' ) {
-
-            auto character = parseCharacter();
-            if (!character.has_value()) {
-                return std::nullopt;
-            }
-
-            result += character.value();
-        }
-
-        if (hasTheLineEnded(m_sourceCode[m_cursor]))
-            m_cursor++;
-
-        return makeTokenAt(Literal::makeString(result), location, result.size());
-    }
-
-    std::optional<Token> Lexer::parseDirectiveArgument() {
-        std::string result;
-
-        m_cursor++; // Skip space
-        auto location = this->location();
-
-        while (m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\r' && m_sourceCode[m_cursor] != '\0') {
-
-            auto character = parseCharacter();
-            if (!character.has_value()) {
-                return std::nullopt;
-            }
-
-            result += character.value();
-        }
-
-        if (hasTheLineEnded(m_sourceCode[m_cursor]))
-            m_cursor++;
-
-        return makeTokenAt(Literal::makeString(result), location, result.size());
-    }
-
-    std::optional<Token> Lexer::parseStringLiteral() {
-        std::string result;
-        auto location = this->location();
-
-        m_cursor++; // Skip opening "
-
-        while (m_sourceCode[m_cursor] != '\"') {
-            char c = peek(0);
-            if (c == '\n' || c == '\r') {
-                m_errorLength = 1;
-                error("Unexpected newline in string literal");
-                m_line++;
-                m_lineBegin = m_cursor;
-                return std::nullopt;
-            }
-
-            if (c == '\0') {
-                m_errorLength = 1;
-                error("Unexpected end of file in string literal");
-                return std::nullopt;
-            }
-
-            auto character = parseCharacter();
-            if (!character.has_value()) {
-                return std::nullopt;
-            }
-
-            result += character.value();
-        }
-
-        m_cursor++;
-
-        return makeTokenAt(Literal::makeString(result), location, result.size() + 2);
-    }
-
-    std::optional<u128> Lexer::parseInteger(std::string_view literal) {
         u8 base = 10;
-
         u128 value = 0;
         if(literal[0] == '0') {
             if(literal.size() == 1) {
@@ -230,25 +105,27 @@ namespace pl::core {
         }
 
         for (const char c : literal) {
-            if(c == integerSeparator) continue;
+            if(c == integerSeparator_) continue;
 
-            if (!isIntegerCharacter(c, base)) {
-                m_errorLength = literal.size();
-                error("Invalid integer literal: {}", literal);
+            if (!isIntegerCharacter_(c, base)) {
+                error(location(), "Invalid integer literal: {}", literal);
                 return std::nullopt;
             }
-            value = value * base + characterValue(c);
+            value = value * base + characterValue_(c);
         }
 
-        return value;
+        if (isUnsigned) {
+            return value;
+        }
+
+        return i128(value);
     }
 
-    std::optional<double> Lexer::parseFloatingPoint(std::string_view literal, const char suffix) {
+    std::optional<double> Lexer::parseFloatingPoint(std::string_view literal, const char suffix, const auto &location) {
         const auto value = wolv::util::from_chars<double>(literal);
 
         if(!value.has_value()) {
-            m_errorLength = literal.size();
-            error("Invalid float literal: {}", literal);
+            error(location(), "Invalid float literal: {}", literal);
             return std::nullopt;
         }
 
@@ -263,425 +140,410 @@ namespace pl::core {
         }
     }
 
-    std::optional<Token::Literal> Lexer::parseIntegerLiteral(std::string_view literal) {
-        // parse a c like numeric literal
-        const bool floatSuffix = hlp::stringEndsWithOneOf(literal, { "f", "F", "d", "D" });
-        const bool unsignedSuffix = hlp::stringEndsWithOneOf(literal, { "u", "U" });
-        const bool isFloat = literal.find('.') != std::string_view::npos
-                       || (!literal.starts_with("0x") && floatSuffix);
-        const bool isUnsigned = unsignedSuffix;
-
-        if(isFloat) {
-
-            char suffix = 0;
-            if(floatSuffix) {
-                // remove suffix
-                suffix = literal.back();
-                literal = literal.substr(0, literal.size() - 1);
+    std::optional<char> Lexer::parseCharacter(const char* &pchar, const char* e, const auto &location) {
+        const char c = *(pchar++);
+        if (c == '\\') {
+            switch (*(pchar++)) {
+                case 'a':
+                    return '\a';
+                case 'b':
+                    return '\b';
+                case 'f':
+                    return '\f';
+                case 'n':
+                    return '\n';
+                case 't':
+                    return '\t';
+                case 'r':
+                    return '\r';
+                case '0':
+                    return '\0';
+                case '\'':
+                    return '\'';
+                case '"':
+                    return '"';
+                case '\\':
+                    return '\\';
+                case 'x': {
+                    if (pchar+1 >= e) {
+                        error(location(), "Incomplete escape sequence");
+                        return std::nullopt;
+                    }
+                    const char hex[3] = { *pchar, *(pchar+1), 0 }; // TODO: buffer overrun?
+                    pchar += sizeof(hex)-1;
+                    try {
+                        return static_cast<char>(std::stoul(hex, nullptr, 16));
+                    } catch (const std::invalid_argument&) {
+                        error(location(), "Invalid hex escape sequence: {}", hex);
+                        return std::nullopt;
+                    }
+                }
+                case 'u': {
+                     if (pchar+3 >= e) {
+                        error(location(), "Incomplete escape sequence");
+                        return std::nullopt;
+                    }
+                    const char hex[5] = { *pchar, *(pchar+1), *(pchar+2), *(pchar+3), 0};
+                    pchar += sizeof(hex)-1;
+                    try {
+                        return static_cast<char>(std::stoul(hex, nullptr, 16));
+                    } catch (const std::invalid_argument&) {
+                        error(location(), "Invalid unicode escape sequence: {}", hex);
+                        return std::nullopt;
+                    }
+                }
+                default:
+                    error(location(), "Unknown escape sequence: {}", pchar);
+                return std::nullopt;
             }
-
-            auto floatingPoint = parseFloatingPoint(literal, suffix);
-
-            if(!floatingPoint.has_value()) return std::nullopt;
-
-            return floatingPoint.value();
-
         }
-
-        if(unsignedSuffix) {
-            // remove suffix
-            literal = literal.substr(0, literal.size() - 1);
-        }
-
-        const auto integer = parseInteger(literal);
-
-        if(!integer.has_value()) return std::nullopt;
-
-        u128 value = integer.value();
-        if(isUnsigned) {
-            return value;
-        }
-
-        return i128(value);
+        return c;
     }
 
-    std::optional<Token> Lexer::parseOneLineComment() {
-        auto location = this->location();
-        const auto begin = m_cursor;
-        m_cursor += 2;
-
+    std::optional<Token> Lexer::parseStringLiteral(std::string_view literal, const auto &location)
+    {
         std::string result;
-        while(m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\r' && m_sourceCode[m_cursor] != '\0') {
-            result += m_sourceCode[m_cursor];
-            m_cursor++;
+
+        if (literal.size()==0) {
+            return Token{Token::Type::String, Token::Literal(result), location()};
         }
-        auto len = m_cursor - begin;
 
-        if (hasTheLineEnded(m_sourceCode[m_cursor]))
-            m_cursor++;
-
-        return makeTokenAt(Literal::makeComment(true, result), location, len);
-    }
-
-    std::optional<Token> Lexer::parseOneLineDocComment() {
-        auto location = this->location();
-        const auto begin = m_cursor;
-        m_cursor += 3;
-
-        std::string result;
-        while(m_sourceCode[m_cursor] != '\n' && m_sourceCode[m_cursor] != '\r' && m_sourceCode[m_cursor] != '\0') {
-            result += m_sourceCode[m_cursor];
-            m_cursor++;
-        }
-        auto len = m_cursor - begin;
-
-        if (hasTheLineEnded(m_sourceCode[m_cursor]))
-            m_cursor++;
-
-        return makeTokenAt(Literal::makeDocComment(false, true, result), location, len);
-    }
-
-    std::optional<Token> Lexer::parseMultiLineDocComment() {
-        auto location = this->location();
-        const auto begin = m_cursor;
-        const bool global = peek(2) == '!';
-        std::string result;
-
-        m_cursor += 3;
-        while(true) {
-            hasTheLineEnded(peek(0));
-
-            if(peek(1) == '\x00') {
-                m_errorLength = 1;
-                error("Unexpected end of file while parsing multi line doc comment");
+        const char *p = &literal.front();
+        const char *e = &literal.back(); // inclusive
+        while (p<=e) {
+            auto character = parseCharacter(p, e+1, location);
+            if (!character.has_value()) {
                 return std::nullopt;
             }
 
-            if(peek(0) == '*' && peek(1) == '/') {
-                m_cursor += 2;
+            result += character.value();
+        }
+
+        return Token{Token::Type::String, Token::Literal(result), location()};
+    }
+
+    namespace {
+        bool g_lexerStaticInitDone = false;
+
+        // Much of the contents of this anonymous namespace serve as conceptually
+        // private static members of the Lexer class. They're placed here to avoid
+        // pulling in unnecessary symbols into every file that includes our header.
+
+        struct KWOpTypeInfo {
+            Token::Type type;
+            Token::ValueTypes value;
+        };
+
+        // This "Trans" stuff is to allow us to use std::string_view to lookup stuff
+        // so we don't have to construct a std::string.
+        struct TransHash {
+            using is_transparent = void;
+
+            std::size_t operator()(const std::string &s) const noexcept {
+                return std::hash<std::string>{}(s);
+            }
+
+            std::size_t operator()(std::string_view s) const noexcept {
+                return std::hash<std::string_view>{}(s);
+            }
+        };
+
+        struct TransEqual {
+            using is_transparent = void;
+
+            bool operator()(const std::string &lhs, const std::string &rhs) const noexcept {
+                return lhs == rhs;
+            }
+
+            bool operator()(const std::string &lhs, std::string_view rhs) const noexcept {
+                return lhs == rhs;
+            }
+
+            bool operator()(std::string_view lhs, const std::string& rhs) const noexcept {
+                return lhs == rhs;
+            }
+
+            bool operator()(std::string_view lhs, std::string_view rhs) const noexcept {
+                return lhs == rhs;
+            }
+        };
+
+        std::unordered_map<std::string, KWOpTypeInfo, TransHash, TransEqual> g_KWOpTypeTokenInfo;
+
+#if !defined(NDEBUG)
+        lexertl::state_machine g_sm;
+#endif
+
+    } // anonymous namespace
+
+    void initNewLexer()
+    {
+        const auto &keywords = Token::Keywords();
+        for (const auto& [key, value] : keywords)
+            g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
+    
+        const auto &operators = Token::Operators();
+        for (const auto& [key, value] : operators) {
+            g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
+        }
+
+        const auto &types = Token::Types();
+        for (const auto& [key, value] : types)
+            g_KWOpTypeTokenInfo.insert(std::make_pair(key, KWOpTypeInfo{value.type, value.value}));
+
+#if !defined(NDEBUG)
+        newLexerBuild(g_sm);
+#endif
+    }
+
+    Lexer::Lexer() {
+        if (!g_lexerStaticInitDone) {
+            g_lexerStaticInitDone = true;
+            initNewLexer();
+        }
+        m_longestLineLength = 0;
+    }
+
+    void Lexer::reset() {
+        m_longestLineLength = 0;
+        this->m_tokens.clear();
+    }
+
+    hlp::CompileResult<std::vector<Token>> Lexer::lex(const api::Source *source)
+    {
+        reset();
+
+        std::string::const_iterator contentEnd = source->content.end();
+        lexertl::smatch results(source->content.begin(), contentEnd);
+
+        auto lineStart = results.first;
+        u32 line = 1;
+
+        auto location = [&]() -> Location {
+            u32 column = results.first-lineStart+1;
+            size_t errorLength = results.second-results.first;
+            return Location { source, line, column, errorLength };
+        };
+
+        std::string::const_iterator mlcomentStartRaw; // start of parsed token, no skipping
+        std::string::const_iterator mlcomentStart;
+        Location mlcommentLocation;
+
+        enum MLCommentType{
+            MLComment,
+            MLLocalDocComment,
+            MLGlobalDocComment
+        };
+
+        MLCommentType mlcommentType = MLComment;
+#if defined(NDEBUG)
+            lookup(results);
+#else
+            lexertl::lookup(g_sm, results);
+#endif
+        for (;;)
+        {
+            if (results.id==LexerToken::EndOfFile)
+                break;
+
+            switch (results.id) {
+            case (lexertl::smatch::id_type)-1: {
+                    error(location(), "Unexpected character: {}", *results.first);
+                }
+                break;
+            case LexerToken::NewLine: {
+                    ++line;
+                    std::size_t len = results.first - lineStart;
+                    m_longestLineLength = std::max(len, m_longestLineLength);
+                    lineStart = results.second;
+                }
+                break;
+            case LexerToken::KWNamedOpTypeConstIdent:
+            case LexerToken::Operator: {
+                    const std::string_view kw(results.first, results.second);
+
+                    if (const auto it = g_KWOpTypeTokenInfo.find(kw); it != g_KWOpTypeTokenInfo.end()) {
+                        m_tokens.emplace_back(it->second.type, it->second.value, location());
+                    }
+                    else if (const auto it = tkn::constants.find(kw); it != tkn::constants.end()) {
+                        auto ctok = tkn::Literal::makeNumeric(it->second);
+                        m_tokens.emplace_back(ctok.type, ctok.value, location());
+                    }
+                    else {
+                        auto idtok = tkn::Literal::makeIdentifier(std::string(kw));
+                        // TODO:
+                        //  It seems the presence of a non-zero length in the location info is being
+                        //  used by the pattern editor editor for error highlighting. This makes things
+                        //  hard. I am trying to include location info in every token. At the very least
+                        //  this could make debugging easier. Who knows, it may have other uses. In the
+                        //  mean time hack the length to 0.
+                        auto loc = location();
+                        loc.length = 0;
+                        m_tokens.emplace_back(idtok.type, idtok.value, loc);
+                    }
+                }
+                break;
+            case LexerToken::SingleLineComment: {
+                    const std::string_view comment(results.first+2, results.second);
+                    if (comment.size() && comment[0]=='/') {
+                        auto ctok = tkn::Literal::makeDocComment(false, true, std::string(comment.substr(1)));
+                        m_tokens.emplace_back(ctok.type, ctok.value, location());
+                    }
+                    else {
+                        auto ctok = tkn::Literal::makeComment(true, std::string(comment));
+                        m_tokens.emplace_back(ctok.type, ctok.value, location());
+                    }
+                }
+                break;
+
+            case LexerToken::MultiLineCommentOpen: {
+                    mlcommentType = MLComment;
+                    mlcomentStartRaw = results.first;
+                    mlcomentStart = results.first+2;
+                    mlcommentLocation = location();
+
+                    const std::string_view comment(results.first+2, results.second);
+                    if (comment.size()) {
+                        if (comment[0]=='*') {
+                            mlcommentType = MLLocalDocComment;
+                            ++mlcomentStart;
+                        }
+                        else if (comment[0]=='!') {
+                            mlcommentType = MLGlobalDocComment;
+                            ++mlcomentStart;
+                        }
+                    }
+                }
+                break;
+
+            case LexerToken::MultiLineCommentClose: {
+                    mlcommentLocation.length = results.second-mlcomentStartRaw;
+                    const std::string_view comment(mlcomentStart, results.second-2);
+
+                    switch (mlcommentType) {
+                    case MLComment: {
+                            auto ctok = tkn::Literal::makeComment(false, std::string(comment));
+                            m_tokens.emplace_back(ctok.type, ctok.value, mlcommentLocation);
+                        }
+                        break;
+                    case MLLocalDocComment: {
+                            auto ctok = tkn::Literal::makeDocComment(false, false, std::string(comment));
+                            m_tokens.emplace_back(ctok.type, ctok.value, mlcommentLocation);
+                        }
+                        break;
+                    case MLGlobalDocComment: {
+                            auto ctok = tkn::Literal::makeDocComment(true, false, std::string(comment));
+                            m_tokens.emplace_back(ctok.type, ctok.value, mlcommentLocation);
+                        }
+                        break;
+                    }
+                }
+                break;
+
+            case LexerToken::Integer: {
+                    const std::string_view numStr(results.first, results.second);
+                    auto optNum = parseInteger(numStr, location);
+                    if (!optNum.has_value()) {
+                        break;
+                    }
+                    auto ntok = tkn::Literal::makeNumeric(optNum.value());
+                    m_tokens.emplace_back(ntok.type, ntok.value, location());
+                }
+                break;
+
+            case LexerToken::FPNumber: {
+                    std::string_view numStr(results.first, results.second);
+                    const bool floatSuffix = hlp::stringEndsWithOneOf(numStr, {"f","F","d","D"});
+                    char suffix = 0;
+                    if (floatSuffix) {
+                        // remove suffix
+                        suffix = numStr.back();
+                        numStr = numStr.substr(0, numStr.size()-1);
+                    }
+                    auto num = parseFloatingPoint(numStr, suffix, location);
+                    if (num.has_value()) {
+                        auto ntok = tkn::Literal::makeNumeric(num.value());
+                        m_tokens.emplace_back(ntok.type, ntok.value, location());
+                    }
+
+                }
+                break;
+
+            case LexerToken::String: {
+                    const std::string_view str(results.first+1, results.second-1);
+                    auto optTok = parseStringLiteral(str, location);
+                    if (optTok.has_value()) {
+                        auto stok = optTok.value();
+                        m_tokens.emplace_back(stok.type, stok.value, location());
+                    }
+                }
+                break;
+            case LexerToken::Char: {
+                    const std::string_view ch(results.first+1, results.second-1);
+                    const char *p = &ch[0];
+                    auto optCh = parseCharacter(p, (&ch.back())+1, location);
+                    if (optCh.has_value()) {
+                        if (p-1 < &ch.back()) {
+                            error(location(), "char literal too long");
+                        }
+                        else if (p-1 > &ch.back()) {
+                            error(location(), "char literal too short");
+                        }
+                        else {
+                            m_tokens.emplace_back(core::Token::Type::Integer, optCh.value(), location());
+                        }
+                    }
+                }
+                break;
+            case LexerToken::Separator: {
+                    const char sep = *results.first;
+                    const auto separatorToken = Token::Separators().find(sep)->second;
+                    m_tokens.emplace_back(separatorToken.type, separatorToken.value, location());
+                }
+                break;
+            case LexerToken::Directive: {
+                    auto first = results.first;
+                    for (++first; std::isspace(static_cast<unsigned char>(*first)); ++first) {}
+                    std::string name = "#"+std::string(first, results.second); // TODO: I don't like this!
+                    const auto &directives = Token::Directives();
+                    if (const auto directiveToken = directives.find(name); directiveToken != directives.end()) {
+                        m_tokens.emplace_back(directiveToken->second.type, directiveToken->second.value, location());
+                    }
+                    else {
+                        error(location(), "Unknown directive: {}", name);
+                    }
+                }
+                break;
+            case LexerToken::DirectiveType: {
+                    const std::string_view type(results.first, results.second);
+                    const auto stok = tkn::Literal::makeString(std::string(type));
+                    m_tokens.emplace_back(stok.type, stok.value, location());
+                }
+                break;
+            case LexerToken::DirectiveParam: {
+                    const std::string_view param(results.first, results.second);
+                    const auto stok = tkn::Literal::makeString(std::string(param));
+                    m_tokens.emplace_back(stok.type, stok.value, location());
+                }
                 break;
             }
 
-            result += m_sourceCode[m_cursor++];
+#if defined(NDEBUG)
+            lookup(results);
+#else
+            lexertl::lookup(g_sm, results);
+#endif
         }
 
-        return makeTokenAt(Literal::makeDocComment(global, false, result), location, m_cursor - begin);
-    }
+        std::size_t len = results.first - lineStart;
+        m_longestLineLength = std::max(len, m_longestLineLength);
+        lineStart = results.second;
 
-    std::optional<Token> Lexer::parseMultiLineComment() {
-        auto location = this->location();
-        const auto begin = m_cursor;
-        std::string result;
-
-        m_cursor += 2;
-        while(true) {
-            hasTheLineEnded(peek(0));
-
-            if(peek(1) == '\x00') {
-                m_errorLength = 2;
-                error("Unexpected end of file while parsing multi line doc comment");
-                return std::nullopt;
-            }
-
-            if(peek(0) == '*' && peek(1) == '/') {
-                m_cursor += 2;
-                break;
-            }
-
-            result += m_sourceCode[m_cursor++];
-        }
-
-        return makeTokenAt(Literal::makeComment(false, result), location, m_cursor - begin);
-    }
-
-    std::optional<Token> Lexer::parseOperator() {
-        auto location = this->location();
-        const auto begin = m_cursor;
-        const auto operators = Token::Operators();
-        std::optional<Token> lastMatch = std::nullopt;
-
-        for (int i = 1; i <= Operator::maxOperatorLength; ++i) {
-            const auto view = std::string_view { &m_sourceCode[begin], static_cast<size_t>(i) };
-            if (auto operatorToken = operators.find(view); operatorToken != operators.end()) {
-                m_cursor++;
-                lastMatch = operatorToken->second;
-            }
-        }
-
-        return lastMatch ? makeTokenAt(lastMatch.value(), location, m_cursor - begin) : lastMatch;
-    }
-
-    std::optional<Token> Lexer::parseSeparator() {
-        auto location = this->location();
-        const auto begin = m_cursor;
-
-        if (const auto separatorToken = Token::Separators().find(m_sourceCode[m_cursor]);
-            separatorToken != Token::Separators().end()) {
-            m_cursor++;
-            return makeTokenAt(separatorToken->second, location, m_cursor - begin);
-            }
-
-        return std::nullopt;
-    }
-
-    std::optional<Token> Lexer::parseKeyword(const std::string_view &identifier) {
-        const auto keywords = Token::Keywords();
-        if (const auto keywordToken = keywords.find(identifier); keywordToken != keywords.end()) {
-            return makeToken(keywordToken->second, identifier.length());
-        }
-        return std::nullopt;
-    }
-
-    std::optional<Token> Lexer::parseType(const std::string_view &identifier) {
-        auto types = Token::Types();
-        if (const auto typeToken = types.find(identifier); typeToken != types.end()) {
-            return makeToken(typeToken->second, identifier.length());
-        }
-        return std::nullopt;
-    }
-
-    std::optional<Token> Lexer::parseNamedOperator(const std::string_view &identifier) {
-        auto operators = Token::Operators();
-        if (const auto operatorToken = operators.find(identifier); operatorToken != operators.end()) {
-            return makeToken(operatorToken->second, identifier.length());
-        }
-        return std::nullopt;
-    }
-
-    std::optional<Token> Lexer::parseConstant(const std::string_view &identifier) {
-        if (const auto constantToken = constants.find(identifier); constantToken != constants.end()) {
-            return makeToken(Literal::makeNumeric(constantToken->second), identifier.length());
-        }
-        return std::nullopt;
-    }
-
-    Token Lexer::makeToken(const Token &token, const size_t length) {
-        auto location = this->location();
-        location.length = length;
-        return { token.type, token.value, location };
-    }
-
-    Token Lexer::makeTokenAt(const Token &token, Location& location, const size_t length) {
-        location.length = length;
-        return { token.type, token.value, location };
-    }
-
-    void Lexer::addToken(const Token &token) {
-        m_tokens.emplace_back(token);
-    }
-
-    hlp::CompileResult<std::vector<Token>> Lexer::lex(const api::Source *source) {
-        this->m_sourceCode = source->content;
-        this->m_source = source;
-
-        this->reset();
-
-        const size_t end = this->m_sourceCode.size();
-
-        while (this->m_cursor < end) {
-            const char& c = this->m_sourceCode[this->m_cursor];
-
-            if (c == '\x00') {
-                m_longestLineLength = std::max(m_longestLineLength, m_cursor - m_lineBegin);
-                break; // end of string
-            }
-
-            if (std::isblank(c) || std::isspace(c)) {
-                hasTheLineEnded(c);
-                m_cursor++;
-                continue;
-            }
-
-            if(isIdentifierCharacter(c) && !std::isdigit(c)) {
-                size_t length = 0;
-                while (isIdentifierCharacter(peek(length))) {
-                    length++;
-                }
-
-                auto identifier = std::string_view { &m_sourceCode[m_cursor], length };
-
-                // process keywords, named operators and types
-                if (processToken(&Lexer::parseKeyword, identifier) ||
-                    processToken(&Lexer::parseNamedOperator, identifier) ||
-                    processToken(&Lexer::parseType, identifier) ||
-                    processToken(&Lexer::parseConstant, identifier)) {
-                    continue;
-                    }
-
-                // not a predefined token, so it must be an identifier
-                addToken(makeToken(Literal::makeIdentifier(std::string(identifier)), length));
-                this->m_cursor += length;
-
-                continue;
-            }
-
-            if(std::isdigit(c)) {
-                auto literal = &m_sourceCode[m_cursor];
-                size_t size = getIntegerLiteralLength(literal);
-
-                const auto integer = parseIntegerLiteral({ literal, size });
-
-                if(integer.has_value()) {
-                    addToken(makeToken(Literal::makeNumeric(integer.value()), size));
-                    this->m_cursor += size;
-                    continue;
-                }
-
-                this->m_cursor += size;
-                continue;
-            }
-
-            // comment cases
-            if(c == '/') {
-                const char category = peek(1);
-                char type = peek(2);
-                if(category == '/') {
-                    if(type == '/') {
-                        const auto token = parseOneLineDocComment();
-                        if(token.has_value()) {
-                            addToken(token.value());
-                        }
-                    } else {
-                        const auto token = parseOneLineComment();
-                        if(token.has_value()) {
-                            addToken(token.value());
-                        }
-                    }
-                    continue;
-                }
-                if(category == '*') {
-                    if (type != '!' && (type != '*' || peek(3) == '/' )) {
-                        const auto token = parseMultiLineComment();
-                        if(token.has_value())
-                            addToken(token.value());
-                        continue;
-                    }
-                    const auto token = parseMultiLineDocComment();
-                    if(token.has_value()) {
-                        addToken(token.value());
-                    }
-                    continue;
-                }
-            }
-
-            const auto operatorToken = parseOperator();
-            if (operatorToken.has_value()) {
-                addToken(operatorToken.value());
-                continue;
-            }
-
-            const auto separatorToken = parseSeparator();
-            if (separatorToken.has_value()) {
-                addToken(separatorToken.value());
-                continue;
-            }
-
-            if (c == '#' && (m_tokens.empty() ||  m_tokens.back().location.line < m_line)) {
-                size_t length = 1;
-                u32 line = m_line;
-                while (isIdentifierCharacter(peek(length)))
-                    length++;
-                auto directiveName = std::string_view{&m_sourceCode[m_cursor], length};
-
-                if (processToken(&Lexer::parseDirectiveName, directiveName)) {
-                    Token::Directive directive = get<Token::Directive>(m_tokens.back().value);
-                    if (m_line != line || directive == Token::Directive::Define || directive == Token::Directive::Undef ||
-                         peek(0) == 0  || directive == Token::Directive::IfDef  || directive == Token::Directive::IfNDef ||
-                         directive == Token::Directive::EndIf)
-                        continue;
-                    if (hasTheLineEnded(peek(0))) {
-                        m_cursor++;
-                        continue;
-                    }
-                    auto directiveValue = parseDirectiveValue();
-                    if (directiveValue.has_value()) {
-                        addToken(directiveValue.value());
-                        if (m_line != line || peek(0) == 0)
-                            continue;
-                        if (hasTheLineEnded(peek(0))) {
-                            m_cursor++;
-                            continue;
-                        }
-                        directiveValue = parseDirectiveArgument();
-                        if (directiveValue.has_value()) {
-                            addToken(directiveValue.value());
-                        }
-                    }
-                    continue;
-                }
-            }
-
-            // literals
-            if (c == '"') {
-                const auto string = parseStringLiteral();
-
-                if (string.has_value()) {
-                    addToken(string.value());
-                    continue;
-                }
-            } else if(c == '\'') {
-                auto location = this->location();
-                const auto begin = m_cursor;
-                m_cursor++; // skip opening '
-                const auto character = parseCharacter();
-
-                if (character.has_value()) {
-                    if(m_sourceCode[m_cursor] != '\'') {
-                        m_errorLength = 1;
-                        error("Expected closing '");
-                        continue;
-                    }
-
-                    m_cursor++; // skip closing '
-
-                    addToken(makeTokenAt(Literal::makeNumeric(character.value()), location, m_cursor - begin));
-                    continue;
-                }
-            } else {
-                m_errorLength = 1;
-                error("Unexpected character: {}", c);
-                m_cursor++;
-
-                break;
-            }
-
-            m_cursor++;
-        }
-        m_longestLineLength = std::max(m_longestLineLength, m_cursor - m_lineBegin);
-        addToken(makeToken(Separator::EndOfProgram, 0));
+        const auto &eop = tkn::Separator::EndOfProgram;
+        m_tokens.emplace_back(eop.type, eop.value, location());
 
         return { m_tokens, collectErrors() };
     }
 
-    void Lexer::reset() {
-        this->m_cursor = 0;
-        this->m_line = 1;
-        this->m_lineBegin = 0;
-        this->m_longestLineLength = 0;
-        this->m_tokens.clear();
-    }
+} // namespace pl::core
 
-
-    inline char Lexer::peek(const size_t p) const {
-        return m_cursor + p < m_sourceCode.size() ? m_sourceCode[m_cursor + p] : '\0';
-    }
-
-    bool Lexer::processToken(auto parserFunction, const std::string_view& identifier) {
-        const auto token = (this->*parserFunction)(identifier);
-        if (token.has_value()) {
-            m_tokens.emplace_back(token.value());
-            m_cursor += identifier.size();
-            return true;
-        }
-        return false;
-    }
-
-    Location Lexer::location() {
-        u32 column = m_cursor - m_lineBegin;
-        // There is no newline before the first line so add 1 to the column
-        if(m_line==1) {
-            column += 1;
-        }
-        return Location { m_source, m_line, column, m_errorLength };
-    }
-}

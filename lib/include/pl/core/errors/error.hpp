@@ -131,33 +131,27 @@ namespace pl::core::err {
         std::vector<Location> m_trace;
     };
 
-    class ErrorCollector {
+    class ErrorCollectorExplicitLocation
+    {
     public:
-
-        virtual ~ErrorCollector() = default;
-
-        virtual Location location() = 0;
+        virtual ~ErrorCollectorExplicitLocation() = default;
 
         template <typename... Args>
-        void error(const fmt::format_string<Args...>& fmt, Args&&... args) {
-            this->m_errors.emplace_back(fmt::format(fmt, std::forward<Args>(args)...), location());
+        void error(const Location &location, const fmt::format_string<Args...> &fmt, Args&&... args) {
+            this->m_errors.emplace_back(fmt::format(fmt, std::forward<Args>(args)...), location);
         }
 
-        void error(const std::string &message) {
-            this->m_errors.emplace_back(message, location());
-        }
-
-        void errorDesc(const std::string &message, const std::string &description) {
-            this->m_errors.emplace_back(message, description, location());
+        void errorDesc(const Location &location, const std::string &message, const std::string &description) {
+            this->m_errors.emplace_back(message, description, location);
         }
 
         template<typename... Args>
-        void errorDesc(const fmt::format_string<Args...>& message, const std::string &description, Args&&... args) {
-            this->m_errors.emplace_back(fmt::format(message, std::forward<Args>(args)...), description, location());
+        void errorDesc(const Location &location, const fmt::format_string<Args...>& message, const std::string &description, Args&&... args) {
+            this->m_errors.emplace_back(fmt::format(message, std::forward<Args>(args)...), description, location);
         }
 
-        void error(CompileError& error) {
-            error.getTrace().push_back(location());
+        void error(const Location &location, CompileError& error) {
+            error.getTrace().push_back(location);
             this->m_errors.push_back(std::move(error));
         }
 
@@ -189,8 +183,39 @@ namespace pl::core::err {
         void clear() {
             this->m_errors.clear();
         }
+
     private:
         std::vector<CompileError> m_errors;
+    };
+
+    class ErrorCollector : public ErrorCollectorExplicitLocation {
+    public:
+
+        virtual ~ErrorCollector() = default;
+
+        virtual Location location() = 0;
+
+        template <typename... Args>
+        void error(const fmt::format_string<Args...> &fmt, Args&&... args) {
+            this->ErrorCollectorExplicitLocation::error(location(), fmt, std::forward<Args>(args)...);
+        }
+
+        void error(const std::string &message) {
+            this->errorAt(location(), message);
+        }
+    
+        void errorDesc(const std::string &message, const std::string &description) {
+            this->ErrorCollectorExplicitLocation::errorDesc(location(), message, description);
+        }
+
+        template<typename... Args>
+        void errorDesc(const fmt::format_string<Args...>& message, const std::string &description, Args&&... args) {
+            this->ErrorCollectorExplicitLocation::errorDesc(location(), message, description, std::forward<Args>(args)...);
+        }
+
+        void error(CompileError& error) {
+            this->ErrorCollectorExplicitLocation::error(location(), error);
+        }
     };
 
 }
