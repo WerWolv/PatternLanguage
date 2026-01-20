@@ -24,7 +24,14 @@
 
 namespace pl::core::ast {
 
-    ASTNodeRValue::ASTNodeRValue(Path &&path) : m_path(std::move(path)) { }
+    ASTNodeRValue::ASTNodeRValue(Path &&path) : m_path(std::move(path)) {
+        for (auto &part : m_path) {
+            if (std::holds_alternative<std::unique_ptr<ASTNode>>(part)) {
+                m_canCache = false;
+                return;
+            }
+        }
+    }
 
     ASTNodeRValue::ASTNodeRValue(const ASTNodeRValue &other) : ASTNode(other) {
         for (auto &part : other.m_path) {
@@ -33,6 +40,7 @@ namespace pl::core::ast {
             else if (auto nodePart = std::get_if<std::unique_ptr<ASTNode>>(&part); nodePart != nullptr)
                 this->m_path.emplace_back((*nodePart)->clone());
         }
+        this->m_canCache = other.m_canCache;
     }
 
     static void readVariable(Evaluator *evaluator, auto &value, ptrn::Pattern *variablePattern) {
@@ -52,102 +60,109 @@ namespace pl::core::ast {
     [[nodiscard]] std::unique_ptr<ASTNode> ASTNodeRValue::evaluate(Evaluator *evaluator) const {
         [[maybe_unused]] auto context = evaluator->updateRuntime(this);
 
-        if (this->getPath().size() == 1) {
-            if (auto name = std::get_if<std::string>(&this->getPath().front()); name != nullptr) {
-                if (*name == "$") return std::make_unique<ASTNodeLiteral>(u128(evaluator->getReadOffset()));
-                else if (*name == "null") return std::make_unique<ASTNodeLiteral>(
-                    std::make_shared<ptrn::PatternPadding>(evaluator, 0, 0, getLocation().line));
+        std::shared_ptr<ptrn::Pattern> pattern;
+        if (!m_canCache || m_evaluatedPattern == nullptr) {
+            if (this->getPath().size() == 1) {
+                if (auto name = std::get_if<std::string>(&this->getPath().front()); name != nullptr) {
+                    if (*name == "$") return std::make_unique<ASTNodeLiteral>(u128(evaluator->getReadOffset()));
+                    else if (*name == "null") return std::make_unique<ASTNodeLiteral>(
+                        std::make_shared<ptrn::PatternPadding>(evaluator, 0, 0, getLocation().line));
 
-                auto parameterPack = evaluator->getScope(0).parameterPack;
-                if (parameterPack && *name == parameterPack->name)
-                    return std::make_unique<ASTNodeParameterPack>(std::move(parameterPack->values));
-            }
-        } else if (this->getPath().size() == 2) {
-            if (auto name = std::get_if<std::string>(this->getPath().data()); name != nullptr) {
-                if (*name == "$") {
-                    if (auto arraySegment = std::get_if<std::unique_ptr<ASTNode>>(&this->getPath()[1]); arraySegment != nullptr) {
-                        auto offsetNode = (*arraySegment)->evaluate(evaluator);
-                        auto offsetLiteral = dynamic_cast<ASTNodeLiteral*>(offsetNode.get());
-                        if (offsetLiteral != nullptr) {
-                            auto offset = u64(offsetLiteral->getValue().toUnsigned());
+                    auto parameterPack = evaluator->getScope(0).parameterPack;
+                    if (parameterPack && *name == parameterPack->name)
+                        return std::make_unique<ASTNodeParameterPack>(std::move(parameterPack->values));
+                }
+            } else if (this->getPath().size() == 2) {
+                if (auto name = std::get_if<std::string>(this->getPath().data()); name != nullptr) {
+                    if (*name == "$") {
+                        if (auto arraySegment = std::get_if<std::unique_ptr<ASTNode>>(&this->getPath()[1]); arraySegment != nullptr) {
+                            auto offsetNode = (*arraySegment)->evaluate(evaluator);
+                            auto offsetLiteral = dynamic_cast<ASTNodeLiteral*>(offsetNode.get());
+                            if (offsetLiteral != nullptr) {
+                                auto offset = u64(offsetLiteral->getValue().toUnsigned());
 
-                            u8 byte = 0x00;
-                            evaluator->readData(offset, &byte, 1, ptrn::Pattern::MainSectionId);
-                            return std::make_unique<ASTNodeLiteral>(u128(byte));
+                                u8 byte = 0x00;
+                                evaluator->readData(offset, &byte, 1, ptrn::Pattern::MainSectionId);
+                                return std::make_unique<ASTNodeLiteral>(u128(byte));
+                            }
                         }
                     }
                 }
             }
+
+            {
+                std::vector<std::shared_ptr<ptrn::Pattern>> referencedPatterns;
+                this->createPatterns(evaluator, referencedPatterns);
+
+                pattern = std::move(referencedPatterns.front());
+            }
+
+            if (m_canCache)
+                m_evaluatedPattern = pattern;
+        } else {
+            pattern = m_evaluatedPattern;
         }
 
-        std::shared_ptr<ptrn::Pattern> pattern;
-        {
-            std::vector<std::shared_ptr<ptrn::Pattern>> referencedPatterns;
-            this->createPatterns(evaluator, referencedPatterns);
-
-            pattern = std::move(referencedPatterns.front());
-        }
-
-        Token::Literal literal;
+        std::unique_ptr<ASTNodeLiteral> literal;
         if (dynamic_cast<ptrn::PatternUnsigned *>(pattern.get()) != nullptr) {
             u128 value = 0;
             readVariable(evaluator, value, pattern.get());
-            literal = value;
+            literal = std::make_unique<ASTNodeLiteral>(value);
         } else if (dynamic_cast<ptrn::PatternSigned *>(pattern.get()) != nullptr) {
             i128 value = 0;
             readVariable(evaluator, value, pattern.get());
             value   = hlp::signExtend(pattern->getSize() * 8, value);
-            literal = value;
+            literal = std::make_unique<ASTNodeLiteral>(value);
         } else if (dynamic_cast<ptrn::PatternFloat *>(pattern.get()) != nullptr) {
             if (pattern->getSize() == sizeof(u16)) {
                 u16 value = 0;
                 readVariable(evaluator, value, pattern.get());
-                literal = double(hlp::float16ToFloat32(value));
+                literal = std::make_unique<ASTNodeLiteral>(double(hlp::float16ToFloat32(value)));
             } else if (pattern->getSize() == sizeof(float)) {
                 float value = 0;
                 readVariable(evaluator, value, pattern.get());
-                literal = double(value);
+                literal = std::make_unique<ASTNodeLiteral>(double(value));
             } else if (pattern->getSize() == sizeof(double)) {
                 double value = 0;
                 readVariable(evaluator, value, pattern.get());
-                literal = value;
+                literal = std::make_unique<ASTNodeLiteral>(value);
             } else
                 err::E0001.throwError("Invalid floating point type.");
         } else if (dynamic_cast<ptrn::PatternCharacter *>(pattern.get()) != nullptr) {
             char value = 0;
             readVariable(evaluator, value, pattern.get());
-            literal = value;
+            literal = std::make_unique<ASTNodeLiteral>(value);
         } else if (dynamic_cast<ptrn::PatternBoolean *>(pattern.get()) != nullptr) {
             bool value = false;
             readVariable(evaluator, value, pattern.get());
-            literal = value;
+            literal = std::make_unique<ASTNodeLiteral>(value);
         } else if (dynamic_cast<ptrn::PatternString *>(pattern.get()) != nullptr) {
             std::string value;
             readVariable(evaluator, value, pattern.get());
-            literal = value;
+            literal = std::make_unique<ASTNodeLiteral>(value);
         } else if (auto bitfieldFieldPatternBoolean = dynamic_cast<ptrn::PatternBitfieldFieldBoolean *>(pattern.get()); bitfieldFieldPatternBoolean != nullptr) {
-            literal = bool(bitfieldFieldPatternBoolean->readValue());
+            literal = std::make_unique<ASTNodeLiteral>(bool(bitfieldFieldPatternBoolean->readValue()));
         } else if (auto bitfieldFieldPatternSigned = dynamic_cast<ptrn::PatternBitfieldFieldSigned *>(pattern.get()); bitfieldFieldPatternSigned != nullptr) {
-            literal = hlp::signExtend(bitfieldFieldPatternSigned->getBitSize(), i128(bitfieldFieldPatternSigned->readValue()));
+            literal = std::make_unique<ASTNodeLiteral>(hlp::signExtend(bitfieldFieldPatternSigned->getBitSize(), i128(bitfieldFieldPatternSigned->readValue())));
         } else if (auto bitfieldFieldPatternEnum = dynamic_cast<ptrn::PatternBitfieldFieldEnum *>(pattern.get()); bitfieldFieldPatternEnum != nullptr) {
-            literal = pattern;
+            literal = std::make_unique<ASTNodeLiteral>(pattern);
         } else if (auto bitfieldFieldPattern = dynamic_cast<ptrn::PatternBitfieldField *>(pattern.get()); bitfieldFieldPattern != nullptr) {
-            literal = bitfieldFieldPattern->readValue();
+            literal = std::make_unique<ASTNodeLiteral>(bitfieldFieldPattern->readValue());
         } else {
-            literal = pattern;
+            literal = std::make_unique<ASTNodeLiteral>(pattern);
         }
 
         if (auto transformFunc = evaluator->findFunction(pattern->getTransformFunction()); transformFunc.has_value()) {
             auto oldPatternName = pattern->getVariableName();
-            auto result = transformFunc->func(evaluator, { std::move(literal) });
+            auto result = transformFunc->func(evaluator, { literal->getValue() });
             pattern->setVariableName(oldPatternName);
 
             if (!result.has_value())
                 err::E0009.throwError("Transform function did not return a value.", "Try adding a 'return <value>;' statement in all code paths.", this->getLocation());
-            literal = std::move(result.value());
+            literal = std::make_unique<ASTNodeLiteral>(std::move(result.value()));
         }
 
-        return std::unique_ptr<ASTNode>(new ASTNodeLiteral(std::move(literal)));
+        return literal;
     }
 
     void ASTNodeRValue::createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const {
