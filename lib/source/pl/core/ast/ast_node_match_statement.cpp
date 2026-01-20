@@ -9,7 +9,7 @@
 namespace pl::core::ast {
 
     ASTNodeMatchStatement::ASTNodeMatchStatement(std::vector<MatchCase> cases, std::optional<MatchCase> defaultCase)
-    : ASTNode(), m_cases(std::move(cases)), m_defaultCase(std::move(defaultCase)) { }
+    : m_cases(std::move(cases)), m_defaultCase(std::move(defaultCase)) { }
 
     ASTNodeMatchStatement::ASTNodeMatchStatement(const ASTNodeMatchStatement &other) : ASTNode(other) {
         for (auto &matchCase : other.m_cases)
