@@ -717,6 +717,10 @@ namespace pl::ptrn {
                 } else if (auto *bitfield = dynamic_cast<PatternBitfield *>(pattern.get()); bitfield != nullptr) {
                     valueString += fmt::format("{} = {} | ", bitfield->getVariableName(), bitfield->formatDisplayValue());
                 }
+
+                if (valueString.size() - 3 > 64) {
+                    break;
+                }
             }
 
             if (valueString.size() >= 3) {
