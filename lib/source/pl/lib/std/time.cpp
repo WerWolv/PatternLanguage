@@ -11,20 +11,28 @@
 
 namespace pl::lib::libstd::time {
 
-    static u128 packTMValue(const std::tm &tm) {
-        return
+    static u128 packTMValue(const std::tm &tm, pl::PatternLanguage &runtime) {
+        auto endian = runtime.getInternals().evaluator->getDefaultEndian();
+        std::tm tmCopy = tm;
+        tmCopy.tm_year = hlp::changeEndianess(tm.tm_year, 2, endian);
+        tmCopy.tm_yday = hlp::changeEndianess(tm.tm_yday, 2, endian);
+        u128 result =
             (u128(tm.tm_sec)   << 0)  |
             (u128(tm.tm_min)   << 8)  |
             (u128(tm.tm_hour)  << 16) |
             (u128(tm.tm_mday)  << 24) |
             (u128(tm.tm_mon)   << 32) |
-            (u128(tm.tm_year)  << 40) |
+            (u128(tmCopy.tm_year)  << 40) |
             (u128(tm.tm_wday)  << 56) |
-            (u128(tm.tm_yday)  << 64) |
+            (u128(tmCopy.tm_yday)  << 64) |
             (u128(tm.tm_isdst) << 80);
+
+        return hlp::changeEndianess(result, 16, endian);
     }
 
-    static tm unpackTMValue(u128 value) {
+    static tm unpackTMValue(u128 value, pl::PatternLanguage &runtime) {
+        auto endian = runtime.getInternals().evaluator->getDefaultEndian();
+        value = hlp::changeEndianess(value, 16, endian);
         tm tm = { };
         tm.tm_sec   = (int)(value >> 0)  & 0xFF;
         tm.tm_min   = (int)(value >> 8)  & 0xFF;
@@ -32,8 +40,10 @@ namespace pl::lib::libstd::time {
         tm.tm_mday  = (int)(value >> 24) & 0xFF;
         tm.tm_mon   = (int)(value >> 32) & 0xFF;
         tm.tm_year  = (int)(value >> 40) & 0xFFFF;
+        tm.tm_year = hlp::changeEndianess(tm.tm_year, 2, endian);
         tm.tm_wday  = (int)(value >> 56) & 0xFF;
         tm.tm_yday  = (int)(value >> 64) & 0xFFFF;
+        tm.tm_yday = hlp::changeEndianess(tm.tm_yday, 2, endian);
         tm.tm_isdst = (int)(value >> 80) & 0xFF;
 
         return tm;
@@ -53,48 +63,48 @@ namespace pl::lib::libstd::time {
             });
 
             /* to_local(time) */
-            runtime.addFunction(nsStdTime, "to_local", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
+            runtime.addFunction(nsStdTime, "to_local", FunctionParameterCount::exactly(1), [&runtime](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 auto time = time_t(params[0].toUnsigned());
 
                 try {
                     auto localTime = std::localtime(&time);
                     if (localTime == nullptr) return u128(0);
 
-                    return { packTMValue(*localTime) };
+                    return { packTMValue(*localTime, runtime) };
                 } catch (const fmt::format_error&) {
                     return u128(0);
                 }
             });
 
             /* to_utc(time) */
-            runtime.addFunction(nsStdTime, "to_utc", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
+            runtime.addFunction(nsStdTime, "to_utc", FunctionParameterCount::exactly(1), [&runtime](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 auto time = time_t(params[0].toUnsigned());
 
                 try {
                     auto gmTime = std::gmtime(&time);
                     if (gmTime == nullptr) return u128(0);
 
-                    return { packTMValue(*gmTime) };
+                    return { packTMValue(*gmTime, runtime) };
                 } catch (const fmt::format_error&) {
                     return u128(0);
                 }
             });
 
             /* to_epoch(structured_time) */
-            runtime.addFunction(nsStdTime, "to_epoch", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
+            runtime.addFunction(nsStdTime, "to_epoch", FunctionParameterCount::exactly(1), [&runtime](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 u128 structuredTime = params[0].toUnsigned();
 
-                tm time = unpackTMValue(structuredTime);
+                tm time = unpackTMValue(structuredTime, runtime);
 
                 return { u128(std::mktime(&time)) };
             });
 
             /* format(format_string, structured_time) */
-            runtime.addFunction(nsStdTime, "format", FunctionParameterCount::exactly(2), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
+            runtime.addFunction(nsStdTime, "format", FunctionParameterCount::exactly(2), [&runtime](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 auto formatString = params[0].toString(false);
                 u128 structuredTime = params[1].toUnsigned();
 
-                auto time = unpackTMValue(structuredTime);
+                auto time = unpackTMValue(structuredTime, runtime);
 
                 if (time.tm_sec  < 0 || time.tm_sec  > 61 ||
                     time.tm_min  < 0 || time.tm_min  > 59 ||
