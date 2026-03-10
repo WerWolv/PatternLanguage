@@ -42,7 +42,6 @@ set(AVAILABLE_TESTS
 add_executable(pattern_language_tests
     source/main.cpp
     source/tests.cpp
-        include/test_patterns/test_pattern_import.hpp
 )
 
 
@@ -63,7 +62,7 @@ add_custom_command(TARGET pattern_language_tests
 
 add_custom_command(TARGET pattern_language_tests
         POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}//files/export/yaml.yml" ${CMAKE_BINARY_DIR}/bin/files/export/yaml.yml)
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/files/export/yaml.yml" ${CMAKE_BINARY_DIR}/bin/files/export/yaml.yml)
 
 foreach (test IN LISTS AVAILABLE_TESTS)
     add_test(NAME "PatternLanguage/${test}" COMMAND pattern_language_tests "${test}" WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin)

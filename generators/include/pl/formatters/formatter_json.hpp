@@ -64,33 +64,82 @@ namespace pl::gen::fmt {
             if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
             if (pattern->getVisibility() == ptrn::Visibility::TreeHidden) return;
 
-            const auto string = pattern->toString();
+            const auto rawBytes = pattern->toString();
 
             std::string result;
-            const auto decodedString = wolv::util::utf8ToUtf32(string, true).value();
-            for (const auto &ch : decodedString) {
-                switch (ch) {
-                    case U'"':  result += "\\\""; break;
-                    case U'\\': result += "\\\\"; break;
-                    case U'\b': result += "\\b";  break;
-                    case U'\f': result += "\\f";  break;
-                    case U'\n': result += "\\n";  break;
-                    case U'\r': result += "\\r";  break;
-                    case U'\t': result += "\\t";  break;
-                    default:
-                        if (ch < 0x20) {
-                            result += ::fmt::format("\\u{:04x}", static_cast<u32>(ch));
-                        } else if (ch <= 0xFFFF) {
-                            result += static_cast<char>(ch);
-                        } else {
-                            u32 code = static_cast<u32>(ch) - 0x10000;
-                            u16 highSurrogate = 0xD800 + ((code >> 10) & 0x3FF);
-                            u16 lowSurrogate = 0xDC00 + (code & 0x3FF);
-                            result += ::fmt::format("\\u{:04x}\\u{:04x}", highSurrogate, lowSurrogate);
-                        }
-                        break;
+            for (size_t i = 0; i < rawBytes.size(); ) {
+            const u8 ch = static_cast<u8>(rawBytes[i]);
+
+            // Determine UTF-8 sequence length
+            size_t seqLen = 0;
+            u32 codepoint = 0;
+            if (ch < 0x80) {
+                seqLen = 1;
+                codepoint = ch;
+            } else if ((ch & 0xE0) == 0xC0 && ch >= 0xC2) {
+                seqLen = 2;
+                codepoint = ch & 0x1F;
+            } else if ((ch & 0xF0) == 0xE0) {
+                seqLen = 3;
+                codepoint = ch & 0x0F;
+            } else if ((ch & 0xF8) == 0xF0 && ch <= 0xF4) {
+                seqLen = 4;
+                codepoint = ch & 0x07;
+            }
+
+            // Validate continuation bytes
+            bool valid = seqLen > 0;
+            for (size_t j = 1; j < seqLen && valid; ++j) {
+                const u8 cb = static_cast<u8>(rawBytes[i + j]);
+                if (i + j >= rawBytes.size() || (cb & 0xC0) != 0x80) {
+                    valid = false;
+                } else {
+                    codepoint = (codepoint << 6) | (cb & 0x3F);
                 }
             }
+
+            // Reject overlong sequences and surrogates
+            if (valid) {
+                if (seqLen == 2 && codepoint < 0x80)            valid = false;
+                if (seqLen == 3 && codepoint < 0x800)           valid = false;
+                if (seqLen == 4 && codepoint < 0x10000)         valid = false;
+                if (codepoint >= 0xD800 && codepoint <= 0xDFFF) valid = false;
+                if (codepoint > 0x10FFFF)                       valid = false;
+            }
+
+            if (!valid) {
+                // Escape the single invalid byte
+                result += ::fmt::format("\\u{:04x}", static_cast<u32>(ch));
+                i += 1;
+                continue;
+            }
+
+            // Emit the codepoint
+            switch (codepoint) {
+                case U'"':  result += "\\\""; break;
+                case U'\\': result += "\\\\"; break;
+                case U'\b': result += "\\b";  break;
+                case U'\f': result += "\\f";  break;
+                case U'\n': result += "\\n";  break;
+                case U'\r': result += "\\r";  break;
+                case U'\t': result += "\\t";  break;
+                default:
+                    if (codepoint < 0x20 || codepoint == 0x7F) {
+                        result += ::fmt::format("\\u{:04x}", codepoint);
+                    } else if (codepoint <= 0xFFFF) {
+                        // Append the original UTF-8 bytes directly
+                        for (size_t j = 0; j < seqLen; ++j)
+                            result += rawBytes[i + j];
+                    } else {
+                        u32 code = codepoint - 0x10000;
+                        u16 highSurrogate = 0xD800 + ((code >> 10) & 0x3FF);
+                        u16 lowSurrogate  = 0xDC00 + (code & 0x3FF);
+                        result += ::fmt::format("\\u{:04x}\\u{:04x}", highSurrogate, lowSurrogate);
+                    }
+                    break;
+            }
+            i += seqLen;
+        }
 
             addLine(pattern->getVariableName(), ::fmt::format("\"{}\",", result));
         }
