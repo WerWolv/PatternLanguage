@@ -970,6 +970,9 @@ namespace pl::core {
             statement = parseFunctionVariableDecl();
         } else if (sequence(tkn::Keyword::Const)) {
             statement = parseFunctionVariableDecl(true);
+        } else if (m_curr[0].type == Token::Type::Keyword) {
+            errorHere("Invalid {} found in function.", getFormattedToken(0));
+            return nullptr;
         } else {
             errorHere("Invalid function statement.");
             next();
@@ -1930,7 +1933,10 @@ namespace pl::core {
             return parseTryCatchStatement([this] { return parseMember(); });
         else if (oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue))
             member = parseFunctionControlFlowStatement();
-        else {
+        else if (m_curr[0].type == Token::Type::Keyword) {
+            errorHere("Invalid {} found in struct.", getFormattedToken(0));
+            return nullptr;
+        } else {
             errorHere("Invalid struct member definition.");
             next();
             return nullptr;
