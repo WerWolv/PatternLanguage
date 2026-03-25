@@ -711,7 +711,9 @@ namespace pl::core {
                     auto section = value->getSection();
                     if (section != ptrn::Pattern::InstantiationSectionId) {
                         if (heapSection || patternLocalSection) {
-                            u64 baseAddress = section ? 0 : getDataBaseAddress();
+                            u64 baseAddress = 0;
+                            if (section == ptrn::Pattern::MainSectionId)
+                                baseAddress = getDataBaseAddress();
                             storage.resize(((value->getOffset() - baseAddress) & 0xFFFF'FFFF) + value->getSize());
                             this->readData(value->getOffset(), storage.data(), value->getSize(), section);
                         } else if (storage.size() < pattern->getOffset() + pattern->getSize()) {
