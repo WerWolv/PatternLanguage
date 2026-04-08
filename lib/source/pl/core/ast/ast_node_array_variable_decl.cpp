@@ -334,11 +334,13 @@ namespace pl::core::ast {
                         addEntries(std::move(patterns));
 
                     auto ctrlFlow = evaluator->getCurrentControlFlowStatement();
-                    evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
-                    if (ctrlFlow == ControlFlowStatement::Break || ctrlFlow == ControlFlowStatement::Return)
+                    if ( ctrlFlow == ControlFlowStatement::Return) {
                         break;
-                    else if (ctrlFlow == ControlFlowStatement::Continue) {
-
+                    } else if (ctrlFlow == ControlFlowStatement::Break) {
+                        evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
+                        break;
+                    } else if (ctrlFlow == ControlFlowStatement::Continue) {
+                        evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
                         discardEntries(patternCount);
                         continue;
                     }
@@ -366,10 +368,13 @@ namespace pl::core::ast {
 
 
                     auto ctrlFlow = evaluator->getCurrentControlFlowStatement();
-                    evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
-                    if (ctrlFlow == ControlFlowStatement::Break || ctrlFlow == ControlFlowStatement::Return)
+                    if ( ctrlFlow == ControlFlowStatement::Return) {
                         break;
-                    else if (ctrlFlow == ControlFlowStatement::Continue) {
+                    } else if (ctrlFlow == ControlFlowStatement::Break) {
+                        evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
+                        break;
+                    } else if (ctrlFlow == ControlFlowStatement::Continue) {
+                        evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
                         discardEntries(patternCount);
                         continue;
                     }
@@ -417,10 +422,13 @@ namespace pl::core::ast {
                 }
 
                 auto ctrlFlow = evaluator->getCurrentControlFlowStatement();
-                evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
-                if (ctrlFlow == ControlFlowStatement::Break || ctrlFlow == ControlFlowStatement::Return)
+                if ( ctrlFlow == ControlFlowStatement::Return) {
                     break;
-                else if (ctrlFlow == ControlFlowStatement::Continue) {
+                } else if (ctrlFlow == ControlFlowStatement::Break) {
+                    evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
+                    break;
+                } else if (ctrlFlow == ControlFlowStatement::Continue) {
+                    evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
                     discardEntries(1);
                     continue;
                 }
