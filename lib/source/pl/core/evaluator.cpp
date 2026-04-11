@@ -708,17 +708,13 @@ namespace pl::core {
                     }
 
                     auto &storage = getStorage();
-                    auto section = value->getSection();
-                    if (section != ptrn::Pattern::InstantiationSectionId) {
+                    if (value->getSection() != ptrn::Pattern::InstantiationSectionId) {
                         if (heapSection || patternLocalSection) {
-                            u64 baseAddress = 0;
-                            if (section == ptrn::Pattern::MainSectionId)
-                                baseAddress = getDataBaseAddress();
-                            storage.resize(((value->getOffset() - baseAddress) & 0xFFFF'FFFF) + value->getSize());
-                            this->readData(value->getOffset(), storage.data(), value->getSize(), section);
+                            storage.resize((pattern->getOffset() & 0xFFFF'FFFF) + value->getSize());
+                            this->readData(value->getOffset(), storage.data(), value->getSize(), value->getSection());
                         } else if (storage.size() < pattern->getOffset() + pattern->getSize()) {
                             storage.resize(pattern->getOffset() + pattern->getSize());
-                            this->readData(value->getOffset(), storage.data() + pattern->getOffset(), value->getSize(), section);
+                            this->readData(value->getOffset(), storage.data() + pattern->getOffset(), value->getSize(), value->getSection());
                         }
                     } else {
                         storage.resize(value->getSize());
