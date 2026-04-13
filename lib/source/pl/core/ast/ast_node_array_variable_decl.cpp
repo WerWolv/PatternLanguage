@@ -74,8 +74,6 @@ namespace pl::core::ast {
             u64 size = evaluator->getDataSize();
             u64 baseAddress = evaluator->getDataBaseAddress();
             u64 maxAddress = baseAddress + size;
-            if (size > 0)
-                maxAddress = maxAddress - 1;
             if (evaluator->getReadOffset() < baseAddress || evaluator->getReadOffset() > maxAddress)
                 err::E0005.throwError(fmt::format("Cannot place variable '{}' at out of bounds address 0x{:08X}", this->m_name, evaluator->getReadOffset()), { }, this->getLocation());
         }
