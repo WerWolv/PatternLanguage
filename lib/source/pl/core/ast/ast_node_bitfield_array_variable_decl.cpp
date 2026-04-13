@@ -149,13 +149,10 @@ namespace pl::core::ast {
             std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
             this->m_type->createPatterns(evaluator, patterns);
 
-            if (arrayPattern->getSection() == ptrn::Pattern::MainSectionId) {
-                u64 dataSize = evaluator->getDataSize();
-                u64 baseAddress = evaluator->getDataBaseAddress();
-                u64 maxAddress = baseAddress + dataSize;
-                if (evaluator->getReadOffset() > maxAddress)
+            if (arrayPattern->getSection() == ptrn::Pattern::MainSectionId)
+                if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize()))
                     err::E0004.throwError("Bitfield array expanded past end of the data.", fmt::format("Entry {} exceeded data by {} bytes.", dataIndex, evaluator->getReadOffset() - evaluator->getDataSize()), this->getLocation());
-            }
+
             auto ctrlFlow = evaluator->getCurrentControlFlowStatement();
             evaluator->setCurrentControlFlowStatement(ControlFlowStatement::None);
 
