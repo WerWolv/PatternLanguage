@@ -192,8 +192,6 @@ namespace pl::core::ast {
                         u64 size = evaluator->getDataSize();
                         u64 baseAddress = evaluator->getDataBaseAddress();
                         u64 maxAddress = baseAddress + size;
-                        if (size > 0)
-                            maxAddress = maxAddress - 1;
                         if (evaluator->getReadOffset() > maxAddress)
                             err::E0004.throwError("Array expanded past end of the data before termination condition was met.", {}, this->getLocation());
                     }
@@ -212,8 +210,6 @@ namespace pl::core::ast {
                     u64 dataSize = evaluator->getDataSize();
                     u64 baseAddress = evaluator->getDataBaseAddress();
                     u64 maxAddress = baseAddress + dataSize;
-                    if (dataSize > 0)
-                        maxAddress = maxAddress - 1;
                     if (evaluator->getReadOffset() > maxAddress)
                         err::E0004.throwError("Array expanded past end of the data before a null-entry was found.", "Try using a while-sized array instead to limit the size of the array.", this->getLocation());
                 }
@@ -264,8 +260,6 @@ namespace pl::core::ast {
             u64 size = evaluator->getDataSize();
             u64 baseAddress = evaluator->getDataBaseAddress();
             u64 maxAddress = baseAddress + size;
-            if (size > 0)
-                maxAddress = maxAddress - 1;
             if (evaluator->getReadOffset() > maxAddress)
                 err::E0004.throwError("Array expanded past end of the data.", {}, this->getLocation());
         }
@@ -351,8 +345,6 @@ namespace pl::core::ast {
                         u64 dataSize = evaluator->getDataSize();
                         u64 baseAddress = evaluator->getDataBaseAddress();
                         u64 maxAddress = baseAddress + dataSize;
-                        if (dataSize > 0)
-                            maxAddress = maxAddress - 1;
                         if (evaluator->getReadOffset() > maxAddress)
                             err::E0004.throwError("Array expanded past end of the data.", fmt::format("Entry {} exceeded data by {} bytes.", i, evaluator->getReadOffset() - evaluator->getDataSize()), this->getLocation());
                     }
@@ -389,8 +381,6 @@ namespace pl::core::ast {
                         u64 dataSize = evaluator->getDataSize();
                         u64 baseAddress = evaluator->getDataBaseAddress();
                         u64 maxAddress = baseAddress + dataSize;
-                        if (dataSize > 0)
-                            maxAddress = maxAddress - 1;
                         if (evaluator->getReadOffset() > maxAddress)
                             err::E0004.throwError("Array expanded past end of the data before termination condition was met.", {}, this->getLocation());
                     }
@@ -432,8 +422,6 @@ namespace pl::core::ast {
                         u64 dataSize = evaluator->getDataSize();
                         u64 baseAddress = evaluator->getDataBaseAddress();
                         u64 maxAddress = baseAddress + dataSize;
-                        if (dataSize > 0)
-                            maxAddress = maxAddress - 1;
                         if (evaluator->getReadOffset() > maxAddress)
                             err::E0004.throwError("Array expanded past end of the data before a null-entry was found.", "Try using a while-sized array instead to limit the size of the array.", this->getLocation());
                     }

@@ -153,8 +153,6 @@ namespace pl::core::ast {
                 u64 dataSize = evaluator->getDataSize();
                 u64 baseAddress = evaluator->getDataBaseAddress();
                 u64 maxAddress = baseAddress + dataSize;
-                if (dataSize > 0)
-                    maxAddress = maxAddress - 1;
                 if (evaluator->getReadOffset() > maxAddress)
                     err::E0004.throwError("Bitfield array expanded past end of the data.", fmt::format("Entry {} exceeded data by {} bytes.", dataIndex, evaluator->getReadOffset() - evaluator->getDataSize()), this->getLocation());
             }
