@@ -67,8 +67,15 @@ namespace pl::lib::libstd::time {
                 auto time = time_t(params[0].toUnsigned());
 
                 try {
+#ifdef _MSC_VER
+                    std::tm localTimeBuf{};
+                    if(localtime_s(&localTimeBuf, &time) != 0)
+                        return u128(0);
+                    auto localTime = &localTimeBuf;
+#else
                     auto localTime = std::localtime(&time);
                     if (localTime == nullptr) return u128(0);
+#endif // _MSC_VER
 
                     return { packTMValue(*localTime, runtime) };
                 } catch (const fmt::format_error&) {
@@ -81,8 +88,15 @@ namespace pl::lib::libstd::time {
                 auto time = time_t(params[0].toUnsigned());
 
                 try {
+#ifdef _MSC_VER
+                    std::tm gmTimeBuf{};
+                    if(gmtime_s(&gmTimeBuf, &time) != 0)
+                        return u128(0);
+                    auto gmTime = &gmTimeBuf;
+#else
                     auto gmTime = std::gmtime(&time);
                     if (gmTime == nullptr) return u128(0);
+#endif // _MSC_VER
 
                     return { packTMValue(*gmTime, runtime) };
                 } catch (const fmt::format_error&) {
