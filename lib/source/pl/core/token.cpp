@@ -5,7 +5,7 @@
 
 #include <pl/helpers/utils.hpp>
 #include <pl/helpers/concepts.hpp>
-#include <pl/helpers/variant_type_index.hpp>
+#include <wolv/utils/variant_type_index.hpp>
 #include <variant>
 
 namespace pl::core {
@@ -162,7 +162,7 @@ namespace pl::core {
                 }
             },
             []<typename TL, typename TR>(TL, TR) -> std::strong_ordering {
-                return hlp::VariantTypeIndex<TL, LiteralVariantType> <=> hlp::VariantTypeIndex<TR, LiteralVariantType>;
+                return wolv::util::VariantTypeIndex<TL, LiteralVariantType> <=> wolv::util::VariantTypeIndex<TR, LiteralVariantType>;
             }
         }, *this, other);
     }
@@ -456,5 +456,4 @@ namespace pl::core {
 
         return s_directives;
     }
-
 }
