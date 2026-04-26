@@ -380,6 +380,14 @@ namespace pl {
         this->m_aborted = true;
     }
 
+    const wolv::util::Locale& PatternLanguage::getLocale() const {
+        return m_locale;
+    }
+
+    void PatternLanguage::setLocale(const wolv::util::Locale &lc) {
+        m_locale = lc;
+    }
+
     void PatternLanguage::setIncludePaths(const std::vector<std::fs::path>& paths) {
         this->m_fileResolver.setIncludePaths(paths);
     }

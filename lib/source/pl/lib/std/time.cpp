@@ -4,12 +4,16 @@
 #include <pl/core/log_console.hpp>
 #include <pl/core/evaluator.hpp>
 #include <pl/patterns/pattern.hpp>
+#include <wolv/utils/date_time_format.hpp>
 
 #include <ctime>
 #include <fmt/format.h>
 #include <fmt/chrono.h>
 
 namespace pl::lib::libstd::time {
+
+    const std::string s_invalid         = "Invalid";
+    const std::string s_canNotFormat    = "Can not format";
 
     static u128 packTMValue(const std::tm &tm, pl::PatternLanguage &runtime) {
         auto endian = runtime.getInternals().evaluator->getDefaultEndian();
@@ -65,29 +69,21 @@ namespace pl::lib::libstd::time {
             /* to_local(time) */
             runtime.addFunction(nsStdTime, "to_local", FunctionParameterCount::exactly(1), [&runtime](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 auto time = time_t(params[0].toUnsigned());
+                auto localTime = std::localtime(&time);
 
-                try {
-                    auto localTime = std::localtime(&time);
-                    if (localTime == nullptr) return u128(0);
+                if (localTime == nullptr) return u128(0);
 
-                    return { packTMValue(*localTime, runtime) };
-                } catch (const fmt::format_error&) {
-                    return u128(0);
-                }
+                return { packTMValue(*localTime, runtime) };
             });
 
             /* to_utc(time) */
             runtime.addFunction(nsStdTime, "to_utc", FunctionParameterCount::exactly(1), [&runtime](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 auto time = time_t(params[0].toUnsigned());
+                auto gmTime = std::gmtime(&time);
 
-                try {
-                    auto gmTime = std::gmtime(&time);
-                    if (gmTime == nullptr) return u128(0);
+                if (gmTime == nullptr) return u128(0);
 
-                    return { packTMValue(*gmTime, runtime) };
-                } catch (const fmt::format_error&) {
-                    return u128(0);
-                }
+                return { packTMValue(*gmTime, runtime) };
             });
 
             /* to_epoch(structured_time) */
@@ -116,6 +112,94 @@ namespace pl::lib::libstd::time {
                     return std::string("Invalid");
 
                 return { fmt::format(fmt::runtime(fmt::format("{{:{}}}", formatString)), time) };
+            });
+
+            /* format_tt(time_t) */
+            runtime.addFunction(nsStdTime, "format_tt", FunctionParameterCount::exactly(1), [&runtime](Evaluator *, auto params) -> std::optional<Token::Literal> {
+                auto tt = params[0].toUnsigned();
+                const wolv::util::Locale &lc = runtime.getLocale();
+
+                using wolv::util::DTOpts;
+                auto optval = wolv::util::formatTT(lc, tt, DTOpts::TT64 | DTOpts::DandT);
+                if (!optval) {
+                    return s_canNotFormat;
+                }
+
+                return optval;
+            });
+
+            /* format_dos_date(time_t) */
+            runtime.addFunction(nsStdTime, "format_dos_date", FunctionParameterCount::exactly(1), [&runtime](Evaluator *, auto params) -> std::optional<Token::Literal> {
+                auto p = params[0].toUnsigned();
+
+                struct DOSDate {
+                    u16 day   : 5;
+                    u16 month : 4;
+                    u16 year  : 7;
+                };
+
+                DOSDate dd;
+                std::memcpy(&dd, &p, sizeof(dd));
+                if ( (dd.day<1 || dd.day>31) || (dd.month<1 || dd.month>12) ) {
+                    return s_invalid;
+                }
+
+                std::tm tm{};
+                tm.tm_year = dd.year + 80;
+                tm.tm_mon  = dd.month - 1;
+                tm.tm_mday = dd.day;
+
+#if defined(OS_WINDOWS)
+                time_t tt = _mkgmtime(&tm);
+#else
+                time_t tt = timegm(&tm);
+#endif
+                if (tt == -1) {
+                    return s_canNotFormat;
+                }
+
+                const wolv::util::Locale &lc = runtime.getLocale();
+
+                using wolv::util::DTOpts;
+                auto optval = wolv::util::formatTT(lc, tt, DTOpts::TT64 | DTOpts::D);
+                if (!optval) {
+                    return s_canNotFormat;
+                }
+                
+                return *optval;
+            });
+
+            /* format_dos_time(time_t) */
+            runtime.addFunction(nsStdTime, "format_dos_time", FunctionParameterCount::exactly(1), [&runtime](Evaluator *, auto params) -> std::optional<Token::Literal> {
+                auto p = params[0].toUnsigned();
+
+                struct DOSTime {
+                    u16 seconds : 5;
+                    u16 minutes : 6;
+                    u16 hours   : 5;
+                };
+
+                DOSTime dt;
+                std::memcpy(&dt, &p, sizeof(dt));
+
+                if ( (dt.hours<0 || dt.hours>23)     ||
+                     (dt.minutes<0 || dt.minutes>59) ||
+                     (dt.seconds<0 || dt.seconds>29)  )
+                {
+                    return s_invalid;
+                }
+
+                time_t tt = dt.hours*60*60 + dt.minutes*60 + dt.seconds*2;
+
+                const wolv::util::Locale &lc = runtime.getLocale();
+
+                using wolv::util::DTOpts;
+                auto optval = wolv::util::formatTT(lc, tt, DTOpts::TT64 | DTOpts::T);
+                if (!optval) {
+                    return s_canNotFormat;
+                }
+                
+                return *optval;
             });
         }
     }

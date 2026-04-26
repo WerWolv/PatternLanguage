@@ -23,6 +23,7 @@
 
 #include <wolv/io/fs.hpp>
 #include <wolv/container/interval_tree.hpp>
+#include <wolv/utils/date_time_format.hpp>
 
 namespace pl {
 
@@ -133,6 +134,16 @@ namespace pl {
          * @brief Aborts the currently running execution asynchronously
         */
         void abort();
+
+         /**
+         * @brief Get locale (currently only used for date/time formatting)
+        */
+        const wolv::util::Locale& getLocale() const;
+
+        /**
+         * @brief Set locale (currently only used for date/time formatting)
+        */
+        void setLocale(const wolv::util::Locale &lc);
 
         /**
          * @brief Sets the data source for the pattern language
@@ -416,6 +427,7 @@ namespace pl {
 
     private:
         Internals m_internals;
+        wolv::util::Locale m_locale;
         std::vector<core::err::CompileError> m_compileErrors;
         std::optional<core::err::PatternLanguageError> m_currError;
         std::map<std::string, std::string> m_defines;
