@@ -11,8 +11,7 @@
 
 namespace pl::lib::libstd::time {
 
-    static u128 packTMValue(const std::tm &tm, pl::PatternLanguage &runtime) {
-        auto endian = runtime.getInternals().evaluator->getDefaultEndian();
+    static u128 packTMValue(const std::tm &tm, std::endian endian = std::endian::native) {
         std::tm tmCopy = tm;
         tmCopy.tm_year = hlp::changeEndianess(tm.tm_year, 2, endian);
         tmCopy.tm_yday = hlp::changeEndianess(tm.tm_yday, 2, endian);
@@ -30,8 +29,7 @@ namespace pl::lib::libstd::time {
         return hlp::changeEndianess(result, 16, endian);
     }
 
-    static tm unpackTMValue(u128 value, pl::PatternLanguage &runtime) {
-        auto endian = runtime.getInternals().evaluator->getDefaultEndian();
+    static tm unpackTMValue(u128 value, std::endian endian = std::endian::native) {
         value = hlp::changeEndianess(value, 16, endian);
         tm tm = { };
         tm.tm_sec   = (int)(value >> 0)  & 0xFF;
@@ -63,48 +61,48 @@ namespace pl::lib::libstd::time {
             });
 
             /* to_local(time) */
-            runtime.addFunction(nsStdTime, "to_local", FunctionParameterCount::exactly(1), [&runtime](Evaluator *, auto params) -> std::optional<Token::Literal> {
+            runtime.addFunction(nsStdTime, "to_local", FunctionParameterCount::exactly(1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 auto time = time_t(params[0].toUnsigned());
 
                 try {
                     auto localTime = std::localtime(&time);
                     if (localTime == nullptr) return u128(0);
 
-                    return { packTMValue(*localTime, runtime) };
+                    return { packTMValue(*localTime, ctx->getDefaultEndian()) };
                 } catch (const fmt::format_error&) {
                     return u128(0);
                 }
             });
 
             /* to_utc(time) */
-            runtime.addFunction(nsStdTime, "to_utc", FunctionParameterCount::exactly(1), [&runtime](Evaluator *, auto params) -> std::optional<Token::Literal> {
+            runtime.addFunction(nsStdTime, "to_utc", FunctionParameterCount::exactly(1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 auto time = time_t(params[0].toUnsigned());
 
                 try {
                     auto gmTime = std::gmtime(&time);
                     if (gmTime == nullptr) return u128(0);
 
-                    return { packTMValue(*gmTime, runtime) };
+                    return { packTMValue(*gmTime, ctx->getDefaultEndian()) };
                 } catch (const fmt::format_error&) {
                     return u128(0);
                 }
             });
 
             /* to_epoch(structured_time) */
-            runtime.addFunction(nsStdTime, "to_epoch", FunctionParameterCount::exactly(1), [&runtime](Evaluator *, auto params) -> std::optional<Token::Literal> {
+            runtime.addFunction(nsStdTime, "to_epoch", FunctionParameterCount::exactly(1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 u128 structuredTime = params[0].toUnsigned();
 
-                tm time = unpackTMValue(structuredTime, runtime);
+                tm time = unpackTMValue(structuredTime, ctx->getDefaultEndian());
 
                 return { u128(std::mktime(&time)) };
             });
 
             /* format(format_string, structured_time) */
-            runtime.addFunction(nsStdTime, "format", FunctionParameterCount::exactly(2), [&runtime](Evaluator *, auto params) -> std::optional<Token::Literal> {
+            runtime.addFunction(nsStdTime, "format", FunctionParameterCount::exactly(2), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 auto formatString = params[0].toString(false);
                 u128 structuredTime = params[1].toUnsigned();
 
-                auto time = unpackTMValue(structuredTime, runtime);
+                auto time = unpackTMValue(structuredTime, ctx->getDefaultEndian());
 
                 if (time.tm_sec  < 0 || time.tm_sec  > 61 ||
                     time.tm_min  < 0 || time.tm_min  > 59 ||
