@@ -77,7 +77,8 @@ namespace pl::core::ast {
         pattern->setPointerTypePattern(std::move(sizePattern));
 
         ON_SCOPE_EXIT {
-            resultPatterns = hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
+            if (pattern->getPointedAtPattern() != nullptr)
+                resultPatterns = hlp::moveToVector<std::shared_ptr<ptrn::Pattern>>(std::move(pattern));
         };
 
         auto pointerEndOffset = evaluator->getBitwiseReadOffset();
