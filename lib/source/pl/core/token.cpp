@@ -13,47 +13,47 @@ namespace pl::core {
     std::shared_ptr<ptrn::Pattern> Token::Literal::toPattern() const {
         return std::visit(wolv::util::overloaded {
                               [&](const std::shared_ptr<ptrn::Pattern> &result) -> std::shared_ptr<ptrn::Pattern> { return result; },
-                              [&](const std::string &) -> std::shared_ptr<ptrn::Pattern> { err::E0004.throwError("Cannot cast value to type 'pattern'."); },
-                              [](auto &&) ->  std::shared_ptr<ptrn::Pattern> { err::E0004.throwError("Cannot cast value to type 'pattern'."); }
+                              [&](const std::string &) -> std::shared_ptr<ptrn::Pattern> { err::E0004.throwError("Cannot cast value of type 'string' to type 'pattern'."); },
+                              [](auto &&) ->  std::shared_ptr<ptrn::Pattern> { err::E0004.throwError("Cannot cast value of builtin type to type 'pattern'."); }
                           }, *this);
     }
 
     u128 Token::Literal::toUnsigned() const {
         return std::visit(wolv::util::overloaded {
-                              [&](const std::shared_ptr<ptrn::Pattern>&) -> u128 { err::E0004.throwError("Cannot cast value to type 'integer'."); },
-                              [&](const std::string &) -> u128 { err::E0004.throwError("Cannot cast value to type 'integer'."); },
+                              [&](const std::shared_ptr<ptrn::Pattern>&) -> u128 { err::E0004.throwError("Cannot cast value of type 'pattern' to type 'integer'."); },
+                              [&](const std::string &) -> u128 { err::E0004.throwError("Cannot cast value of type 'string' to type 'integer'."); },
                               [](auto &&result) -> u128 { return u128(result); }
                           }, *this);
     }
 
     i128 Token::Literal::toSigned() const {
         return std::visit(wolv::util::overloaded {
-                              [](const std::shared_ptr<ptrn::Pattern>&) -> i128 { err::E0004.throwError("Cannot cast value to type 'integer'."); },
-                              [](const std::string &) -> i128 { err::E0004.throwError("Cannot cast value to type 'integer'."); },
+                              [](const std::shared_ptr<ptrn::Pattern>&) -> i128 { err::E0004.throwError("Cannot cast value of type 'pattern' to type 'integer'."); },
+                              [](const std::string &) -> i128 { err::E0004.throwError("Cannot cast value of type 'string' to type 'integer'."); },
                               [](auto &&result) -> i128 { return i128(result); }
                           }, *this);
     }
 
     double Token::Literal::toFloatingPoint() const {
         return std::visit(wolv::util::overloaded {
-                              [](const std::shared_ptr<ptrn::Pattern>&) -> double { err::E0004.throwError("Cannot cast value to type 'floating point'."); },
-                              [](const std::string &) -> double { err::E0004.throwError("Cannot cast value to type 'floating point'."); },
+                              [](const std::shared_ptr<ptrn::Pattern>&) -> double { err::E0004.throwError("Cannot cast value of type 'pattern' to type 'floating point'."); },
+                              [](const std::string &) -> double { err::E0004.throwError("Cannot cast value of type 'string' to type 'floating point'."); },
                               [](auto &&result) -> double { return double(result); }
                           }, *this);
     }
 
     char Token::Literal::toCharacter() const {
         return std::visit(wolv::util::overloaded {
-                              [&](const std::shared_ptr<ptrn::Pattern>&) -> char { err::E0004.throwError("Cannot cast value to type 'char'."); },
-                              [&](const std::string &) -> char { err::E0004.throwError("Cannot cast value to type 'char'."); },
+                              [&](const std::shared_ptr<ptrn::Pattern>&) -> char { err::E0004.throwError("Cannot cast value of type 'pattern' to type 'char'."); },
+                              [&](const std::string &) -> char { err::E0004.throwError("Cannot cast value of type 'string' to type 'char'."); },
                               [](auto &&result) -> char { return char(result); }
                           }, *this);
     }
 
     bool Token::Literal::toBoolean() const {
         return std::visit(wolv::util::overloaded {
-                              [](const std::shared_ptr<ptrn::Pattern>&) -> bool { err::E0004.throwError("Cannot cast value to type 'bool'."); },
-                              [](const std::string &) -> bool { err::E0004.throwError("Cannot cast value to type 'bool'."); },
+                              [](const std::shared_ptr<ptrn::Pattern>&) -> bool { err::E0004.throwError("Cannot cast value of type 'pattern' to type 'bool'."); },
+                              [](const std::string &) -> bool { err::E0004.throwError("Cannot cast value of type 'string' to type 'bool'."); },
                               [](auto &&result) -> bool { return result != 0; }
                           },  *this);
     }
