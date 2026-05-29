@@ -972,6 +972,7 @@ namespace pl::core {
             statement = parseFunctionVariableDecl(true);
         } else if (m_curr[0].type == Token::Type::Keyword) {
             errorHere("Invalid {} found in function.", getFormattedToken(0));
+            next();
             return nullptr;
         } else {
             errorHere("Invalid function statement.");
