@@ -13,3 +13,6 @@
 	path = external/throwing_ptr
 	url = https://github.com/rockdreamer/throwing_ptr
 	ignore = dirty
+[submodule "external/lexertl17"]
+	path = external/lexertl17
+	url = https://github.com/BenHanson/lexertl17.git
