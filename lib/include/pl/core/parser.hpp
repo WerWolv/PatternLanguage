@@ -18,7 +18,7 @@
 
 #include <pl/core/errors/result.hpp>
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 #include <functional>
 #include <map>
