@@ -18,7 +18,7 @@
 #include <pl/core/errors/runtime_errors.hpp>
 #include <pl/core/ast/ast_node_type_appilication.hpp>
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <fmt/ranges.h>
 #include <pl/pattern_language.hpp>
 
