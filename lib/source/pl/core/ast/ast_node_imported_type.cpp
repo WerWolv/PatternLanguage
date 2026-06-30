@@ -19,12 +19,35 @@ namespace pl::core::ast {
         auto source = resolver.unwrap();
 
         const auto startAddress = evaluator->getReadOffset();
-        runtime.setStartAddress(evaluator->getStartAddress() + startAddress);
+        const auto sectionId = evaluator->getSectionId();
+        const bool customSection = sectionId != ptrn::Pattern::MainSectionId
+            && sectionId != ptrn::Pattern::HeapSectionId
+            && sectionId != ptrn::Pattern::PatternLocalSectionId
+            && sectionId != ptrn::Pattern::InstantiationSectionId;
+
+        if (customSection) {
+            runtime.setDataSource(0x00, evaluator->getSectionSize(sectionId),
+                [evaluator, sectionId](u64 address, u8 *buffer, size_t size) {
+                    evaluator->readData(address, buffer, size, sectionId);
+                },
+                [evaluator, sectionId](u64 address, const u8 *buffer, size_t size) {
+                    evaluator->writeData(address, const_cast<u8*>(buffer), size, sectionId);
+                }
+            );
+            runtime.setStartAddress(startAddress);
+        } else {
+            runtime.setStartAddress(evaluator->getStartAddress() + startAddress);
+        }
+
         if (runtime.executeString(source->content, source->source) != 0) {
             err::E0005.throwError(fmt::format("Error while processing imported type '{}'.", m_importedTypeName), "Check the imported pattern for errors.", getLocation());
         }
 
         auto patterns = runtime.getPatterns();
+        if (customSection) {
+            for (const auto &pattern : patterns)
+                evaluator->changePatternSection(pattern.get(), sectionId);
+        }
 
         auto &result = resultPatterns.emplace_back();
         if (patterns.size() == 1) {
