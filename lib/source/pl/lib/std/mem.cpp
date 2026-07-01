@@ -12,9 +12,34 @@
 
 namespace pl::lib::libstd::mem {
 
+    static u64 resolveSection(::pl::core::Evaluator *ctx, u64 section) {
+        if (section == 0xFFFF'FFFF'FFFF'FFFF)
+            return ctx->getUserSectionId();
+
+        return section;
+    }
+
+    static u64 validateReadableSection(::pl::core::Evaluator *ctx, u64 section) {
+        section = resolveSection(ctx, section);
+
+        if (section == ptrn::Pattern::MainSectionId || ctx->getSections().contains(section))
+            return section;
+
+        core::err::E0012.throwError("Invalid section id.", "Only the main section and custom sections can be accessed through std::mem.");
+    }
+
+    static u64 validateCustomSection(::pl::core::Evaluator *ctx, u64 section) {
+        section = resolveSection(ctx, section);
+
+        if (ctx->getSections().contains(section))
+            return section;
+
+        core::err::E0012.throwError("Invalid section id.", "Only custom sections can be modified through std::mem.");
+    }
+
     static std::optional<i128> findSequence(::pl::core::Evaluator *ctx, u64 occurrenceIndex, u64 offsetFrom, u64 offsetTo, u64 section, const std::vector<u8> &sequence) {
         u32 occurrences = 0;
-        const u64 bufferSize = ctx->getDataSize();
+        const u64 bufferSize = ctx->getSectionSize(section);
 
         if (offsetFrom >= offsetTo || sequence.empty() || bufferSize == 0)
             return std::nullopt;
@@ -60,9 +85,8 @@ namespace pl::lib::libstd::mem {
 
             /* base_address() */
             runtime.addFunction(nsStdMem, "base_address", FunctionParameterCount::between(0, 1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto section = params.size() == 1 ? params[0].toUnsigned() : ptrn::Pattern::MainSectionId;
-                if (section == 0xFFFF'FFFF'FFFF'FFFF)
-                    section = ctx->getUserSectionId();
+                auto section = params.size() == 1 ? params[0].toUnsigned() : ctx->getUserSectionId();
+                section = validateReadableSection(ctx, section);
 
                 if (section != ptrn::Pattern::MainSectionId)
                     return u128(0x00);
@@ -72,9 +96,8 @@ namespace pl::lib::libstd::mem {
 
             /* size() */
             runtime.addFunction(nsStdMem, "size", FunctionParameterCount::between(0, 1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto section = params.size() == 1 ? u64(params[0].toUnsigned()) : ptrn::Pattern::MainSectionId;
-                if (section == 0xFFFF'FFFF'FFFF'FFFF)
-                    section = ctx->getUserSectionId();
+                auto section = params.size() == 1 ? u64(params[0].toUnsigned()) : ctx->getUserSectionId();
+                section = validateReadableSection(ctx, section);
 
                 return u128(ctx->getSectionSize(section));
             });
@@ -113,9 +136,8 @@ namespace pl::lib::libstd::mem {
                 const auto address           = u64(params[0].toUnsigned());
                 const auto size              = std::size_t(params[1].toSigned());
                 const types::Endian endian   = params[2].toUnsigned();
-                u64 section                  = params.size() == 4 ? u64(params[3].toUnsigned()) : ptrn::Pattern::MainSectionId;
-                if (section == 0xFFFF'FFFF'FFFF'FFFF)
-                    section = ctx->getUserSectionId();
+                u64 section                  = params.size() == 4 ? u64(params[3].toUnsigned()) : ctx->getUserSectionId();
+                section = validateReadableSection(ctx, section);
 
                 if (size < 1 || size > 16)
                     err::E0012.throwError(fmt::format("Read size {} is out of range.", size), "Try a value between 1 and 16.");
@@ -132,9 +154,8 @@ namespace pl::lib::libstd::mem {
                 const auto address           = u64(params[0].toUnsigned());
                 const auto size              = std::size_t(params[1].toSigned());
                 const types::Endian endian   = params[2].toUnsigned();
-                u64 section                  = params.size() == 4 ? u64(params[3].toUnsigned()) : ptrn::Pattern::MainSectionId;
-                if (section == 0xFFFF'FFFF'FFFF'FFFF)
-                    section = ctx->getUserSectionId();
+                u64 section                  = params.size() == 4 ? u64(params[3].toUnsigned()) : ctx->getUserSectionId();
+                section = validateReadableSection(ctx, section);
 
                 if (size < 1 || size > 16)
                     err::E0012.throwError(fmt::format("Read size {} is out of range.", size), "Try a value between 1 and 16.");
@@ -151,9 +172,8 @@ namespace pl::lib::libstd::mem {
             runtime.addFunction(nsStdMem, "read_string", FunctionParameterCount::between(2, 3), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 const auto address           = u64(params[0].toUnsigned());
                 const auto size              = std::size_t(params[1].toSigned());
-                u64 section                  = params.size() == 3 ? u64(params[2].toUnsigned()) : ptrn::Pattern::MainSectionId;
-                if (section == 0xFFFF'FFFF'FFFF'FFFF)
-                    section = ctx->getUserSectionId();
+                u64 section                  = params.size() == 3 ? u64(params[2].toUnsigned()) : ctx->getUserSectionId();
+                section = validateReadableSection(ctx, section);
 
                 std::string result(size, '\x00');
                 ctx->readData(address, result.data(), size, section);
@@ -173,7 +193,7 @@ namespace pl::lib::libstd::mem {
                 auto byteOffset = params[0].toUnsigned();
                 auto bitOffset = u8(params[1].toUnsigned());
                 auto bitSize = u64(params[2].toUnsigned());
-                return ctx->readBits(byteOffset, bitOffset, bitSize, ptrn::Pattern::MainSectionId, ctx->getDefaultEndian());
+                return ctx->readBits(byteOffset, bitOffset, bitSize, validateReadableSection(ctx, ctx->getUserSectionId()), ctx->getDefaultEndian());
             });
 
 
@@ -186,7 +206,7 @@ namespace pl::lib::libstd::mem {
 
             /* delete_section(id) */
             runtime.addFunction(nsStdMem, "delete_section", FunctionParameterCount::exactly(1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto id = u64(params[0].toUnsigned());
+                auto id = validateCustomSection(ctx, u64(params[0].toUnsigned()));
 
                 ctx->removeSection(id);
 
@@ -195,14 +215,14 @@ namespace pl::lib::libstd::mem {
 
             /* get_section_size(id) -> size */
             runtime.addFunction(nsStdMem, "get_section_size", FunctionParameterCount::exactly(1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto id = u64(params[0].toUnsigned());
+                auto id = validateReadableSection(ctx, u64(params[0].toUnsigned()));
 
-                return u128(ctx->getSection(id).size());
+                return u128(ctx->getSectionSize(id));
             });
 
             /* set_section_size(id, size) */
             runtime.addFunction(nsStdMem, "set_section_size", FunctionParameterCount::exactly(2), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto id   = u64(params[0].toUnsigned());
+                auto id   = validateCustomSection(ctx, u64(params[0].toUnsigned()));
                 auto size = size_t(params[1].toUnsigned());
 
                 ctx->getSection(id).resize(size);
@@ -218,12 +238,11 @@ namespace pl::lib::libstd::mem {
                 auto toAddr     = u64(params[3].toUnsigned());
                 auto size       = size_t(params[4].toUnsigned());
 
+                fromId = validateReadableSection(ctx, fromId);
+                toId = validateCustomSection(ctx, toId);
+
                 std::vector<u8> data(size, 0x00);
                 ctx->readData(fromAddr, data.data(), size, fromId);
-                if (toId == ptrn::Pattern::MainSectionId)
-                    err::E0012.throwError("Cannot write to main section.", "The main section represents the currently loaded data and is immutable.");
-                else if (toId == ptrn::Pattern::HeapSectionId)
-                    err::E0012.throwError("Invalid section id.");
 
                 auto& section = ctx->getSection(toId);
                 if (section.size() < toAddr + size)
@@ -238,10 +257,7 @@ namespace pl::lib::libstd::mem {
                 auto toId       = u64(params[1].toUnsigned());
                 auto toAddr     = u64(params[2].toUnsigned());
 
-                if (toId == ptrn::Pattern::MainSectionId)
-                    err::E0012.throwError("Cannot write to main section.", "The main section represents the currently loaded data and is immutable.");
-                else if (toId == ptrn::Pattern::HeapSectionId)
-                    err::E0012.throwError("Invalid section id.");
+                toId = validateCustomSection(ctx, toId);
 
                 auto& section = ctx->getSection(toId);
 

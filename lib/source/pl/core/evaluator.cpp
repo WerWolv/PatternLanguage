@@ -765,7 +765,7 @@ namespace pl::core {
         variable->setSection(section);
     }
 
-    void Evaluator::pushScope(const std::shared_ptr<ptrn::Pattern> &parent, std::vector<std::shared_ptr<ptrn::Pattern>> &scope) {
+    void Evaluator::pushScope(const std::shared_ptr<ptrn::Pattern> &parent, std::vector<std::shared_ptr<ptrn::Pattern>> &scope, bool clearScopeOnPop) {
         if (this->m_scopes.size() > this->getEvaluationDepth())
             err::E0007.throwError(fmt::format("Evaluation depth exceeded set limit of '{}'.", this->getEvaluationDepth()), "If this is intended, try increasing the limit using '#pragma eval_depth <new_limit>'.");
 
@@ -773,7 +773,7 @@ namespace pl::core {
 
         const auto &heap = this->getHeap();
 
-        this->m_scopes.emplace_back(std::make_unique<Scope>(parent, &scope, heap.size()));
+        this->m_scopes.emplace_back(std::make_unique<Scope>(parent, &scope, heap.size(), clearScopeOnPop));
 
         if (this->isDebugModeEnabled())
             this->getConsole().log(LogConsole::Level::Debug, fmt::format("Entering new scope #{}. Parent: '{}', Heap Size: {}.", this->m_scopes.size(), parent == nullptr ? "None" : parent->getVariableName(), heap.size()));
@@ -787,7 +787,16 @@ namespace pl::core {
 
         auto &heap = this->getHeap();
 
-        heap.resize(currScope.heapStartSize);
+        if (currScope.clearOnPop && currScope.scope != nullptr)
+            currScope.scope->clear();
+
+        auto heapSize = currScope.heapStartSize;
+        for (const auto &[address, referenceCount] : this->m_heapReferenceCounts) {
+            if (referenceCount > 0 && address >= heapSize)
+                heapSize = u64(address) + 1;
+        }
+
+        heap.resize(heapSize);
 
         if (this->isDebugModeEnabled())
             this->getConsole().log(LogConsole::Level::Debug, fmt::format("Exiting scope #{}. Parent: '{}', Heap Size: {}.", this->m_scopes.size(), currScope.parent == nullptr ? "None" : currScope.parent->getVariableName(), heap.size()));
@@ -970,6 +979,7 @@ namespace pl::core {
         this->m_scopes.clear();
         this->m_callStack.clear();
         this->m_heap.clear();
+        this->m_heapReferenceCounts.clear();
 
         this->m_templateParameters.clear();
         this->m_currentTemplateArguments.clear();
@@ -1230,6 +1240,8 @@ namespace pl::core {
             } else {
                 this->m_patternLocalStorage[pattern->getHeapAddress()] = { 1, {} };
             }
+        } else if (pattern->getSection() == ptrn::Pattern::HeapSectionId) {
+            this->m_heapReferenceCounts[pattern->getHeapAddress()]++;
         }
     }
 
@@ -1256,6 +1268,14 @@ namespace pl::core {
                     this->m_patternLocalStorage.erase(it);
             } else if (!this->m_evaluated) {
                 err::E0001.throwError(fmt::format("Double free of variable named '{}'.", pattern->getVariableName()));
+            }
+        } else if (pattern->getSection() == ptrn::Pattern::HeapSectionId) {
+            if (auto it = this->m_heapReferenceCounts.find(pattern->getHeapAddress()); it != this->m_heapReferenceCounts.end()) {
+                auto &[address, referenceCount] = *it;
+
+                referenceCount--;
+                if (referenceCount == 0)
+                    this->m_heapReferenceCounts.erase(it);
             }
         }
     }

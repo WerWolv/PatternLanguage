@@ -79,15 +79,18 @@ namespace pl::core {
         struct Scope {
             Scope(const std::shared_ptr<pl::ptrn::Pattern>& parentPattern,
                 std::vector<std::shared_ptr<pl::ptrn::Pattern>>* scopePatterns,
-                size_t heapSize)
+                size_t heapSize,
+                bool clearScopeOnPop)
                 : parent(parentPattern),
                 scope(scopePatterns),
-                heapStartSize(heapSize) {}
+                heapStartSize(heapSize),
+                clearOnPop(clearScopeOnPop) {}
 
             std::shared_ptr<ptrn::Pattern> parent;
             std::vector<std::shared_ptr<ptrn::Pattern>> *scope;
             std::optional<ParameterPack> parameterPack;
             size_t heapStartSize;
+            bool clearOnPop;
         };
 
         struct PatternLocalData {
@@ -109,7 +112,7 @@ namespace pl::core {
             u64 cursorAddress;
         };
 
-        void pushScope(const std::shared_ptr<ptrn::Pattern> &parent, std::vector<std::shared_ptr<ptrn::Pattern>> &scope);
+        void pushScope(const std::shared_ptr<ptrn::Pattern> &parent, std::vector<std::shared_ptr<ptrn::Pattern>> &scope, bool clearScopeOnPop = false);
         void popScope();
 
         [[nodiscard]] Scope &getScope(i32 index) {
@@ -531,6 +534,7 @@ namespace pl::core {
         u64 m_sectionId = 0;
 
         std::vector<std::vector<u8>> m_heap;
+        std::map<u32, u32> m_heapReferenceCounts;
         std::map<u32, PatternLocalData> m_patternLocalStorage;
 
         std::map<std::string, std::set<ptrn::Pattern*>> m_attributedPatterns;

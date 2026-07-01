@@ -55,7 +55,7 @@ namespace pl::core::ast {
         };
 
         if (this->m_newScope) {
-            evaluator->pushScope(nullptr, variables);
+            evaluator->pushScope(nullptr, variables, true);
         } else {
             scopeGuard.release();
         }

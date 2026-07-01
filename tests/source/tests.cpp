@@ -31,6 +31,7 @@
 #include "test_patterns/test_pattern_typenameof.hpp"
 #include "test_patterns/test_pattern_custom_builtin_type.hpp"
 #include "test_patterns/test_pattern_using.hpp"
+#include "test_patterns/test_pattern_heap_lifetime.hpp"
 
 static pl::core::Evaluator s_evaluator;
 
@@ -67,4 +68,5 @@ std::array Tests = {
     TEST(TypeNameOf),
     TEST(CustomBuiltinType),
     TEST(Using),
+    TEST(HeapLifetime),
 };
