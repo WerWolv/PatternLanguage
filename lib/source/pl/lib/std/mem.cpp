@@ -19,7 +19,7 @@ namespace pl::lib::libstd::mem {
         return section;
     }
 
-    static u64 validateReadableSection(::pl::core::Evaluator *ctx, u64 section) {
+    static u64 validateReadableSection(::pl::core::Evaluator *ctx, u128 section) {
         section = resolveSection(ctx, section);
 
         if (section == ptrn::Pattern::MainSectionId || ctx->getSections().contains(section))
@@ -28,7 +28,7 @@ namespace pl::lib::libstd::mem {
         core::err::E0012.throwError("Invalid section id.", "Only the main section and custom sections can be accessed through std::mem.");
     }
 
-    static u64 validateCustomSection(::pl::core::Evaluator *ctx, u64 section) {
+    static u64 validateCustomSection(::pl::core::Evaluator *ctx, u128 section) {
         section = resolveSection(ctx, section);
 
         if (ctx->getSections().contains(section))
