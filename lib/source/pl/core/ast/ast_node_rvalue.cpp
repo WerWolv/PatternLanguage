@@ -21,6 +21,7 @@
 #include <pl/patterns/pattern_union.hpp>
 #include <pl/patterns/pattern_bitfield.hpp>
 #include <pl/patterns/pattern_padding.hpp>
+#include <ranges>
 
 namespace pl::core::ast {
 
@@ -192,31 +193,36 @@ namespace pl::core::ast {
                     currPattern = currParent;
                     continue;
                 } else {
-                    using namespace std::views;
                     using std::ranges::find;
                     std::shared_ptr<ptrn::Pattern> pattern;
 
                     if (currPattern == nullptr) {
-                        auto currScope = *evaluator->getScope(0).scope | all;
-                        auto templateParameters = evaluator->getTemplateParameters() | all;
-                        auto globalScope = *evaluator->getGlobalScope().scope | all;
-                        auto allScopes = {globalScope, templateParameters, currScope};
-                        auto searchScopes = allScopes | drop(evaluator->isGlobalScope() ? 1 : 0);
-                        auto view = searchScopes | join | reverse;
-                        if (auto result = find(view, name, &ptrn::Pattern::getVariableName); result != view.end())
-                            pattern = *result;
+                        const auto findInScope = [&name](const std::vector<std::shared_ptr<ptrn::Pattern>> &scope) -> std::shared_ptr<ptrn::Pattern> {
+                            for (const auto & iter : std::views::reverse(scope)) {
+                                if (iter->getVariableName() == name)
+                                    return iter;
+                            }
+
+                            return nullptr;
+                        };
+
+                        pattern = findInScope(*evaluator->getScope(0).scope);
+                        if (pattern == nullptr)
+                            pattern = findInScope(evaluator->getTemplateParameters());
+                        if (pattern == nullptr && !evaluator->isGlobalScope())
+                            pattern = findInScope(*evaluator->getGlobalScope().scope);
                     } else if (auto currParent = evaluator->getScope(scopeIndex).parent; currParent == currPattern) {
-                        auto view = *evaluator->getScope(scopeIndex).scope | reverse;
+                        auto view = *evaluator->getScope(scopeIndex).scope | std::views::reverse;
                         if (auto result = find(view, name, &ptrn::Pattern::getVariableName); result != view.end())
                             pattern = *result;
                     } else if (auto indexablePattern = dynamic_cast<ptrn::IIndexable *>(currPattern.get()); indexablePattern != nullptr) {
-                        auto iota_view = iota((size_t)0, indexablePattern->getEntryCount());
-                        auto view = iota_view | transform(std::bind_front(&ptrn::IIndexable::getEntry, indexablePattern)) | reverse;
+                        auto iota_view = std::views::iota(std::size_t(0), indexablePattern->getEntryCount());
+                        auto view = iota_view | std::views::transform(std::bind_front(&ptrn::IIndexable::getEntry, indexablePattern)) | std::views::reverse;
                         if (auto result = find(view, name, &ptrn::Pattern::getVariableName); result != view.end())
                             pattern = *result;
                     } else if (auto iterablePattern = dynamic_cast<ptrn::IIterable *>(currPattern.get()); iterablePattern != nullptr) {
                         auto scope = iterablePattern->getEntries();
-                        auto view =  scope | reverse;
+                        auto view =  scope | std::views::reverse;
                         if (auto result = find(view, name, &ptrn::Pattern::getVariableName); result != view.end())
                             pattern = *result;
                     }
