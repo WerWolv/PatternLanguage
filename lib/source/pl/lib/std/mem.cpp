@@ -12,26 +12,26 @@
 
 namespace pl::lib::libstd::mem {
 
-    static u128 resolveSection(::pl::core::Evaluator *ctx, u128 section) {
+    static u64 resolveSection(::pl::core::Evaluator *ctx, u64 section) {
         if (section == 0xFFFF'FFFF'FFFF'FFFF)
             return ctx->getUserSectionId();
 
         return section;
     }
 
-    static u128 validateReadableSection(::pl::core::Evaluator *ctx, u128 section) {
+    static u64 validateReadableSection(::pl::core::Evaluator *ctx, u64 section) {
         section = resolveSection(ctx, section);
 
-        if (section == ptrn::Pattern::MainSectionId || ctx->getSections().contains(u64(section)))
+        if (section == ptrn::Pattern::MainSectionId || ctx->getSections().contains(section))
             return section;
 
         core::err::E0012.throwError("Invalid section id.", "Only the main section and custom sections can be accessed through std::mem.");
     }
 
-    static u128 validateCustomSection(::pl::core::Evaluator *ctx, u128 section) {
+    static u64 validateCustomSection(::pl::core::Evaluator *ctx, u64 section) {
         section = resolveSection(ctx, section);
 
-        if (ctx->getSections().contains(u64(section)))
+        if (ctx->getSections().contains(section))
             return section;
 
         core::err::E0012.throwError("Invalid section id.", "Only custom sections can be modified through std::mem.");
@@ -85,7 +85,7 @@ namespace pl::lib::libstd::mem {
 
             /* base_address() */
             runtime.addFunction(nsStdMem, "base_address", FunctionParameterCount::between(0, 1), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
-                auto section = params.size() == 1 ? params[0].toUnsigned() : ctx->getUserSectionId();
+                auto section = params.size() == 1 ? u64(params[0].toUnsigned()) : ctx->getUserSectionId();
                 section = validateReadableSection(ctx, section);
 
                 if (section != ptrn::Pattern::MainSectionId)
