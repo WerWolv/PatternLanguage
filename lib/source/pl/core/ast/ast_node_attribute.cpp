@@ -175,6 +175,9 @@ namespace pl::core::ast {
         if (attributable == nullptr)
             err::E0008.throwError("Attributes cannot be applied to this statement.", {}, node->getLocation());
 
+        if (attributable->getAttributes().empty())
+            return;
+
         if (attributable->hasAttribute("inline", false)) {
             auto inlinable = dynamic_cast<ptrn::IInlinable *>(pattern.get());
 
@@ -388,6 +391,9 @@ namespace pl::core::ast {
         auto attributable = dynamic_cast<const Attributable *>(node);
         if (attributable == nullptr)
             err::E0008.throwError("Attributes cannot be applied to this statement.", {}, node->getLocation());
+
+        if (attributable->getAttributes().empty())
+            return;
 
         auto endOffset = evaluator->getBitwiseReadOffset();
         evaluator->setReadOffset(pattern->getOffset());

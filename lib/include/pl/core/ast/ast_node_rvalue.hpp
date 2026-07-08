@@ -25,6 +25,8 @@ namespace pl::core::ast {
 
     private:
         Path m_path;
+        bool m_canCache = false;
+        mutable std::shared_ptr<ptrn::Pattern> m_evaluatedPattern;
     };
 
 }
