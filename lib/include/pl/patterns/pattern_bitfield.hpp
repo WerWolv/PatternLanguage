@@ -410,7 +410,7 @@ namespace pl::ptrn {
                 evaluator->setCurrentArrayIndex(i);
 
                 auto &entry = patterns[i];
-                if (!entry->isPatternLocal() || entry->hasAttribute("export"))
+                if (this->hasAttribute("export") || !entry->isPatternLocal() || entry->hasAttribute("export"))
                     fn(i, entry);
             }
         }
@@ -773,7 +773,7 @@ namespace pl::ptrn {
 
             for (auto i = start; i < end; i++) {
                 auto &pattern = patterns[i];
-                if (!pattern->isPatternLocal() || pattern->hasAttribute("export"))
+                if (this->hasAttribute("export") || !pattern->isPatternLocal() || pattern->hasAttribute("export"))
                     fn(i, pattern);
             }
         }

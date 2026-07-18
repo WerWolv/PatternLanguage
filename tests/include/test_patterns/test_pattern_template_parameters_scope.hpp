@@ -108,14 +108,62 @@ namespace pl::test {
                 Q q @ 0;
                 std::assert(q.q.e == 65, "q.q.e should be 65");
 
-                using Fp<auto x>;  
+                using Fp<auto x>;
                 struct FFp{
                     Fp<1> fp;
                 };
                 FFp ffp @ 0;
                 using Fp<auto x> = P<x + b>;
                 std::assert(ffp.fp.e == 129, "fp.e should be 129");
+
+                fn populate_exported_local_array(ref u32 output, ref u8 values) {
+                    output[0] = values[0];
+                    output[1] = values[1];
+                };
+
+                struct LocalExport {
+                    u8 values[2];
+                    u32 image[2] = { 0 } [[export]];
+                    populate_exported_local_array(image, values);
+                };
+
+                LocalExport localExport @ 0;
+                std::assert(localExport.image[0] == localExport.values[0], "localExport.image[0] should be populated");
+                std::assert(localExport.image[1] == localExport.values[1], "localExport.image[1] should be populated");
             )";
+        }
+
+        [[nodiscard]] bool runChecks(const std::vector<std::shared_ptr<ptrn::Pattern>> &patterns) const override {
+            for (const auto &pattern : patterns) {
+                if (pattern->getVariableName() != "localExport")
+                    continue;
+
+                auto iterable = dynamic_cast<ptrn::IIterable *>(pattern.get());
+                if (iterable == nullptr)
+                    return false;
+
+                std::shared_ptr<ptrn::Pattern> image;
+                iterable->forEachEntry(0, iterable->getEntryCount(), [&](u64, const auto &entry) {
+                    if (entry->getVariableName() == "image")
+                        image = entry;
+                });
+
+                if (image == nullptr)
+                    return false;
+
+                auto imageIterable = dynamic_cast<ptrn::IIterable *>(image.get());
+                if (imageIterable == nullptr)
+                    return false;
+
+                u64 entryCount = 0;
+                imageIterable->forEachEntry(0, imageIterable->getEntryCount(), [&](u64, const auto &) {
+                    entryCount += 1;
+                });
+
+                return entryCount == 2;
+            }
+
+            return false;
         }
     };
 

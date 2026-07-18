@@ -62,7 +62,7 @@ namespace pl::ptrn {
 
             for (u64 i = start; i < patterns.size() && i < end; i++) {
                 auto &pattern = patterns[i];
-                if (!pattern->isPatternLocal() || pattern->hasAttribute("export"))
+                if (this->hasAttribute("export") || !pattern->isPatternLocal() || pattern->hasAttribute("export"))
                     fn(i, pattern);
             }
         }
