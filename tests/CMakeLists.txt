@@ -36,6 +36,8 @@ set(AVAILABLE_TESTS
         TypeNameOf
         CustomBuiltInType
         Using
+        HeapLifetime
+        Flattening
 )
 
 

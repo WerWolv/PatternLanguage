@@ -58,7 +58,7 @@ namespace pl::core::ast {
             std::vector<std::shared_ptr<ptrn::Pattern>> variables;
 
             auto startOffset = ctx->getBitwiseReadOffset();
-            ctx->pushScope(nullptr, variables);
+            ctx->pushScope(nullptr, variables, true);
             ctx->pushSectionId(ptrn::Pattern::HeapSectionId);
             ON_SCOPE_EXIT {
                 ctx->popScope();

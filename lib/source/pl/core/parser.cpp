@@ -796,6 +796,8 @@ namespace pl::core {
 
         while (!sequence(tkn::Separator::RightBrace)) {
             auto statement = parseFunctionStatement();
+            if (hasErrors())
+                break;
             if (statement == nullptr)
                 continue;
 
@@ -970,11 +972,11 @@ namespace pl::core {
             statement = parseFunctionVariableDecl();
         } else if (sequence(tkn::Keyword::Const)) {
             statement = parseFunctionVariableDecl(true);
-        } else if (m_curr[0].type == Token::Type::Keyword) {
-            errorHere("Invalid {} found in function.", getFormattedToken(0));
-            return nullptr;
         } else {
-            errorHere("Invalid function statement.");
+            if (m_curr[0].type == Token::Type::Keyword)
+                errorHere("Invalid {} found in function.", getFormattedToken(0));
+            else
+                errorHere("Invalid function statement.");
             next();
             return nullptr;
         }
@@ -1267,6 +1269,8 @@ namespace pl::core {
         std::vector<hlp::safe_unique_ptr<ast::ASTNode>> tryBody, catchBody;
         while (!sequence(tkn::Separator::RightBrace)) {
             auto member = memberParser();
+            if (hasErrors())
+                break;
             if (member == nullptr)
                 continue;
 
@@ -1281,6 +1285,8 @@ namespace pl::core {
 
             while (!sequence(tkn::Separator::RightBrace)) {
                 auto member = memberParser();
+                if (hasErrors())
+                    break;
                 if (member == nullptr)
                     continue;
 
@@ -1933,11 +1939,11 @@ namespace pl::core {
             return parseTryCatchStatement([this] { return parseMember(); });
         else if (oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue))
             member = parseFunctionControlFlowStatement();
-        else if (m_curr[0].type == Token::Type::Keyword) {
-            errorHere("Invalid {} found in struct.", getFormattedToken(0));
-            return nullptr;
-        } else {
-            errorHere("Invalid struct member definition.");
+        else  {
+            if (m_curr[0].type == Token::Type::Keyword)
+                errorHere("Invalid {} found in custom type.", getFormattedToken(0));
+            else
+                errorHere("Invalid struct member definition.");
             next();
             return nullptr;
         }
@@ -2043,6 +2049,8 @@ namespace pl::core {
         this->m_currTemplateType.push_back(typeDecl);
         while (!sequence(tkn::Separator::RightBrace)) {
             auto member = parseMember();
+            if (hasErrors())
+                break;
             if(member == nullptr)
                 continue;
 
@@ -2314,6 +2322,8 @@ namespace pl::core {
 
         while (!sequence(tkn::Separator::RightBrace)) {
             auto entry = parseBitfieldEntry();
+            if (hasErrors())
+                break;
             if (entry == nullptr)
                 continue;
 

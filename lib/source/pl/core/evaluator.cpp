@@ -218,7 +218,13 @@ namespace pl::core {
         auto startOffset = this->getBitwiseReadOffset();
 
         std::vector<std::shared_ptr<ptrn::Pattern>> typePatterns;
-        type->createPatterns(this, typePatterns);
+        if (section == ptrn::Pattern::HeapSectionId || section == ptrn::Pattern::PatternLocalSectionId) {
+            this->pushSectionId(ptrn::Pattern::InstantiationSectionId);
+            ON_SCOPE_EXIT { this->popSectionId(); };
+            type->createPatterns(this, typePatterns);
+        } else {
+            type->createPatterns(this, typePatterns);
+        }
         auto typePattern = std::move(typePatterns.front());
 
         typePattern->setConstant(constant);
@@ -246,19 +252,27 @@ namespace pl::core {
 
         } else if (section == ptrn::Pattern::HeapSectionId) {
             typePattern->setLocal(true);
+
+            auto &heap = this->getHeap();
+            auto heapAddress = u64(heap.size());
+            auto &storage = heap.emplace_back();
+
             std::vector<std::shared_ptr<ptrn::Pattern>> entries;
+            u64 entryOffset = 0;
             for (size_t i = 0; i < entryCount; i++) {
                 auto entryPattern = typePattern->clone();
                 entryPattern->setLocal(true);
+                entryPattern->setOffset((heapAddress << 32) + entryOffset);
 
-                auto &heap = this->getHeap();
-                entryPattern->setOffset(u64(heap.size()) << 32);
-                heap.emplace_back();
+                entryOffset += entryPattern->getSize();
+                storage.resize(entryOffset);
 
                 entries.push_back(std::move(entryPattern));
             }
             pattern->setEntries(entries);
+            pattern->setSize(entryOffset);
             pattern->setLocal(true);
+            pattern->setAbsoluteOffset(heapAddress << 32);
         } else {
             typePattern->setSection(section);
             std::vector<std::shared_ptr<ptrn::Pattern>> entries;
@@ -349,7 +363,13 @@ namespace pl::core {
         } else {
             if (builtinType != nullptr) {
                 std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
-                type->createPatterns(this, patterns);
+                if (!reference && (sectionId == ptrn::Pattern::HeapSectionId || sectionId == ptrn::Pattern::PatternLocalSectionId)) {
+                    this->pushSectionId(ptrn::Pattern::InstantiationSectionId);
+                    ON_SCOPE_EXIT { this->popSectionId(); };
+                    type->createPatterns(this, patterns);
+                } else {
+                    type->createPatterns(this, patterns);
+                }
                 pattern = std::move(patterns.front());
             }
             else {
@@ -445,7 +465,7 @@ namespace pl::core {
                     err::E0004.throwError(fmt::format("Cannot cast from type 'string' to type '{}'.", pattern->getTypeName()));
             },
             [&](const std::shared_ptr<ptrn::Pattern>& value) -> Token::Literal {
-                if (value->getTypeName() == pattern->getTypeName() || value->getTypeName().empty())
+                if (value->getTypeName() == pattern->getTypeName() || value->getTypeName().empty() || dynamic_cast<const ptrn::PatternPadding*>(pattern) != nullptr)
                     return value;
                 else
                     err::E0004.throwError(fmt::format("Cannot cast from type '{}' to type '{}'.", value->getTypeName(), pattern->getTypeName()));
@@ -708,17 +728,23 @@ namespace pl::core {
                     }
 
                     auto &storage = getStorage();
+                    auto localOffset = pattern->getOffset() & 0xFFFF'FFFF;
                     if (value->getSection() != ptrn::Pattern::InstantiationSectionId) {
                         if (heapSection || patternLocalSection) {
-                            storage.resize((pattern->getOffset() & 0xFFFF'FFFF) + value->getSize());
-                            this->readData(value->getOffset(), storage.data(), value->getSize(), value->getSection());
+                            storage.resize(localOffset + value->getSize());
+                            this->readData(value->getOffset(), storage.data() + localOffset, value->getSize(), value->getSection());
                         } else if (storage.size() < pattern->getOffset() + pattern->getSize()) {
                             storage.resize(pattern->getOffset() + pattern->getSize());
                             this->readData(value->getOffset(), storage.data() + pattern->getOffset(), value->getSize(), value->getSection());
                         }
                     } else {
-                        storage.resize(value->getSize());
-                        std::fill(storage.begin(), storage.end(), 0x00);
+                        if (heapSection || patternLocalSection) {
+                            storage.resize(localOffset + value->getSize());
+                            std::fill(storage.begin() + localOffset, storage.begin() + localOffset + value->getSize(), 0x00);
+                        } else {
+                            storage.resize(value->getSize());
+                            std::fill(storage.begin(), storage.end(), 0x00);
+                        }
                     }
 
                     if (this->isDebugModeEnabled())
@@ -739,7 +765,7 @@ namespace pl::core {
         variable->setSection(section);
     }
 
-    void Evaluator::pushScope(const std::shared_ptr<ptrn::Pattern> &parent, std::vector<std::shared_ptr<ptrn::Pattern>> &scope) {
+    void Evaluator::pushScope(const std::shared_ptr<ptrn::Pattern> &parent, std::vector<std::shared_ptr<ptrn::Pattern>> &scope, bool clearScopeOnPop) {
         if (this->m_scopes.size() > this->getEvaluationDepth())
             err::E0007.throwError(fmt::format("Evaluation depth exceeded set limit of '{}'.", this->getEvaluationDepth()), "If this is intended, try increasing the limit using '#pragma eval_depth <new_limit>'.");
 
@@ -747,7 +773,7 @@ namespace pl::core {
 
         const auto &heap = this->getHeap();
 
-        this->m_scopes.emplace_back(std::make_unique<Scope>(parent, &scope, heap.size()));
+        this->m_scopes.emplace_back(std::make_unique<Scope>(parent, &scope, heap.size(), clearScopeOnPop));
 
         if (this->isDebugModeEnabled())
             this->getConsole().log(LogConsole::Level::Debug, fmt::format("Entering new scope #{}. Parent: '{}', Heap Size: {}.", this->m_scopes.size(), parent == nullptr ? "None" : parent->getVariableName(), heap.size()));
@@ -761,7 +787,16 @@ namespace pl::core {
 
         auto &heap = this->getHeap();
 
-        heap.resize(currScope.heapStartSize);
+        if (currScope.clearOnPop && currScope.scope != nullptr)
+            currScope.scope->clear();
+
+        auto heapSize = currScope.heapStartSize;
+        for (const auto &[address, referenceCount] : this->m_heapReferenceCounts) {
+            if (referenceCount > 0 && address >= heapSize)
+                heapSize = u64(address) + 1;
+        }
+
+        heap.resize(heapSize);
 
         if (this->isDebugModeEnabled())
             this->getConsole().log(LogConsole::Level::Debug, fmt::format("Exiting scope #{}. Parent: '{}', Heap Size: {}.", this->m_scopes.size(), currScope.parent == nullptr ? "None" : currScope.parent->getVariableName(), heap.size()));
@@ -944,6 +979,7 @@ namespace pl::core {
         this->m_scopes.clear();
         this->m_callStack.clear();
         this->m_heap.clear();
+        this->m_heapReferenceCounts.clear();
 
         this->m_templateParameters.clear();
         this->m_currentTemplateArguments.clear();
@@ -1204,6 +1240,8 @@ namespace pl::core {
             } else {
                 this->m_patternLocalStorage[pattern->getHeapAddress()] = { 1, {} };
             }
+        } else if (pattern->getSection() == ptrn::Pattern::HeapSectionId) {
+            this->m_heapReferenceCounts[pattern->getHeapAddress()]++;
         }
     }
 
@@ -1230,6 +1268,14 @@ namespace pl::core {
                     this->m_patternLocalStorage.erase(it);
             } else if (!this->m_evaluated) {
                 err::E0001.throwError(fmt::format("Double free of variable named '{}'.", pattern->getVariableName()));
+            }
+        } else if (pattern->getSection() == ptrn::Pattern::HeapSectionId) {
+            if (auto it = this->m_heapReferenceCounts.find(pattern->getHeapAddress()); it != this->m_heapReferenceCounts.end()) {
+                auto &[address, referenceCount] = *it;
+
+                referenceCount--;
+                if (referenceCount == 0)
+                    this->m_heapReferenceCounts.erase(it);
             }
         }
     }

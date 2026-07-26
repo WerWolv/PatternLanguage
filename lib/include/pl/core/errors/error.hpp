@@ -3,7 +3,7 @@
 #include <pl/helpers/types.hpp>
 #include <pl/core/location.hpp>
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 #include <string>
 #include <utility>

@@ -1,10 +1,11 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.21)
 project(PatternLanguage)
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(LIBPL_SHARED_LIBRARY "Compile the library as a shared library" OFF)
+option(LIBPL_WARNINGS_AS_ERRORS "Treat warnings as errors" ${PROJECT_IS_TOP_LEVEL})
 option(LIBPL_ENABLE_TESTS "Enable testing" OFF)
 option(LIBPL_ENABLE_CLI "Enable building the CLI tool" ON)
 option(LIBPL_BUILD_CLI_AS_EXECUTABLE "Build the CLI tool as an executable" ON)

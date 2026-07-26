@@ -2,6 +2,13 @@
 #pragma once
 
 #include <cstddef>
+#include <pl/helpers/types.hpp>
+#include <pl/core/errors/error.hpp>
+
+#include <pl/core/token.hpp>
+
+#include <fmt/format.h>
+
 #include <optional>
 #include <string_view>
 #include <vector>

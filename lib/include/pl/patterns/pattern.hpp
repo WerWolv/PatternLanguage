@@ -6,7 +6,7 @@
 #include <pl/helpers/types.hpp>
 #include <pl/helpers/utils.hpp>
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 #include <wolv/utils/core.hpp>
 #include <wolv/utils/guards.hpp>

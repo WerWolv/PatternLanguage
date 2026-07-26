@@ -105,6 +105,11 @@ int runTests(int argc, char **argv) {
         fn c() {};
     )", "IC");
 
+    (void)runtime.addVirtualSource(R"(
+        char imported @ 0;
+        std::assert(imported == 'A', "Imported type did not execute in the target section");
+    )", "ImportedSection");
+
     auto &test = testPatterns[testName];
     test->m_runtime = &runtime;
     test->setup();

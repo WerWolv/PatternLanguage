@@ -47,7 +47,7 @@ namespace pl::core::ast {
         auto variables     = *evaluator->getScope(0).scope;
         auto parameterPack = evaluator->getScope(0).parameterPack;
 
-        evaluator->pushScope(nullptr, variables);
+        evaluator->pushScope(nullptr, variables, true);
         evaluator->getScope(0).parameterPack = parameterPack;
         ON_SCOPE_EXIT {
             evaluator->popScope();
