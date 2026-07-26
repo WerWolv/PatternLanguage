@@ -141,6 +141,8 @@ namespace pl::core::ast {
         }
 
         evaluator->createArrayVariable(this->m_name, this->m_type.get(), size_t(entryCount), section, this->m_constant);
+        auto &variable = evaluator->getScope(0).scope->back();
+        applyVariableAttributes(evaluator, this, variable);
 
         if (this->m_placementOffset != nullptr) {
             const auto placementNode = this->m_placementOffset->evaluate(evaluator);
