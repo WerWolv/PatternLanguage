@@ -157,6 +157,47 @@ namespace pl::test {
                 };
 
                 IndexedCopyHolder indexedCopyHolder @ 0x0;
+
+                str localStringNames[3];
+                localStringNames[0] = "str number 0";
+                localStringNames[1] = "str number 1";
+                localStringNames[2] = "str number 2";
+                std::assert(localStringNames[0] == "str number 0", "localStringNames[0] should not overlap");
+                std::assert(localStringNames[1] == "str number 1", "localStringNames[1] should not overlap");
+                std::assert(localStringNames[2] == "str number 2", "localStringNames[2] should not overlap");
+
+                struct StringCopyTest {
+                    u8 x;
+                    str name;
+                };
+
+                StringCopyTest stringCopyTests[3];
+                stringCopyTests[0].x = 0;
+                stringCopyTests[1].x = 1;
+                stringCopyTests[2].x = 2;
+
+                u32 stringCopyIndex = 0;
+                fn put_string_copy_name() {
+                    str value = builtin::std::format("str number {}", stringCopyIndex);
+                    stringCopyTests[stringCopyIndex].name = value;
+                    stringCopyIndex += 1;
+                };
+
+                for (u32 stringCopyLoop = 0, stringCopyLoop < 3, stringCopyLoop += 1)
+                    put_string_copy_name();
+
+                std::assert(stringCopyTests[0].name == "str number 0", "stringCopyTests[0].name should not overlap");
+                std::assert(stringCopyTests[1].name == "str number 1", "stringCopyTests[1].name should not overlap");
+                std::assert(stringCopyTests[2].name == "str number 2", "stringCopyTests[2].name should not overlap");
+
+                u32 stringCopyOutputIndex = 0;
+                struct StringCopyOutput {
+                    str name = stringCopyTests[stringCopyOutputIndex].name [[export]];
+                    std::assert(name == builtin::std::format("str number {}", stringCopyOutputIndex), "Exported local string copy invalid");
+                    stringCopyOutputIndex += 1;
+                };
+
+                StringCopyOutput stringCopyOutput[3] @ 0x0;
             )";
         }
 
