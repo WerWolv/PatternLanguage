@@ -130,6 +130,33 @@ namespace pl::test {
                 LocalExport localExport @ 0;
                 std::assert(localExport.image[0] == localExport.values[0], "localExport.image[0] should be populated");
                 std::assert(localExport.image[1] == localExport.values[1], "localExport.image[1] should be populated");
+
+                struct IndexedCopyTest {
+                    u32 a;
+                    u32 b;
+                };
+
+                IndexedCopyTest indexedCopyTests[2];
+                indexedCopyTests[0].a = 1;
+                indexedCopyTests[0].b = 2;
+                indexedCopyTests[1].a = 3;
+                indexedCopyTests[1].b = 4;
+
+                u32 indexedCopyIndex = 0;
+
+                struct IndexedCopyEntry {
+                    IndexedCopyTest t = indexedCopyTests[indexedCopyIndex];
+                    indexedCopyIndex += 1;
+
+                    std::assert(t.a == indexedCopyIndex * 2 - 1, "Indexed local struct copy field a invalid");
+                    std::assert(t.b == indexedCopyIndex * 2, "Indexed local struct copy field b invalid");
+                };
+
+                struct IndexedCopyHolder {
+                    IndexedCopyEntry entries[2];
+                };
+
+                IndexedCopyHolder indexedCopyHolder @ 0x0;
             )";
         }
 
