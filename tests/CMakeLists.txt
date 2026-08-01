@@ -38,6 +38,26 @@ set(AVAILABLE_TESTS
         Using
         HeapLifetime
         Flattening
+        ExpressionSemantics
+        ControlFlowSemantics
+        FunctionSemantics
+        LocalStorageSemantics
+        StringSemantics
+        TypeOperatorSemantics
+        EnumSemantics
+        NamespaceSemantics
+        ArrayAlgorithmSemantics
+        AliasAggregateSemantics
+        DivisionByZeroFail
+        ModuloByZeroFail
+        ArrayOutOfBoundsFail
+        ConstAssignmentFail
+        AmbiguousMatchFail
+        NegativeStringRepeatFail
+        InvalidStringOperandFail
+        TooFewArgumentsFail
+        UndefinedFunctionFail
+        DuplicateVariableFail
 )
 
 

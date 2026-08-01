@@ -33,6 +33,9 @@
 #include "test_patterns/test_pattern_using.hpp"
 #include "test_patterns/test_pattern_heap_lifetime.hpp"
 #include "test_patterns/test_pattern_flattening.hpp"
+#include "test_patterns/test_pattern_language_semantics.hpp"
+#include "test_patterns/test_pattern_extended_semantics.hpp"
+#include "test_patterns/test_pattern_error_semantics.hpp"
 
 static pl::core::Evaluator s_evaluator;
 
@@ -71,4 +74,24 @@ std::array Tests = {
     TEST(Using),
     TEST(HeapLifetime),
     TEST(Flattening),
+    TEST(ExpressionSemantics),
+    TEST(ControlFlowSemantics),
+    TEST(FunctionSemantics),
+    TEST(LocalStorageSemantics),
+    TEST(StringSemantics),
+    TEST(TypeOperatorSemantics),
+    TEST(EnumSemantics),
+    TEST(NamespaceSemantics),
+    TEST(ArrayAlgorithmSemantics),
+    TEST(AliasAggregateSemantics),
+    TEST(DivisionByZeroFail),
+    TEST(ModuloByZeroFail),
+    TEST(ArrayOutOfBoundsFail),
+    TEST(ConstAssignmentFail),
+    TEST(AmbiguousMatchFail),
+    TEST(NegativeStringRepeatFail),
+    TEST(InvalidStringOperandFail),
+    TEST(TooFewArgumentsFail),
+    TEST(UndefinedFunctionFail),
+    TEST(DuplicateVariableFail),
 };
