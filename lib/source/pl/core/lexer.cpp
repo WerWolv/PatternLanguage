@@ -54,6 +54,12 @@ namespace pl::core {
 
 
     std::optional<char> Lexer::parseCharacter() {
+        if (m_cursor >= m_sourceCode.size()) {
+            m_errorLength = 1;
+            error("Unexpected end of file");
+            return std::nullopt;
+        }
+
         const char& c = m_sourceCode[m_cursor++];
         if (c == '\\') {
             switch (m_sourceCode[m_cursor++]) {
