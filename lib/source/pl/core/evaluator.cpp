@@ -254,25 +254,58 @@ namespace pl::core {
             typePattern->setLocal(true);
 
             auto &heap = this->getHeap();
-            auto heapAddress = u64(heap.size());
-            auto &storage = heap.emplace_back();
+            auto hasDynamicLayout = [](const std::shared_ptr<ptrn::Pattern> &pattern) {
+                if (pattern->getSize() == 0)
+                    return true;
+
+                for (const auto &[address, child] : pattern->getChildren()) {
+                    wolv::util::unused(address);
+                    if (child->getSize() == 0)
+                        return true;
+                }
+
+                return false;
+            };
 
             std::vector<std::shared_ptr<ptrn::Pattern>> entries;
-            u64 entryOffset = 0;
-            for (size_t i = 0; i < entryCount; i++) {
-                auto entryPattern = typePattern->clone();
-                entryPattern->setLocal(true);
-                entryPattern->setOffset((heapAddress << 32) + entryOffset);
+            if (hasDynamicLayout(typePattern)) {
+                for (size_t i = 0; i < entryCount; i++) {
+                    auto entryPattern = typePattern->clone();
+                    entryPattern->setLocal(true);
 
-                entryOffset += entryPattern->getSize();
-                storage.resize(entryOffset);
+                    auto heapAddress = u64(heap.size());
+                    auto &storage = heap.emplace_back();
+                    entryPattern->setOffset(heapAddress << 32);
+                    storage.resize(entryPattern->getSize());
 
-                entries.push_back(std::move(entryPattern));
+                    entries.push_back(std::move(entryPattern));
+                }
+
+                pattern->setEntries(entries);
+                pattern->setSize(typePattern->getSize() * entryCount);
+                pattern->setLocal(true);
+                pattern->setAbsoluteOffset((heap.size() - entryCount) << 32);
+            } else {
+                auto heapAddress = u64(heap.size());
+                auto &storage = heap.emplace_back();
+
+                u64 entryOffset = 0;
+                for (size_t i = 0; i < entryCount; i++) {
+                    auto entryPattern = typePattern->clone();
+                    entryPattern->setLocal(true);
+                    entryPattern->setOffset((heapAddress << 32) + entryOffset);
+
+                    entryOffset += entryPattern->getSize();
+                    storage.resize(entryOffset);
+
+                    entries.push_back(std::move(entryPattern));
+                }
+
+                pattern->setEntries(entries);
+                pattern->setSize(entryOffset);
+                pattern->setLocal(true);
+                pattern->setAbsoluteOffset(heapAddress << 32);
             }
-            pattern->setEntries(entries);
-            pattern->setSize(entryOffset);
-            pattern->setLocal(true);
-            pattern->setAbsoluteOffset(heapAddress << 32);
         } else {
             typePattern->setSection(section);
             std::vector<std::shared_ptr<ptrn::Pattern>> entries;

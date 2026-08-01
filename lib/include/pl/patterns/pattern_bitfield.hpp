@@ -247,12 +247,12 @@ namespace pl::ptrn {
 
         std::string formatDisplayValue() override {
             auto value = this->readValue();
-            auto enumName = PatternEnum::getEnumName(this->getTypeName(), value, this->getEnumValues());
+            auto enumName = PatternEnum::getEnumName(this->getTypeName(), value, this->getEnumValues(), this->getBitSize());
             return Pattern::callUserFormatFunc(value).value_or(fmt::format("{}", enumName));
         }
 
         [[nodiscard]] std::string toString() override {
-            auto enumName = PatternEnum::getEnumName(this->getTypeName(), this->readValue(), this->getEnumValues());
+            auto enumName = PatternEnum::getEnumName(this->getTypeName(), this->readValue(), this->getEnumValues(), this->getBitSize());
             return Pattern::callUserFormatFunc(this->getValue(), true).value_or(enumName);
         }
 
@@ -760,8 +760,12 @@ namespace pl::ptrn {
 
         void setOffset(u64 offset) override {
             for (auto &field : this->m_fields) {
-                if (field->getSection() == this->getSection() && field->getSection() != ptrn::Pattern::PatternLocalSectionId)
-                    field->setOffset(field->getOffset() - this->getOffset() + offset);
+                if (field->getSection() == this->getSection()) {
+                    if (field->getSection() == ptrn::Pattern::PatternLocalSectionId)
+                        field->setOffset((offset & 0xFFFF'FFFF'0000'0000) | (field->getOffset() & 0xFFFF'FFFF));
+                    else
+                        field->setOffset(field->getOffset() - this->getOffset() + offset);
+                }
             }
 
             PatternBitfieldMember::setOffset(offset);

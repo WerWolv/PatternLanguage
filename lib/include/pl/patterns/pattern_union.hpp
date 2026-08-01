@@ -73,8 +73,12 @@ namespace pl::ptrn {
 
         void setOffset(u64 offset) override {
             for (auto &member : this->m_members) {
-                if (member->getSection() == this->getSection() && member->getSection() != ptrn::Pattern::PatternLocalSectionId)
-                    member->setOffset(member->getOffset() - this->getOffset() + offset);
+                if (member->getSection() == this->getSection()) {
+                    if (member->getSection() == ptrn::Pattern::PatternLocalSectionId)
+                        member->setOffset((offset & 0xFFFF'FFFF'0000'0000) | (member->getOffset() & 0xFFFF'FFFF));
+                    else
+                        member->setOffset(member->getOffset() - this->getOffset() + offset);
+                }
             }
 
             Pattern::setOffset(offset);

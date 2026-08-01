@@ -62,13 +62,30 @@ namespace pl::ptrn {
             return fmt::format("{}", this->toString());
         }
 
-        static std::string getEnumName(const std::string &typeName, u128 value, const std::map<std::string, EnumValue> &enumValues) {
+        static std::string getEnumName(const std::string &typeName, u128 value, const std::map<std::string, EnumValue> &enumValues, u64 bitSize = 128) {
+            auto truncate = [bitSize](const core::Token::Literal &literal) -> u128 {
+                auto value = literal.toUnsigned();
+                if (bitSize >= 128)
+                    return value;
+
+                return value & ((u128(1) << bitSize) - 1);
+            };
+
+            if (bitSize < 128)
+                value &= (u128(1) << bitSize) - 1;
+
             std::string result = typeName + "::";
 
             bool foundValue = false;
             for (const auto &[name, values] : enumValues) {
                 const auto& [min, max] = values;
-                if (value >= min.toUnsigned() && value <= max.toUnsigned()) {
+                const auto minValue = truncate(min);
+                const auto maxValue = truncate(max);
+                const auto matches = minValue <= maxValue
+                    ? value >= minValue && value <= maxValue
+                    : value >= minValue || value <= maxValue;
+
+                if (matches) {
                     result += name;
                     foundValue = true;
                     break;
@@ -82,7 +99,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::string toString() override {
             u128 value = this->getValue().toUnsigned();
-            return Pattern::callUserFormatFunc(this->reference(), true).value_or(getEnumName(this->getTypeName(), value, m_enumValues));
+            return Pattern::callUserFormatFunc(this->reference(), true).value_or(getEnumName(this->getTypeName(), value, m_enumValues, this->getSize() * 8));
         }
 
         std::vector<u8> getRawBytes() override {
