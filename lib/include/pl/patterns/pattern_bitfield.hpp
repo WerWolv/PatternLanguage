@@ -247,12 +247,12 @@ namespace pl::ptrn {
 
         std::string formatDisplayValue() override {
             auto value = this->readValue();
-            auto enumName = PatternEnum::getEnumName(this->getTypeName(), value, this->getEnumValues());
+            auto enumName = PatternEnum::getEnumName(this->getTypeName(), value, this->getEnumValues(), this->getBitSize());
             return Pattern::callUserFormatFunc(value).value_or(fmt::format("{}", enumName));
         }
 
         [[nodiscard]] std::string toString() override {
-            auto enumName = PatternEnum::getEnumName(this->getTypeName(), this->readValue(), this->getEnumValues());
+            auto enumName = PatternEnum::getEnumName(this->getTypeName(), this->readValue(), this->getEnumValues(), this->getBitSize());
             return Pattern::callUserFormatFunc(this->getValue(), true).value_or(enumName);
         }
 
