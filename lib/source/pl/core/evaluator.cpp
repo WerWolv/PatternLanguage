@@ -694,7 +694,9 @@ namespace pl::core {
 
                     if (storage.size() < offset + pattern->getSize())
                         storage.resize(offset + pattern->getSize());
-                    std::memmove(storage.data() + offset, &value, pattern->getSize());
+
+                    if (!storage.empty())
+                        std::memmove(storage.data() + offset, &value, pattern->getSize());
                 }
 
                 if (this->isDebugModeEnabled())

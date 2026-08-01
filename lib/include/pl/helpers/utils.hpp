@@ -6,6 +6,7 @@
 #include <cctype>
 #include <functional>
 #include <limits>
+#include <climits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -54,9 +55,27 @@ namespace pl::hlp {
     std::vector<u8> decodeByteString(const std::string &str);
     u32 stringCrc32(const std::string &str);
 
-    [[nodiscard]] constexpr inline i128 signExtend(size_t numBits, i128 value) {
-        i128 mask = u128(1) << (numBits - 1);
-        return (value ^ mask) - mask;
+
+    [[nodiscard]] constexpr i128 signExtend(std::size_t numBits, i128 value) {
+        constexpr std::size_t width = sizeof(u128) * CHAR_BIT;
+
+        if (numBits == 0 || numBits > width)
+            throw std::out_of_range{"signExtend: invalid bit width"};
+
+        // Sign-extending an already full-width value is an identity operation.
+        if (numBits == width)
+            return value;
+
+        const u128 fieldMask = (u128(1) << numBits) - 1;
+        const u128 bits      = u128(value) & fieldMask;
+        const u128 signBit   = u128(1) << (numBits - 1);
+
+        if ((bits & signBit) == 0)
+            return static_cast<i128>(bits);
+
+        // Compute the magnitude without signed overflow.
+        const u128 magnitude = ((~bits) & fieldMask) + 1;
+        return -static_cast<i128>(magnitude);
     }
 
     template<size_t Size>
