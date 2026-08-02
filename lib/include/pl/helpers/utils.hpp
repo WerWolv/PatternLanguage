@@ -60,7 +60,7 @@ namespace pl::hlp {
         constexpr std::size_t width = sizeof(u128) * CHAR_BIT;
 
         if (numBits == 0 || numBits > width)
-            throw std::out_of_range{"signExtend: invalid bit width"};
+            throw std::out_of_range("signExtend: invalid bit width");
 
         // Sign-extending an already full-width value is an identity operation.
         if (numBits == width)
@@ -74,7 +74,7 @@ namespace pl::hlp {
             return static_cast<i128>(bits);
 
         // Compute the magnitude without signed overflow.
-        const u128 magnitude = ((~bits) & fieldMask) + 1;
+        const u128 magnitude = (~u128(bits) & fieldMask) + 1;
         return -static_cast<i128>(magnitude);
     }
 
