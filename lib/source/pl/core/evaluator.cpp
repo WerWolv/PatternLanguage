@@ -284,7 +284,7 @@ namespace pl::core {
                 pattern->setEntries(entries);
                 pattern->setSize(typePattern->getSize() * entryCount);
                 pattern->setLocal(true);
-                pattern->setAbsoluteOffset((heap.size() - entryCount) << 32);
+                pattern->setAbsoluteOffset(u64(heap.size() - entryCount) << 32);
             } else {
                 auto heapAddress = u64(heap.size());
                 auto &storage = heap.emplace_back();
