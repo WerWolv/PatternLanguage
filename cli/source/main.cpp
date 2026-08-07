@@ -1,3 +1,5 @@
+#include "pl/pattern_language.hpp"
+
 #include <pl/cli/cli.hpp>
 
 #include <wolv/io/file.hpp>
@@ -12,24 +14,24 @@ namespace pl::cli {
 
     namespace sub {
 
-        void addFormatSubcommand(CLI::App *app);
-        void addRunSubcommand(CLI::App *app);
-        void addDocsSubcommand(CLI::App *app);
-        void addInfoSubcommand(CLI::App *app);
+        void addFormatSubcommand(CLI::App *app, pl::PatternLanguage &runtime);
+        void addRunSubcommand(CLI::App *app, pl::PatternLanguage &runtime);
+        void addDocsSubcommand(CLI::App *app, pl::PatternLanguage &runtime);
+        void addInfoSubcommand(CLI::App *app, pl::PatternLanguage &runtime);
 
     }
 
     // Run the pattern language CLI
     // first argument (args[0]) is the subcommand, not the executable name
-    int executeCommandLineInterface(std::vector<std::string> args) {
+    int executeCommandLineInterface(std::vector<std::string> args, pl::PatternLanguage &runtime) {
         CLI::App app("Pattern Language CLI");
         app.require_subcommand();
 
         // Add subcommands
-        sub::addFormatSubcommand(&app);
-        sub::addRunSubcommand(&app);
-        sub::addDocsSubcommand(&app);
-        sub::addInfoSubcommand(&app);
+        sub::addFormatSubcommand(&app, runtime);
+        sub::addRunSubcommand(&app, runtime);
+        sub::addDocsSubcommand(&app, runtime);
+        sub::addInfoSubcommand(&app, runtime);
 
         // Print help message if not enough arguments were provided
         if (args.size() == 0) {
@@ -74,6 +76,7 @@ namespace pl::cli {
             args.push_back(argv[i]);
         }
 
-        return pl::cli::executeCommandLineInterface(args);
+        pl::PatternLanguage runtime;
+        return pl::cli::executeCommandLineInterface(args, runtime);
     }
 #endif

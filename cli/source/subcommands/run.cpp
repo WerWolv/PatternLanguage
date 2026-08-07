@@ -8,7 +8,7 @@
 
 namespace pl::cli::sub {
 
-    void addRunSubcommand(CLI::App *app) {
+    void addRunSubcommand(CLI::App *app, pl::PatternLanguage &runtime) {
         static std::vector<std::fs::path> includePaths;
 
         static std::string formatterName;
@@ -30,10 +30,8 @@ namespace pl::cli::sub {
         subcommand->add_flag("-v,--verbose", verbose, "Verbose output")->default_val(false);
         subcommand->add_flag("-d,--dangerous", allowDangerousFunctions, "Allow dangerous functions")->default_val(false);
 
-        subcommand->callback([] {
-
-            // Create and configure Pattern Language runtime
-            pl::PatternLanguage runtime;
+        subcommand->callback([&runtime] {
+            // Configure Pattern Language runtime
             runtime.setDangerousFunctionCallHandler([&]() {
                 return allowDangerousFunctions;
             });

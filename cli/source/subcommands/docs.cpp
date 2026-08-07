@@ -109,7 +109,7 @@ namespace pl::cli::sub {
 
     }
 
-    void addDocsSubcommand(CLI::App *app) {
+    void addDocsSubcommand(CLI::App *app, pl::PatternLanguage &runtime) {
         static std::vector<std::fs::path> includePaths;
         static std::vector<std::string> defines;
 
@@ -125,10 +125,9 @@ namespace pl::cli::sub {
         subcommand->add_option("-D,--define", defines, "Define a preprocessor macro")->take_all();
         subcommand->add_flag("-n,--noimpls", hideImplementationDetails, "Hide implementation details");
 
-        subcommand->callback([] {
+        subcommand->callback([&runtime] {
 
-            // Create and configure Pattern Language runtime
-            pl::PatternLanguage runtime;
+            // Configure Pattern Language runtime
             runtime.setDangerousFunctionCallHandler([&]() {
                 return false;
             });
@@ -172,8 +171,6 @@ namespace pl::cli::sub {
                 {
                     std::string sectionContent;
                     for (const auto &[name, type] : runtime.getInternals().parser->getTypes()) {
-                        if (!type->getLocation().source->mainSource)
-                            continue;
                         if (!type->shouldDocument())
                             continue;
                         if (hideImplementationDetails && name.contains("impl::"))

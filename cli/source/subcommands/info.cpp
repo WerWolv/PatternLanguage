@@ -76,7 +76,7 @@ namespace pl::cli::sub {
         fmt::print("{}\n", json.dump());
     }
 
-    void addInfoSubcommand(CLI::App *app) {
+    void addInfoSubcommand(CLI::App *app, pl::PatternLanguage &runtime) {
         static std::vector<std::fs::path> includePaths;
         static std::vector<std::string> defines;
 
@@ -101,10 +101,9 @@ namespace pl::cli::sub {
                 return "Invalid formatter. Valid formatters are: [pretty, json]";
         });
 
-        subcommand->callback([] {
+        subcommand->callback([&runtime] {
 
-            // Create and configure Pattern Language runtime
-            pl::PatternLanguage runtime;
+            // Configure Pattern Language runtime
             runtime.setDangerousFunctionCallHandler([&]() {
                 return false;
             });
