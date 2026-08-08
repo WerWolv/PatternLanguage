@@ -176,6 +176,10 @@ namespace pl::cli::sub {
                         if (hideImplementationDetails && name.contains("impl::"))
                             continue;
 
+                        auto sourceLocation = type->getLocation();
+                        if (sourceLocation.source == nullptr || std::filesystem::absolute(sourceLocation.source->source) != std::filesystem::absolute(patternFilePath))
+                            continue;
+
                         sectionContent += fmt::format("### `{}`\n", name);
 
                         for (auto line : wolv::util::splitString(type->getDocComment(), "\n")) {
