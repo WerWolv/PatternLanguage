@@ -22,6 +22,7 @@
 #include <pl/patterns/pattern_wide_character.hpp>
 #include <pl/patterns/pattern_string.hpp>
 #include <pl/patterns/pattern_array_dynamic.hpp>
+#include <pl/patterns/pattern_struct.hpp>
 #include <pl/patterns/pattern_padding.hpp>
 #include <pl/patterns/pattern_error.hpp>
 
@@ -557,8 +558,69 @@ namespace pl::core {
         if (name == "_")
             return;
 
+        auto &currentVariable = this->getVariableByName(name);
+        if (dynamic_cast<ptrn::PatternPadding*>(currentVariable.get()) != nullptr) {
+            const auto patternValue = std::get_if<std::shared_ptr<ptrn::Pattern>>(&variableValue);
+            if (patternValue != nullptr && dynamic_cast<ptrn::PatternStruct*>(patternValue->get()) != nullptr) {
+                if (currentVariable->isConstant() && currentVariable->isInitialized())
+                    err::E0011.throwError(fmt::format("Cannot modify constant variable '{}'.", currentVariable->getVariableName()));
+
+                auto inferredPattern = (*patternValue)->clone();
+                auto widenMembers = [&](auto &self, const std::shared_ptr<ptrn::Pattern> &pattern) -> void {
+                    if (auto structure = dynamic_cast<ptrn::PatternStruct*>(pattern.get()); structure != nullptr) {
+                        u64 offset = pattern->getOffset();
+                        for (const auto &member : structure->getEntries()) {
+                            self(self, member);
+                            member->setOffset(offset);
+                            offset += member->getSize();
+                        }
+                        pattern->setSize(offset - pattern->getOffset());
+                    } else if (dynamic_cast<ptrn::PatternUnsigned*>(pattern.get()) != nullptr ||
+                               dynamic_cast<ptrn::PatternSigned*>(pattern.get()) != nullptr ||
+                               dynamic_cast<ptrn::PatternEnum*>(pattern.get()) != nullptr) {
+                        pattern->setSize(sizeof(u128));
+                    } else if (dynamic_cast<ptrn::PatternFloat*>(pattern.get()) != nullptr) {
+                        pattern->setSize(sizeof(double));
+                    }
+                };
+                widenMembers(widenMembers, inferredPattern);
+
+                const auto section = currentVariable->getSection();
+                const auto offset = currentVariable->getOffset();
+                const auto constant = currentVariable->isConstant();
+                inferredPattern->setOffset(0);
+                inferredPattern->setSection(section);
+                inferredPattern->setOffset(offset);
+                inferredPattern->setVariableName(name);
+                inferredPattern->setConstant(constant);
+                inferredPattern->setInitialized(true);
+                currentVariable = std::move(inferredPattern);
+
+                if (section == ptrn::Pattern::HeapSectionId)
+                    this->getHeap()[currentVariable->getHeapAddress()].resize(currentVariable->getSize());
+                else if (section == ptrn::Pattern::PatternLocalSectionId)
+                    this->m_patternLocalStorage[currentVariable->getHeapAddress()].data.resize(currentVariable->getSize());
+
+                auto copyMembers = [&](auto &self, const std::shared_ptr<ptrn::Pattern> &destination, const std::shared_ptr<ptrn::Pattern> &source) -> void {
+                    auto destinationStruct = dynamic_cast<ptrn::PatternStruct*>(destination.get());
+                    auto sourceStruct = dynamic_cast<ptrn::PatternStruct*>(source.get());
+                    if (destinationStruct != nullptr && sourceStruct != nullptr) {
+                        auto destinationMembers = destinationStruct->getEntries();
+                        auto sourceMembers = sourceStruct->getEntries();
+                        for (size_t index = 0; index < destinationMembers.size(); index++)
+                            self(self, destinationMembers[index], sourceMembers[index]);
+                    } else {
+                        auto destinationPattern = destination;
+                        this->setVariable(destinationPattern, source->getValue());
+                    }
+                };
+                copyMembers(copyMembers, currentVariable, *patternValue);
+                return;
+            }
+        }
+
         auto &pattern = [&]() -> std::shared_ptr<ptrn::Pattern>& {
-            auto& variablePattern = this->getVariableByName(name);
+            auto& variablePattern = currentVariable;
 
             if (variablePattern->isLocal() || variablePattern->isReference()) {
                 // If the variable is being set to a pattern, adjust its layout to the real layout as it potentially contains dynamically sized members
