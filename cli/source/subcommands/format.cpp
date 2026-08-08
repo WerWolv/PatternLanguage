@@ -63,14 +63,14 @@ namespace pl::cli::sub {
             wolv::io::File inputFile(inputFilePath, wolv::io::File::Mode::Read);
             if (!inputFilePath.empty() && !inputFile.isValid()) {
                 ::fmt::print("Failed to open file '{}'\n", inputFilePath.string());
-                std::exit(EXIT_FAILURE);
+                throw ExitException(EXIT_FAILURE);
             }
 
             // Open pattern file
             wolv::io::File patternFile(patternFilePath, wolv::io::File::Mode::Read);
             if (!patternFile.isValid()) {
                 ::fmt::print("Failed to open file '{}'\n", patternFilePath.string());
-                std::exit(EXIT_FAILURE);
+                throw ExitException(EXIT_FAILURE);
             }
 
             runtime.setLogCallback([](auto level, const auto &message) {
@@ -110,7 +110,7 @@ namespace pl::cli::sub {
                 wolv::io::File outputFile(outputFilePath, wolv::io::File::Mode::Create);
                 if (!outputFile.isValid()) {
                     ::fmt::print("Failed to create output file: {}\n", outputFilePath.string());
-                    std::exit(EXIT_FAILURE);
+                    throw ExitException(EXIT_FAILURE);
                 }
 
                 outputFile.writeVector(result);

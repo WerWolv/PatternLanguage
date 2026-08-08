@@ -1,10 +1,10 @@
+#include "pl/cli/helpers/utils.hpp"
 #include "pl/pattern_language.hpp"
 
 #include <pl/cli/cli.hpp>
 
 #include <wolv/io/file.hpp>
 
-#include <CLI/CLI.hpp>
 #include <CLI/App.hpp>
 
 #include <fmt/format.h>
@@ -34,7 +34,7 @@ namespace pl::cli {
         sub::addInfoSubcommand(&app, runtime);
 
         // Print help message if not enough arguments were provided
-        if (args.size() == 0) {
+        if (args.empty()) {
             fmt::print("{}", app.help());
             return EXIT_FAILURE;
         } else if (args.size() == 1) {
@@ -62,6 +62,8 @@ namespace pl::cli {
             app.parse(args);
         } catch(const CLI::ParseError &e) {
             return app.exit(e, std::cout, std::cout);
+        } catch (const ExitException &e) {
+            return e.exitCode;
         }
 
         return EXIT_SUCCESS;

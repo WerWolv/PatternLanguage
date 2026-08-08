@@ -3,7 +3,6 @@
 #include <wolv/io/file.hpp>
 
 #include <fmt/format.h>
-#include <fmt/ranges.h>
 #include <pl/helpers/utils.hpp>
 #include <wolv/utils/string.hpp>
 
@@ -26,7 +25,7 @@ namespace pl::cli {
         return result;
     }
 
-    void executePattern(
+    int executePattern(
             PatternLanguage &runtime,
             wolv::io::File &inputFile,
             wolv::io::File &patternFile,
@@ -64,7 +63,7 @@ namespace pl::cli {
         // Execute pattern file
         if (int result = runtime.executeString(patternFile.readString(), wolv::util::toUTF8String(patternFile.getPath())); result != 0) {
             auto compileErrors = runtime.getCompileErrors();
-            if (compileErrors.size()>0) {
+            if (!compileErrors.empty()) {
                 fmt::print("Compilation failed\n");
                 for (const auto &error : compileErrors) {
                     fmt::print("{}\n", error.format());
@@ -73,8 +72,11 @@ namespace pl::cli {
                 auto error = runtime.getEvalError().value();
                 fmt::print("Pattern Error: {}:{} -> {}\n", error.line, error.column, error.message);
             }
-            std::exit(result);
+
+            return result;
         }
+
+        return 0;
     }
 
 }

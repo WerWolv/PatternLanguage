@@ -1,5 +1,6 @@
 #include <pl/pattern_language.hpp>
 #include <pl/core/parser.hpp>
+#include <pl/cli/helpers/utils.hpp>
 
 #include <wolv/io/file.hpp>
 #include <wolv/utils/string.hpp>
@@ -143,7 +144,7 @@ namespace pl::cli::sub {
             auto ast = runtime.parseString(patternFile.readString(), wolv::util::toUTF8String(patternFile.getPath()));
             if (!ast.has_value()) {
                 auto compileErrors = runtime.getCompileErrors();
-                if (compileErrors.size()>0) {
+                if (!compileErrors.empty()) {
                     fmt::print("Compilation failed\n");
                     for (const auto &error : compileErrors) {
                         fmt::print("{}\n", error.format());
@@ -152,7 +153,8 @@ namespace pl::cli::sub {
                     auto error = runtime.getEvalError().value();
                     fmt::print("Pattern Error: {}:{} -> {}\n", error.line, error.column, error.message);
                 }
-                std::exit(EXIT_FAILURE);
+
+                throw ExitException(EXIT_FAILURE);
             }
 
             // Output documentation

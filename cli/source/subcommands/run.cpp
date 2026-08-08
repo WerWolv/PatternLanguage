@@ -1,5 +1,6 @@
 #include <pl/pattern_language.hpp>
 #include <pl/formatters.hpp>
+#include <pl/cli/helpers/utils.hpp>
 #include <wolv/io/file.hpp>
 
 #include <CLI/CLI.hpp>
@@ -76,7 +77,7 @@ namespace pl::cli::sub {
             // Execute pattern file
             if (int result = runtime.executeFile(patternFilePath); result != 0) {
                 auto compileErrors = runtime.getCompileErrors();
-                if (compileErrors.size()>0) {
+                if (!compileErrors.empty()) {
                     fmt::print("Compilation failed\n");
                     for (const auto &error : compileErrors) {
                         fmt::print("{}\n", error.format());
@@ -85,7 +86,7 @@ namespace pl::cli::sub {
                     auto error = runtime.getEvalError().value();
                     fmt::print("Pattern Error: {}:{} -> {}\n", error.line, error.column, error.message);
                 }
-                std::exit(result);
+                throw ExitException(result);
             }
         });
     }
