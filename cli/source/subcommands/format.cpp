@@ -95,7 +95,8 @@ namespace pl::cli::sub {
                 }
             });
 
-            pl::cli::executePattern(runtime, inputFile, patternFile, includePaths, defines, allowDangerousFunctions, baseAddress);
+            if (int exitCode = pl::cli::executePattern(runtime, inputFile, patternFile, includePaths, defines, allowDangerousFunctions, baseAddress); exitCode != 0)
+                throw ExitException(exitCode);
 
             // Set formatter settings
             formatter->enableMetaInformation(metaInformation);
