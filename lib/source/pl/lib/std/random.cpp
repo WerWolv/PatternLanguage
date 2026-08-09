@@ -57,42 +57,48 @@ namespace pl::lib::libstd::random {
             runtime.addFunction(nsStdRandom, "generate", FunctionParameterCount::exactly(3), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 auto type = RandomType(i32(params[0].toUnsigned()));
 
+                #if defined(LIBWOLV_BUILTIN_UINT128)
+                    using IntegerType = i128;
+                    using FloatType = double;
+                #else
+                    using IntegerType = i64;
+                    using FloatType = double;
+                #endif
+
                 switch (type) {
                     using enum RandomType;
-#if 0
                     case Uniform:
-                        return generateNumber<std::uniform_int_distribution<i128>>(params[1].toUnsigned(), params[2].toUnsigned());
+                        return Token::Literal(u128(generateNumber<std::uniform_int_distribution<IntegerType>>(IntegerType(params[1].toUnsigned()), IntegerType(params[2].toUnsigned()))));
                     case Normal:
-                        return generateNumber<std::normal_distribution<double>>(params[1].toFloatingPoint(), params[2].toFloatingPoint());
+                        return generateNumber<std::normal_distribution<FloatType>>(params[1].toFloatingPoint(), params[2].toFloatingPoint());
                     case Exponential:
-                        return generateNumber<std::exponential_distribution<double>>(params[1].toFloatingPoint());
+                        return generateNumber<std::exponential_distribution<FloatType>>(params[1].toFloatingPoint());
                     case Gamma:
-                        return generateNumber<std::gamma_distribution<double>>(params[1].toFloatingPoint(), params[2].toFloatingPoint());
+                        return generateNumber<std::gamma_distribution<FloatType>>(params[1].toFloatingPoint(), params[2].toFloatingPoint());
                     case Weibull:
-                        return generateNumber<std::weibull_distribution<double>>(params[1].toFloatingPoint(), params[2].toFloatingPoint());
+                        return generateNumber<std::weibull_distribution<FloatType>>(params[1].toFloatingPoint(), params[2].toFloatingPoint());
                     case ExtremeValue:
-                        return generateNumber<std::extreme_value_distribution<double>>(params[1].toFloatingPoint(), params[2].toFloatingPoint());
+                        return generateNumber<std::extreme_value_distribution<FloatType>>(params[1].toFloatingPoint(), params[2].toFloatingPoint());
                     case ChiSquared:
-                        return generateNumber<std::chi_squared_distribution<double>>(params[1].toFloatingPoint());
+                        return generateNumber<std::chi_squared_distribution<FloatType>>(params[1].toFloatingPoint());
                     case Cauchy:
-                        return generateNumber<std::cauchy_distribution<double>>(params[1].toFloatingPoint(), params[2].toFloatingPoint());
+                        return generateNumber<std::cauchy_distribution<FloatType>>(params[1].toFloatingPoint(), params[2].toFloatingPoint());
                     case FisherF:
-                        return generateNumber<std::fisher_f_distribution<double>>(params[1].toFloatingPoint(), params[2].toFloatingPoint());
+                        return generateNumber<std::fisher_f_distribution<FloatType>>(params[1].toFloatingPoint(), params[2].toFloatingPoint());
                     case StudentT:
-                        return generateNumber<std::student_t_distribution<double>>(params[1].toFloatingPoint());
+                        return generateNumber<std::student_t_distribution<FloatType>>(params[1].toFloatingPoint());
                     case LogNormal:
-                        return generateNumber<std::lognormal_distribution<double>>(params[1].toFloatingPoint(), params[2].toFloatingPoint());
+                        return generateNumber<std::lognormal_distribution<FloatType>>(params[1].toFloatingPoint(), params[2].toFloatingPoint());
                     case Bernoulli:
                         return generateNumber<std::bernoulli_distribution>(params[1].toFloatingPoint());
                     case Binomial:
-                        return generateNumber<std::binomial_distribution<i128>>(params[1].toUnsigned(), params[2].toFloatingPoint());
+                        return Token::Literal(u128(generateNumber<std::binomial_distribution<IntegerType>>(IntegerType(params[1].toUnsigned()), params[2].toFloatingPoint())));
                     case NegativeBinomial:
-                        return generateNumber<std::negative_binomial_distribution<i128>>(params[1].toUnsigned(), params[2].toFloatingPoint());
+                        return Token::Literal(u128(generateNumber<std::negative_binomial_distribution<IntegerType>>(IntegerType(params[1].toUnsigned()), params[2].toFloatingPoint())));
                     case Geometric:
-                        return generateNumber<std::geometric_distribution<i128>>(params[1].toFloatingPoint());
+                        return Token::Literal(u128(generateNumber<std::geometric_distribution<IntegerType>>(params[1].toFloatingPoint())));
                     case Poisson:
-                        return generateNumber<std::poisson_distribution<i128>>(params[1].toFloatingPoint());
-#endif
+                        return Token::Literal(u128(generateNumber<std::poisson_distribution<IntegerType>>(params[1].toFloatingPoint())));
                     default:
                         err::E0003.throwError("Invalid random type");
                 }

@@ -63,7 +63,6 @@ namespace pl::core::ast {
 
         const auto throwInvalidOperandError = [this]() -> ASTNode * {
             err::E0002.throwError("Invalid operand used in mathematical expression.", { }, this->getLocation());
-            return nullptr;
         };
 
         auto leftNode  = this->getLeftOperand()->evaluate(evaluator);
