@@ -95,6 +95,7 @@ namespace pl::core::ast {
                 }
             }
         } catch (err::EvaluatorError::Exception &error) {
+            std::ignore = error;
             for (auto &statement : this->m_catchBody) {
                 auto result = statement->execute(evaluator);
 
