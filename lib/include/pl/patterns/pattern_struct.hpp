@@ -129,6 +129,13 @@ namespace pl::ptrn {
             Pattern::setReference(reference);
         }
 
+        void setInferred(bool inferred) override {
+            for (auto &pattern : this->m_members)
+                pattern->setInferred(inferred);
+
+            Pattern::setInferred(inferred);
+        }
+
         void setColor(u32 color) override {
             Pattern::setColor(color);
             for (auto &member : this->m_members) {

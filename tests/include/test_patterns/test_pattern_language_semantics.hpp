@@ -379,6 +379,7 @@ namespace pl::test {
 
                 Pair typedAggregateCopy = autoCopySource[1];
                 auto inferredAggregateCopy = autoCopySource[1];
+                std::assert(sizeof(inferredAggregateCopy) == sizeof(Pair), "Inferred aggregate changed source layout");
                 std::assert(typedAggregateCopy.first == 1, "Typed aggregate copy first member failed");
                 std::assert(typedAggregateCopy.second == 3, "Typed aggregate copy second member failed");
                 std::assert(inferredAggregateCopy.first == 1, "Inferred aggregate copy first member failed");
@@ -388,6 +389,7 @@ namespace pl::test {
                 inferredAggregateCopy.second = 0x100000003;
                 std::assert(inferredAggregateCopy.first == 0x100000001, "Inferred aggregate first member was truncated");
                 std::assert(inferredAggregateCopy.second == 0x100000003, "Inferred aggregate second member was truncated");
+                std::assert(sizeof(inferredAggregateCopy) == sizeof(Pair), "Inferred member assignment changed aggregate layout");
 
                 struct AutoCopyByteTest {
                     u8 x;
@@ -402,10 +404,12 @@ namespace pl::test {
 
                 AutoCopyByteTest typedByteCopy = autoCopyBytes[1];
                 auto inferredByteCopy = autoCopyBytes[1];
+                std::assert(sizeof(inferredByteCopy) == sizeof(AutoCopyByteTest), "Inferred u8 aggregate changed source layout");
                 inferredByteCopy.x = 300;
                 std::assert(inferredByteCopy.x == 300, "Inferred u8 aggregate member was truncated");
                 std::assert(inferredByteCopy.y == 3, "Inferred aggregate copy changed adjacent member");
                 std::assert(autoCopyBytes[1].x == 1, "Inferred aggregate copy aliased its source");
+                std::assert(sizeof(inferredByteCopy) == sizeof(AutoCopyByteTest), "Inferred u8 member assignment changed aggregate layout");
 
                 typedByteCopy.x = 300;
                 std::assert(typedByteCopy.x == u8(300), "Typed aggregate copy did not preserve member type");

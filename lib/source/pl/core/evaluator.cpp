@@ -22,7 +22,6 @@
 #include <pl/patterns/pattern_wide_character.hpp>
 #include <pl/patterns/pattern_string.hpp>
 #include <pl/patterns/pattern_array_dynamic.hpp>
-#include <pl/patterns/pattern_struct.hpp>
 #include <pl/patterns/pattern_padding.hpp>
 #include <pl/patterns/pattern_error.hpp>
 
@@ -394,6 +393,9 @@ namespace pl::core {
             }
             else
                 err::E0003.throwError("Cannot determine type of 'auto' variable.", "Try initializing it directly with a literal.", type->getLocation());
+
+            if (!reference)
+                pattern->setInferred(true);
         } else {
             if (builtinType != nullptr) {
                 std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
@@ -558,69 +560,8 @@ namespace pl::core {
         if (name == "_")
             return;
 
-        auto &currentVariable = this->getVariableByName(name);
-        if (dynamic_cast<ptrn::PatternPadding*>(currentVariable.get()) != nullptr) {
-            const auto patternValue = std::get_if<std::shared_ptr<ptrn::Pattern>>(&variableValue);
-            if (patternValue != nullptr && dynamic_cast<ptrn::PatternStruct*>(patternValue->get()) != nullptr) {
-                if (currentVariable->isConstant() && currentVariable->isInitialized())
-                    err::E0011.throwError(fmt::format("Cannot modify constant variable '{}'.", currentVariable->getVariableName()));
-
-                auto inferredPattern = (*patternValue)->clone();
-                auto widenMembers = [&](auto &self, const std::shared_ptr<ptrn::Pattern> &pattern) -> void {
-                    if (auto structure = dynamic_cast<ptrn::PatternStruct*>(pattern.get()); structure != nullptr) {
-                        u64 offset = pattern->getOffset();
-                        for (const auto &member : structure->getEntries()) {
-                            self(self, member);
-                            member->setOffset(offset);
-                            offset += member->getSize();
-                        }
-                        pattern->setSize(offset - pattern->getOffset());
-                    } else if (dynamic_cast<ptrn::PatternUnsigned*>(pattern.get()) != nullptr ||
-                               dynamic_cast<ptrn::PatternSigned*>(pattern.get()) != nullptr ||
-                               dynamic_cast<ptrn::PatternEnum*>(pattern.get()) != nullptr) {
-                        pattern->setSize(sizeof(u128));
-                    } else if (dynamic_cast<ptrn::PatternFloat*>(pattern.get()) != nullptr) {
-                        pattern->setSize(sizeof(double));
-                    }
-                };
-                widenMembers(widenMembers, inferredPattern);
-
-                const auto section = currentVariable->getSection();
-                const auto offset = currentVariable->getOffset();
-                const auto constant = currentVariable->isConstant();
-                inferredPattern->setOffset(0);
-                inferredPattern->setSection(section);
-                inferredPattern->setOffset(offset);
-                inferredPattern->setVariableName(name);
-                inferredPattern->setConstant(constant);
-                inferredPattern->setInitialized(true);
-                currentVariable = std::move(inferredPattern);
-
-                if (section == ptrn::Pattern::HeapSectionId)
-                    this->getHeap()[currentVariable->getHeapAddress()].resize(currentVariable->getSize());
-                else if (section == ptrn::Pattern::PatternLocalSectionId)
-                    this->m_patternLocalStorage[currentVariable->getHeapAddress()].data.resize(currentVariable->getSize());
-
-                auto copyMembers = [&](auto &self, const std::shared_ptr<ptrn::Pattern> &destination, const std::shared_ptr<ptrn::Pattern> &source) -> void {
-                    auto destinationStruct = dynamic_cast<ptrn::PatternStruct*>(destination.get());
-                    auto sourceStruct = dynamic_cast<ptrn::PatternStruct*>(source.get());
-                    if (destinationStruct != nullptr && sourceStruct != nullptr) {
-                        auto destinationMembers = destinationStruct->getEntries();
-                        auto sourceMembers = sourceStruct->getEntries();
-                        for (size_t index = 0; index < destinationMembers.size(); index++)
-                            self(self, destinationMembers[index], sourceMembers[index]);
-                    } else {
-                        auto destinationPattern = destination;
-                        this->setVariable(destinationPattern, source->getValue());
-                    }
-                };
-                copyMembers(copyMembers, currentVariable, *patternValue);
-                return;
-            }
-        }
-
         auto &pattern = [&]() -> std::shared_ptr<ptrn::Pattern>& {
-            auto& variablePattern = currentVariable;
+            auto& variablePattern = this->getVariableByName(name);
 
             if (variablePattern->isLocal() || variablePattern->isReference()) {
                 // If the variable is being set to a pattern, adjust its layout to the real layout as it potentially contains dynamically sized members
@@ -633,6 +574,8 @@ namespace pl::core {
                             err::E0004.throwError(fmt::format("Cannot cast from type '{}' to type '{}'.", value->getTypeName(), variablePattern->getTypeName()));
 
                         auto reference = variablePattern->isReference();
+                        auto inferred = variablePattern->isInferred() ||
+                            (dynamic_cast<ptrn::PatternPadding*>(variablePattern.get()) != nullptr && variablePattern->getTypeName().empty());
                         auto offset = variablePattern->getOffset();
                         auto section = variablePattern->getSection();
 
@@ -641,6 +584,8 @@ namespace pl::core {
 
                         variablePattern->setVariableName(name);
                         variablePattern->setReference(reference);
+
+                        variablePattern->setInferred(inferred);
 
                         if (!reference) {
                             variablePattern->setOffset(offset);
@@ -687,17 +632,44 @@ namespace pl::core {
         auto section = pattern->getSection();
         auto offset = pattern->getOffset();
         auto variableName = pattern->getVariableName();
+        auto inferred = pattern->isInferred();
 
         pattern = std::move(newPattern);
 
         pattern->setSection(section);
         pattern->setOffset(offset);
         pattern->setVariableName(variableName);
+        pattern->setInferred(inferred);
     }
 
     void Evaluator::setVariable(std::shared_ptr<ptrn::Pattern> &pattern, const Token::Literal &variableValue) {
         auto startPos = this->getBitwiseReadOffset();
         ON_SCOPE_EXIT { this->setBitwiseReadOffset(startPos); };
+
+        bool inferred = pattern->isInferred();
+        for (auto parent = pattern->getParent(); !inferred && parent != nullptr; parent = parent->getParent())
+            inferred = parent->isInferred();
+
+        if (inferred) {
+            const auto numericValue = std::visit(wolv::util::overloaded {
+                [](const u128 &) { return true; },
+                [](const i128 &) { return true; },
+                [](const double &) { return true; },
+                [](const auto &) { return false; }
+            }, variableValue);
+            const auto inferredSize = dynamic_cast<ptrn::PatternFloat*>(pattern.get()) != nullptr ? sizeof(double) : sizeof(u128);
+
+            if (numericValue && inferredSize > pattern->getSize() &&
+                (dynamic_cast<ptrn::PatternUnsigned*>(pattern.get()) != nullptr ||
+                 dynamic_cast<ptrn::PatternSigned*>(pattern.get()) != nullptr ||
+                 dynamic_cast<ptrn::PatternEnum*>(pattern.get()) != nullptr ||
+                 dynamic_cast<ptrn::PatternFloat*>(pattern.get()) != nullptr)) {
+                this->getHeap().emplace_back(inferredSize);
+                pattern->setSection(ptrn::Pattern::HeapSectionId);
+                pattern->setOffset(u64(this->getHeap().size() - 1) << 32);
+                pattern->setSize(inferredSize);
+            }
+        }
 
         if (pattern->isConstant() && pattern->isInitialized())
             err::E0011.throwError(fmt::format("Cannot modify constant variable '{}'.", pattern->getVariableName()));
