@@ -159,6 +159,7 @@ namespace pl::test {
                 std::assert(test.flag4 == false, "flag4 was invalid");
                 std::assert(test.flag5 == false, "flag5 was invalid");
                 std::assert(test.enumerated == Enum::A, "enumerated was invalid");
+                std::assert(builtin::std::core::is_valid_enum(test.enumerated), "bitfield enum field must be a valid enum");
             )";
         }
     };
