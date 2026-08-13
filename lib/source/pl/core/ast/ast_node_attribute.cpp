@@ -346,7 +346,7 @@ namespace pl::core::ast {
         if (const auto &arguments = attributable->getAttributeArguments("fixed_size"); arguments.size() == 1) {
             auto requestedSize = size_t(getAttributeValueAsInteger(arguments.front(), evaluator));
             auto actualSize = pattern->getSize();
-            if (actualSize < requestedSize) {
+            if (actualSize <= requestedSize) {
                 pattern->setSize(requestedSize);
                 evaluator->setReadOffset(pattern->getOffset() + requestedSize);
             }

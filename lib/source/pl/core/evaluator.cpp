@@ -284,7 +284,7 @@ namespace pl::core {
                 pattern->setEntries(entries);
                 pattern->setSize(typePattern->getSize() * entryCount);
                 pattern->setLocal(true);
-                pattern->setAbsoluteOffset((heap.size() - entryCount) << 32);
+                pattern->setAbsoluteOffset(u64(heap.size() - entryCount) << 32);
             } else {
                 auto heapAddress = u64(heap.size());
                 auto &storage = heap.emplace_back();
@@ -393,6 +393,9 @@ namespace pl::core {
             }
             else
                 err::E0003.throwError("Cannot determine type of 'auto' variable.", "Try initializing it directly with a literal.", type->getLocation());
+
+            if (!reference)
+                pattern->setInferred(true);
         } else {
             if (builtinType != nullptr) {
                 std::vector<std::shared_ptr<ptrn::Pattern>> patterns;
@@ -571,6 +574,8 @@ namespace pl::core {
                             err::E0004.throwError(fmt::format("Cannot cast from type '{}' to type '{}'.", value->getTypeName(), variablePattern->getTypeName()));
 
                         auto reference = variablePattern->isReference();
+                        auto inferred = variablePattern->isInferred() ||
+                            (dynamic_cast<ptrn::PatternPadding*>(variablePattern.get()) != nullptr && variablePattern->getTypeName().empty());
                         auto offset = variablePattern->getOffset();
                         auto section = variablePattern->getSection();
 
@@ -579,6 +584,8 @@ namespace pl::core {
 
                         variablePattern->setVariableName(name);
                         variablePattern->setReference(reference);
+
+                        variablePattern->setInferred(inferred);
 
                         if (!reference) {
                             variablePattern->setOffset(offset);
@@ -625,17 +632,44 @@ namespace pl::core {
         auto section = pattern->getSection();
         auto offset = pattern->getOffset();
         auto variableName = pattern->getVariableName();
+        auto inferred = pattern->isInferred();
 
         pattern = std::move(newPattern);
 
         pattern->setSection(section);
         pattern->setOffset(offset);
         pattern->setVariableName(variableName);
+        pattern->setInferred(inferred);
     }
 
     void Evaluator::setVariable(std::shared_ptr<ptrn::Pattern> &pattern, const Token::Literal &variableValue) {
         auto startPos = this->getBitwiseReadOffset();
         ON_SCOPE_EXIT { this->setBitwiseReadOffset(startPos); };
+
+        bool inferred = pattern->isInferred();
+        for (auto parent = pattern->getParent(); !inferred && parent != nullptr; parent = parent->getParent())
+            inferred = parent->isInferred();
+
+        if (inferred) {
+            const auto numericValue = std::visit(wolv::util::overloaded {
+                [](const u128 &) { return true; },
+                [](const i128 &) { return true; },
+                [](const double &) { return true; },
+                [](const auto &) { return false; }
+            }, variableValue);
+            const auto inferredSize = dynamic_cast<ptrn::PatternFloat*>(pattern.get()) != nullptr ? sizeof(double) : sizeof(u128);
+
+            if (numericValue && inferredSize > pattern->getSize() &&
+                (dynamic_cast<ptrn::PatternUnsigned*>(pattern.get()) != nullptr ||
+                 dynamic_cast<ptrn::PatternSigned*>(pattern.get()) != nullptr ||
+                 dynamic_cast<ptrn::PatternEnum*>(pattern.get()) != nullptr ||
+                 dynamic_cast<ptrn::PatternFloat*>(pattern.get()) != nullptr)) {
+                this->getHeap().emplace_back(inferredSize);
+                pattern->setSection(ptrn::Pattern::HeapSectionId);
+                pattern->setOffset(u64(this->getHeap().size() - 1) << 32);
+                pattern->setSize(inferredSize);
+            }
+        }
 
         if (pattern->isConstant() && pattern->isInitialized())
             err::E0011.throwError(fmt::format("Cannot modify constant variable '{}'.", pattern->getVariableName()));
@@ -694,7 +728,9 @@ namespace pl::core {
 
                     if (storage.size() < offset + pattern->getSize())
                         storage.resize(offset + pattern->getSize());
-                    std::memmove(storage.data() + offset, &value, pattern->getSize());
+
+                    if (!storage.empty())
+                        std::memmove(storage.data() + offset, &value, pattern->getSize());
                 }
 
                 if (this->isDebugModeEnabled())

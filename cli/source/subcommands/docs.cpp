@@ -1,5 +1,6 @@
 #include <pl/pattern_language.hpp>
 #include <pl/core/parser.hpp>
+#include <pl/cli/helpers/utils.hpp>
 
 #include <wolv/io/file.hpp>
 #include <wolv/utils/string.hpp>
@@ -109,7 +110,7 @@ namespace pl::cli::sub {
 
     }
 
-    void addDocsSubcommand(CLI::App *app) {
+    void addDocsSubcommand(CLI::App *app, pl::PatternLanguage &runtime) {
         static std::vector<std::fs::path> includePaths;
         static std::vector<std::string> defines;
 
@@ -125,10 +126,9 @@ namespace pl::cli::sub {
         subcommand->add_option("-D,--define", defines, "Define a preprocessor macro")->take_all();
         subcommand->add_flag("-n,--noimpls", hideImplementationDetails, "Hide implementation details");
 
-        subcommand->callback([] {
+        subcommand->callback([&runtime] {
 
-            // Create and configure Pattern Language runtime
-            pl::PatternLanguage runtime;
+            // Configure Pattern Language runtime
             runtime.setDangerousFunctionCallHandler([&]() {
                 return false;
             });
@@ -144,7 +144,7 @@ namespace pl::cli::sub {
             auto ast = runtime.parseString(patternFile.readString(), wolv::util::toUTF8String(patternFile.getPath()));
             if (!ast.has_value()) {
                 auto compileErrors = runtime.getCompileErrors();
-                if (compileErrors.size()>0) {
+                if (!compileErrors.empty()) {
                     fmt::print("Compilation failed\n");
                     for (const auto &error : compileErrors) {
                         fmt::print("{}\n", error.format());
@@ -153,7 +153,8 @@ namespace pl::cli::sub {
                     auto error = runtime.getEvalError().value();
                     fmt::print("Pattern Error: {}:{} -> {}\n", error.line, error.column, error.message);
                 }
-                std::exit(EXIT_FAILURE);
+
+                throw ExitException(EXIT_FAILURE);
             }
 
             // Output documentation
@@ -172,11 +173,13 @@ namespace pl::cli::sub {
                 {
                     std::string sectionContent;
                     for (const auto &[name, type] : runtime.getInternals().parser->getTypes()) {
-                        if (!type->getLocation().source->mainSource)
-                            continue;
                         if (!type->shouldDocument())
                             continue;
                         if (hideImplementationDetails && name.contains("impl::"))
+                            continue;
+
+                        auto sourceLocation = type->getLocation();
+                        if (sourceLocation.source == nullptr || std::filesystem::absolute(sourceLocation.source->source) != std::filesystem::absolute(patternFilePath))
                             continue;
 
                         sectionContent += fmt::format("### `{}`\n", name);

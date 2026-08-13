@@ -10,7 +10,7 @@
 
 namespace pl::cli::sub {
 
-    void addFormatSubcommand(CLI::App *app) {
+    void addFormatSubcommand(CLI::App *app, pl::PatternLanguage &runtime) {
         static const auto formatters = pl::gen::fmt::createFormatters();
 
         static std::fs::path inputFilePath, outputFilePath, patternFilePath;
@@ -52,7 +52,7 @@ namespace pl::cli::sub {
         if (formatterName == "default")
             formatterName = formatters.front()->getName();
 
-        subcommand->callback([] {
+        subcommand->callback([&runtime] {
             // Find formatter that matches this name
             const auto &formatter = *std::find_if(formatters.begin(), formatters.end(),
                                                   [&](const auto &formatter) {
@@ -63,18 +63,15 @@ namespace pl::cli::sub {
             wolv::io::File inputFile(inputFilePath, wolv::io::File::Mode::Read);
             if (!inputFilePath.empty() && !inputFile.isValid()) {
                 ::fmt::print("Failed to open file '{}'\n", inputFilePath.string());
-                std::exit(EXIT_FAILURE);
+                throw ExitException(EXIT_FAILURE);
             }
 
             // Open pattern file
             wolv::io::File patternFile(patternFilePath, wolv::io::File::Mode::Read);
             if (!patternFile.isValid()) {
                 ::fmt::print("Failed to open file '{}'\n", patternFilePath.string());
-                std::exit(EXIT_FAILURE);
+                throw ExitException(EXIT_FAILURE);
             }
-
-            // Create and configure Pattern Language runtime
-            pl::PatternLanguage runtime;
 
             runtime.setLogCallback([](auto level, const auto &message) {
                 if (!verbose)
@@ -98,7 +95,8 @@ namespace pl::cli::sub {
                 }
             });
 
-            pl::cli::executePattern(runtime, inputFile, patternFile, includePaths, defines, allowDangerousFunctions, baseAddress);
+            if (int exitCode = pl::cli::executePattern(runtime, inputFile, patternFile, includePaths, defines, allowDangerousFunctions, baseAddress); exitCode != 0)
+                throw ExitException(exitCode);
 
             // Set formatter settings
             formatter->enableMetaInformation(metaInformation);
@@ -113,7 +111,7 @@ namespace pl::cli::sub {
                 wolv::io::File outputFile(outputFilePath, wolv::io::File::Mode::Create);
                 if (!outputFile.isValid()) {
                     ::fmt::print("Failed to create output file: {}\n", outputFilePath.string());
-                    std::exit(EXIT_FAILURE);
+                    throw ExitException(EXIT_FAILURE);
                 }
 
                 outputFile.writeVector(result);

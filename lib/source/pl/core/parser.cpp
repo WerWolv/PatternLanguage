@@ -1890,7 +1890,7 @@ namespace pl::core {
             member = parseFunctionVariableAssignment(getValue<Token::Identifier>(-2).get());
         } else if (const auto identifierOffset = parseCompoundAssignment(tkn::Literal::Identifier); identifierOffset.has_value())
             member = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(*identifierOffset).get());
-        else if (MATCHES(sequence(tkn::Literal::Identifier) && (peek(tkn::Separator::Dot) || (peek(tkn::Separator::LeftBracket, 0) && !peek(tkn::Separator::LeftBracket, 1)))))
+        else if (MATCHES((sequence(tkn::Literal::Identifier) || sequence(tkn::Keyword::Parent) || sequence(tkn::Keyword::This)) && (peek(tkn::Separator::Dot) || (peek(tkn::Separator::LeftBracket, 0) && !peek(tkn::Separator::LeftBracket, 1)))))
             member = parseRValueAssignment();
         else if (peek(tkn::Keyword::Const) || peek(tkn::Keyword::BigEndian) || peek(tkn::Keyword::LittleEndian) || peek(tkn::ValueType::Any) || peek(tkn::Literal::Identifier)) {
             // Some kind of variable definition

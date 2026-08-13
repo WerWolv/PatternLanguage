@@ -370,6 +370,66 @@ namespace pl::test {
                 std::assert(names[0] == "zero", "String array copy changed source");
                 std::assert(names[1] == "zero", "String array copy failed");
                 std::assert(names[2] == "two", "String array copy changed neighbor");
+
+                Pair autoCopySource[2];
+                autoCopySource[0].first = 0;
+                autoCopySource[1].first = 1;
+                autoCopySource[0].second = 2;
+                autoCopySource[1].second = 3;
+
+                Pair typedAggregateCopy = autoCopySource[1];
+                auto inferredAggregateCopy = autoCopySource[1];
+                std::assert(sizeof(inferredAggregateCopy) == sizeof(Pair), "Inferred aggregate changed source layout");
+                std::assert(typedAggregateCopy.first == 1, "Typed aggregate copy first member failed");
+                std::assert(typedAggregateCopy.second == 3, "Typed aggregate copy second member failed");
+                std::assert(inferredAggregateCopy.first == 1, "Inferred aggregate copy first member failed");
+                std::assert(inferredAggregateCopy.second == 3, "Inferred aggregate copy second member failed");
+
+                inferredAggregateCopy.first = 0x100000001;
+                inferredAggregateCopy.second = 0x100000003;
+                std::assert(inferredAggregateCopy.first == 0x100000001, "Inferred aggregate first member was truncated");
+                std::assert(inferredAggregateCopy.second == 0x100000003, "Inferred aggregate second member was truncated");
+                std::assert(sizeof(inferredAggregateCopy) == sizeof(Pair), "Inferred member assignment changed aggregate layout");
+
+                struct AutoCopyByteTest {
+                    u8 x;
+                    u8 y;
+                };
+
+                AutoCopyByteTest autoCopyBytes[2];
+                autoCopyBytes[0].x = 0;
+                autoCopyBytes[1].x = 1;
+                autoCopyBytes[0].y = 2;
+                autoCopyBytes[1].y = 3;
+
+                AutoCopyByteTest typedByteCopy = autoCopyBytes[1];
+                auto inferredByteCopy = autoCopyBytes[1];
+                std::assert(sizeof(inferredByteCopy) == sizeof(AutoCopyByteTest), "Inferred u8 aggregate changed source layout");
+                inferredByteCopy.x = 300;
+                std::assert(inferredByteCopy.x == 300, "Inferred u8 aggregate member was truncated");
+                std::assert(inferredByteCopy.y == 3, "Inferred aggregate copy changed adjacent member");
+                std::assert(autoCopyBytes[1].x == 1, "Inferred aggregate copy aliased its source");
+                std::assert(sizeof(inferredByteCopy) == sizeof(AutoCopyByteTest), "Inferred u8 member assignment changed aggregate layout");
+
+                typedByteCopy.x = 300;
+                std::assert(typedByteCopy.x == u8(300), "Typed aggregate copy did not preserve member type");
+
+                struct NestedAutoCopyTest {
+                    AutoCopyByteTest inner;
+                    u16 value;
+                };
+
+                NestedAutoCopyTest nestedAutoCopySource;
+                nestedAutoCopySource.inner.x = 4;
+                nestedAutoCopySource.inner.y = 5;
+                nestedAutoCopySource.value = 6;
+                auto nestedAutoCopy = nestedAutoCopySource;
+                nestedAutoCopy.inner.x = 700;
+                nestedAutoCopy.value = 70000;
+                std::assert(nestedAutoCopy.inner.x == 700, "Nested inferred u8 member was truncated");
+                std::assert(nestedAutoCopy.inner.y == 5, "Nested inferred aggregate changed adjacent member");
+                std::assert(nestedAutoCopy.value == 70000, "Nested inferred u16 member was truncated");
+                std::assert(nestedAutoCopySource.inner.x == 4, "Nested inferred aggregate aliased its source");
             )";
         }
     };

@@ -7,29 +7,26 @@
 namespace pl::core::ast {
 
 #define FLOAT_BIT_OPERATION(name)                                                       \
-    auto name(pl::floating_point auto left, auto right) const {                         \
+    auto name(pl::floating_point auto left, auto right) const -> u128 {                 \
         wolv::util::unused(left, right);                                                \
         err::E0002.throwError(                                                          \
             "Invalid floating point operation.",                                        \
             "This operation doesn't make sense to be used with floating point values.", \
             this->getLocation());                                                       \
-        return 0;                                                                       \
     }                                                                                   \
-    auto name(auto left, pl::floating_point auto right) const {                         \
+    auto name(auto left, pl::floating_point auto right) const -> u128 {                 \
         wolv::util::unused(left, right);                                                \
         err::E0002.throwError(                                                          \
             "Invalid floating point operation.",                                        \
             "This operation doesn't make sense to be used with floating point values.", \
             this->getLocation());                                                       \
-        return 0;                                                                       \
     }                                                                                   \
-    auto name(pl::floating_point auto left, pl::floating_point auto right) const {      \
+    auto name(pl::floating_point auto left, pl::floating_point auto right) const -> u128 { \
         wolv::util::unused(left, right);                                                \
         err::E0002.throwError(                                                          \
             "Invalid floating point operation.",                                        \
             "This operation doesn't make sense to be used with floating point values.", \
             this->getLocation());                                                       \
-        return 0;                                                                       \
     }                                                                                   \
     auto name(pl::integral auto left, pl::integral auto right) const
 

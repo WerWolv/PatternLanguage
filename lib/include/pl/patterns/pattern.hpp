@@ -105,6 +105,7 @@ namespace pl::ptrn {
             this->m_variableName = other.m_variableName;
             this->m_typeName = other.m_typeName;
             this->m_reference = other.m_reference;
+            this->m_inferred = other.m_inferred;
             this->m_parent = other.m_parent;
             this->m_arrayIndex = other.m_arrayIndex;
             this->m_line = other.m_line;
@@ -380,6 +381,14 @@ namespace pl::ptrn {
 
         [[nodiscard]] bool isReference() const {
             return this->m_reference;
+        }
+
+        virtual void setInferred(bool inferred) {
+            this->m_inferred = inferred;
+        }
+
+        [[nodiscard]] bool isInferred() const {
+            return this->m_inferred;
         }
 
         virtual void setSection(u64 id) {
@@ -674,6 +683,7 @@ namespace pl::ptrn {
         u32 m_color = 0x00;
 
         bool m_reference = false;
+        bool m_inferred = false;
         bool m_constant = false;
         bool m_initialized = false;
 

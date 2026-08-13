@@ -1,5 +1,6 @@
 #include <pl/pattern_language.hpp>
 #include <pl/formatters.hpp>
+#include <pl/cli/helpers/utils.hpp>
 #include <wolv/io/file.hpp>
 
 #include <CLI/CLI.hpp>
@@ -8,7 +9,7 @@
 
 namespace pl::cli::sub {
 
-    void addRunSubcommand(CLI::App *app) {
+    void addRunSubcommand(CLI::App *app, pl::PatternLanguage &runtime) {
         static std::vector<std::fs::path> includePaths;
 
         static std::string formatterName;
@@ -30,10 +31,8 @@ namespace pl::cli::sub {
         subcommand->add_flag("-v,--verbose", verbose, "Verbose output")->default_val(false);
         subcommand->add_flag("-d,--dangerous", allowDangerousFunctions, "Allow dangerous functions")->default_val(false);
 
-        subcommand->callback([] {
-
-            // Create and configure Pattern Language runtime
-            pl::PatternLanguage runtime;
+        subcommand->callback([&runtime] {
+            // Configure Pattern Language runtime
             runtime.setDangerousFunctionCallHandler([&]() {
                 return allowDangerousFunctions;
             });
@@ -78,7 +77,7 @@ namespace pl::cli::sub {
             // Execute pattern file
             if (int result = runtime.executeFile(patternFilePath); result != 0) {
                 auto compileErrors = runtime.getCompileErrors();
-                if (compileErrors.size()>0) {
+                if (!compileErrors.empty()) {
                     fmt::print("Compilation failed\n");
                     for (const auto &error : compileErrors) {
                         fmt::print("{}\n", error.format());
@@ -87,7 +86,7 @@ namespace pl::cli::sub {
                     auto error = runtime.getEvalError().value();
                     fmt::print("Pattern Error: {}:{} -> {}\n", error.line, error.column, error.message);
                 }
-                std::exit(result);
+                throw ExitException(result);
             }
         });
     }
