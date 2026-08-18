@@ -30,8 +30,8 @@ jobs:
         sudo apt install -y       \
             build-essential       \
             ccache                \
-            gcc-14                \
-            g++-14                \
+            gcc-16                \
+            g++-16                \
             lld                   \
             ${PKGCONF:-}          \
             cmake                 \
@@ -50,7 +50,7 @@ jobs:
       run: |
         mkdir -p build
         cd build
-        CC=gcc-14 CXX=g++-14 cmake                                                                                    \
+        CC=gcc-16 CXX=g++-16 cmake                                                                                    \
           -DCMAKE_BUILD_TYPE=Debug                                                                                    \
           -DCMAKE_C_FLAGS="-O0 -fuse-ld=lld --coverage -fsanitize=address,leak,undefined -fno-sanitize-recover=all"   \
           -DCMAKE_CXX_FLAGS="-O0 -fuse-ld=lld --coverage -fsanitize=address,leak,undefined -fno-sanitize-recover=all" \

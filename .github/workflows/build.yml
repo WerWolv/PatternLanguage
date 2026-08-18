@@ -130,8 +130,8 @@ jobs:
         sudo apt update
         sudo apt install -y       \
             build-essential       \
-            gcc-14                \
-            g++-14                \
+            gcc-16                \
+            g++-16                \
             lld                   \
             cmake                 \
             ninja-build           \
@@ -148,7 +148,7 @@ jobs:
       run: |
         mkdir -p build
         cd build
-        CC=gcc-14 CXX=g++-14 cmake                \
+        CC=gcc-16 CXX=g++-16 cmake                \
           -DCMAKE_BUILD_TYPE=Debug                \
           -DCMAKE_INSTALL_PREFIX="/usr"           \
           -DCMAKE_C_FLAGS="-fuse-ld=lld"          \
