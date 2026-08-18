@@ -13,6 +13,7 @@ namespace pl::cli {
         std::vector<std::string> authors;
         std::vector<std::string> mimes;
         std::string version;
+        std::map<std::string, std::vector<std::string>> pragmas;
         
         nlohmann::json toJSON();
     };

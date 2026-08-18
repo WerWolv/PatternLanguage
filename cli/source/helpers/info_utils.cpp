@@ -24,67 +24,50 @@ namespace pl::cli {
         }
     }
 
+    std::vector<std::string> getMultimapValues(std::multimap<std::string, std::string> &pragmas, const std::string key) {
+        std::vector<std::string> values;
+        auto [begin, end] = pragmas.equal_range(key);
+        for (auto it = begin; it != end; ++it) {
+            values.push_back(trimValue(it->second));
+        }
+        return values;
+    }
+
+    std::string getLastOrFallback(const std::vector<std::string> &values, const std::string &fallback) {
+        if (values.empty()) {
+            return fallback;
+        }
+        return values.back();
+    }
+
     std::optional<PatternMetadata> parsePatternMetadata(pl::PatternLanguage &runtime, const std::string &patternData) {
-        // reset pragma handlers
         clearPragmas(runtime);
 
-        // Setup pragma handlers
-        PatternMetadata metadata;
-        std::vector<std::string> descriptions;
-        runtime.addPragma("name", [&](auto &, const std::string &value) -> bool {
-            metadata.name = trimValue(value);
-            return true;
-        });
+        auto pragmaValues = runtime.getPragmaValues(patternData);
 
-        runtime.addPragma("author", [&](auto &, const std::string &value) -> bool {
-            metadata.authors.push_back(trimValue(value));
-            return true;
-        });
+        PatternMetadata metadata = {};
 
-        runtime.addPragma("description", [&](auto &, const std::string &value) -> bool {
-            descriptions.push_back(trimValue(value));
-            return true;
-        });
+        metadata.name = getLastOrFallback(getMultimapValues(pragmaValues, "name"), "");
+        metadata.authors = getMultimapValues(pragmaValues, "author");
+        metadata.mimes = getMultimapValues(pragmaValues, "mime");
+        metadata.version = getLastOrFallback(getMultimapValues(pragmaValues, "version"), "");
+        metadata.description = wolv::util::combineStrings(getMultimapValues(pragmaValues, "description"), "\n");
 
-        runtime.addPragma("MIME", [&](auto &, const std::string &value) -> bool {
-            metadata.mimes.push_back(trimValue(value));
-            return true;
-        });
-
-        runtime.addPragma("version", [&](auto &, const std::string &value) -> bool {
-            metadata.version = trimValue(value);
-            return true;
-        });
-
-        // Run pattern file
-        auto ast = runtime.parseString(patternData, "pattern.hexpat");
-        if (!ast.has_value()) {
-            auto compileErrors = runtime.getCompileErrors();
-            if (compileErrors.size()>0) {
-                fmt::print("Compilation failed\n");
-                for (const auto &error : compileErrors) {
-                    fmt::print("{}\n", error.format());
-                }
-            } else {
-                auto error = runtime.getEvalError().value();
-                fmt::print("Pattern Error: {}:{} -> {}\n", error.line, error.column, error.message);
-            }
-            return {};
+        for (const auto &[key, value] : pragmaValues) {
+            metadata.pragmas[key].push_back(trimValue(value));
         }
-
-        // Set description
-        metadata.description = wolv::util::combineStrings(descriptions, "\n");
 
         return metadata;
     }
 
     nlohmann::json PatternMetadata::toJSON() {
         return {
-            {"name", name},
-            {"description", description},
-            {"authors", authors},
-            {"mimes", mimes},
-            {"version", version}
+            { "name",           name        },
+            { "description",    description },
+            { "authors",        authors     },
+            { "mimes",          mimes       },
+            { "version",        version     },
+            { "pragmas",        pragmas     }
         };
     }
 }
