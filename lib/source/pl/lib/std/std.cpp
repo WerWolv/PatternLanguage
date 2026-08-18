@@ -93,6 +93,7 @@ namespace pl::lib::libstd::libstd {
             /* error(message) */
             runtime.addFunction(nsStd, "error", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 err::E0012.throwError(params[0].toString(true));
+                std::unreachable();
             });
 
             /* warning(message) */

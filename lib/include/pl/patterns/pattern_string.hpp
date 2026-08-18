@@ -74,6 +74,13 @@ namespace pl::ptrn {
 
             std::string buffer(size, 0x00);
             this->getEvaluator()->readData(this->getOffset(), buffer.data(), size, this->getSection());
+
+            const auto pos = buffer.find_last_not_of('\x00');
+            if (pos == std::string::npos)
+                return "\"\"";
+
+            buffer.erase(pos + 1);
+
             auto displayString = hlp::encodeByteString({ buffer.begin(), buffer.end() });
 
             return Pattern::callUserFormatFunc(buffer).value_or(fmt::format("\"{0}\" {1}", displayString, size > this->getSize() ? "(truncated)" : ""));
