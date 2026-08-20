@@ -114,4 +114,13 @@ namespace pl::test {
             )") { }
     };
 
+    class TestPatternStaticArrayRangeOverflowFail : public TestPatternFailingSemantic {
+    public:
+        TestPatternStaticArrayRangeOverflowFail(core::Evaluator *evaluator)
+            : TestPatternFailingSemantic(evaluator, "StaticArrayRangeOverflowFail", R"(
+                u64 wrappedSize = 0xFFFFFFFFFFFFFFFF;
+                u8 values[wrappedSize] @ 0;
+            )") { }
+    };
+
 }

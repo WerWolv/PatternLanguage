@@ -16,6 +16,8 @@
 #include <pl/patterns/pattern_array_dynamic.hpp>
 #include <pl/patterns/pattern_array_static.hpp>
 
+#include <limits>
+
 namespace pl::core::ast {
 
     ASTNodeArrayVariableDecl::ASTNodeArrayVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeApplication> type, std::unique_ptr<ASTNode> &&size, std::unique_ptr<ASTNode> &&placementOffset, std::unique_ptr<ASTNode> &&placementSection, bool constant)
@@ -128,6 +130,13 @@ namespace pl::core::ast {
                 [](auto &&size) -> i128 { return i128(size); }
         }, sizeLiteral->getValue());
 
+        if (entryCount < 0)
+            err::E0004.throwError("Array size cannot be negative.", { }, this->getLocation());
+
+        auto limit = evaluator->getArrayLimit();
+        if (u128(entryCount) > limit)
+            err::E0007.throwError(fmt::format("Array grew past set limit of {}", limit), "If this is intended, try increasing the limit using '#pragma array_limit <new_limit>'.", this->getLocation());
+
         u64 section = 0;
         if (this->m_placementSection != nullptr) {
             const auto sectionNode = this->m_placementSection->evaluate(evaluator);
@@ -197,6 +206,7 @@ namespace pl::core::ast {
 
             if (entryCount < 0)
                 err::E0004.throwError("Array size cannot be negative.", { }, this->getLocation());
+
         } else {
             std::vector<u8> buffer(templatePattern->getSize());
             while (true) {
@@ -222,6 +232,21 @@ namespace pl::core::ast {
             }
         }
 
+        const auto arraySize = u128(templatePattern->getSize()) * u128(entryCount);
+        const auto arrayEnd = u128(startOffset) + arraySize;
+
+        if (arraySize > std::numeric_limits<size_t>::max())
+            err::E0004.throwError("Array size is too large.", { }, this->getLocation());
+
+        if (templatePattern->getSection() == ptrn::Pattern::MainSectionId) {
+            const auto dataStart = u128(evaluator->getDataBaseAddress());
+            const auto dataEnd = dataStart + evaluator->getDataSize();
+            if (startOffset < dataStart || arrayEnd > dataEnd)
+                err::E0004.throwError("Array expanded past end of the data.", { }, this->getLocation());
+        } else if (arrayEnd > std::numeric_limits<u64>::max()) {
+            err::E0004.throwError("Array address range overflowed.", { }, this->getLocation());
+        }
+
         if (dynamic_cast<ptrn::PatternPadding *>(templatePattern.get())) {
             outputPattern = std::make_unique<ptrn::PatternPadding>(evaluator, startOffset, 0, getLocation().line);
         } else if (dynamic_cast<ptrn::PatternCharacter *>(templatePattern.get())) {
@@ -240,16 +265,12 @@ namespace pl::core::ast {
         if (templatePattern->hasOverriddenEndian())
             outputPattern->setEndian(templatePattern->getEndian());
         outputPattern->setTypeName(templatePattern->getTypeName());
-        outputPattern->setSize(size_t(templatePattern->getSize() * entryCount));
+        outputPattern->setSize(size_t(arraySize));
         if (evaluator->isReadOrderReversed())
             outputPattern->setAbsoluteOffset(evaluator->getReadOffset());
         outputPattern->setSection(templatePattern->getSection());
 
-        evaluator->setReadOffset(startOffset + outputPattern->getSize());
-
-        if (outputPattern->getSection() == ptrn::Pattern::MainSectionId)
-            if ((evaluator->getReadOffset() - evaluator->getDataBaseAddress()) > (evaluator->getDataSize()))
-                err::E0004.throwError("Array expanded past end of the data.", { }, this->getLocation());
+        evaluator->setReadOffset(u64(arrayEnd));
     }
 
     void ASTNodeArrayVariableDecl::createDynamicArray(Evaluator *evaluator, std::shared_ptr<ptrn::Pattern> &resultPattern) const {

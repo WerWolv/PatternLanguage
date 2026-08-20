@@ -94,4 +94,5 @@ std::array Tests = {
     TEST(TooFewArgumentsFail),
     TEST(UndefinedFunctionFail),
     TEST(DuplicateVariableFail),
+    TEST(StaticArrayRangeOverflowFail),
 };

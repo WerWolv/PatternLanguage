@@ -58,6 +58,7 @@ set(AVAILABLE_TESTS
         TooFewArgumentsFail
         UndefinedFunctionFail
         DuplicateVariableFail
+        StaticArrayRangeOverflowFail
 )
 
 
