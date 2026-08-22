@@ -15,7 +15,8 @@ namespace pl::ptrn {
             for (const auto &member : other.m_members) {
                 auto copy = member->clone();
 
-                this->m_members.push_back(std::move(copy));
+                this->m_members.push_back(copy);
+                this->m_sortedMembers.push_back(std::move(copy));
             }
         }
 

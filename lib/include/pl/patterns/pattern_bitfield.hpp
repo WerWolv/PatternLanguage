@@ -545,8 +545,11 @@ namespace pl::ptrn {
                 : PatternBitfieldMember(evaluator, offset, size_t((totalBitSize + 7) / 8), line), m_firstBitOffset(firstBitOffset), m_totalBitSize(totalBitSize) { }
 
         PatternBitfield(const PatternBitfield &other) : PatternBitfieldMember(other) {
-            for (const auto &field : other.m_fields)
-                this->m_fields.push_back(field->clone());
+            for (const auto &field : other.m_fields) {
+                auto copy = field->clone();
+                this->m_fields.push_back(copy);
+                this->m_sortedFields.push_back(std::move(copy));
+            }
 
             this->m_firstBitOffset = other.m_firstBitOffset;
             this->m_totalBitSize = other.m_totalBitSize;
