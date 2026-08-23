@@ -9,7 +9,7 @@ on:
 jobs:
   tests:
     name: 🧪 Unit Tests
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     env:
       DISPATCH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
