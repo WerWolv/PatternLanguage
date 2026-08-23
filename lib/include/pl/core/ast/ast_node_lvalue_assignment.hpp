@@ -37,6 +37,7 @@ namespace pl::core::ast {
     private:
         std::string m_lvalueName;
         std::unique_ptr<ASTNode> m_rvalue;
+        mutable std::shared_ptr<ptrn::Pattern> m_cachedVariable;
     };
 
 }
