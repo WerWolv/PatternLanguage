@@ -71,9 +71,10 @@ namespace pl::core::ast {
                         auto offsetLiteral = dynamic_cast<ASTNodeLiteral*>(offsetNode.get());
                         if (offsetLiteral != nullptr) {
                             auto offset = u64(offsetLiteral->getValue().toUnsigned());
+                            const u64 currentSection = evaluator->getUserSectionId();
 
                             u8 byte = 0x00;
-                            evaluator->readData(offset, &byte, 1, ptrn::Pattern::MainSectionId);
+                            evaluator->readData(offset, &byte, 1, currentSection);
                             return std::make_unique<ASTNodeLiteral>(u128(byte));
                         }
                     }
