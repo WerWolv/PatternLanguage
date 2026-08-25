@@ -26,10 +26,14 @@ namespace pl::core::ast {
         if (this->m_providerOperation) {
             switch (this->getOperator()) {
                 case Token::Operator::AddressOf:
-                    result = u128(evaluator->getDataBaseAddress());
+                    if (evaluator->getUserSectionId() == ptrn::Pattern::MainSectionId) {
+                        result = u128(evaluator->getDataBaseAddress());
+                    } else {
+                        result = u128(0x00);
+                    }
                     break;
                 case Token::Operator::SizeOf:
-                    result = u128(evaluator->getDataSize());
+                    result = u128(evaluator->getSectionSize(evaluator->getUserSectionId()));
                     break;
                 default:
                     err::E0001.throwError("Invalid type operation.", {}, this->getLocation());
