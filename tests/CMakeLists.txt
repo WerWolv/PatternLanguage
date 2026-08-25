@@ -59,6 +59,7 @@ set(AVAILABLE_TESTS
         UndefinedFunctionFail
         DuplicateVariableFail
         StaticArrayRangeOverflowFail
+        Dollar
 )
 
 
