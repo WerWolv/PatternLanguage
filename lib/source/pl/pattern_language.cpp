@@ -598,13 +598,13 @@ namespace pl {
             ptrn::Pattern* value = interval.value;
 
             auto parent = value->getParent();
-            while (parent != nullptr && dynamic_cast<const ptrn::PatternArrayStatic*>(parent->getParent()) == nullptr) {
+            while (parent != nullptr && dynamic_cast<const ptrn::PatternArrayStatic*>(parent) == nullptr) {
                 parent = parent->getParent();
             }
 
             // Handle static array members
             if (parent != nullptr) {
-                parent->setOffset(interval.interval.start - (value->getOffset() - parent->getOffset()));
+                value->setOffset(interval.interval.start);
                 parent->clearFormatCache();
                 value->clearFormatCache();
             }
