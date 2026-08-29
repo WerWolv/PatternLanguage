@@ -173,6 +173,7 @@ namespace pl::core {
         hlp::safe_unique_ptr<ast::ASTNode> parseFunctionStatement(bool needsSemicolon = true);
         hlp::safe_unique_ptr<ast::ASTNode> parseFunctionVariableAssignment(const std::string &lvalue);
         hlp::safe_unique_ptr<ast::ASTNode> parseFunctionVariableCompoundAssignment(const std::string &lvalue);
+        hlp::safe_unique_ptr<ast::ASTNode> parseFunctionVariableCompoundAssignment(TokenIter curr);
         hlp::safe_unique_ptr<ast::ASTNode> parseFunctionControlFlowStatement();
         std::vector<hlp::safe_unique_ptr<ast::ASTNode>> parseStatementBody(const std::function<hlp::safe_unique_ptr<ast::ASTNode>()> &memberParser);
         hlp::safe_unique_ptr<ast::ASTNode> parseFunctionWhileLoop();
@@ -210,7 +211,9 @@ namespace pl::core {
         std::vector<hlp::safe_shared_ptr<ast::ASTNode>> parseNamespace();
         std::vector<hlp::safe_shared_ptr<ast::ASTNode>> parseStatements();
 
-        std::optional<i32> parseCompoundAssignment(const Token &token);
+        std::optional<i32> isCompoundAssignmentOperator(const Token &token);
+        std::optional<TokenIter> isCompoundAssignmentOperator();
+        std::optional<i32>  isCompoundAssignmentOperator(i32 offset);
 
         std::optional<Token::DocComment> parseDocComment(bool global);
 
