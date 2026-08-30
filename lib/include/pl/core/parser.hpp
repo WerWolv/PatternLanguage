@@ -71,6 +71,13 @@ namespace pl::core {
         std::string m_aliasNamespaceString;
         std::string m_autoNamespace;
 
+        enum class AllowKeywords : u8 {
+            None = 0,
+            Parent,
+            This,
+            Both
+        };
+
         Location location() override;
         // error helpers
         void errorHere(const std::string &message);
@@ -212,7 +219,7 @@ namespace pl::core {
         std::vector<hlp::safe_shared_ptr<ast::ASTNode>> parseStatements();
 
         std::optional<i32> isCompoundAssignmentOperator(const Token &token);
-        std::optional<TokenIter> isCompoundAssignmentOperator();
+        std::optional<TokenIter> isCompoundAssignmentOperator(AllowKeywords allowKeywords = AllowKeywords::None);
         std::optional<i32>  isCompoundAssignmentOperator(i32 offset);
 
         std::optional<Token::DocComment> parseDocComment(bool global);
