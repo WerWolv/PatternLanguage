@@ -191,6 +191,9 @@ namespace pl::core::ast {
                 err::E0008.throwError("[[merge]] attribute can only be used with nested types.", "Try applying it to a struct, union, bitfield or array instead.", node->getLocation());
             else {
                 auto child = dynamic_cast<ptrn::IIterable*>(pattern.get());
+                if (child == nullptr)
+                    err::E0008.throwError("[[merge]] attribute can only be used with iterable types.", "Try applying it to a struct, union, bitfield or array instead.", node->getLocation());
+
                 auto &currScope = evaluator->getScope(0);
 
                 if (currScope.parent == pattern)
