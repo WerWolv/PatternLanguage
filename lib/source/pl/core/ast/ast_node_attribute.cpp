@@ -196,19 +196,19 @@ namespace pl::core::ast {
 
                 auto &currScope = evaluator->getScope(0);
 
-                if (currScope.parent == pattern)
-
-                for (const auto& entry : child->getEntries()) {
-                    for (auto &existingPattern : *currScope.scope) {
-                        if (entry->hasVariableName() && existingPattern->getVariableName() == entry->getVariableName()) {
-                            err::E0008.throwError(fmt::format("Cannot merge '{}' from Type '{}' into current scope. Pattern with this name already exists.", entry->getVariableName(), pattern->getTypeName()), "", node->getLocation());
+                if (currScope.parent == pattern) {
+                    for (const auto& entry : child->getEntries()) {
+                        for (auto &existingPattern : *currScope.scope) {
+                            if (entry->hasVariableName() && existingPattern->getVariableName() == entry->getVariableName()) {
+                                err::E0008.throwError(fmt::format("Cannot merge '{}' from Type '{}' into current scope. Pattern with this name already exists.", entry->getVariableName(), pattern->getTypeName()), "", node->getLocation());
+                            }
                         }
+
+                        if (entry->hasAttribute("private"))
+                            continue;
+
+                        currScope.scope->emplace_back(entry);
                     }
-
-                    if (entry->hasAttribute("private"))
-                        continue;
-
-                    currScope.scope->emplace_back(entry);
                 }
 
                 child->setEntries({});
