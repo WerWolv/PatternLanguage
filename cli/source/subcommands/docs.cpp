@@ -25,9 +25,7 @@ namespace pl::cli::sub {
         std::string getTypeEndian(const core::ast::ASTNodeTypeApplication *typeApp) {
             auto endian = typeApp->getEndian();
 
-            if (!endian.has_value())
-                return "";
-            else if (endian == std::endian::little)
+            if (endian == std::endian::little)
                 return "le ";
             else if (endian == std::endian::big)
                 return "be ";
