@@ -197,11 +197,17 @@ namespace pl::core {
             path.emplace_back("null");
 
         if (MATCHES(sequence(tkn::Separator::LeftBracket) && !peek(tkn::Separator::LeftBracket))) {
-            path.emplace_back(std::move(parseMathematicalExpression().unwrap()));
+            auto expression = parseMathematicalExpression();
+            if (expression == nullptr) {
+                return nullptr;
+            }
+
             if (!sequence(tkn::Separator::RightBracket)) {
                 error("Expected ']' at end of array indexing, got {}.", getFormattedToken(0));
                 return nullptr;
             }
+
+            path.emplace_back(std::move(expression.unwrap()));
         }
 
         if (sequence(tkn::Separator::Dot)) {
@@ -216,6 +222,8 @@ namespace pl::core {
 
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseRValueAssignment() {
         auto lhs = parseRValue();
+        if (lhs == nullptr)
+            return nullptr;
 
         if (!sequence(tkn::Operator::Assign)) {
             errorHere("Expected value after '=' in variable assignment, got {}.", getFormattedToken(0));
@@ -2769,13 +2777,15 @@ namespace pl::core {
         return std::nullopt;
     }
 
-    std::optional<Parser::TokenIter>  Parser::isCompoundAssignmentOperator(AllowKeywords allowKeywords) {
+    std::optional<Parser::TokenIter> Parser::isCompoundAssignmentOperator(AllowKeywords allowKeywords) {
         auto save = this->m_curr;
+        auto saveErrors = getErrors();
         bool allowParent = ((u32)allowKeywords & (u32)AllowKeywords::Parent) != 0;
         bool allowThis   = ((u32)allowKeywords & (u32)AllowKeywords::This) != 0;
         if (MATCHES((sequence(tkn::Literal::Identifier) || (allowParent && sequence(tkn::Keyword::Parent)) || (allowThis && sequence(tkn::Keyword::This))) && (peek(tkn::Separator::Dot) || (peek(tkn::Separator::LeftBracket, 0) && !peek(tkn::Separator::LeftBracket, 1))))) {
             auto result = m_curr;
             auto lhs = parseRValue();
+            setErrors(saveErrors);
             if (lhs == nullptr) {
                 m_curr = save;
                 return std::nullopt;
