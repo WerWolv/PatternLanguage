@@ -2347,7 +2347,7 @@ namespace pl::core {
         auto identifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
 
 
-        hlp::safe_unique_ptr<ast::ASTNode> placementOffset, placementSection;
+        hlp::safe_unique_ptr<ast::ASTNode> placementOffset, placementSection, defaultValue;
         if (sequence(tkn::Operator::At)) {
             if (identifier != nullptr) {
                 if (m_currTemplateType.empty())
@@ -2366,6 +2366,11 @@ namespace pl::core {
             }
         } else if (sequence(tkn::Keyword::In)) {
             inVariable = true;
+            if (sequence(tkn::Operator::Assign)) {
+                defaultValue = parseMathematicalExpression();
+                if (defaultValue == nullptr)
+                    return nullptr;
+            }
         } else if (sequence(tkn::Keyword::Out)) {
             outVariable = true;
         } else if (sequence(tkn::Operator::Assign)) {
@@ -2402,7 +2407,7 @@ namespace pl::core {
         }
         if (identifier != nullptr)
             identifier->setType(Token::Identifier::IdentifierType::GlobalVariable);
-        return create<ast::ASTNodeVariableDecl>(name, type.unwrapUnchecked(), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()), inVariable, outVariable);
+        return create<ast::ASTNodeVariableDecl>(name, type.unwrapUnchecked(), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()), inVariable, outVariable, false, std::move(defaultValue.unwrapUnchecked()));
     }
 
     // (parseType) Identifier[[(parseMathematicalExpression)]] @ Integer

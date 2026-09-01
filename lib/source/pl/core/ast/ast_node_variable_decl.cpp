@@ -7,8 +7,8 @@
 
 namespace pl::core::ast {
 
-    ASTNodeVariableDecl::ASTNodeVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeApplication> type, std::unique_ptr<ASTNode> &&placementOffset, std::unique_ptr<ASTNode> &&placementSection, bool inVariable, bool outVariable, bool constant)
-        : ASTNode(), m_name(std::move(name)), m_type(std::move(type)), m_placementOffset(std::move(placementOffset)), m_placementSection(std::move(placementSection)), m_inVariable(inVariable), m_outVariable(outVariable), m_constant(constant) { }
+    ASTNodeVariableDecl::ASTNodeVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeApplication> type, std::unique_ptr<ASTNode> &&placementOffset, std::unique_ptr<ASTNode> &&placementSection, bool inVariable, bool outVariable, bool constant, std::unique_ptr<ASTNode> &&defaultValue)
+        : ASTNode(), m_name(std::move(name)), m_type(std::move(type)), m_placementOffset(std::move(placementOffset)), m_placementSection(std::move(placementSection)), m_defaultValue(std::move(defaultValue)), m_inVariable(inVariable), m_outVariable(outVariable), m_constant(constant) { }
 
     ASTNodeVariableDecl::ASTNodeVariableDecl(const ASTNodeVariableDecl &other) : ASTNode(other), Attributable(other) {
         this->m_name = other.m_name;
@@ -19,6 +19,9 @@ namespace pl::core::ast {
 
         if (other.m_placementSection != nullptr)
             this->m_placementSection = other.m_placementSection->clone();
+
+        if (other.m_defaultValue != nullptr)
+            this->m_defaultValue = other.m_defaultValue->clone();
 
         this->m_inVariable  = other.m_inVariable;
         this->m_outVariable = other.m_outVariable;
@@ -173,6 +176,22 @@ namespace pl::core::ast {
             auto section = this->evaluatePlacementSection(evaluator);
             auto offset = this->evaluatePlacementOffset(evaluator);
             evaluator->setVariableAddress(this->getName(), u64(offset), section);
+        }
+
+        if (this->m_defaultValue != nullptr && !evaluator->hasInVariable(this->getName())) {
+            const auto node = this->m_defaultValue->evaluate(evaluator);
+            const auto literal = dynamic_cast<ASTNodeLiteral *>(node.get());
+            if (literal == nullptr)
+                err::E0010.throwError("Cannot assign void expression to variable.", {}, this->getLocation());
+
+            auto value = literal->getValue();
+            if (value.isPattern()) {
+                auto decayedValue = value.toPattern()->getValue();
+                if (!decayedValue.isPattern())
+                    value = std::move(decayedValue);
+            }
+
+            evaluator->setVariable(this->getName(), value);
         }
 
         return std::nullopt;

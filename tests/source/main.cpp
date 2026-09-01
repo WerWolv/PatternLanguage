@@ -115,7 +115,7 @@ int runTests(int argc, char **argv) {
     test->setup();
 
     for (size_t i = 0; i < test->repeatTimes(); i++) {
-        auto result = runtime.executeString(test->getSourceCode());
+        auto result = runtime.executeString(test->getSourceCode(), api::Source::DefaultSource, {}, test->getInVariables());
 
         // Check if compilation succeeded
         if (result != 0) {
