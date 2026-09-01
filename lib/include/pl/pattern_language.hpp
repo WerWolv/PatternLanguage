@@ -295,6 +295,14 @@ namespace pl {
         void reset();
 
         /**
+         * @brief Clears every placed pattern's cached display value, across every section.
+         * Call this after changing something a pattern's formatted value depends on
+         * without re-running the pattern, such as the host application's declared
+         * string encoding.
+         */
+        void clearFormatCaches();
+
+        /**
          * @brief Checks whether the runtime is currently running
          * @return True if the runtime is running, false otherwise
          */

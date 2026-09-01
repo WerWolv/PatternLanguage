@@ -13,6 +13,7 @@
 
 #include <pl/core/log_console.hpp>
 #include <pl/core/token.hpp>
+#include <pl/core/string_encode_decode.hpp>
 #include <pl/api.hpp>
 
 #include <pl/core/errors/runtime_errors.hpp>
@@ -206,6 +207,41 @@ namespace pl::core {
         [[nodiscard]] std::map<std::string, Token::Literal> getOutVariables() const;
 
         void setDataSource(u64 baseAddress, size_t dataSize, std::function<void(u64, u8*, size_t)> readerFunction, std::optional<std::function<void(u64, const u8*, size_t)>> writerFunction = std::nullopt);
+
+        /**
+         * @brief Sets the text codec for string patterns
+         * @param codec Codec to set. Pass nullptr to go back to raw bytes.
+         */
+        void setStringEncodeDecode(std::shared_ptr<StringEncodeDecode> codec) {
+            this->m_stringEncodeDecode = std::move(codec);
+        }
+
+        /**
+         * @brief Gets the text codec set for string patterns
+         * @return The codec, or nullptr when none is set
+         */
+        [[nodiscard]] const std::shared_ptr<StringEncodeDecode>& getStringEncodeDecode() const {
+            return this->m_stringEncodeDecode;
+        }
+
+        /**
+         * @brief Sets the default encoding a string pattern with no [[encoding]]
+         * attribute of its own resolves to
+         * @param encoding Encoding name to set. Empty lets the codec pick its own
+         * default.
+         */
+        void setDefaultEncoding(std::string encoding) {
+            this->m_defaultEncoding = std::move(encoding);
+        }
+
+        /**
+         * @brief Gets the default encoding a string pattern with no [[encoding]]
+         * attribute of its own resolves to
+         * @return The encoding name, empty when none is set
+         */
+        [[nodiscard]] const std::string& getDefaultEncoding() const {
+            return this->m_defaultEncoding;
+        }
 
         void setDataBaseAddress(u64 baseAddress) {
             this->m_dataBaseAddress = baseAddress;
@@ -556,6 +592,8 @@ namespace pl::core {
         std::vector<std::unique_ptr<ast::ASTNode>> m_currentTemplateArguments;
 
         std::function<bool()> m_dangerousFunctionCalledCallback = []{ return false; };
+        std::shared_ptr<StringEncodeDecode> m_stringEncodeDecode;
+        std::string m_defaultEncoding;
         std::function<void()> m_breakpointHitCallback = []{ };
         std::atomic<DangerousFunctionPermission> m_allowDangerousFunctions = DangerousFunctionPermission::Ask;
         ControlFlowStatement m_currControlFlowStatement = ControlFlowStatement::None;
