@@ -3,6 +3,9 @@
 #include <pl/patterns/pattern.hpp>
 
 #include <pl/patterns/pattern_character.hpp>
+#include <pl/core/errors/runtime_errors.hpp>
+
+#include <stdexcept>
 
 namespace pl::ptrn {
 
@@ -32,21 +35,74 @@ namespace pl::ptrn {
 
         }
 
+        // Empty when this pattern names no encoding. The codec then falls back to its own
+        // default.
+        [[nodiscard]] std::string getEncodingName() const {
+            if (const auto &arguments = this->getAttributeArguments("encoding"); !arguments.empty())
+                return arguments[0].toString(true);
+            return "";
+        }
+
         std::string getValue(size_t size) const {
             if (size == 0)
                 return "";
 
+            auto *evaluator = this->getEvaluator();
+
             std::string buffer(size, '\x00');
-            this->getEvaluator()->readData(this->getOffset(), buffer.data(), size, this->getSection());
+            evaluator->readData(this->getOffset(), buffer.data(), size, this->getSection());
+
+            if (const auto &codec = evaluator->getStringEncodeDecode(); codec != nullptr) {
+                const auto encoding = this->getEncodingName();
+                auto decoded = codec->decode({ reinterpret_cast<const u8*>(buffer.data()), buffer.size() }, encoding);
+                if (!decoded.has_value())
+                    core::err::E0004.throwError(fmt::format("invalid byte sequence for encoding '{}'", encoding));
+
+                return *decoded;
+            }
 
             return buffer;
         }
 
         std::vector<u8> getBytesOf(const core::Token::Literal &value) const override {
-            if (auto stringValue = std::get_if<std::string>(&value); stringValue != nullptr)
-                return { stringValue->begin(), stringValue->end() };
-            else
+            if (auto stringValue = std::get_if<std::string>(&value); stringValue != nullptr) {
+                std::vector<u8> bytes;
+
+                if (const auto &codec = this->getEvaluator()->getStringEncodeDecode(); codec != nullptr) {
+                    const auto encoding = this->getEncodingName();
+                    auto encoded = codec->encode(*stringValue, encoding);
+                    if (!encoded.has_value())
+                        core::err::E0004.throwError(fmt::format("text has no byte value in encoding '{}'", encoding));
+
+                    bytes = *encoded;
+                } else {
+                    bytes = { stringValue->begin(), stringValue->end() };
+                }
+
+                // This field owns a fixed number of bytes in the file. A longer write would
+                // overwrite whatever comes right after it. Truncate or pad with NUL to the
+                // field's own size, the same contract every other pattern type already has.
+                bytes.resize(this->getSize());
+                return bytes;
+            } else
                 return { };
+        }
+
+        // Force-writes `value`, substituting a replacement character for anything the
+        // pattern's encoding cannot represent. setValue() rejects such a value instead;
+        // an editor that offers an explicit lossy override calls this one directly.
+        void setValueLossy(const std::string &value) {
+            std::vector<u8> bytes;
+
+            if (const auto &codec = this->getEvaluator()->getStringEncodeDecode(); codec != nullptr)
+                bytes = codec->encodeLossy(value, this->getEncodingName());
+            else
+                bytes = { value.begin(), value.end() };
+
+            bytes.resize(this->getSize());
+            this->getEvaluator()->writeData(this->getOffset(), bytes.data(), bytes.size(), this->getSection());
+            this->clearFormatCache();
+            this->clearByteCache();
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
@@ -67,23 +123,39 @@ namespace pl::ptrn {
         }
 
         std::string formatDisplayValue() override {
-            auto size = std::min<size_t>(this->getSize(), 0x7F);
+            auto *evaluator = this->getEvaluator();
+            const auto fullSize = this->getSize();
+            auto size = std::min<size_t>(fullSize, 0x7F);
 
             if (size == 0)
                 return "\"\"";
 
             std::string buffer(size, 0x00);
-            this->getEvaluator()->readData(this->getOffset(), buffer.data(), size, this->getSection());
+            evaluator->readData(this->getOffset(), buffer.data(), size, this->getSection());
 
-            const auto pos = buffer.find_last_not_of('\x00');
-            if (pos == std::string::npos)
-                return "\"\"";
+            if (auto formatted = Pattern::callUserFormatFunc(buffer); formatted.has_value())
+                return *formatted;
 
-            buffer.erase(pos + 1);
+            const auto &codec = evaluator->getStringEncodeDecode();
+            const auto truncatedSuffix = size > fullSize ? "(truncated)" : "";
 
-            auto displayString = hlp::encodeByteString({ buffer.begin(), buffer.end() });
+            // No codec configured keeps the old raw-byte display, unescaped by any
+            // encoding. A configured codec reports an undecodable buffer as invalid,
+            // rather than substituting a replacement character into the display.
+            if (codec == nullptr) {
+                const auto pos = buffer.find_last_not_of('\x00');
+                if (pos == std::string::npos)
+                    return "\"\"";
+                buffer.erase(pos + 1);
 
-            return Pattern::callUserFormatFunc(buffer).value_or(fmt::format("\"{0}\" {1}", displayString, size > this->getSize() ? "(truncated)" : ""));
+                return fmt::format("\"{0}\" {1}", hlp::encodeByteString({ buffer.begin(), buffer.end() }), truncatedSuffix);
+            }
+
+            auto decoded = codec->decode({ reinterpret_cast<const u8*>(buffer.data()), buffer.size() }, this->getEncodingName());
+            if (!decoded.has_value())
+                throw std::runtime_error("Invalid");
+
+            return fmt::format("\"{0}\" {1}", *decoded, truncatedSuffix);
         }
 
         std::shared_ptr<Pattern> getEntry(size_t index) const override {

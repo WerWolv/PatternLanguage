@@ -484,6 +484,7 @@ namespace pl::ptrn {
             if (!result.empty()) {
                 this->getEvaluator()->writeData(this->getOffset(), result.data(), result.size(), this->getSection());
                 this->clearFormatCache();
+                this->clearByteCache();
             }
         }
 

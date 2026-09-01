@@ -13,6 +13,7 @@
 
 #include <pl/core/log_console.hpp>
 #include <pl/core/token.hpp>
+#include <pl/core/string_encode_decode.hpp>
 #include <pl/api.hpp>
 
 #include <pl/core/errors/runtime_errors.hpp>
@@ -206,6 +207,15 @@ namespace pl::core {
         [[nodiscard]] std::map<std::string, Token::Literal> getOutVariables() const;
 
         void setDataSource(u64 baseAddress, size_t dataSize, std::function<void(u64, u8*, size_t)> readerFunction, std::optional<std::function<void(u64, const u8*, size_t)>> writerFunction = std::nullopt);
+
+        // Sets the text codec for string patterns. Pass nullptr to go back to raw bytes.
+        void setStringEncodeDecode(std::shared_ptr<StringEncodeDecode> codec) {
+            this->m_stringEncodeDecode = std::move(codec);
+        }
+
+        [[nodiscard]] const std::shared_ptr<StringEncodeDecode>& getStringEncodeDecode() const {
+            return this->m_stringEncodeDecode;
+        }
 
         void setDataBaseAddress(u64 baseAddress) {
             this->m_dataBaseAddress = baseAddress;
@@ -556,6 +566,7 @@ namespace pl::core {
         std::vector<std::unique_ptr<ast::ASTNode>> m_currentTemplateArguments;
 
         std::function<bool()> m_dangerousFunctionCalledCallback = []{ return false; };
+        std::shared_ptr<StringEncodeDecode> m_stringEncodeDecode;
         std::function<void()> m_breakpointHitCallback = []{ };
         std::atomic<DangerousFunctionPermission> m_allowDangerousFunctions = DangerousFunctionPermission::Ask;
         ControlFlowStatement m_currControlFlowStatement = ControlFlowStatement::None;

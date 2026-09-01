@@ -533,6 +533,13 @@ namespace pl {
         this->m_parserManager.setPatternLanguage(this);
     }
 
+    void PatternLanguage::clearFormatCaches() {
+        for (const auto &[section, patterns] : this->m_patterns) {
+            for (const auto &pattern : patterns)
+                pattern->clearFormatCache();
+        }
+    }
+
     void PatternLanguage::addFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) {
         this->m_functions.emplace_back(ns, name, parameterCount, func, false);
     }
