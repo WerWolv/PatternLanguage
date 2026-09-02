@@ -60,6 +60,8 @@ set(AVAILABLE_TESTS
         DuplicateVariableFail
         StaticArrayRangeOverflowFail
         Dollar
+        InVariableDefault
+        InVariableOverride
 )
 
 

@@ -11,7 +11,7 @@ namespace pl::core::ast {
     class ASTNodeVariableDecl : public ASTNode,
                                 public Attributable {
     public:
-        ASTNodeVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeApplication> type, std::unique_ptr<ASTNode> &&placementOffset = nullptr, std::unique_ptr<ASTNode> &&placementSection = nullptr, bool inVariable = false, bool outVariable = false, bool constant = false);
+        ASTNodeVariableDecl(std::string name, std::shared_ptr<ASTNodeTypeApplication> type, std::unique_ptr<ASTNode> &&placementOffset = nullptr, std::unique_ptr<ASTNode> &&placementSection = nullptr, bool inVariable = false, bool outVariable = false, bool constant = false, std::unique_ptr<ASTNode> &&defaultValue = nullptr);
 
         ASTNodeVariableDecl(const ASTNodeVariableDecl &other);
 
@@ -41,7 +41,7 @@ namespace pl::core::ast {
     private:
         std::string m_name;
         std::shared_ptr<ASTNodeTypeApplication> m_type;
-        std::unique_ptr<ASTNode> m_placementOffset, m_placementSection;
+        std::unique_ptr<ASTNode> m_placementOffset, m_placementSection, m_defaultValue;
 
         bool m_inVariable = false, m_outVariable = false;
         bool m_constant = false;

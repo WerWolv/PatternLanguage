@@ -191,21 +191,24 @@ namespace pl::core::ast {
                 err::E0008.throwError("[[merge]] attribute can only be used with nested types.", "Try applying it to a struct, union, bitfield or array instead.", node->getLocation());
             else {
                 auto child = dynamic_cast<ptrn::IIterable*>(pattern.get());
+                if (child == nullptr)
+                    err::E0008.throwError("[[merge]] attribute can only be used with iterable types.", "Try applying it to a struct, union, bitfield or array instead.", node->getLocation());
+
                 auto &currScope = evaluator->getScope(0);
 
-                if (currScope.parent == pattern)
-
-                for (const auto& entry : child->getEntries()) {
-                    for (auto &existingPattern : *currScope.scope) {
-                        if (entry->hasVariableName() && existingPattern->getVariableName() == entry->getVariableName()) {
-                            err::E0008.throwError(fmt::format("Cannot merge '{}' from Type '{}' into current scope. Pattern with this name already exists.", entry->getVariableName(), pattern->getTypeName()), "", node->getLocation());
+                if (currScope.parent == pattern) {
+                    for (const auto& entry : child->getEntries()) {
+                        for (auto &existingPattern : *currScope.scope) {
+                            if (entry->hasVariableName() && existingPattern->getVariableName() == entry->getVariableName()) {
+                                err::E0008.throwError(fmt::format("Cannot merge '{}' from Type '{}' into current scope. Pattern with this name already exists.", entry->getVariableName(), pattern->getTypeName()), "", node->getLocation());
+                            }
                         }
+
+                        if (entry->hasAttribute("private"))
+                            continue;
+
+                        currScope.scope->emplace_back(entry);
                     }
-
-                    if (entry->hasAttribute("private"))
-                        continue;
-
-                    currScope.scope->emplace_back(entry);
                 }
 
                 child->setEntries({});
