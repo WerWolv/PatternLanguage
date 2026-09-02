@@ -290,7 +290,7 @@ namespace pl::core::ast {
         std::vector<std::shared_ptr<ptrn::Pattern>> entries;
 
         size_t size    = 0;
-        u64 entryIndex = 0;
+        u32 entryIndex = 0;
 
         ON_SCOPE_EXIT {
             if (arrayPattern->getEntryCount() > 0)

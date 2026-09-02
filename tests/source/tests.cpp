@@ -37,6 +37,7 @@
 #include "test_patterns/test_pattern_extended_semantics.hpp"
 #include "test_patterns/test_pattern_error_semantics.hpp"
 #include "test_patterns/test_pattern_dollar.hpp"
+#include "test_patterns/test_pattern_in_variable_defaults.hpp"
 
 static pl::core::Evaluator s_evaluator;
 
@@ -97,4 +98,6 @@ std::array Tests = {
     TEST(DuplicateVariableFail),
     TEST(StaticArrayRangeOverflowFail),
     TEST(Dollar),
+    TEST(InVariableDefault),
+    TEST(InVariableOverride),
 };

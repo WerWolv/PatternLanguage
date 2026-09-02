@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <map>
 #include <vector>
 
 #include <pl/patterns/pattern.hpp>
@@ -39,6 +40,7 @@ namespace pl::test {
         }
 
         [[nodiscard]] virtual std::string getSourceCode() const = 0;
+        [[nodiscard]] virtual std::map<std::string, core::Token::Literal> getInVariables() const { return {}; }
 
         [[nodiscard]] virtual const std::vector<std::shared_ptr<ptrn::Pattern>> &getPatterns() const final { return this->m_patterns; }
         virtual void addPattern(std::shared_ptr<ptrn::Pattern> &&pattern) final {

@@ -79,7 +79,7 @@ namespace pl::ptrn {
         constexpr static u64 InstantiationSectionId = 0xFFFF'FFFF'FFFF'FFFD;
 
         Pattern(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
-            : m_evaluator(evaluator), m_line(line), m_offset(offset), m_size(size) {
+            : m_evaluator(evaluator), m_offset(offset), m_size(size), m_line(line) {
 
             if (evaluator != nullptr) {
                 this->m_color       = evaluator->getNextPatternColor();
@@ -577,7 +577,7 @@ namespace pl::ptrn {
 
         [[nodiscard]] u32 getLine() const { return m_line; }
 
-        void setArrayIndex(u64 index) {
+        void setArrayIndex(u32 index) {
             m_arrayIndex = index;
         }
 
@@ -671,16 +671,16 @@ namespace pl::ptrn {
 
         std::unique_ptr<std::map<std::string, std::vector<core::Token::Literal>>> m_attributes;
         std::weak_ptr<Pattern> m_parent;
-        u32 m_line = 0;
 
         std::set<std::string>::const_iterator m_variableName;
         std::set<std::string>::const_iterator m_typeName;
-        std::optional<u64> m_arrayIndex;
+        std::optional<u32> m_arrayIndex;
 
         u64 m_offset  = 0x00;
         size_t m_size = 0x00;
         u64 m_section = 0x00;
 
+        u32 m_line = 0;
         u32 m_color = 0x00;
 
         bool m_reference = false;

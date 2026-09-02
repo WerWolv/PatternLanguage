@@ -182,6 +182,10 @@ namespace pl::core::err {
             return this->m_errors;
         }
 
+        void setErrors(std::vector<CompileError> errors) {
+            this->m_errors = errors;
+        }
+
         [[nodiscard]] std::vector<CompileError> collectErrors() {
             return std::move(this->m_errors);
         }

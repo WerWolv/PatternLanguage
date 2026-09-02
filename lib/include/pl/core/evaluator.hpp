@@ -204,6 +204,10 @@ namespace pl::core {
             this->m_inVariables = inVariables;
         }
 
+        [[nodiscard]] bool hasInVariable(const std::string &name) const {
+            return this->m_inVariables.contains(name);
+        }
+
         [[nodiscard]] std::map<std::string, Token::Literal> getOutVariables() const;
 
         void setDataSource(u64 baseAddress, size_t dataSize, std::function<void(u64, u8*, size_t)> readerFunction, std::optional<std::function<void(u64, const u8*, size_t)>> writerFunction = std::nullopt);

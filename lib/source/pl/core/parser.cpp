@@ -197,11 +197,17 @@ namespace pl::core {
             path.emplace_back("null");
 
         if (MATCHES(sequence(tkn::Separator::LeftBracket) && !peek(tkn::Separator::LeftBracket))) {
-            path.emplace_back(std::move(parseMathematicalExpression().unwrap()));
+            auto expression = parseMathematicalExpression();
+            if (expression == nullptr) {
+                return nullptr;
+            }
+
             if (!sequence(tkn::Separator::RightBracket)) {
                 error("Expected ']' at end of array indexing, got {}.", getFormattedToken(0));
                 return nullptr;
             }
+
+            path.emplace_back(std::move(expression.unwrap()));
         }
 
         if (sequence(tkn::Separator::Dot)) {
@@ -216,6 +222,8 @@ namespace pl::core {
 
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseRValueAssignment() {
         auto lhs = parseRValue();
+        if (lhs == nullptr)
+            return nullptr;
 
         if (!sequence(tkn::Operator::Assign)) {
             errorHere("Expected value after '=' in variable assignment, got {}.", getFormattedToken(0));
@@ -934,9 +942,11 @@ namespace pl::core {
             statement = parseFunctionVariableAssignment(getValue<Token::Identifier>(-2).get());
         else if (sequence(tkn::Operator::Dollar, tkn::Operator::Assign))
             statement = parseFunctionVariableAssignment("$");
-        else if (const auto identifierOffset = parseCompoundAssignment(tkn::Literal::Identifier); identifierOffset.has_value())
+        else if (const auto identifierOffset = isCompoundAssignmentOperator(tkn::Literal::Identifier); identifierOffset.has_value())
             statement = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(*identifierOffset).get());
-        else if (parseCompoundAssignment(tkn::Operator::Dollar).has_value())
+        else if (const auto curr = isCompoundAssignmentOperator(AllowKeywords::Parent); curr.has_value())
+            statement = parseFunctionVariableCompoundAssignment(curr.value());
+        else if (isCompoundAssignmentOperator(tkn::Operator::Dollar).has_value())
             statement = parseFunctionVariableCompoundAssignment("$");
         else if (oneOf(tkn::Keyword::Return, tkn::Keyword::Break, tkn::Keyword::Continue))
             statement = parseFunctionControlFlowStatement();
@@ -955,7 +965,7 @@ namespace pl::core {
         } else if (sequence(tkn::Keyword::For, tkn::Separator::LeftParenthesis)) {
             statement      = parseFunctionForLoop();
             needsSemicolon = false;
-        } else if (MATCHES(sequence(tkn::Literal::Identifier) && (peek(tkn::Separator::Dot) || (peek(tkn::Separator::LeftBracket, 0) && !peek(tkn::Separator::LeftBracket, 1))))) {
+        } else if (MATCHES((sequence(tkn::Literal::Identifier) || sequence(tkn::Keyword::Parent)) && (peek(tkn::Separator::Dot) || (peek(tkn::Separator::LeftBracket, 0) && !peek(tkn::Separator::LeftBracket, 1))))) {
             statement = parseRValueAssignment();
         } else if (sequence(tkn::Literal::Identifier)) {
             const auto originalPos = this->m_curr;
@@ -999,6 +1009,30 @@ namespace pl::core {
             return nullptr;
 
         return create<ast::ASTNodeLValueAssignment>(lvalue, std::move(rvalue));
+    }
+
+    hlp::safe_unique_ptr<ast::ASTNode> Parser::parseFunctionVariableCompoundAssignment(TokenIter curr) {
+        m_curr = curr;
+        auto lhs = parseRValue();
+        Token::Operator op = getValue<Token::Operator>(0);
+        next();
+        if (op == Token::Operator::BoolLessThan) {
+            op = Token::Operator::LeftShift;
+            next();
+        } else if (op == Token::Operator::BoolGreaterThan) {
+            op = Token::Operator::RightShift;
+            next();
+        }
+        next();
+
+        auto rhs = parseMathematicalExpression();
+        if (rhs == nullptr)
+            return nullptr;
+
+        auto lhsCopy = lhs->clone();
+        rhs = create<ast::ASTNodeMathematicalExpression>(std::move(lhsCopy), std::move(rhs), op);
+
+        return create<ast::ASTNodeRValueAssignment>(std::move(lhs), std::move(rhs));
     }
 
     hlp::safe_unique_ptr<ast::ASTNode> Parser::parseFunctionVariableCompoundAssignment(const std::string &lvalue) {
@@ -1884,12 +1918,14 @@ namespace pl::core {
 
         if (sequence(tkn::Operator::Dollar, tkn::Operator::Assign))
             member = parseFunctionVariableAssignment("$");
-        else if (parseCompoundAssignment(tkn::Operator::Dollar).has_value())
+        else if (isCompoundAssignmentOperator(tkn::Operator::Dollar).has_value())
             member = parseFunctionVariableCompoundAssignment("$");
         else if (sequence(tkn::Literal::Identifier, tkn::Operator::Assign)) {
             member = parseFunctionVariableAssignment(getValue<Token::Identifier>(-2).get());
-        } else if (const auto identifierOffset = parseCompoundAssignment(tkn::Literal::Identifier); identifierOffset.has_value())
+        } else if (const auto identifierOffset = isCompoundAssignmentOperator(tkn::Literal::Identifier); identifierOffset.has_value())
             member = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(*identifierOffset).get());
+        else if (const auto curr = isCompoundAssignmentOperator(AllowKeywords::Both); curr.has_value())
+            member = parseFunctionVariableCompoundAssignment(curr.value());
         else if (MATCHES((sequence(tkn::Literal::Identifier) || sequence(tkn::Keyword::Parent) || sequence(tkn::Keyword::This)) && (peek(tkn::Separator::Dot) || (peek(tkn::Separator::LeftBracket, 0) && !peek(tkn::Separator::LeftBracket, 1)))))
             member = parseRValueAssignment();
         else if (peek(tkn::Keyword::Const) || peek(tkn::Keyword::BigEndian) || peek(tkn::Keyword::LittleEndian) || peek(tkn::ValueType::Any) || peek(tkn::Literal::Identifier)) {
@@ -2160,8 +2196,12 @@ namespace pl::core {
             if (identifier != nullptr)
                 identifier->setType(Token::Identifier::IdentifierType::LocalVariable);
             member = parseFunctionVariableAssignment(variableName);
-        } else if (const auto identifierOffset = parseCompoundAssignment(tkn::Literal::Identifier); identifierOffset.has_value())
+        } else if (const auto identifierOffset = isCompoundAssignmentOperator(tkn::Literal::Identifier); identifierOffset.has_value())
             member = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(*identifierOffset).get());
+        else if (const auto curr = isCompoundAssignmentOperator(AllowKeywords::Parent); curr.has_value())
+            member = parseFunctionVariableCompoundAssignment(curr.value());
+        else if (MATCHES((sequence(tkn::Literal::Identifier) || sequence(tkn::Keyword::Parent)) && (peek(tkn::Separator::Dot) || (peek(tkn::Separator::LeftBracket, 0) && !peek(tkn::Separator::LeftBracket, 1)))))
+            member = parseRValueAssignment();
         else if (MATCHES(optional(tkn::Keyword::Unsigned) && sequence(tkn::Literal::Identifier, tkn::Operator::Colon))) {
             auto fieldName = getValue<Token::Identifier>(-2).get();
             auto identifier = std::get_if<Token::Identifier>(&((m_curr[-2]).value));
@@ -2347,7 +2387,7 @@ namespace pl::core {
         auto identifier = std::get_if<Token::Identifier>(&((m_curr[-1]).value));
 
 
-        hlp::safe_unique_ptr<ast::ASTNode> placementOffset, placementSection;
+        hlp::safe_unique_ptr<ast::ASTNode> placementOffset, placementSection, defaultValue;
         if (sequence(tkn::Operator::At)) {
             if (identifier != nullptr) {
                 if (m_currTemplateType.empty())
@@ -2366,6 +2406,11 @@ namespace pl::core {
             }
         } else if (sequence(tkn::Keyword::In)) {
             inVariable = true;
+            if (sequence(tkn::Operator::Assign)) {
+                defaultValue = parseMathematicalExpression();
+                if (defaultValue == nullptr)
+                    return nullptr;
+            }
         } else if (sequence(tkn::Keyword::Out)) {
             outVariable = true;
         } else if (sequence(tkn::Operator::Assign)) {
@@ -2402,7 +2447,7 @@ namespace pl::core {
         }
         if (identifier != nullptr)
             identifier->setType(Token::Identifier::IdentifierType::GlobalVariable);
-        return create<ast::ASTNodeVariableDecl>(name, type.unwrapUnchecked(), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()), inVariable, outVariable);
+        return create<ast::ASTNodeVariableDecl>(name, type.unwrapUnchecked(), std::move(placementOffset.unwrapUnchecked()), std::move(placementSection.unwrapUnchecked()), inVariable, outVariable, false, std::move(defaultValue.unwrapUnchecked()));
     }
 
     // (parseType) Identifier[[(parseMathematicalExpression)]] @ Integer
@@ -2643,8 +2688,12 @@ namespace pl::core {
             statement = parseFunctionVariableAssignment(getValue<Token::Identifier>(-2).get());
         else if (sequence(tkn::Operator::Dollar, tkn::Operator::Assign))
             statement = parseFunctionVariableAssignment("$");
-        else if (const auto identifierOffset = parseCompoundAssignment(tkn::Literal::Identifier); identifierOffset.has_value())
+        else if (const auto identifierOffset = isCompoundAssignmentOperator(tkn::Literal::Identifier); identifierOffset.has_value())
             statement = parseFunctionVariableCompoundAssignment(getValue<Token::Identifier>(*identifierOffset).get());
+        else if (const auto curr = isCompoundAssignmentOperator(); curr.has_value())
+            statement = parseFunctionVariableCompoundAssignment(curr.value());
+        else if (MATCHES(sequence(tkn::Literal::Identifier) && (peek(tkn::Separator::Dot) || (peek(tkn::Separator::LeftBracket, 0) && !peek(tkn::Separator::LeftBracket, 1)))))
+            statement = parseRValueAssignment();
         else if (MATCHES(sequence(tkn::Keyword::Using, tkn::Literal::Identifier)))
             statement = parseUsingDeclaration();
         else if (sequence(tkn::Keyword::Import))
@@ -2704,20 +2753,52 @@ namespace pl::core {
         return hlp::moveToVector(std::move(statement));
     }
 
-    std::optional<i32> Parser::parseCompoundAssignment(const Token &token) {
+    std::optional<i32> Parser::isCompoundAssignmentOperator(const Token &token) {
+        auto save = m_curr;
+
+        if (sequence(token)) {
+            if (auto offset = isCompoundAssignmentOperator(-1); offset.has_value())
+                return offset;
+        }
+
+        m_curr = save;
+        return std::nullopt;
+    }
+
+    std::optional<i32> Parser::isCompoundAssignmentOperator(i32 offset) {
         const static std::array SingleTokens = { tkn::Operator::Plus, tkn::Operator::Minus, tkn::Operator::Star, tkn::Operator::Slash, tkn::Operator::Percent, tkn::Operator::BitOr, tkn::Operator::BitAnd, tkn::Operator::BitXor };
         const static std::array DoubleTokens = { tkn::Operator::BoolLessThan, tkn::Operator::BoolGreaterThan };
 
-        for (auto &singleToken : SingleTokens) {
-            if (sequence(token, singleToken, tkn::Operator::Assign))
-                return -3;
+        for (auto &token : SingleTokens) {
+            if (sequence(token, tkn::Operator::Assign))
+                return -2 + offset;
         }
 
-        for (auto &doubleTokens : DoubleTokens) {
-            if (sequence(token, doubleTokens, doubleTokens, tkn::Operator::Assign))
-                return -4;
+        for (auto &token : DoubleTokens) {
+            if (sequence(token, token, tkn::Operator::Assign))
+                return -3 + offset;
         }
 
+        return std::nullopt;
+    }
+
+    std::optional<Parser::TokenIter> Parser::isCompoundAssignmentOperator(AllowKeywords allowKeywords) {
+        auto save = this->m_curr;
+        auto saveErrors = getErrors();
+        bool allowParent = ((u32)allowKeywords & (u32)AllowKeywords::Parent) != 0;
+        bool allowThis   = ((u32)allowKeywords & (u32)AllowKeywords::This) != 0;
+        if (MATCHES((sequence(tkn::Literal::Identifier) || (allowParent && sequence(tkn::Keyword::Parent)) || (allowThis && sequence(tkn::Keyword::This))) && (peek(tkn::Separator::Dot) || (peek(tkn::Separator::LeftBracket, 0) && !peek(tkn::Separator::LeftBracket, 1))))) {
+            auto result = m_curr;
+            auto lhs = parseRValue();
+            setErrors(saveErrors);
+            if (lhs == nullptr) {
+                m_curr = save;
+                return std::nullopt;
+            }
+            if (isCompoundAssignmentOperator(-1).has_value())
+                return result;
+        }
+        m_curr = save;
         return std::nullopt;
     }
 
