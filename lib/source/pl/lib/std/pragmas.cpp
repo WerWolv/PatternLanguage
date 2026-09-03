@@ -39,7 +39,7 @@ namespace pl::lib::libstd {
         });
 
         runtime.addPragma("encoding", [](pl::PatternLanguage &runtime, const std::string &value) {
-            return runtime.getInternals().evaluator->setDefaultEncoding(value);
+            return runtime.setDefaultEncoding(value);
         });
 
         runtime.addPragma("eval_depth", [](pl::PatternLanguage &runtime, const std::string &value) {
