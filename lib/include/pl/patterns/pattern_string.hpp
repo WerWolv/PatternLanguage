@@ -57,10 +57,10 @@ namespace pl::ptrn {
             if (const auto &codec = evaluator->getStringEncodeDecode(); codec != nullptr) {
                 const auto encoding = this->getEncodingName();
                 auto decoded = codec->decode({ reinterpret_cast<const u8*>(buffer.data()), buffer.size() }, encoding);
-                if (!decoded.has_value())
+                if (decoded.bytesConsumed != buffer.size())
                     core::err::E0004.throwError(fmt::format("invalid byte sequence for encoding '{}'", encoding));
 
-                return *decoded;
+                return decoded.text;
             }
 
             return buffer;
@@ -132,14 +132,15 @@ namespace pl::ptrn {
             auto *evaluator = this->getEvaluator();
             const auto fullSize = this->getSize();
 
-            // Read a little past DisplayBudget, so a multi-byte codepoint at the
-            // cutoff usually has the bytes to decode whole. The decode below still
-            // backs off further on failure; this only keeps that the common case.
-            constexpr size_t DisplayBudget = 0x7F;
-            auto size = std::min<size_t>(fullSize, DisplayBudget + 8);
-
-            if (size == 0)
+            if (fullSize == 0)
                 return "\"\"";
+
+            constexpr size_t DisplayBudget = 0x7F;
+
+            // UTF-32, the widest encoding decode() supports, spends 4 bytes per
+            // code point. This margin holds DisplayBudget code points under any
+            // of them.
+            auto size = std::min<size_t>(fullSize, DisplayBudget * 4);
 
             std::string buffer(size, 0x00);
             evaluator->readData(this->getOffset(), buffer.data(), size, this->getSection());
@@ -148,12 +149,13 @@ namespace pl::ptrn {
                 return *formatted;
 
             const auto &codec = evaluator->getStringEncodeDecode();
-            bool truncated = size < fullSize;
 
             // No codec configured keeps the old raw-byte display, unescaped by any
             // encoding. A configured codec reports an undecodable buffer as invalid,
             // rather than substituting a replacement character into the display.
             if (codec == nullptr) {
+                bool truncated = size < fullSize;
+
                 if (buffer.size() > DisplayBudget) {
                     buffer.resize(DisplayBudget);
                     truncated = true;
@@ -168,33 +170,13 @@ namespace pl::ptrn {
             }
 
             const auto encoding = this->getEncodingName();
+            const auto decoded = codec->decode({ reinterpret_cast<const u8*>(buffer.data()), buffer.size() }, encoding, DisplayBudget);
 
-            // The read above can itself end mid-codepoint. decode() fails on the whole
-            // buffer in that case, not just its incomplete tail, so back off a few
-            // bytes and retry rather than reporting a merely-truncated read as invalid.
-            std::optional<std::string> decoded;
-            for (size_t backoff = 0; backoff <= std::min<size_t>(4, buffer.size()); ++backoff) {
-                decoded = codec->decode({ reinterpret_cast<const u8*>(buffer.data()), buffer.size() - backoff }, encoding);
-                if (decoded.has_value()) {
-                    if (backoff > 0)
-                        truncated = true;
-                    break;
-                }
-            }
-            if (!decoded.has_value())
+            if (decoded.stopReason == core::DecodeStop::MalformedBytes)
                 core::err::E0004.throwError(fmt::format("invalid byte sequence for encoding '{}'", encoding));
 
-            // Trim the decoded text itself, not the raw bytes, so a multi-byte
-            // codepoint at the cutoff stays whole instead of splitting mid-sequence.
-            if (decoded->size() > DisplayBudget) {
-                auto cut = DisplayBudget;
-                while (cut > 0 && (static_cast<u8>((*decoded)[cut]) & 0xC0) == 0x80)
-                    --cut;
-                decoded->resize(cut);
-                truncated = true;
-            }
-
-            return fmt::format("\"{0}\" {1}", *decoded, truncated ? "(truncated)" : "");
+            const bool truncated = decoded.bytesConsumed < fullSize;
+            return fmt::format("\"{0}\" {1}", decoded.text, truncated ? "(truncated)" : "");
         }
 
         std::shared_ptr<Pattern> getEntry(size_t index) const override {

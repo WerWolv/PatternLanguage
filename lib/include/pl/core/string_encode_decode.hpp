@@ -10,6 +10,20 @@
 
 namespace pl::core {
 
+    /// Why decode() stopped before the end of `bytes`.
+    enum class DecodeStop {
+        EndOfInput,      ///< Consumed every byte given
+        CodepointLimit,  ///< Reached maxCodepoints; more input may remain
+        MalformedBytes,  ///< The byte sequence at bytesConsumed is not valid under this encoding
+    };
+
+    struct DecodeResult {
+        std::string text;                              ///< Whole code points only, never a mid-sequence fragment
+        size_t bytesConsumed = 0;                       ///< How much of the input `text` accounts for
+        size_t codepointCount = 0;                      ///< Code points in `text`
+        DecodeStop stopReason = DecodeStop::EndOfInput;
+    };
+
     /**
      * @brief A pluggable text codec for string patterns
      * @note The host application sets this on the Evaluator. With none set, string
@@ -20,14 +34,17 @@ namespace pl::core {
         virtual ~StringEncodeDecode() = default;
 
         /**
-         * @brief Decodes `bytes` under `encoding`
+         * @brief Decodes `bytes` under `encoding`, one code point at a time
          * @param bytes Bytes to decode
          * @param encoding Encoding to decode with; empty when the pattern names no
          * encoding, in which case the codec picks its own default
-         * @return The decoded text, or std::nullopt when `bytes` is not valid under
-         * `encoding`
+         * @param maxCodepoints Stop after decoding this many code points. std::nullopt
+         * decodes as much of `bytes` as is valid, with no cap.
+         * @return Code points decoded up to the first malformed byte, the end of
+         * `bytes`, or maxCodepoints - whichever comes first. `stopReason` says which.
          */
-        [[nodiscard]] virtual std::optional<std::string> decode(std::span<const u8> bytes, std::string_view encoding) const = 0;
+        [[nodiscard]] virtual DecodeResult decode(std::span<const u8> bytes, std::string_view encoding,
+            std::optional<size_t> maxCodepoints = std::nullopt) const = 0;
 
         /**
          * @brief Encodes `text` under `encoding`
