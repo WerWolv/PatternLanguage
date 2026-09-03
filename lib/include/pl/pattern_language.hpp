@@ -18,6 +18,7 @@
 #include <pl/core/resolver.hpp>
 #include <pl/core/resolvers.hpp>
 #include <pl/core/parser_manager.hpp>
+#include <pl/core/string_encoding_region.hpp>
 
 #include <pl/helpers/types.hpp>
 
@@ -280,6 +281,22 @@ namespace pl {
          */
         [[nodiscard]] std::vector<ptrn::Pattern *> getPatternsAtAddress(u64 address, u64 section = 0x00) const;
 
+        /**
+         * @brief Gets a snapshot of what encoding every string pattern resolved to on the last
+         * successful run. Unlike the pattern tree itself, this is safe to read from any thread.
+         * @return The snapshot. Never null; empty before the first successful run.
+         */
+        [[nodiscard]] std::shared_ptr<const std::vector<core::StringEncodingRegion>> getStringEncodingRegions() const;
+
+        /**
+         * @brief Looks up the encoding a string pattern at an exact address and size resolved to
+         * @param address Address to check
+         * @param size Size to check
+         * @param section Section id
+         * @return The encoding name, or std::nullopt if no string pattern matches exactly
+         */
+        [[nodiscard]] std::optional<std::string> findStringEncoding(u64 address, u64 size, u64 section = 0x00) const;
+
 
         /**
          * @brief Get the colors of all patterns that overlap with the given address
@@ -293,6 +310,14 @@ namespace pl {
          * @brief Resets the runtime
          */
         void reset();
+
+        /**
+         * @brief Clears every placed pattern's cached display value, across every section.
+         * Call this after changing something a pattern's formatted value depends on
+         * without re-running the pattern, such as the host application's declared
+         * string encoding.
+         */
+        void clearFormatCaches();
 
         /**
          * @brief Checks whether the runtime is currently running
@@ -413,6 +438,7 @@ namespace pl {
 
     private:
         void flattenPatterns();
+        void buildStringEncodingRegions();
 
     private:
         Internals m_internals;
@@ -430,6 +456,8 @@ namespace pl {
         std::atomic<bool> m_flattenedPatternsValid = false;
         std::map<u64, wolv::container::IntervalTree<ptrn::Pattern*, u64, 8>> m_flattenedPatterns;
         std::thread m_flattenThread;
+        std::atomic<std::shared_ptr<const std::vector<core::StringEncodingRegion>>> m_stringEncodingRegions
+            = std::make_shared<const std::vector<core::StringEncodingRegion>>();
         std::vector<std::function<void(PatternLanguage&)>> m_cleanupCallbacks;
         std::vector<std::shared_ptr<core::ast::ASTNode>> m_currAST;
 

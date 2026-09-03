@@ -11,12 +11,16 @@
 
 #include <pl/patterns/pattern.hpp>
 #include <pl/patterns/pattern_array_static.hpp>
+#include <pl/patterns/pattern_string.hpp>
 
 #include <pl/lib/std/libstd.hpp>
 
 #include <wolv/io/fs.hpp>
 #include <wolv/io/file.hpp>
 #include <wolv/utils/string.hpp>
+
+#include <algorithm>
+#include <functional>
 
 namespace pl {
 
@@ -81,6 +85,7 @@ namespace pl {
 
         this->m_patterns            = std::move(other.m_patterns);
         this->m_flattenedPatterns   = std::move(other.m_flattenedPatterns);
+        this->m_stringEncodingRegions.store(other.m_stringEncodingRegions.load());
         this->m_cleanupCallbacks    = std::move(other.m_cleanupCallbacks);
         this->m_currAST             = std::move(other.m_currAST);
 
@@ -314,6 +319,7 @@ namespace pl {
             this->reset();
         } else {
             this->flattenPatterns();
+            this->buildStringEncodingRegions();
             this->m_patternsValid = true;
         }
 
@@ -501,6 +507,7 @@ namespace pl {
         this->m_patterns.clear();
         this->m_flattenedPatterns.clear();
         this->m_flattenedPatternsValid = false;
+        this->m_stringEncodingRegions.store(std::make_shared<const std::vector<core::StringEncodingRegion>>());
 
         this->m_currError.reset();
         this->m_compileErrors.clear();
@@ -531,6 +538,13 @@ namespace pl {
         this->m_internals.preprocessor->setResolver(resolver);
         this->m_parserManager.setResolver(resolver);
         this->m_parserManager.setPatternLanguage(this);
+    }
+
+    void PatternLanguage::clearFormatCaches() {
+        for (const auto &[section, patterns] : this->m_patterns) {
+            for (const auto &pattern : patterns)
+                pattern->clearFormatCache();
+        }
     }
 
     void PatternLanguage::addFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) {
@@ -585,6 +599,57 @@ namespace pl {
                 }
             }
         }
+    }
+
+    void PatternLanguage::buildStringEncodingRegions() {
+        auto regions = std::make_shared<std::vector<core::StringEncodingRegion>>();
+
+        std::function<void(ptrn::Pattern*)> walk = [&](ptrn::Pattern *pattern) {
+            if (this->m_aborted)
+                return;
+
+            if (auto string = dynamic_cast<ptrn::PatternString*>(pattern)) {
+                if (auto encoding = string->getEncodingName(); !encoding.empty())
+                    regions->push_back({ pattern->getSection(), pattern->getOffset(), pattern->getSize(), std::move(encoding) });
+            }
+
+            if (auto iterable = dynamic_cast<ptrn::IIterable*>(pattern)) {
+                for (const auto &child : iterable->getEntries())
+                    walk(child.get());
+            }
+        };
+
+        for (const auto &[section, patterns] : this->m_patterns) {
+            for (const auto &pattern : patterns) {
+                if (this->m_aborted)
+                    return;
+
+                walk(pattern.get());
+            }
+        }
+
+        std::ranges::sort(*regions, {}, [](const core::StringEncodingRegion &region) {
+            return std::pair{ region.section, region.address };
+        });
+
+        this->m_stringEncodingRegions.store(std::move(regions));
+    }
+
+    std::shared_ptr<const std::vector<core::StringEncodingRegion>> PatternLanguage::getStringEncodingRegions() const {
+        return this->m_stringEncodingRegions.load();
+    }
+
+    std::optional<std::string> PatternLanguage::findStringEncoding(u64 address, u64 size, u64 section) const {
+        auto regions = this->getStringEncodingRegions();
+
+        auto it = std::ranges::lower_bound(*regions, std::pair{ section, address }, {}, [](const core::StringEncodingRegion &region) {
+            return std::pair{ region.section, region.address };
+        });
+
+        if (it != regions->end() && it->section == section && it->address == address && it->size == size)
+            return it->encoding;
+
+        return std::nullopt;
     }
 
     std::vector<ptrn::Pattern *> PatternLanguage::getPatternsAtAddress(u64 address, u64 section) const {
