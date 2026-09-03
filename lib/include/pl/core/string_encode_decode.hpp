@@ -10,17 +10,28 @@
 
 namespace pl::core {
 
-    /// Why decode() stopped before the end of `bytes`.
+    /**
+     * @brief Why decode() stopped before the end of `bytes`
+     * @var DecodeStop::EndOfInput Consumed every byte given
+     * @var DecodeStop::CodepointLimit Reached maxCodepoints; more input may remain
+     * @var DecodeStop::MalformedBytes The byte sequence at bytesConsumed is not valid under this encoding
+     */
     enum class DecodeStop {
-        EndOfInput,      ///< Consumed every byte given
-        CodepointLimit,  ///< Reached maxCodepoints; more input may remain
-        MalformedBytes,  ///< The byte sequence at bytesConsumed is not valid under this encoding
+        EndOfInput,
+        CodepointLimit,
+        MalformedBytes,
     };
 
+    /**
+     * @brief The result of decode()
+     * @var DecodeResult::text Whole code points only, never a mid-sequence fragment
+     * @var DecodeResult::bytesConsumed How much of the input `text` accounts for
+     * @var DecodeResult::codepointCount Code points in `text`
+     */
     struct DecodeResult {
-        std::string text;                              ///< Whole code points only, never a mid-sequence fragment
-        size_t bytesConsumed = 0;                       ///< How much of the input `text` accounts for
-        size_t codepointCount = 0;                      ///< Code points in `text`
+        std::string text;
+        size_t bytesConsumed = 0;
+        size_t codepointCount = 0;
         DecodeStop stopReason = DecodeStop::EndOfInput;
     };
 
