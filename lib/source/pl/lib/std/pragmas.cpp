@@ -38,6 +38,10 @@ namespace pl::lib::libstd {
                 return false;
         });
 
+        runtime.addPragma("encoding", [](pl::PatternLanguage &runtime, const std::string &value) {
+            return runtime.setDefaultEncoding(value);
+        });
+
         runtime.addPragma("eval_depth", [](pl::PatternLanguage &runtime, const std::string &value) {
             auto limit = parseLimit(value);
             if (!limit.has_value())

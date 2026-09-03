@@ -3,6 +3,7 @@
 #include <pl/patterns/pattern.hpp>
 
 #include <pl/patterns/pattern_character.hpp>
+#include <pl/core/errors/runtime_errors.hpp>
 
 namespace pl::ptrn {
 
@@ -32,21 +33,82 @@ namespace pl::ptrn {
 
         }
 
+        /**
+         * @brief Gets this string's own encoding
+         * @return This pattern's own [[encoding]] attribute, the evaluator's default
+         * encoding if none, or empty when neither is set. An empty result falls back
+         * to the codec's own default.
+         */
+        [[nodiscard]] std::string getEncodingName() const {
+            if (const auto &arguments = this->getAttributeArguments("encoding"); !arguments.empty())
+                return arguments[0].toString(true);
+            return this->getEvaluator()->getDefaultEncoding();
+        }
+
         std::string getValue(size_t size) const {
             if (size == 0)
                 return "";
 
+            auto *evaluator = this->getEvaluator();
+
             std::string buffer(size, '\x00');
-            this->getEvaluator()->readData(this->getOffset(), buffer.data(), size, this->getSection());
+            evaluator->readData(this->getOffset(), buffer.data(), size, this->getSection());
+
+            if (const auto &codec = evaluator->getStringEncodeDecode(); codec != nullptr) {
+                const auto encoding = this->getEncodingName();
+                auto decoded = codec->decode({ reinterpret_cast<const u8*>(buffer.data()), buffer.size() }, encoding);
+                if (decoded.bytesConsumed != buffer.size())
+                    core::err::E0004.throwError(fmt::format("invalid byte sequence for encoding '{}'", encoding));
+
+                return decoded.text;
+            }
 
             return buffer;
         }
 
         std::vector<u8> getBytesOf(const core::Token::Literal &value) const override {
-            if (auto stringValue = std::get_if<std::string>(&value); stringValue != nullptr)
-                return { stringValue->begin(), stringValue->end() };
-            else
+            if (auto stringValue = std::get_if<std::string>(&value); stringValue != nullptr) {
+                std::vector<u8> bytes;
+
+                if (const auto &codec = this->getEvaluator()->getStringEncodeDecode(); codec != nullptr) {
+                    const auto encoding = this->getEncodingName();
+                    auto encoded = codec->encode(*stringValue, encoding);
+                    if (!encoded.has_value())
+                        core::err::E0004.throwError(fmt::format("text has no byte value in encoding '{}'", encoding));
+
+                    bytes = *encoded;
+                } else {
+                    bytes = { stringValue->begin(), stringValue->end() };
+                }
+
+                // This field owns a fixed number of bytes in the file. A longer write would
+                // overwrite whatever comes right after it. Truncate or pad with NUL to the
+                // field's own size, the same contract every other pattern type already has.
+                bytes.resize(this->getSize());
+                return bytes;
+            } else
                 return { };
+        }
+
+        /**
+         * @brief Force-writes `value`, substituting a replacement character for
+         * anything the pattern's encoding cannot represent
+         * @param value Value to write
+         * @note setValue() rejects such a value instead; an editor that offers an
+         * explicit lossy override calls this one directly.
+         */
+        void setValueLossy(const std::string &value) {
+            std::vector<u8> bytes;
+
+            if (const auto &codec = this->getEvaluator()->getStringEncodeDecode(); codec != nullptr)
+                bytes = codec->encodeLossy(value, this->getEncodingName());
+            else
+                bytes = { value.begin(), value.end() };
+
+            bytes.resize(this->getSize());
+            this->getEvaluator()->writeData(this->getOffset(), bytes.data(), bytes.size(), this->getSection());
+            this->clearFormatCache();
+            this->clearByteCache();
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
@@ -67,23 +129,54 @@ namespace pl::ptrn {
         }
 
         std::string formatDisplayValue() override {
-            auto size = std::min<size_t>(this->getSize(), 0x7F);
+            auto *evaluator = this->getEvaluator();
+            const auto fullSize = this->getSize();
 
-            if (size == 0)
+            if (fullSize == 0)
                 return "\"\"";
+
+            constexpr size_t DisplayBudget = 0x7F;
+
+            // UTF-32, the widest encoding decode() supports, spends 4 bytes per
+            // code point. This margin holds DisplayBudget code points under any
+            // of them.
+            auto size = std::min<size_t>(fullSize, DisplayBudget * 4);
 
             std::string buffer(size, 0x00);
-            this->getEvaluator()->readData(this->getOffset(), buffer.data(), size, this->getSection());
+            evaluator->readData(this->getOffset(), buffer.data(), size, this->getSection());
 
-            const auto pos = buffer.find_last_not_of('\x00');
-            if (pos == std::string::npos)
-                return "\"\"";
+            if (auto formatted = Pattern::callUserFormatFunc(buffer); formatted.has_value())
+                return *formatted;
 
-            buffer.erase(pos + 1);
+            const auto &codec = evaluator->getStringEncodeDecode();
 
-            auto displayString = hlp::encodeByteString({ buffer.begin(), buffer.end() });
+            // No codec configured keeps the old raw-byte display, unescaped by any
+            // encoding. A configured codec reports an undecodable buffer as invalid,
+            // rather than substituting a replacement character into the display.
+            if (codec == nullptr) {
+                bool truncated = size < fullSize;
 
-            return Pattern::callUserFormatFunc(buffer).value_or(fmt::format("\"{0}\" {1}", displayString, size > this->getSize() ? "(truncated)" : ""));
+                if (buffer.size() > DisplayBudget) {
+                    buffer.resize(DisplayBudget);
+                    truncated = true;
+                }
+
+                const auto pos = buffer.find_last_not_of('\x00');
+                if (pos == std::string::npos)
+                    return "\"\"";
+                buffer.erase(pos + 1);
+
+                return fmt::format("\"{0}\" {1}", hlp::encodeByteString({ buffer.begin(), buffer.end() }), truncated ? "(truncated)" : "");
+            }
+
+            const auto encoding = this->getEncodingName();
+            const auto decoded = codec->decode({ reinterpret_cast<const u8*>(buffer.data()), buffer.size() }, encoding, DisplayBudget);
+
+            if (decoded.stopReason == core::DecodeStop::MalformedBytes)
+                core::err::E0004.throwError(fmt::format("invalid byte sequence for encoding '{}'", encoding));
+
+            const bool truncated = decoded.bytesConsumed < fullSize;
+            return fmt::format("\"{0}\" {1}", decoded.text, truncated ? "(truncated)" : "");
         }
 
         std::shared_ptr<Pattern> getEntry(size_t index) const override {

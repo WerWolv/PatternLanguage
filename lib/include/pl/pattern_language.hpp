@@ -13,6 +13,7 @@
 #include <pl/api.hpp>
 
 #include <pl/core/log_console.hpp>
+#include <pl/core/string_encode_decode.hpp>
 #include <pl/core/token.hpp>
 #include <pl/core/errors/error.hpp>
 #include <pl/core/resolver.hpp>
@@ -148,6 +149,38 @@ namespace pl {
          * @param baseAddress Base address of the data source
          */
         void setDataBaseAddress(u64 baseAddress);
+
+        /**
+         * @brief Sets the text codec for string patterns
+         * @param codec Codec to set. Pass nullptr to go back to raw bytes.
+         */
+        void setStringEncodeDecode(std::shared_ptr<core::StringEncodeDecode> codec);
+
+        /**
+         * @brief Sets a host-supplied check for whether an encoding name means
+         * anything. #pragma encoding fails when this rejects its value.
+         * @param validator Called with a candidate encoding name. Pass nullptr
+         * (the default) to accept any name.
+         */
+        void setEncodingValidator(std::function<bool(const std::string&)> validator);
+
+        /**
+         * @brief Sets the default encoding a string pattern with no [[encoding]]
+         * attribute of its own resolves to
+         * @param encoding Encoding name to set. Empty lets the codec pick its own
+         * default.
+         * @return false when a validator set through the evaluator's
+         * setEncodingValidator() rejects `encoding`; the default encoding is left
+         * unchanged in that case.
+         */
+        bool setDefaultEncoding(std::string encoding);
+
+        /**
+         * @brief Sets a callback invoked whenever setDefaultEncoding() actually
+         * changes the default encoding, after it passes any validator
+         * @param callback Called with the new encoding name
+         */
+        void setOnDefaultEncodingChanged(std::function<void(const std::string&)> callback);
 
         /**
          * @brief Sets the size of the data source
@@ -293,6 +326,14 @@ namespace pl {
          * @brief Resets the runtime
          */
         void reset();
+
+        /**
+         * @brief Clears every placed pattern's cached display value, across every section.
+         * Call this after changing something a pattern's formatted value depends on
+         * without re-running the pattern, such as the host application's declared
+         * string encoding.
+         */
+        void clearFormatCaches();
 
         /**
          * @brief Checks whether the runtime is currently running

@@ -427,6 +427,22 @@ namespace pl {
         this->m_dataBaseAddress = baseAddress;
     }
 
+    void PatternLanguage::setStringEncodeDecode(std::shared_ptr<core::StringEncodeDecode> codec) {
+        this->m_internals.evaluator->setStringEncodeDecode(std::move(codec));
+    }
+
+    void PatternLanguage::setEncodingValidator(std::function<bool(const std::string&)> validator) {
+        this->m_internals.evaluator->setEncodingValidator(std::move(validator));
+    }
+
+    bool PatternLanguage::setDefaultEncoding(std::string encoding) {
+        return this->m_internals.evaluator->setDefaultEncoding(std::move(encoding));
+    }
+
+    void PatternLanguage::setOnDefaultEncodingChanged(std::function<void(const std::string&)> callback) {
+        this->m_internals.evaluator->setOnDefaultEncodingChanged(std::move(callback));
+    }
+
     void PatternLanguage::setDataSize(u64 size) {
         this->m_dataSize = size;
     }
@@ -531,6 +547,13 @@ namespace pl {
         this->m_internals.preprocessor->setResolver(resolver);
         this->m_parserManager.setResolver(resolver);
         this->m_parserManager.setPatternLanguage(this);
+    }
+
+    void PatternLanguage::clearFormatCaches() {
+        for (const auto &[section, patterns] : this->m_patterns) {
+            for (const auto &pattern : patterns)
+                pattern->clearFormatCache();
+        }
     }
 
     void PatternLanguage::addFunction(const api::Namespace &ns, const std::string &name, api::FunctionParameterCount parameterCount, const api::FunctionCallback &func) {
