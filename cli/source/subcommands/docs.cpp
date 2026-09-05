@@ -40,8 +40,10 @@ namespace pl::cli::sub {
                 return fmt::format("{}{}", getTypeEndian(typeApp), getTypeName(typeApp->getType().get()));
             } else if (auto typeDecl = dynamic_cast<const core::ast::ASTNodeTypeDecl*>(type); typeDecl != nullptr) {
                 return typeDecl->getName();
+            } else if (auto builtinType = dynamic_cast<const core::ast::ASTNodeBuiltinType*>(type); builtinType != nullptr) {
+                return core::Token::getTypeName(builtinType->getType());
             } else {
-                return "";
+                return "???";
             }
         }
 
@@ -53,6 +55,10 @@ namespace pl::cli::sub {
             std::string result = " [[";
             for (const auto &attribute : attributes) {
                 result += attribute->getAttribute();
+
+                if (!attribute->getArguments().empty()) {
+                    result += "(...)";
+                }
 
                 result += ", ";
             }
@@ -86,15 +92,15 @@ namespace pl::cli::sub {
 
         std::string generateTypeDocumentation(const std::string &name, const core::ast::ASTNodeTypeDecl *type) {
             if (auto typeApp = dynamic_cast<core::ast::ASTNodeTypeApplication*>(type->getType().get())) {
-                return fmt::format("```rust\nusing {}{} = {}{};\n```", name, generateTemplateParams(type), getTypeName(typeApp), generateAttributes(type));
+                return fmt::format("```pl\nusing {}{} = {}{};\n```", name, generateTemplateParams(type), getTypeName(typeApp), generateAttributes(type));
             } else if (dynamic_cast<core::ast::ASTNodeStruct*>(type->getType().get())) {
-                return fmt::format("```rust\nstruct {}{} {{ ... }}{};\n```", name, generateTemplateParams(type), generateAttributes(type));
+                return fmt::format("```pl\nstruct {}{} {{ ... }}{};\n```", name, generateTemplateParams(type), generateAttributes(type));
             } else if (dynamic_cast<core::ast::ASTNodeUnion*>(type->getType().get())) {
-                return fmt::format("```rust\nunion {}{} {{ ... }}{};\n```", name, generateTemplateParams(type), generateAttributes(type));
+                return fmt::format("```pl\nunion {}{} {{ ... }}{};\n```", name, generateTemplateParams(type), generateAttributes(type));
             } else if (dynamic_cast<core::ast::ASTNodeBitfield*>(type->getType().get())) {
-                return fmt::format("```rust\nbitfield {}{} {{ ... }}{};\n```", name, generateTemplateParams(type), generateAttributes(type));
+                return fmt::format("```pl\nbitfield {}{} {{ ... }}{};\n```", name, generateTemplateParams(type), generateAttributes(type));
             } else if (auto enumDecl = dynamic_cast<core::ast::ASTNodeEnum*>(type->getType().get())) {
-                auto result = fmt::format("```rust\nenum {}{} : {} {{\n", name, generateTemplateParams(type), getTypeName(enumDecl->getUnderlyingType().get()));
+                auto result = fmt::format("```pl\nenum {}{} : {} {{\n", name, generateTemplateParams(type), getTypeName(enumDecl->getUnderlyingType().get()));
                 for (auto &[enumValueName, enumValues] : enumDecl->getEntries()) {
                     result += fmt::format("    {},\n", enumValueName);
                 }
@@ -270,7 +276,7 @@ namespace pl::cli::sub {
                                 }
                             }
 
-                            sectionContent += "\n```rust\n";
+                            sectionContent += "\n```pl\n";
                             sectionContent += fmt::format("fn {}(", wolv::util::splitString(functionDecl->getName(), "::").back());
 
                             const auto &params = functionDecl->getParams();
