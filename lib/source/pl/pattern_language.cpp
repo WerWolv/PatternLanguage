@@ -348,7 +348,7 @@ namespace pl {
         const api::Source plSource(code, source);
         const auto result = m_internals.lexer->lex(&plSource);
         if (result.isOk()) {
-            const auto tokens = result.unwrap();
+            const auto& tokens = result.unwrap();
             for (auto it = tokens.begin(); it != tokens.end(); ++it) {
                 if (it->type == core::Token::Type::Directive && std::get<core::Token::Directive>(it->value) == core::Token::Directive::Pragma) {
                     ++it;
@@ -358,12 +358,20 @@ namespace pl {
                         if (string != nullptr) {
                             auto pragmaKey = *string;
                             ++it;
-                            if (it != tokens.end() && it->type == core::Token::Type::String) {
+
+                            if (it == tokens.end()) {
+                                break;
+                            }
+
+                            if (it->type == core::Token::Type::String) {
                                 literal = std::get<core::Token::Literal>(it->value);
                                 string = std::get_if<std::string>(&literal);
                                 if (string != nullptr) {
                                     pragmaValues.emplace(pragmaKey, *string);
                                 }
+                            } else {
+                                // rewind, so pragmas without argument (i.e. "once") don't skip over the next pragma.
+                                --it;
                             }
                         }
                     }
