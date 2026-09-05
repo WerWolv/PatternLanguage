@@ -24,6 +24,7 @@
 #include "test_patterns/test_pattern_include.hpp"
 #include "test_patterns/test_pattern_import.hpp"
 #include "test_patterns/test_pattern_pragmas.hpp"
+#include "test_patterns/test_pattern_pragmas_pr249.hpp"
 #include "test_patterns/test_pattern_pragmas_fail.hpp"
 #include "test_patterns/test_pattern_format.hpp"
 #include "test_patterns/test_pattern_rvalues_assignment_in_struct.hpp"
@@ -67,6 +68,7 @@ std::array Tests = {
     TEST(Attributes),
     TEST(StructInheritance),
     TEST(Pragmas),
+    TEST(PragmasIssue249),
     TEST(PragmasFail),
     TEST(Format),
     TEST(RValuesAssignmentInStruct),
