@@ -7,6 +7,15 @@ project(pattern_language_tests)
 set(AVAILABLE_TESTS
         DocComments
         Strings
+        UnicodeEscapes
+        UnicodeEscapeSurrogateFail
+        UnicodeEscapeOutOfRangeFail
+        UnicodeEscapeBadDigitFail
+        UnicodeEscapeShortFail
+        UnicodeEscapeInCharFail
+        HexEscapeBadDigitFail
+        HexEscapeShortFail
+        UnknownEscapeFail
         Placement
         Structs
         Unions

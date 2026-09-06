@@ -5,6 +5,7 @@
 
 #include <optional>
 #include <wolv/utils/charconv.hpp>
+#include <wolv/utils/string.hpp>
 
 namespace pl::core {
     using namespace tkn;
@@ -53,7 +54,47 @@ namespace pl::core {
     }
 
 
-    std::optional<char> Lexer::parseCharacter() {
+    // Reads `count` hexadecimal digits. Fails on any other character, which
+    // includes the end of the source.
+    std::optional<u32> Lexer::parseHexDigits(size_t count) {
+        u32 value = 0;
+
+        for (size_t i = 0; i < count; i += 1) {
+            const char digit = m_sourceCode[m_cursor];
+            if (std::isxdigit(static_cast<unsigned char>(digit)) == 0) {
+                m_errorLength = count;
+                error("Invalid hex digit in escape sequence: {}", digit);
+                return std::nullopt;
+            }
+
+            const u32 nibble = std::isdigit(static_cast<unsigned char>(digit)) != 0
+                             ? u32(digit - '0')
+                             : u32(std::tolower(static_cast<unsigned char>(digit)) - 'a' + 10);
+            value = (value << 4) | nibble;
+            m_cursor += 1;
+        }
+
+        return value;
+    }
+
+    // Encodes one code point as UTF-8. A surrogate and a value above U+10FFFF
+    // are not code points, so both fail.
+    std::optional<std::string> Lexer::encodeCodepoint(u32 codepoint) {
+        if (codepoint > 0x10FFFF || (codepoint >= 0xD800 && codepoint <= 0xDFFF)) {
+            error("Not a Unicode code point: U+{:04X}", codepoint);
+            return std::nullopt;
+        }
+
+        auto utf8 = wolv::util::utf32ToUtf8(std::u32string(1, char32_t(codepoint)));
+        if (!utf8.has_value()) {
+            error("Could not encode U+{:04X} as UTF-8", codepoint);
+            return std::nullopt;
+        }
+
+        return *utf8;
+    }
+
+    std::optional<std::string> Lexer::parseCharacter() {
         if (m_cursor >= m_sourceCode.size()) {
             m_errorLength = 1;
             error("Unexpected end of file");
@@ -64,55 +105,49 @@ namespace pl::core {
         if (c == '\\') {
             switch (m_sourceCode[m_cursor++]) {
                 case 'a':
-                    return '\a';
+                    return "\a";
                 case 'b':
-                    return '\b';
+                    return "\b";
                 case 'f':
-                    return '\f';
+                    return "\f";
                 case 'n':
-                    return '\n';
+                    return "\n";
                 case 't':
-                    return '\t';
+                    return "\t";
                 case 'r':
-                    return '\r';
+                    return "\r";
                 case '0':
-                    return '\0';
+                    return std::string(1, '\0');
                 case '\'':
-                    return '\'';
+                    return "'";
                 case '"':
-                    return '"';
+                    return "\"";
                 case '\\':
-                    return '\\';
+                    return "\\";
+                // One byte, whatever the encoding. Not a code point.
                 case 'x': {
-                    const char hex[3] = { m_sourceCode[m_cursor], m_sourceCode[m_cursor + 1], 0 };
-                    m_cursor += 2;
-                    try {
-                        return static_cast<char>(std::stoul(hex, nullptr, 16));
-                    } catch (const std::invalid_argument&) {
-                        m_errorLength = 2;
-                        error("Invalid hex escape sequence: {}", hex);
+                    const auto value = parseHexDigits(2);
+                    if (!value.has_value())
                         return std::nullopt;
-                    }
+
+                    return std::string(1, char(*value));
                 }
-                case 'u': {
-                    const char hex[5] = { m_sourceCode[m_cursor], m_sourceCode[m_cursor + 1], m_sourceCode[m_cursor + 2],
-                                    m_sourceCode[m_cursor + 3], 0 };
-                    m_cursor += 4;
-                    try {
-                        return static_cast<char>(std::stoul(hex, nullptr, 16));
-                    } catch (const std::invalid_argument&) {
-                        m_errorLength = 4;
-                        error("Invalid unicode escape sequence: {}", hex);
-                        return std::nullopt;
-                    }
-                }
+                // One code point, encoded as UTF-8.
+                case 'u':
+                    if (const auto codepoint = parseHexDigits(4); codepoint.has_value())
+                        return encodeCodepoint(*codepoint);
+                    return std::nullopt;
+                case 'U':
+                    if (const auto codepoint = parseHexDigits(8); codepoint.has_value())
+                        return encodeCodepoint(*codepoint);
+                    return std::nullopt;
                 default:
                     m_errorLength = 1;
                     error("Unknown escape sequence: {}", m_sourceCode[m_cursor-1]);
                 return std::nullopt;
             }
         }
-        return c;
+        return std::string(1, c);
     }
 
     std::optional<Token> Lexer::parseDirectiveName(const std::string_view &identifier) {
@@ -632,6 +667,13 @@ namespace pl::core {
                 const auto character = parseCharacter();
 
                 if (character.has_value()) {
+                    // A char holds one byte. \u and \U can give more.
+                    if (character->size() != 1) {
+                        m_errorLength = m_cursor - begin;
+                        error("A char holds one byte. Use a string for this code point");
+                        continue;
+                    }
+
                     if(m_sourceCode[m_cursor] != '\'') {
                         m_errorLength = 1;
                         error("Expected closing '");
@@ -640,7 +682,7 @@ namespace pl::core {
 
                     m_cursor++; // skip closing '
 
-                    addToken(makeTokenAt(Literal::makeNumeric(character.value()), location, m_cursor - begin));
+                    addToken(makeTokenAt(Literal::makeNumeric(character->front()), location, m_cursor - begin));
                     continue;
                 }
             } else {

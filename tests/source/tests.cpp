@@ -21,6 +21,7 @@
 #include "test_patterns/test_pattern_struct_inheritance.hpp"
 #include "test_patterns/test_pattern_doc_comments.hpp"
 #include "test_patterns/test_pattern_strings.hpp"
+#include "test_patterns/test_pattern_unicode_escapes.hpp"
 #include "test_patterns/test_pattern_include.hpp"
 #include "test_patterns/test_pattern_import.hpp"
 #include "test_patterns/test_pattern_pragmas.hpp"
@@ -50,6 +51,15 @@ std::array Tests = {
     TEST(Padding),
     TEST(DocComments),
     TEST(Strings),
+    TEST(UnicodeEscapes),
+    TEST(UnicodeEscapeSurrogateFail),
+    TEST(UnicodeEscapeOutOfRangeFail),
+    TEST(UnicodeEscapeBadDigitFail),
+    TEST(UnicodeEscapeShortFail),
+    TEST(UnicodeEscapeInCharFail),
+    TEST(HexEscapeBadDigitFail),
+    TEST(HexEscapeShortFail),
+    TEST(UnknownEscapeFail),
     TEST(SucceedingAssert),
     TEST(FailingAssert),
     TEST(Bitfields),

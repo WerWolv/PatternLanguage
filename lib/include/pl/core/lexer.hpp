@@ -28,7 +28,11 @@ namespace pl::core {
         bool processToken(auto parserFunction, const std::string_view& identifier);
         Location location() override;
 
-        std::optional<char> parseCharacter();
+        // Returns the UTF-8 bytes of one source character or escape sequence.
+        // \u and \U give a whole code point, so this can be 1 to 4 bytes.
+        std::optional<std::string> parseCharacter();
+        std::optional<u32> parseHexDigits(size_t count);
+        std::optional<std::string> encodeCodepoint(u32 codepoint);
         std::optional<Token> parseOperator();
         std::optional<Token> parseSeparator();
         std::optional<Token> parseOneLineComment();
