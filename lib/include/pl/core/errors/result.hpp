@@ -13,30 +13,31 @@ namespace pl::hlp {
 
         Result() = default;
 
-        explicit Result(const Ok& ok) : ok(ok), errs({ }) { }
-        Result(const Ok& ok, const std::vector<Err>& errs) : ok(ok), errs(errs) { }
-        Result(const Ok& ok, const Err& err) : ok(ok), errs({ err }) { }
-        Result(Result&& other) noexcept : ok(other.ok), errs(other.errs) { }
+        explicit Result(Ok ok) : ok(std::move(ok)), errs({ }) { }
+        Result(Ok ok, std::vector<Err> errs) : ok(std::move(ok)), errs(std::move(errs)) { }
+        Result(Ok ok, Err err) : ok(std::move(ok)), errs({ std::move(err) }) { }
+        Result(Result&& other) noexcept : ok(other.ok), errs(other.errs) { } // why copy?
         Result(const Result& other) noexcept : ok(other.ok), errs(other.errs) { }
-        Result(std::optional<Ok> ok, const std::vector<Err>& errs) : ok(ok), errs(errs) { }
+        Result(std::optional<Ok> ok, std::vector<Err> errs) : ok(std::move(ok)), errs(std::move(errs)) { }
         // move assignment operator
 
+        // why copy?
         Result& operator=(Result&& other) noexcept {
             this->ok = other.ok;
             this->errs = other.errs;
             return *this;
         }
 
-        static Result good(const Ok& ok) {
-            return Result(ok);
+        static Result good(Ok ok) {
+            return Result(std::move(ok));
         }
 
-        static Result err(const Err& err) {
-            return { std::nullopt, { err } };
+        static Result err(Err err) {
+            return { std::nullopt, { std::move(err) } };
         }
 
-        static Result err(const std::vector<Err>& errs) {
-            return { std::nullopt, errs };
+        static Result err(std::vector<Err> errs) {
+            return { std::nullopt, std::move(errs) };
         }
 
         [[nodiscard]] bool isOk() const {
