@@ -62,6 +62,28 @@ set(AVAILABLE_TESTS
         Dollar
         InVariableDefault
         InVariableOverride
+        VarRedeclarationFail
+        #VarRedeclarationInFuncFail
+        ArrayVarRedeclarationFail
+        PointerVarRedeclarationFail
+        MultiVarRedeclarationFail
+        #MultiVarMixRedeclarationFail
+        StructMemberRedeclarationFail
+        UnionMemberRedeclarationFail
+        #EnumMemberRedeclarationFail
+        BitfieldMemberRedeclarationFail
+        #BitfieldArrayMemberRedeclarationFail
+        TemplateParamRedeclarationFail
+        NonTypeTemplateParamRedeclarationFail
+        FuncRedeclarationFail
+        FuncParamRedeclarationFail
+        #RedeclarationInFuncBodyFail
+        #FuncParamAndBodyRedeclarationFail
+        AllowedRedefinitions
+        #GlobalContinueFail
+        #FunctionContinueFail
+        #GlobalBreakFail
+        #FunctionBreakFail
 )
 
 

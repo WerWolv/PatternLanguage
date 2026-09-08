@@ -38,6 +38,7 @@
 #include "test_patterns/test_pattern_error_semantics.hpp"
 #include "test_patterns/test_pattern_dollar.hpp"
 #include "test_patterns/test_pattern_in_variable_defaults.hpp"
+#include "test_patterns/test_pattern_allowed_redefinitions.hpp"
 
 static pl::core::Evaluator s_evaluator;
 
@@ -100,4 +101,26 @@ std::array Tests = {
     TEST(Dollar),
     TEST(InVariableDefault),
     TEST(InVariableOverride),
+    TEST(VarRedeclarationFail),
+//    TEST(VarRedeclarationInFuncFail),
+    TEST(ArrayVarRedeclarationFail),
+    TEST(PointerVarRedeclarationFail),
+    TEST(MultiVarRedeclarationFail),
+//    TEST(MultiVarMixRedeclarationFail),
+    TEST(StructMemberRedeclarationFail),
+    TEST(UnionMemberRedeclarationFail),
+//    TEST(EnumMemberRedeclarationFail),
+    TEST(BitfieldMemberRedeclarationFail),
+//    TEST(BitfieldArrayMemberRedeclarationFail),
+    TEST(TemplateParamRedeclarationFail),
+    TEST(NonTypeTemplateParamRedeclarationFail),
+    TEST(FuncRedeclarationFail),
+    TEST(FuncParamRedeclarationFail),
+//    TEST(RedeclarationInFuncBodyFail),
+//    TEST(FuncParamAndBodyRedeclarationFail),
+    TEST(AllowedRedefinitions),
+    // TEST(GlobalContinueFail),
+    // TEST(FunctionContinueFail),
+    // TEST(GlobalBreakFail),
+    // TEST(FunctionBreakFail),
 };
