@@ -22,6 +22,9 @@ namespace pl::core::ast {
 
         void createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const override;
 
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
     private:
         Token::ValueType m_type;
         api::FunctionParameterCount m_parameterCount;

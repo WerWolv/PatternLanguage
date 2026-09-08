@@ -20,6 +20,10 @@ namespace pl::core::ast {
         [[nodiscard]] const std::vector<std::shared_ptr<ASTNode>> &getMembers() const { return this->m_members; }
         void addMember(std::shared_ptr<ASTNode> &&node) { this->m_members.push_back(std::move(node)); }
 
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
+
     private:
         std::vector<std::shared_ptr<ASTNode>> m_members;
     };

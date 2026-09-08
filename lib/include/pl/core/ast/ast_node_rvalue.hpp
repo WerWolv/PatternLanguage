@@ -23,6 +23,10 @@ namespace pl::core::ast {
         [[nodiscard]] std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override;
         void createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const override;
 
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
+
     private:
         Path m_path;
     };

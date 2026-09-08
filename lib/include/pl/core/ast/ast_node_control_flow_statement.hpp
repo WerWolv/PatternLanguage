@@ -16,6 +16,17 @@ namespace pl::core::ast {
         void createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const override;
         FunctionResult execute(Evaluator *evaluator) const override;
 
+        [[nodiscard]] ControlFlowStatement getType() const {
+            return this->m_type;
+        }
+
+        [[nodiscard]] const std::unique_ptr<ASTNode> &getRValue() {
+            return m_rvalue;
+        }
+
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
     private:
         ControlFlowStatement m_type;
         std::unique_ptr<ASTNode> m_rvalue;
