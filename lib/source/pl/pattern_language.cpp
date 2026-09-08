@@ -34,12 +34,15 @@ namespace pl {
 
     PatternLanguage::PatternLanguage(const bool addLibStd) {
         this->m_internals = {
-            .preprocessor   = std::make_unique<core::Preprocessor>(),
-            .lexer          = std::make_unique<core::Lexer>(),
-            .parser         = std::make_unique<core::Parser>(),
-            .validator      = std::make_unique<core::Validator>(),
-            .evaluator      = std::make_unique<core::Evaluator>()
+            .preprocessor       = std::make_unique<core::Preprocessor>(),
+            .lexer              = std::make_unique<core::Lexer>(),
+            .parser             = std::make_unique<core::Parser>(),
+            .validator          = std::make_unique<core::Validator>(),
+            .validator_pipeline = std::make_unique<core::ValidatorPipeline>(),
+            .evaluator          = std::make_unique<core::Evaluator>()
         };
+
+        configureValidatorPipeline();
 
         this->m_internals.evaluator->setRuntime(this);
 
@@ -185,7 +188,16 @@ namespace pl {
             this->m_compileErrors.insert(m_compileErrors.end(), validatorErrors.begin(), validatorErrors.end());
             validatorErrors.clear();
         }
+        // TODO: delete the block above when ready
 
+        auto [_, validatorPipelineErrors] = this->m_internals.validator_pipeline->validate(ast.value());
+
+        if (!validatorPipelineErrors.empty()) {
+            auto begin = std::move_iterator(validatorPipelineErrors.begin());
+            auto end = std::move_iterator(validatorPipelineErrors.end());
+            this->m_compileErrors.insert(m_compileErrors.end(), begin, end);
+            validatorPipelineErrors.clear();
+        }
 
         this->m_internals.preprocessor->setStoredErrors(this->m_compileErrors);
 
@@ -673,4 +685,10 @@ namespace pl {
         return m_internals.evaluator->getPatternsWithAttribute(attribute);
     }
 
+    void PatternLanguage::configureValidatorPipeline() {
+        auto& pipeline = m_internals.validator_pipeline;
+        wolv::util::unused(pipeline);
+
+        // Configure the predefined validators
+    }
 }

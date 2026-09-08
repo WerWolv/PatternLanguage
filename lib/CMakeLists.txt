@@ -51,6 +51,8 @@ add_library(libpl ${LIBRARY_TYPE}
         source/pl/core/ast/ast_node_variable_decl.cpp
         source/pl/core/ast/ast_node_while_statement.cpp
 
+        source/pl/core/ast/visitors/ast_validator.cpp
+
         source/pl/core/token.cpp
         source/pl/core/evaluator.cpp
         source/pl/core/lexer.cpp

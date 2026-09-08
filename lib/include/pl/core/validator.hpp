@@ -12,6 +12,8 @@
 
 #include <pl/core/errors/result.hpp>
 
+#include <pl/core/ast/visitors/ast_validator.hpp>
+
 namespace pl::core {
 
     namespace ast { class ASTNode; }
@@ -41,6 +43,19 @@ namespace pl::core {
         ast::ASTNode *m_lastNode = nullptr;
         std::set<ast::ASTNode*> m_validatedNodes;
         std::list<std::unordered_set<std::string>> m_identifiers;
+    };
+
+    class ValidatorPipeline {
+        using Result = hlp::CompileResult<bool>; // not sure where to centralize the declaration
+    public:
+        ValidatorPipeline() = default;
+
+        void add(std::unique_ptr<ASTValidator> validator);
+
+        Result validate(const std::vector<std::shared_ptr<ast::ASTNode>> &ast);
+
+    private:
+        std::vector<std::unique_ptr<ASTValidator>> m_validators;
     };
 
 }
