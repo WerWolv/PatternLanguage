@@ -273,6 +273,19 @@ namespace pl::core {
         }
 
         [[nodiscard]] static const char* getTypeName(ValueType type);
+        [[nodiscard]] static const char* getOperatorName(Operator type);
+
+        [[nodiscard]] constexpr static bool isUnary(Operator type) {
+            switch (type) {
+                case Operator::Plus:
+                case Operator::Minus:
+                case Operator::BitNot:
+                case Operator::BoolNot:
+                    return true;
+                default:
+                    return false;
+            }
+        }
 
         [[nodiscard]] std::string getFormattedType() const;
         [[nodiscard]] std::string getFormattedValue() const;

@@ -30,6 +30,21 @@ namespace pl {
         Return
     };
 
+    [[nodiscard]] constexpr const char* getControlFlowStatementName(ControlFlowStatement statement) {
+        switch (statement) {
+            case ControlFlowStatement::Continue:
+                return "continue";
+            case ControlFlowStatement::Break:
+                return "break";
+            case ControlFlowStatement::Return:
+                return "return";
+            case ControlFlowStatement::None:
+                return "<None>";
+
+            default:
+                return "????";
+        }
+    }
 }
 
 #if !defined(LIBWOLV_BUILTIN_UINT128)

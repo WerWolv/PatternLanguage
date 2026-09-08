@@ -254,6 +254,73 @@ namespace pl::core {
         }
     }
 
+    [[nodiscard]] const char* Token::getOperatorName(const core::Token::Operator op) {
+        switch (op) {
+            case Token::Operator::At:
+                return "@";
+            case Token::Operator::Assign:
+                return "=";
+            case Token::Operator::Colon:
+                return ":";
+            case Token::Operator::Plus:
+                return "+";
+            case Token::Operator::Minus:
+                return "-";
+            case Token::Operator::Star:
+                return "*";
+            case Token::Operator::Slash:
+                return "/";
+            case Token::Operator::Percent:
+                return "%";
+            case Token::Operator::LeftShift:
+                return "<<";
+            case Token::Operator::RightShift:
+                return ">>";
+            case Token::Operator::BitOr:
+                return "|";
+            case Token::Operator::BitAnd:
+                return "&";
+            case Token::Operator::BitXor:
+                return "^";
+            case Token::Operator::BitNot:
+                return "~";
+            case Token::Operator::BoolEqual:
+                return "==";
+            case Token::Operator::BoolNotEqual:
+                return "!=";
+            case Token::Operator::BoolGreaterThan:
+                return ">";
+            case Token::Operator::BoolLessThan:
+                return "<";
+            case Token::Operator::BoolGreaterThanOrEqual:
+                return ">=";
+            case Token::Operator::BoolLessThanOrEqual:
+                return "<=";
+            case Token::Operator::BoolAnd:
+                return "&&";
+            case Token::Operator::BoolOr:
+                return "||";
+            case Token::Operator::BoolXor:
+                return "^^";
+            case Token::Operator::BoolNot:
+                return "!";
+            case Token::Operator::TernaryConditional:
+                return "Ternary";
+            case Token::Operator::Dollar:
+                return "$";
+            case Token::Operator::AddressOf:
+                return "addressof";
+            case Token::Operator::SizeOf:
+                return "sizeof";
+            case Token::Operator::TypeNameOf:
+                return "typenameof";
+            case Token::Operator::ScopeResolution:
+                return "::";
+            default:
+                return "???";
+        }
+    }
+
     [[nodiscard]] std::string Token::getFormattedValue() const {
         return std::visit(wolv::util::overloaded {
                               [](const Keyword keyword) -> std::string {
