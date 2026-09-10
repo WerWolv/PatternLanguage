@@ -66,7 +66,7 @@ namespace pl {
             std::unique_ptr<core::Lexer>             lexer;
             std::unique_ptr<core::Parser>            parser;
             std::unique_ptr<core::Validator>         validator;
-            std::unique_ptr<core::ValidatorPipeline> validator_pipeline;
+            std::unique_ptr<core::ValidatorPipeline> validatorPipeline;
             std::unique_ptr<core::Evaluator>         evaluator;
         };
 

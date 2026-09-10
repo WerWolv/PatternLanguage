@@ -46,8 +46,9 @@ namespace pl::core {
     };
 
     class ValidatorPipeline {
-        using Result = hlp::CompileResult<bool>; // not sure where to centralize the declaration
     public:
+        using Result = hlp::CompileResult<bool>;
+
         ValidatorPipeline() = default;
 
         void add(std::unique_ptr<ASTValidator> validator);

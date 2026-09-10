@@ -29,31 +29,31 @@ namespace pl::core {
         // Helpers
         template <ast::vis::Acceptable T>
         void visitTypeErased(const T& node) {
-            auto node_ptr = node.get();
-            if (m_validatedNodes.contains(node_ptr)) {
+            auto nodePtr = node.get();
+            if (m_validatedNodes.contains(nodePtr)) {
                 // Seen this one, let's not repeat ourselves...
                 return;
             }
-            if (node_ptr == nullptr) {
+            if (nodePtr == nullptr) {
                 errorDesc("Null-Pointer found in AST.", "This is a parser bug. Please report it on GitHub.");
                 return;
             }
-            m_lastNode = node_ptr;
-            node_ptr->accept(*this);
+            m_lastNode = nodePtr;
+            nodePtr->accept(*this);
         }
         template <ast::vis::Acceptable TypedNode>
         void visitTyped(const TypedNode& node) {
-            auto node_ptr = node.get();
-            if (m_validatedNodes.contains(node_ptr)) {
+            auto nodePtr = node.get();
+            if (m_validatedNodes.contains(nodePtr)) {
                 // Seen this one, let's not repeat ourselves...
                 return;
             }
-            if (node_ptr == nullptr) {
+            if (nodePtr == nullptr) {
                 errorDesc("Null-Pointer found in AST.", "This is a parser bug. Please report it on GitHub.");
                 return;
             }
-            m_lastNode = node_ptr;
-            visit(*node_ptr);
+            m_lastNode = nodePtr;
+            visit(*nodePtr);
         }
 
         template<ast::vis::Acceptable T>

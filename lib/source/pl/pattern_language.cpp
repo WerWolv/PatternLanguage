@@ -38,7 +38,7 @@ namespace pl {
             .lexer              = std::make_unique<core::Lexer>(),
             .parser             = std::make_unique<core::Parser>(),
             .validator          = std::make_unique<core::Validator>(),
-            .validator_pipeline = std::make_unique<core::ValidatorPipeline>(),
+            .validatorPipeline  = std::make_unique<core::ValidatorPipeline>(),
             .evaluator          = std::make_unique<core::Evaluator>()
         };
 
@@ -190,7 +190,7 @@ namespace pl {
         }
         // TODO: delete the block above when ready
 
-        auto [_, validatorPipelineErrors] = this->m_internals.validator_pipeline->validate(ast.value());
+        auto [_, validatorPipelineErrors] = this->m_internals.validatorPipeline->validate(ast.value());
 
         if (!validatorPipelineErrors.empty()) {
             auto begin = std::move_iterator(validatorPipelineErrors.begin());
@@ -686,7 +686,7 @@ namespace pl {
     }
 
     void PatternLanguage::configureValidatorPipeline() {
-        auto& pipeline = m_internals.validator_pipeline;
+        auto& pipeline = m_internals.validatorPipeline;
         wolv::util::unused(pipeline);
 
         // Configure the predefined validators
