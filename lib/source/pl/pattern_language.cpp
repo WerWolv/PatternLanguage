@@ -9,6 +9,9 @@
 #include <pl/core/resolver.hpp>
 #include <pl/core/resolvers.hpp>
 
+#include <pl/core/ast/visitors/control_flow_validator.hpp>
+#include <pl/core/ast/visitors/scope_validator.hpp>
+
 #include <pl/patterns/pattern.hpp>
 #include <pl/patterns/pattern_array_static.hpp>
 
@@ -38,7 +41,10 @@ namespace pl {
             .lexer              = std::make_unique<core::Lexer>(),
             .parser             = std::make_unique<core::Parser>(),
             .validator          = std::make_unique<core::Validator>(),
-            .validatorPipeline  = std::make_unique<core::ValidatorPipeline>(),
+            .validatorPipeline  = std::make_unique<core::ValidatorPipeline>(
+                std::make_unique<core::ScopeValidator>(),
+                std::make_unique<core::ControlFlowValidator>()
+            ),
             .evaluator          = std::make_unique<core::Evaluator>()
         };
 

@@ -53,7 +53,7 @@ namespace pl::core {
 
         template <std::derived_from<ASTValidator>... Vs>
         ValidatorPipeline(std::unique_ptr<Vs>... validators) {
-            (add(validators), ...);
+            (add(std::move(validators)), ...);
         }
 
         void add(std::unique_ptr<ASTValidator> validator);
