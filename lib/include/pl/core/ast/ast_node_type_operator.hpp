@@ -24,6 +24,10 @@ namespace pl::core::ast {
 
         [[nodiscard]] std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override;
 
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
+
     private:
         Token::Operator m_op;
         std::unique_ptr<ASTNode> m_expression;

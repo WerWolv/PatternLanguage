@@ -34,11 +34,12 @@ namespace pl {
 
     PatternLanguage::PatternLanguage(const bool addLibStd) {
         this->m_internals = {
-            .preprocessor   = std::make_unique<core::Preprocessor>(),
-            .lexer          = std::make_unique<core::Lexer>(),
-            .parser         = std::make_unique<core::Parser>(),
-            .validator      = std::make_unique<core::Validator>(),
-            .evaluator      = std::make_unique<core::Evaluator>()
+            .preprocessor       = std::make_unique<core::Preprocessor>(),
+            .lexer              = std::make_unique<core::Lexer>(),
+            .parser             = std::make_unique<core::Parser>(),
+            .validator          = std::make_unique<core::Validator>(),
+            .validatorPipeline  = std::make_unique<core::ValidatorPipeline>(),
+            .evaluator          = std::make_unique<core::Evaluator>()
         };
 
         this->m_internals.evaluator->setRuntime(this);
@@ -167,7 +168,7 @@ namespace pl {
         this->m_internals.parser->setParserManager(&this->m_parserManager);
         auto [ast, parserErrors] = this->m_internals.parser->parse(tokens.value());
         if (!parserErrors.empty()) {
-            this->m_compileErrors.insert(m_compileErrors.end(), parserErrors.begin(), parserErrors.end());
+            std::ranges::move(parserErrors, std::back_inserter(m_compileErrors));
             parserErrors.clear();
         }
 
@@ -185,7 +186,13 @@ namespace pl {
             this->m_compileErrors.insert(m_compileErrors.end(), validatorErrors.begin(), validatorErrors.end());
             validatorErrors.clear();
         }
+        // TODO: delete the block above when ready
 
+        auto [_, validatorPipelineErrors] = this->m_internals.validatorPipeline->validate(ast.value());
+        if (!validatorPipelineErrors.empty()) {
+            std::ranges::move(validatorPipelineErrors, std::back_inserter(m_compileErrors));
+            validatorPipelineErrors.clear();
+        }
 
         this->m_internals.preprocessor->setStoredErrors(this->m_compileErrors);
 
@@ -672,5 +679,4 @@ namespace pl {
     const std::set<ptrn::Pattern*>& PatternLanguage::getPatternsWithAttribute(const std::string &attribute) const {
         return m_internals.evaluator->getPatternsWithAttribute(attribute);
     }
-
 }

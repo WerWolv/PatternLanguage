@@ -23,6 +23,10 @@ namespace pl::core::ast {
         [[nodiscard]] const std::vector<std::shared_ptr<ASTNode>> &getInheritance() const { return this->m_inheritance; }
         void addInheritance(std::shared_ptr<ASTNode> &&node) { this->m_inheritance.push_back(std::move(node)); }
 
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
+
     private:
         std::vector<std::shared_ptr<ASTNode>> m_members;
         std::vector<std::shared_ptr<ASTNode>> m_inheritance;

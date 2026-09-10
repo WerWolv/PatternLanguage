@@ -35,6 +35,9 @@ namespace pl::core::ast {
             return this->m_defaultParameters;
         }
 
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
 
     private:
         std::string m_name;

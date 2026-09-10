@@ -16,6 +16,16 @@ namespace pl::core::ast {
 
         [[nodiscard]] std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override;
 
+        [[nodiscard]] const std::unique_ptr<ASTNode> &getValue() const {
+            return m_value;
+        }
+        [[nodiscard]] const std::unique_ptr<ASTNodeTypeApplication> &getType() const {
+            return m_type;
+        }
+
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
     private:
         std::unique_ptr<ASTNode> castValue(const Token::Literal &literal, Token::ValueType type, const std::shared_ptr<ptrn::Pattern> &typePattern, Evaluator *evaluator) const;
 

@@ -16,6 +16,10 @@ namespace pl::core::ast {
             return this->m_values;
         }
 
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
+
     private:
         std::vector<Token::Literal> m_values;
     };

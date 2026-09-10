@@ -32,6 +32,7 @@ namespace pl {
         class Lexer;
         class Parser;
         class Validator;
+        class ValidatorPipeline;
         class Evaluator;
 
         namespace ast { class ASTNode; }
@@ -61,11 +62,12 @@ namespace pl {
         PatternLanguage(PatternLanguage &&other) noexcept;
 
         struct Internals {
-            std::unique_ptr<core::Preprocessor> preprocessor;
-            std::unique_ptr<core::Lexer>        lexer;
-            std::unique_ptr<core::Parser>       parser;
-            std::unique_ptr<core::Validator>    validator;
-            std::unique_ptr<core::Evaluator>    evaluator;
+            std::unique_ptr<core::Preprocessor>      preprocessor;
+            std::unique_ptr<core::Lexer>             lexer;
+            std::unique_ptr<core::Parser>            parser;
+            std::unique_ptr<core::Validator>         validator;
+            std::unique_ptr<core::ValidatorPipeline> validatorPipeline;
+            std::unique_ptr<core::Evaluator>         evaluator;
         };
 
         /**

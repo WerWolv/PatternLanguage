@@ -22,6 +22,8 @@ namespace pl::core::ast {
         [[nodiscard]] const std::string &getName() const { return this->m_name; }
         [[nodiscard]] constexpr const std::shared_ptr<ASTNodeTypeApplication> &getType() const { return this->m_type; }
         [[nodiscard]] constexpr const std::unique_ptr<ASTNode> &getPlacementOffset() const { return this->m_placementOffset; }
+        [[nodiscard]] constexpr const std::unique_ptr<ASTNode> &getPlacementSection() const { return this->m_placementSection; }
+        [[nodiscard]] constexpr const std::unique_ptr<ASTNode> &getDefaultValue() const { return this->m_defaultValue; }
 
         [[nodiscard]] constexpr bool isInVariable() const { return this->m_inVariable; }
         [[nodiscard]] constexpr bool isOutVariable() const { return this->m_outVariable; }
@@ -32,6 +34,10 @@ namespace pl::core::ast {
 
         [[nodiscard]] bool isConstant() const {
             return this->m_constant;
+        }
+
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
         }
 
     private:

@@ -22,8 +22,13 @@ namespace pl::core::ast {
         [[nodiscard]] constexpr const std::shared_ptr<ASTNode> &getType() const { return this->m_type; }
         [[nodiscard]] constexpr const std::shared_ptr<ASTNodeTypeApplication> &getSizeType() const { return this->m_sizeType; }
         [[nodiscard]] constexpr const std::unique_ptr<ASTNode> &getPlacementOffset() const { return this->m_placementOffset; }
+        [[nodiscard]] constexpr const std::unique_ptr<ASTNode> &getPlacementSection() const { return this->m_placementSection; }
 
         void createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const override;
+
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
 
     private:
         std::string m_name;

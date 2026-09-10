@@ -2,6 +2,7 @@
 
 #include <pl/core/token.hpp>
 #include <pl/core/location.hpp>
+#include <pl/core/ast/visitors/ast_visitor.hpp>
 
 #include <pl/core/errors/runtime_errors.hpp>
 #include <pl/helpers/concepts.hpp>
@@ -35,6 +36,8 @@ namespace pl::core::ast {
         [[nodiscard]] const std::string &getDocComment() const;
         void setShouldDocument(bool shouldDocument);
         [[nodiscard]] bool shouldDocument() const;
+
+        virtual void accept(vis::ASTVisitor& v) = 0;
 
     private:
         Location m_location = Location::Empty();

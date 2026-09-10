@@ -45,6 +45,17 @@ namespace pl::core::ast {
         void createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const override;
         FunctionResult execute(Evaluator *evaluator) const override;
 
+        [[nodiscard]] const std::optional<MatchCase> &getDefaultCase() const {
+            return this->m_defaultCase;
+        }
+        [[nodiscard]] const std::vector<MatchCase> &getNonDefaultCases() const {
+            return this->m_cases;
+        }
+
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
+
     private:
         [[nodiscard]] bool evaluateCondition(const std::unique_ptr<ASTNode> &condition, Evaluator *evaluator) const;
         [[nodiscard]] const std::vector<std::unique_ptr<ASTNode>>* getCaseBody(Evaluator *evaluator) const;

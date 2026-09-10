@@ -95,6 +95,10 @@ namespace pl::core::ast {
         [[nodiscard]] const std::unique_ptr<ASTNode> &getRightOperand() const { return this->m_right; }
         [[nodiscard]] Token::Operator getOperator() const { return this->m_operator; }
 
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
+
     private:
         std::unique_ptr<ASTNode> m_left, m_right;
         Token::Operator m_operator;

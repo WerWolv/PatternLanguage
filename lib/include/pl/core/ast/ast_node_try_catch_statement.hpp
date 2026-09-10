@@ -23,6 +23,10 @@ namespace pl::core::ast {
             return this->m_catchBody;
         }
 
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
+
     private:
 
         std::vector<std::unique_ptr<ASTNode>> m_tryBody, m_catchBody;

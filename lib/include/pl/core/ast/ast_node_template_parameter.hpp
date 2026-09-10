@@ -23,6 +23,10 @@ namespace pl::core::ast {
             return this->m_isType;
         }
 
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
+
     private:
         Token::Identifier m_name;
         bool m_isType;
