@@ -51,6 +51,11 @@ namespace pl::core {
 
         ValidatorPipeline() = default;
 
+        template <std::derived_from<ASTValidator>... Vs>
+        ValidatorPipeline(std::unique_ptr<Vs>... validators) {
+            (add(validators), ...);
+        }
+
         void add(std::unique_ptr<ASTValidator> validator);
 
         Result validate(const std::vector<std::shared_ptr<ast::ASTNode>> &ast);

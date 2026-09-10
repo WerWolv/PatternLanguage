@@ -42,8 +42,6 @@ namespace pl {
             .evaluator          = std::make_unique<core::Evaluator>()
         };
 
-        configureValidatorPipeline();
-
         this->m_internals.evaluator->setRuntime(this);
 
         if (addLibStd)
@@ -170,7 +168,7 @@ namespace pl {
         this->m_internals.parser->setParserManager(&this->m_parserManager);
         auto [ast, parserErrors] = this->m_internals.parser->parse(tokens.value());
         if (!parserErrors.empty()) {
-            this->m_compileErrors.insert(m_compileErrors.end(), parserErrors.begin(), parserErrors.end());
+            std::ranges::move(parserErrors, std::back_inserter(m_compileErrors));
             parserErrors.clear();
         }
 
@@ -191,11 +189,8 @@ namespace pl {
         // TODO: delete the block above when ready
 
         auto [_, validatorPipelineErrors] = this->m_internals.validatorPipeline->validate(ast.value());
-
         if (!validatorPipelineErrors.empty()) {
-            auto begin = std::move_iterator(validatorPipelineErrors.begin());
-            auto end = std::move_iterator(validatorPipelineErrors.end());
-            this->m_compileErrors.insert(m_compileErrors.end(), begin, end);
+            std::ranges::move(validatorPipelineErrors, std::back_inserter(m_compileErrors));
             validatorPipelineErrors.clear();
         }
 
@@ -683,12 +678,5 @@ namespace pl {
 
     const std::set<ptrn::Pattern*>& PatternLanguage::getPatternsWithAttribute(const std::string &attribute) const {
         return m_internals.evaluator->getPatternsWithAttribute(attribute);
-    }
-
-    void PatternLanguage::configureValidatorPipeline() {
-        auto& pipeline = m_internals.validatorPipeline;
-        wolv::util::unused(pipeline);
-
-        // Configure the predefined validators
     }
 }

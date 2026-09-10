@@ -455,7 +455,6 @@ namespace pl {
         [[nodiscard]] const std::set<pl::ptrn::Pattern*>& getPatternsWithAttribute(const std::string &attribute) const;
 
     private:
-        void configureValidatorPipeline();
         void flattenPatterns();
 
     private:

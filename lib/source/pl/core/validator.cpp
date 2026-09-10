@@ -199,7 +199,6 @@ namespace pl::core {
         return m_lastNode->getLocation();
     }
 
-
     void ValidatorPipeline::add(std::unique_ptr<pl::core::ASTValidator> validator) {
         m_validators.push_back(std::move(validator));
     }
