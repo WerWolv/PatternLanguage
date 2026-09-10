@@ -37,6 +37,8 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getSortedEntries() override {
+            if (this->m_sortedMembers.empty())
+                return this->getEntries();
             return this->m_sortedMembers;
         }
 
@@ -48,6 +50,7 @@ namespace pl::ptrn {
 
         void setEntries(const std::vector<std::shared_ptr<Pattern>> &entries) override {
             this->m_members.clear();
+            this->m_sortedMembers.clear();
 
             for (const auto &member : entries) {
                 addEntry(member);

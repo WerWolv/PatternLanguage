@@ -383,6 +383,8 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getSortedEntries() override {
+            if (this->m_sortedEntries.empty())
+                return this->getEntries();
             return this->m_sortedEntries;
         }
 
@@ -417,6 +419,7 @@ namespace pl::ptrn {
 
         void setEntries(const std::vector<std::shared_ptr<Pattern>> &entries) override {
             this->m_entries = entries;
+            this->m_sortedEntries.clear();
 
             for (auto &entry : this->m_entries) {
                 if (!entry->hasOverriddenColor())
@@ -644,6 +647,7 @@ namespace pl::ptrn {
             if (!this->m_fields.empty())
                 this->setBaseColor(this->m_fields.front()->getColor());
 
+            this->m_sortedFields.clear();
             for (const auto &field : this->m_fields) {
                 field->setParent(this->reference());
                 this->m_sortedFields.push_back(field);
@@ -754,11 +758,14 @@ namespace pl::ptrn {
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getSortedEntries() override {
+            if (this->m_sortedFields.empty())
+                return this->getEntries();
             return this->m_sortedFields;
         }
 
         void setEntries(const std::vector<std::shared_ptr<Pattern>> &entries) override {
             this->m_fields = entries;
+            this->m_sortedFields.clear();
         }
 
         void setOffset(u64 offset) override {
@@ -778,6 +785,7 @@ namespace pl::ptrn {
             if (this->isSealed())
                 return;
 
+            end = std::min<u64>(end, patterns.size());
             for (auto i = start; i < end; i++) {
                 auto &pattern = patterns[i];
                 if (this->hasAttribute("export") || !pattern->isPatternLocal() || pattern->hasAttribute("export"))
