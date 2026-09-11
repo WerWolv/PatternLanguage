@@ -73,27 +73,27 @@ set(AVAILABLE_TESTS
         InVariableOverride
         SetEntriesSortedConsistency
         VarRedeclarationFail
-        #VarRedeclarationInFuncFail
+        VarRedeclarationInFuncFail
         ArrayVarRedeclarationFail
         PointerVarRedeclarationFail
         MultiVarRedeclarationFail
-        #MultiVarMixRedeclarationFail
+        MultiVarMixRedeclarationFail
         StructMemberRedeclarationFail
         UnionMemberRedeclarationFail
         #EnumMemberRedeclarationFail
         BitfieldMemberRedeclarationFail
-        #BitfieldArrayMemberRedeclarationFail
+        BitfieldArrayMemberRedeclarationFail
         TemplateParamRedeclarationFail
         NonTypeTemplateParamRedeclarationFail
         FuncRedeclarationFail
         FuncParamRedeclarationFail
-        #RedeclarationInFuncBodyFail
-        #FuncParamAndBodyRedeclarationFail
+        RedeclarationInFuncBodyFail
+        FuncParamAndBodyRedeclarationFail
         AllowedRedefinitions
-        #GlobalContinueFail
-        #FunctionContinueFail
-        #GlobalBreakFail
-        #FunctionBreakFail
+        GlobalContinueFail
+        FunctionContinueFail
+        GlobalBreakFail
+        FunctionBreakFail
 )
 
 

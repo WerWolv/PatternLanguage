@@ -105,7 +105,7 @@ namespace pl::core {
         if (node.isForwardDeclared()) {
             return;
         }
-        // TODO: lint this
+        // TODO: detect more clashes in a linter
         Scope typeParameterIdentifiers;
         Scope nonTypeParameterIdentifiers;
 
