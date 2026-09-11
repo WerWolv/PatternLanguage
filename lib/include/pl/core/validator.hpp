@@ -18,33 +18,6 @@ namespace pl::core {
 
     namespace ast { class ASTNode; }
 
-    class Validator : err::ErrorCollector {
-        using Result = hlp::CompileResult<bool>;
-    public:
-        Validator() = default;
-
-        Result validate(const std::vector<std::shared_ptr<ast::ASTNode>> &ast);
-
-        void setRecursionDepth(const u32 limit) {
-            this->m_maxRecursionDepth = std::min<u32>(limit, 255);
-        }
-
-    private:
-        bool validateNodes(const std::vector<std::unique_ptr<ast::ASTNode>> &nodes, bool newScope = true);
-        bool validateNodes(const std::vector<std::shared_ptr<ast::ASTNode>> &nodes, bool newScope = true);
-        bool validateNode(const std::shared_ptr<ast::ASTNode>& node, bool newScope = true);
-        bool validateNode(ast::ASTNode *node, std::unordered_set<std::string>& identifiers);
-
-        Location location() override;
-
-        u32 m_maxRecursionDepth = 32;
-        u32 m_recursionDepth = 0;
-
-        ast::ASTNode *m_lastNode = nullptr;
-        std::set<ast::ASTNode*> m_validatedNodes;
-        std::list<std::unordered_set<std::string>> m_identifiers;
-    };
-
     class ValidatorPipeline {
     public:
         using Result = hlp::CompileResult<bool>;
@@ -63,5 +36,4 @@ namespace pl::core {
     private:
         std::vector<std::unique_ptr<ASTValidator>> m_validators;
     };
-
 }
