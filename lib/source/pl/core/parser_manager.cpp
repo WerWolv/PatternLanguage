@@ -39,8 +39,6 @@ namespace pl::core {
             preprocessor.addPragmaHandler(name, handler);
         }
 
-        const auto &validator = internals.validator;
-
         auto [tokens, preprocessorErrors] = preprocessor.preprocess(this->m_patternLanguage, source, true);
         if (!preprocessorErrors.empty()) {
             return Result::err(preprocessorErrors);
@@ -60,7 +58,8 @@ namespace pl::core {
         if (result.hasErrs())
             return Result::err(result.errs);
 
-        auto [validated, validatorErrors] = validator->validate(result.ok.value());
+        const auto &validatorPipeline = internals.validatorPipeline;
+        auto [validated, validatorErrors] = validatorPipeline->validate(result.ok.value());
         if (validated && !validatorErrors.empty()) {
             return Result::err(validatorErrors);
         }

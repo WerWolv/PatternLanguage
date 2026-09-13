@@ -9,6 +9,9 @@
 #include <pl/core/resolver.hpp>
 #include <pl/core/resolvers.hpp>
 
+#include <pl/core/ast/visitors/control_flow_validator.hpp>
+#include <pl/core/ast/visitors/scope_validator.hpp>
+
 #include <pl/patterns/pattern.hpp>
 #include <pl/patterns/pattern_array_static.hpp>
 
@@ -37,8 +40,10 @@ namespace pl {
             .preprocessor       = std::make_unique<core::Preprocessor>(),
             .lexer              = std::make_unique<core::Lexer>(),
             .parser             = std::make_unique<core::Parser>(),
-            .validator          = std::make_unique<core::Validator>(),
-            .validatorPipeline  = std::make_unique<core::ValidatorPipeline>(),
+            .validatorPipeline  = std::make_unique<core::ValidatorPipeline>(
+                std::make_unique<core::ScopeValidator>(),
+                std::make_unique<core::ControlFlowValidator>()
+            ),
             .evaluator          = std::make_unique<core::Evaluator>()
         };
 
@@ -178,15 +183,6 @@ namespace pl {
             return std::nullopt;
         if (ast->empty())
             return ast;
-
-
-        auto [validated, validatorErrors] = this->m_internals.validator->validate(ast.value());
-        wolv::util::unused(validated);
-        if (!validatorErrors.empty()) {
-            this->m_compileErrors.insert(m_compileErrors.end(), validatorErrors.begin(), validatorErrors.end());
-            validatorErrors.clear();
-        }
-        // TODO: delete the block above when ready
 
         auto [_, validatorPipelineErrors] = this->m_internals.validatorPipeline->validate(ast.value());
         if (!validatorPipelineErrors.empty()) {
@@ -541,7 +537,6 @@ namespace pl {
         this->m_currError.reset();
         this->m_compileErrors.clear();
         this->m_parserManager.reset();
-        this->m_internals.validator->setRecursionDepth(32);
 
         this->m_internals.preprocessor->reset();
         this->m_internals.lexer->reset();
