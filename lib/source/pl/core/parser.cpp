@@ -2429,22 +2429,50 @@ namespace pl::core {
 
         if (inVariable || outVariable) {
             bool invalidType = false;
-            if (const auto builtinType = dynamic_cast<ast::ASTNodeBuiltinType*>(type->getType().get()); builtinType != nullptr) {
-                if (const auto valueType = builtinType->getType(); !Token::isInteger(valueType)
-                                                                   && !Token::isFloatingPoint(valueType)
-                                                                   && valueType != Token::ValueType::Boolean
-                                                                   && valueType != Token::ValueType::Character
-                                                                   && valueType != Token::ValueType::String)
+            auto visitingType = type;
+            i32 declNestLimit = 32; // default evaluation depth
+            while (!invalidType && visitingType && declNestLimit-- > 0) {
+                auto checkType = visitingType->getType();
+
+                if (checkType == nullptr) {
                     invalidType = true;
-            } else if (const auto typeDecl = dynamic_cast<ast::ASTNodeTypeDecl*>(type->getType().get()); typeDecl != nullptr) {
-                if (const auto enumDecl = dynamic_cast<ast::ASTNodeEnum*>(typeDecl->getType().get()); enumDecl == nullptr) {
-                    invalidType = true;
+                    break;
                 }
-            } else {
+
+                if (const auto typeDecl = std::dynamic_pointer_cast<ast::ASTNodeTypeDecl>(checkType); typeDecl != nullptr) {
+                    checkType = typeDecl->getType();
+                }
+
+                if (const auto usingDecl = std::dynamic_pointer_cast<ast::ASTNodeTypeApplication>(checkType); usingDecl != nullptr) {
+                    if (usingDecl == visitingType) [[unlikely]] {
+                        // bad case of forward declarations ending up referencing itself
+                        invalidType = true;
+                        break;
+                    }
+
+                    visitingType = usingDecl;
+                    continue;
+                }
+
+                if (const auto enumDecl = dynamic_cast<ast::ASTNodeEnum *>(checkType.get()); enumDecl != nullptr) {
+                    break;
+                }
+
+                if (const auto builtinType = dynamic_cast<ast::ASTNodeBuiltinType *>(checkType.get()); builtinType != nullptr) {
+                    const auto valueType = builtinType->getType();
+                    invalidType = !Token::isInteger(valueType)
+                                  && !Token::isFloatingPoint(valueType)
+                                  && valueType != Token::ValueType::Boolean
+                                  && valueType != Token::ValueType::Character
+                                  && valueType != Token::ValueType::String;
+                    break;
+                }
+
                 invalidType = true;
+                break;
             }
 
-            if (invalidType) {
+            if (invalidType || visitingType == nullptr || declNestLimit <= 0) {
                 errorDesc("Invalid in/out parameter type.", "Allowed types are: 'char', 'bool', 'str', floating point types, integral types, or enums.");
                 return nullptr;
             }
