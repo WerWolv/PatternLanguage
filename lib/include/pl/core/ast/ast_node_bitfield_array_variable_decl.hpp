@@ -36,6 +36,10 @@ namespace pl::core::ast {
             return this->m_size;
         }
 
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
+
     private:
         std::string m_name;
         std::shared_ptr<ASTNodeTypeApplication> m_type;

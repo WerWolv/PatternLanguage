@@ -22,10 +22,17 @@ namespace pl::core::ast {
         [[nodiscard]] const std::vector<std::unique_ptr<ASTNode>> &getBody() const {
             return this->m_body;
         }
+        [[nodiscard]] const std::unique_ptr<ASTNode> &getPostExpression() const {
+            return this->m_postExpression;
+        }
 
         FunctionResult execute(Evaluator *evaluator) const override;
 
         [[nodiscard]] bool evaluateCondition(Evaluator *evaluator) const;
+
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
 
     private:
         std::unique_ptr<ASTNode> m_condition;

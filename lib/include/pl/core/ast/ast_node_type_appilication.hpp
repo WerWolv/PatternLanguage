@@ -18,6 +18,9 @@ namespace pl::core::ast {
         void setTemplateArguments(std::vector<std::unique_ptr<ASTNode>> &&arguments) {
             this->m_templateArguments = std::move(arguments);
         }
+        const std::vector<std::unique_ptr<ASTNode>>& getTemplateArguments() {
+            return this->m_templateArguments;
+        }
         
         std::vector<std::unique_ptr<ASTNode>> evaluateTemplateArguments(Evaluator *evaluator) const;
 
@@ -54,6 +57,9 @@ namespace pl::core::ast {
             return this->m_templateParameterIndex;
         }
 
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
     private:
         std::shared_ptr<ASTNode> m_type;
         std::vector<std::unique_ptr<ASTNode>> m_templateArguments;

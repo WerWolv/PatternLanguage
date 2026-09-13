@@ -25,6 +25,9 @@ namespace pl::core::ast {
         FunctionResult execute(Evaluator *evaluator) const override;
         void addAttribute(std::unique_ptr<ASTNodeAttribute> &&attribute) override;
 
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
     public:
         std::vector<std::shared_ptr<ASTNode>> m_statements;
         bool m_newScope = false;

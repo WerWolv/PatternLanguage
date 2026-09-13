@@ -28,6 +28,9 @@ namespace pl::core::ast {
         [[nodiscard]] virtual std::shared_ptr<ptrn::PatternBitfieldField> createBitfield(Evaluator *evaluator, u64 byteOffset, u8 bitOffset, u8 bitSize) const;
         void createPatterns(Evaluator *evaluator, std::vector<std::shared_ptr<ptrn::Pattern>> &resultPatterns) const override;
 
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
     private:
         std::string m_name;
         std::unique_ptr<ASTNode> m_size;
@@ -38,6 +41,10 @@ namespace pl::core::ast {
         using ASTNodeBitfieldField::ASTNodeBitfieldField;
 
         [[nodiscard]] std::shared_ptr<ptrn::PatternBitfieldField> createBitfield(Evaluator *evaluator, u64 byteOffset, u8 bitOffset, u8 bitSize) const override;
+
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
     };
 
     class ASTNodeBitfieldFieldSizedType : public ASTNodeBitfieldField {
@@ -49,8 +56,15 @@ namespace pl::core::ast {
             return std::unique_ptr<ASTNode>(new ASTNodeBitfieldFieldSizedType(*this));
         }
 
+        [[nodiscard]] const std::unique_ptr<ASTNodeTypeApplication> &getType() {
+            return m_type;
+        }
+
         [[nodiscard]] std::shared_ptr<ptrn::PatternBitfieldField> createBitfield(Evaluator *evaluator, u64 byteOffset, u8 bitOffset, u8 bitSize) const override;
 
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
     private:
         std::unique_ptr<ASTNodeTypeApplication> m_type;
     };

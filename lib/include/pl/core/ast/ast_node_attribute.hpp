@@ -30,6 +30,10 @@ namespace pl::core::ast {
             return m_aliasNamespaceString;
         }
 
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
+
     private:
         std::string m_attribute;
         std::vector<std::unique_ptr<ASTNode>> m_value;

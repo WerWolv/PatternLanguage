@@ -36,9 +36,16 @@ namespace pl::core::ast {
         [[nodiscard]] const std::unique_ptr<ASTNode> &getPlacementOffset() const {
             return this->m_placementOffset;
         }
+        [[nodiscard]] const std::unique_ptr<ASTNode> &getPlacementSection() const {
+            return this->m_placementSection;
+        }
 
         [[nodiscard]] bool isConstant() const {
             return this->m_constant;
+        }
+
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
         }
 
     private:

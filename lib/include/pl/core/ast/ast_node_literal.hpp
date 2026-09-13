@@ -16,6 +16,9 @@ namespace pl::core::ast {
         [[nodiscard]] const auto &getValue() const {
             return this->m_literal;
         }
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
 
     private:
         Token::Literal m_literal;

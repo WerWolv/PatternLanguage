@@ -20,6 +20,10 @@ namespace pl::core::ast {
         [[nodiscard]] const std::unique_ptr<ASTNode> &getThirdOperand() const { return this->m_third; }
         [[nodiscard]] Token::Operator getOperator() const { return this->m_operator; }
 
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
+
     private:
         std::unique_ptr<ASTNode> m_first, m_second, m_third;
         Token::Operator m_operator;

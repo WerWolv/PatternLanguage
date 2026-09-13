@@ -27,6 +27,9 @@ namespace pl::core::ast {
             return this->m_falseBody;
         }
 
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
     private:
         [[nodiscard]] bool evaluateCondition(const std::unique_ptr<ASTNode> &condition, Evaluator *evaluator) const;
 

@@ -71,6 +71,7 @@ set(AVAILABLE_TESTS
         Dollar
         InVariableDefault
         InVariableOverride
+        SetEntriesSortedConsistency
         VarRedeclarationFail
         #VarRedeclarationInFuncFail
         ArrayVarRedeclarationFail

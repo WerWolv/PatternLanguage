@@ -33,6 +33,9 @@ namespace pl::core::ast {
 
         [[nodiscard]] const std::unique_ptr<ASTNode> &getUnderlyingType() { return this->m_underlyingType; }
 
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
     private:
         std::map<std::string, std::pair<std::unique_ptr<ASTNode>, std::unique_ptr<ASTNode>>> m_entries;
         std::unique_ptr<ASTNode> m_underlyingType;

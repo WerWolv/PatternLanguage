@@ -58,6 +58,13 @@ namespace pl::core::ast {
             return this->m_templateParameters;
         }
 
+        [[nodiscard]] const std::vector<std::unique_ptr<ASTNode>> &getTemplateArguments() const {
+            return m_templateArguments;
+        }
+        [[nodiscard]] const std::unique_ptr<ASTNodeTypeApplication> &getCurrTemplateParameterType() const {
+            return m_currTemplateParameterType;
+        }
+
         void setTemplateParameters(std::vector<std::shared_ptr<ASTNodeTemplateParameter>> &&types) {
             this->m_templateParameters = std::move(types);
         }
@@ -65,6 +72,10 @@ namespace pl::core::ast {
         [[nodiscard]] const std::string getTypeName() const;
 
         const ASTNode* getTypeDefinition(Evaluator *evaluator) const;
+
+        void accept(vis::ASTVisitor &v) override {
+            v.visit(*this);
+        }
 
     private:
         bool m_forwardDeclared = false;
