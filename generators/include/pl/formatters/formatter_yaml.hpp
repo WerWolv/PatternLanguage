@@ -100,14 +100,82 @@ namespace pl::gen::fmt {
             }
         }
 
+        // Writes one code point as a YAML numeric escape. Section 5.7 gives
+        // three forms. This uses the shortest one that fits.
+        static std::string escapeCodepoint(u32 codepoint) {
+            if (codepoint <= 0xFF)
+                return ::fmt::format("\\x{:02X}", codepoint);
+            if (codepoint <= 0xFFFF)
+                return ::fmt::format("\\u{:04X}", codepoint);
+            return ::fmt::format("\\U{:08X}", codepoint);
+        }
+
+        // Escapes text for a YAML double quoted scalar. See YAML 1.2.1 chapter 5.
+        //
+        // toString() decodes the string first, so this gets UTF-8 text. Byte
+        // escapes would hide that text. A reader also reads \xNN as code point
+        // NN, not as byte NN.
+        //
+        // Writes each character as itself, unless the spec does not permit it:
+        //   5.1  No C0 control but tab, LF and CR. No DEL. No C1 control but
+        //        NEL. No surrogate. Not U+FFFE or U+FFFF.
+        //   5.2  A scalar holds nb-json only: #x9 | [#x20-#x10FFFF].
+        //   5.2  Escape a byte order mark in content.
+        //   5.7  Escape the quote and the backslash.
+        //
+        // U+2028 and U+2029 stay as they are. Section 5.4 makes them normal
+        // characters in YAML 1.2. NEL is normal too, but a YAML 1.1 reader
+        // folds it to a space, so it keeps the \N escape.
+        //
+        // An invalid byte has no code point. It becomes \xNN, which a reader
+        // reads as a Latin-1 character. Only the !!binary tag can hold a byte,
+        // and that changes the document.
+        static std::string escapeYamlString(std::string_view text) {
+            std::string result;
+
+            for (size_t offset = 0; offset < text.size();) {
+                const auto [codepoint, length] = hlp::decodeUtf8Codepoint(text.substr(offset));
+
+                if (length == 0) {
+                    result += escapeCodepoint(u8(text[offset]));
+                    offset += 1;
+                    continue;
+                }
+
+                switch (codepoint) {
+                    case U'"':   result += "\\\""; break;
+                    case U'\\':  result += "\\\\"; break;
+                    case U'\t':  result += "\\t";  break;
+                    case U'\n':  result += "\\n";  break;
+                    case U'\r':  result += "\\r";  break;
+                    case 0x0085: result += "\\N";  break;  // next line
+                    default: {
+                        const bool controlCode  = codepoint < 0x20 || codepoint == 0x7F
+                                               || (codepoint >= 0x80 && codepoint <= 0x9F);
+                        const bool nonCharacter = codepoint == 0xFFFE || codepoint == 0xFFFF;
+                        const bool byteOrderMark = codepoint == 0xFEFF;
+
+                        if (controlCode || nonCharacter || byteOrderMark)
+                            result += escapeCodepoint(codepoint);
+                        else
+                            result += text.substr(offset, length);
+                        break;
+                    }
+                }
+
+                offset += length;
+            }
+
+            return result;
+        }
+
         void formatString(pl::ptrn::Pattern *pattern) {
             if (pattern->getVisibility() == ptrn::Visibility::Hidden) return;
             if (pattern->getVisibility() == ptrn::Visibility::TreeHidden) return;
 
-            auto result = pattern->toString();
-
-            result = wolv::util::replaceStrings(result, "\n", " ");
-            addLine(pattern->getVariableName(), ::fmt::format("\"{}\"", hlp::encodeByteString({ result.begin(), result.end() })));
+            // Escape a line break. Do not replace it with a space, which loses
+            // data.
+            addLine(pattern->getVariableName(), ::fmt::format("\"{}\"", escapeYamlString(pattern->toString())));
         }
 
         std::string formatLiteral(const core::Token::Literal &literal) {

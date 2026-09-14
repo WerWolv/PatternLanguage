@@ -15,6 +15,31 @@ namespace pl::test {
 
         [[nodiscard]] std::string getSourceCode() const override {
             return R"test(
+                // Byte sequences decodeUtf8Codepoint() has to tell apart. A
+                // format function supplies them, so the shared data file stays
+                // as it is.
+                //
+                //   \xC3        a lead byte, then a byte that cannot follow it
+                //   \x80        a continuation byte with no lead byte
+                //   \xC0\xAF    a lead byte below 0xC2, which is always overlong
+                //   \xE0\x80\xAF      a three byte overlong for U+002F
+                //   \xF0\x80\x80\xAF  a four byte overlong for U+002F
+                //   \xED\xA0\x80  a surrogate, which is not a code point
+                //   \xF4\x90\x80\x80  past U+10FFFF
+                //   \xF0\x9F\x98\x80  a valid four byte sequence
+                //   \xF0\x9F\x98  the last one, cut short by the end of the
+                //                 string. Reading its fourth byte reads past
+                //                 the end.
+                // Characters a formatter must escape, and text above ASCII that
+                // it must not.
+                fn format_tricky(str value) {
+                    return "quote=\" backslash=\\ newline=\n café";
+                };
+
+                fn format_utf8(str value) {
+                    return "\xC3|\x80|\xC0\xAF|\xE0\x80\xAF|\xF0\x80\x80\xAF|\xED\xA0\x80|\xF4\x90\x80\x80|\xF0\x9F\x98\x80|\xF0\x9F\x98";
+                };
+
                 struct MyStruct {
                     char s[];
                     u8 ua;
@@ -29,6 +54,10 @@ namespace pl::test {
                     s48 sd;
                     s64 se;
                     // s128 sf;
+
+                    // Last, so the offsets above do not move.
+                    char tricky[1] [[format("format_tricky")]];
+                    char utf8[1] [[format("format_utf8")]];
                 };
 
                 MyStruct data @ 0x0;

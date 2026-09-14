@@ -42,6 +42,44 @@ namespace pl::hlp {
         return result;
     }
 
+    Utf8Codepoint decodeUtf8Codepoint(std::string_view text) {
+        if (text.empty())
+            return { };
+
+        const u8 lead = u8(text[0]);
+
+        size_t length = 0;
+        u32 value = 0;
+        if (lead < 0x80)                                 { length = 1; value = lead; }
+        else if ((lead & 0xE0) == 0xC0 && lead >= 0xC2)  { length = 2; value = lead & 0x1F; }
+        else if ((lead & 0xF0) == 0xE0)                  { length = 3; value = lead & 0x0F; }
+        else if ((lead & 0xF8) == 0xF0 && lead <= 0xF4)  { length = 4; value = lead & 0x07; }
+        else
+            return { };
+
+        if (text.size() < length)
+            return { };
+
+        for (size_t i = 1; i < length; i += 1) {
+            const u8 continuation = u8(text[i]);
+            if ((continuation & 0xC0) != 0x80)
+                return { };
+
+            value = (value << 6) | (continuation & 0x3F);
+        }
+
+        // An overlong sequence, a surrogate, or a value past the codespace is
+        // not a code point, whatever the lead byte promised.
+        // A two byte overlong needs no test of its own. The lead byte test
+        // above demands 0xC2 or more, so the value is always 0x80 or more.
+        if (length == 3 && value < 0x800)           return { };
+        if (length == 4 && value < 0x10000)         return { };
+        if (value >= 0xD800 && value <= 0xDFFF)     return { };
+        if (value > 0x10FFFF)                       return { };
+
+        return { value, length };
+    }
+
     std::string encodeByteString(const std::vector<u8> &bytes) {
         std::string result;
 

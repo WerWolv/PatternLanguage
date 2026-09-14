@@ -51,6 +51,18 @@ namespace pl::hlp {
         });
     }
 
+    // One code point read from the start of UTF-8 text.
+    struct Utf8Codepoint {
+        u32 value = 0;
+        // 0 means the bytes at the start of the text are not a code point.
+        size_t length = 0;
+    };
+
+    // Reads the first code point of `text`. Rejects an overlong sequence, a
+    // surrogate, and a value above U+10FFFF. Also rejects a sequence that the
+    // end of `text` cuts short.
+    Utf8Codepoint decodeUtf8Codepoint(std::string_view text);
+
     std::string encodeByteString(const std::vector<u8> &bytes);
     std::vector<u8> decodeByteString(const std::string &str);
     u32 stringCrc32(const std::string &str);

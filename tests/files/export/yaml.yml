@@ -1,6 +1,6 @@
 ---
 data: 
-    s: "\x89PNG\r \x1A \x00"
+    s: "\x89PNG\r\n\x1A\n\x00"
     ua: 0
     ub: 3328
     uc: 1380206665
@@ -12,3 +12,5 @@ data:
     sc: -25165923
     sd: 29773251444219
     se: -1463797564129820304
+    tricky: "quote=\" backslash=\\ newline=\n café"
+    utf8: "\xC3|\x80|\xC0\xAF|\xE0\x80\xAF|\xF0\x80\x80\xAF|\xED\xA0\x80|\xF4\x90\x80\x80|😀|\xF0\x9F\x98"
