@@ -3,7 +3,6 @@
 #include <pl/patterns/pattern.hpp>
 
 namespace pl::ptrn {
-
     class PatternUnsigned : public Pattern {
     public:
         PatternUnsigned(core::Evaluator *evaluator, u64 offset, size_t size, u32 line)
@@ -11,12 +10,6 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             return std::unique_ptr<Pattern>(new PatternUnsigned(*this));
-        }
-
-        [[nodiscard]] core::Token::Literal getValue() const override {
-            u128 data = 0;
-            this->getEvaluator()->readData(this->getOffset(), &data, this->getSize(), this->getSection());
-            return transformValue(hlp::changeEndianess(data, this->getSize(), this->getEndian()));
         }
 
         [[nodiscard]] std::string getFormattedName() const override {
@@ -29,18 +22,6 @@ namespace pl::ptrn {
             v.visit(*this);
         }
 
-        std::string formatDisplayValue() override {
-            auto data = this->getValue().toUnsigned();
-            return Pattern::callUserFormatFunc(this->getValue()).value_or(fmt::format("{:d}", data));
-        }
-
-        [[nodiscard]] std::string toString() override {
-            auto value = this->getValue();
-            auto result = fmt::format("{:d}", value.toUnsigned());
-
-            return Pattern::callUserFormatFunc(value, true).value_or(result);
-        }
-
         std::vector<u8> getRawBytes() override {
             std::vector<u8> result;
             result.resize(this->getSize());
@@ -51,6 +32,16 @@ namespace pl::ptrn {
 
             return result;
         }
-    };
 
+        [[nodiscard]] core::Token::Literal getRawValue() const override {
+            u128 data = 0;
+            this->getEvaluator()->readData(this->getOffset(), &data, this->getSize(), this->getSection());
+            return hlp::changeEndianess(data, this->getSize(), this->getEndian());
+        }
+
+    protected:
+        std::string defaultToString() const override {
+            return fmt::format("{:d}", this->getValue().toUnsigned());
+        }
+    };
 }

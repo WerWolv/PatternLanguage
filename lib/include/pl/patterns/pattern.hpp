@@ -259,6 +259,12 @@ namespace pl::ptrn {
 
         [[nodiscard]] virtual std::string getFormattedName() const = 0;
 
+        /**
+         * @brief Pattern's short string representation.
+         *
+         * Tries the user [[format]] function first, then falls back to defaultToDisplayValue() to format with pattern's default display value formatter.
+         * The result is cached.
+         */
         [[nodiscard]] std::string getFormattedValue() {
             if (this->m_cachedDisplayValue != nullptr)
                 return *this->m_cachedDisplayValue;
@@ -271,7 +277,8 @@ namespace pl::ptrn {
                     this->m_evaluator->setReadOffset(startOffset);
                 };
 
-                auto result = this->formatDisplayValue();
+                auto userResult = this->callUserFormatFunc();
+                auto result = userResult.has_value() ? std::move(*userResult) : this->defaultToDisplayValue();
                 this->m_cachedDisplayValue = std::make_unique<std::string>(result);
                 this->m_validDisplayValue = true;
 
@@ -288,20 +295,34 @@ namespace pl::ptrn {
             return this->m_validDisplayValue;
         }
 
-        [[nodiscard]] virtual std::string toString() {
-            auto result = fmt::format("{} {} @ 0x{:X}", this->getTypeName(), this->getVariableName(), this->getOffset());
-
+        /**
+         * @brief Pattern's full string representation.
+         *
+         * Tries to format with user [[format]] function, then uses defaultToString() to format with pattern's default formatter
+         */
+        [[nodiscard]] std::string toString() const {
             try {
-                return this->callUserFormatFunc(this->getValue(), true).value_or(result);
+                auto userResult = this->callUserFormatFunc(true);
+                return userResult.has_value() ? std::move(*userResult) : this->defaultToString();
             } catch (std::exception &e) {
                 return e.what();
             }
         }
 
-        [[nodiscard]] virtual core::Token::Literal getValue() const {
-            auto pattern = this->clone();
+        /**
+         * @brief Pattern's value after [[transform]] function is applied.
+         */
+        [[nodiscard]] core::Token::Literal getValue() const {
+            return this->transformValue(this->getRawValue());
+        }
 
-            return this->transformValue(std::move(pattern));
+        /**
+         * @brief Pattern's value before [[transform]] function is applied.
+         *
+         * Default implementation clones pattern by calling clone() method.
+         */
+        [[nodiscard]] virtual core::Token::Literal getRawValue() const {
+            return this->clone();
         }
 
         [[nodiscard]] virtual std::vector<std::pair<u64, Pattern*>> getChildren() {
@@ -581,10 +602,26 @@ namespace pl::ptrn {
             m_arrayIndex = index;
         }
 
-        [[nodiscard]] virtual std::string formatDisplayValue() = 0;
-
     protected:
         std::optional<std::endian> m_endian;
+
+        /**
+         * @brief Fallback for toString() when no user [[format]] function applies.
+         * @note Implementations of this method should use getValue() instead of getRawValue(), because default formatter should respect [[transform]].
+         */
+        [[nodiscard]] virtual std::string defaultToString() const {
+            return fmt::format("{} {} @ 0x{:X}", this->getTypeName(), this->getVariableName(), this->getOffset());
+        }
+
+        /**
+         * @brief Fallback for getFormattedValue() when no user [[format]] function applies. Cached by getFormattedValue().
+         * @note Implementations of this method should use getValue() instead of getRawValue(), because default formatter should respect [[transform]].
+         *
+         * Default implementation calls defaultToString().
+         */
+        [[nodiscard]] virtual std::string defaultToDisplayValue() const {
+            return this->defaultToString();
+        }
 
         [[nodiscard]] core::Token::Literal transformValue(const core::Token::Literal &value) const {
             auto evaluator = this->getEvaluator();
@@ -612,39 +649,42 @@ namespace pl::ptrn {
         }
 
         /**
-         * @brief Calls an user-defined PL function to format the given literal (pattern), if existing. Else, returns defaultValue
+         * @brief Runs the user [[format]] function if one is registered.
+         *
+         * The argument passed to the [[format]] function is getRawValue() (before [[transform]] is applied).
         */
-        [[nodiscard]] std::optional<std::string> callUserFormatFunc(const core::Token::Literal &literal, bool fromCast = false) const {
+        [[nodiscard]] std::optional<std::string> callUserFormatFunc(bool fromCast = false) const {
             const auto &formatterFunctionName = this->getReadFormatterFunction();
-            if (formatterFunctionName.empty())
-                return {};
-            else {
-                const auto function = this->m_evaluator->findFunction(formatterFunctionName);
-                if (function.has_value()) {
-                    auto startHeap = this->m_evaluator->getHeap();
-                    ON_SCOPE_EXIT { this->m_evaluator->getHeap() = startHeap; };
+            if (formatterFunctionName.empty()) {
+                return std::nullopt;
+            }
+            const auto literal = this->getRawValue();
 
-                    // Preserve pattern variable name
-                    std::string patternName;
-                    if (literal.isPattern()) {
-                        patternName = literal.toPattern()->getVariableName();
-                    }
-                    ON_SCOPE_EXIT {
-                        if (!patternName.empty())
-                            literal.toPattern()->setVariableName(patternName);
-                    };
+            const auto function = this->m_evaluator->findFunction(formatterFunctionName);
+            if (function.has_value()) {
+                auto startHeap = this->m_evaluator->getHeap();
+                ON_SCOPE_EXIT { this->m_evaluator->getHeap() = startHeap; };
 
-                    auto result = function->func(this->m_evaluator, { literal });
-                    if (result.has_value()) {
-                        if (fromCast && result->isPattern() && result->toPattern()->getTypeName() == this->getTypeName()) {
-                            return {};
-                        } else {
-                            return result->toString(true);
-                        }
+                // Preserve pattern variable name
+                std::string patternName;
+                if (literal.isPattern()) {
+                    patternName = literal.toPattern()->getVariableName();
+                }
+                ON_SCOPE_EXIT {
+                    if (!patternName.empty())
+                        literal.toPattern()->setVariableName(patternName);
+                };
+
+                auto result = function->func(this->m_evaluator, { literal });
+                if (result.has_value()) {
+                    if (fromCast && result->isPattern() && result->toPattern()->getTypeName() == this->getTypeName()) {
+                        return {};
+                    } else {
+                        return result->toString(true);
                     }
                 }
-                return {};
             }
+            return std::nullopt;
         }
 
         template<typename T>

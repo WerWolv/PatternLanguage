@@ -158,33 +158,6 @@ namespace pl::ptrn {
                 this->setBaseColor(this->m_entries.front()->getColor());
         }
 
-        [[nodiscard]] std::string toString() override {
-            std::string result;
-
-            result += "[ ";
-
-            size_t entryCount = 0;
-            for (const auto &entry : this->m_entries) {
-                if (entryCount > 50) {
-                    result += fmt::format("..., ");
-                    break;
-                }
-
-                result += fmt::format("{}, ", entry->toString());
-                entryCount++;
-            }
-
-            if (entryCount > 0) {
-                // Remove trailing ", "
-                result.pop_back();
-                result.pop_back();
-            }
-
-            result += " ]";
-
-            return Pattern::callUserFormatFunc(this->reference(), true).value_or(result);
-        }
-
         [[nodiscard]] bool operator==(const Pattern &other) const override {
             if (!compareCommonProperties<decltype(*this)>(other))
                 return false;
@@ -216,10 +189,6 @@ namespace pl::ptrn {
             v.visit(*this);
         }
 
-        std::string formatDisplayValue() override {
-            return Pattern::callUserFormatFunc(this->reference()).value_or("[ ... ]");
-        }
-
         std::vector<u8> getRawBytes() override {
             std::vector<u8> result;
 
@@ -242,6 +211,36 @@ namespace pl::ptrn {
             });
 
             Pattern::clearFormatCache();
+        }
+    protected:
+        std::string defaultToString() const override {
+            std::string result;
+
+            result += "[ ";
+
+            size_t entryCount = 0;
+            for (const auto &entry : this->m_entries) {
+                if (entryCount > 50) {
+                    result += fmt::format("..., ");
+                    break;
+                }
+
+                result += fmt::format("{}, ", entry->toString());
+                entryCount++;
+            }
+
+            if (entryCount > 0) {
+                // Remove trailing ", "
+                result.pop_back();
+                result.pop_back();
+            }
+
+            result += " ]";
+            return result;
+        }
+
+        std::string defaultToDisplayValue() const override {
+            return "[ ... ]";
         }
 
     private:

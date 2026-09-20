@@ -6,7 +6,6 @@
 #include <pl/core/errors/runtime_errors.hpp>
 
 namespace pl::ptrn {
-
     class PatternString : public Pattern,
                           public IIndexable {
     public:
@@ -15,10 +14,6 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::shared_ptr<Pattern> clone() const override {
             return std::unique_ptr<Pattern>(new PatternString(*this));
-        }
-
-        [[nodiscard]] core::Token::Literal getValue() const override {
-            return transformValue(this->getValue(this->getSize()));
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getEntries() override {
@@ -115,68 +110,10 @@ namespace pl::ptrn {
             return "String";
         }
 
-        [[nodiscard]] std::string toString() override {
-            auto value = this->getValue();
-            auto result = value.toString(false);
-
-            return Pattern::callUserFormatFunc(value, true).value_or(result);
-        }
-
         [[nodiscard]] bool operator==(const Pattern &other) const override { return compareCommonProperties<decltype(*this)>(other); }
 
         void accept(PatternVisitor &v) override {
             v.visit(*this);
-        }
-
-        std::string formatDisplayValue() override {
-            auto *evaluator = this->getEvaluator();
-            const auto fullSize = this->getSize();
-
-            if (fullSize == 0)
-                return "\"\"";
-
-            constexpr size_t DisplayBudget = 0x7F;
-
-            // UTF-32, the widest encoding decode() supports, spends 4 bytes per
-            // code point. This margin holds DisplayBudget code points under any
-            // of them.
-            auto size = std::min<size_t>(fullSize, DisplayBudget * 4);
-
-            std::string buffer(size, 0x00);
-            evaluator->readData(this->getOffset(), buffer.data(), size, this->getSection());
-
-            if (auto formatted = Pattern::callUserFormatFunc(buffer); formatted.has_value())
-                return *formatted;
-
-            const auto &codec = evaluator->getStringEncodeDecode();
-
-            // No codec configured keeps the old raw-byte display, unescaped by any
-            // encoding. A configured codec reports an undecodable buffer as invalid,
-            // rather than substituting a replacement character into the display.
-            if (codec == nullptr) {
-                bool truncated = size < fullSize;
-
-                if (buffer.size() > DisplayBudget) {
-                    buffer.resize(DisplayBudget);
-                    truncated = true;
-                }
-
-                const auto pos = buffer.find_last_not_of('\x00');
-                if (pos == std::string::npos)
-                    return "\"\"";
-                buffer.erase(pos + 1);
-
-                return fmt::format("\"{0}\" {1}", hlp::encodeByteString({ buffer.begin(), buffer.end() }), truncated ? "(truncated)" : "");
-            }
-
-            const auto encoding = this->getEncodingName();
-            const auto decoded = codec->decode({ reinterpret_cast<const u8*>(buffer.data()), buffer.size() }, encoding, DisplayBudget);
-
-            if (decoded.stopReason == core::DecodeStop::MalformedBytes)
-                core::err::E0004.throwError(fmt::format("invalid byte sequence for encoding '{}'", encoding));
-
-            const bool truncated = decoded.bytesConsumed < fullSize;
-            return fmt::format("\"{0}\" {1}", decoded.text, truncated ? "(truncated)" : "");
         }
 
         std::shared_ptr<Pattern> getEntry(size_t index) const override {
@@ -207,6 +144,63 @@ namespace pl::ptrn {
             });
 
             return result;
+        }
+
+        [[nodiscard]] core::Token::Literal getRawValue() const override {
+            return this->getValue(this->getSize());
+        }
+
+    protected:
+        std::string defaultToString() const override {
+            return Pattern::getValue().toString(false);
+        }
+
+        std::string defaultToDisplayValue() const override {
+            auto *evaluator = this->getEvaluator();
+            const auto fullSize = this->getSize();
+
+            if (fullSize == 0)
+                return "\"\"";
+
+            constexpr size_t DisplayBudget = 0x7F;
+
+            // UTF-32, the widest encoding decode() supports, spends 4 bytes per
+            // code point. This margin holds DisplayBudget code points under any
+            // of them.
+            auto size = std::min<size_t>(fullSize, DisplayBudget * 4);
+
+            std::string buffer(size, 0x00);
+            evaluator->readData(this->getOffset(), buffer.data(), size, this->getSection());
+
+            const auto &codec = evaluator->getStringEncodeDecode();
+
+            // No codec configured keeps the old raw-byte display, unescaped by any
+            // encoding. A configured codec reports an undecodable buffer as invalid,
+            // rather than substituting a replacement character into the display.
+            if (codec == nullptr) {
+                bool truncated = size < fullSize;
+
+                if (buffer.size() > DisplayBudget) {
+                    buffer.resize(DisplayBudget);
+                    truncated = true;
+                }
+
+                const auto pos = buffer.find_last_not_of('\x00');
+                if (pos == std::string::npos)
+                    return "\"\"";
+                buffer.erase(pos + 1);
+
+                return fmt::format("\"{0}\" {1}", hlp::encodeByteString({ buffer.begin(), buffer.end() }), truncated ? "(truncated)" : "");
+            }
+
+            const auto encoding = this->getEncodingName();
+            const auto decoded = codec->decode({ reinterpret_cast<const u8*>(buffer.data()), buffer.size() }, encoding, DisplayBudget);
+
+            if (decoded.stopReason == core::DecodeStop::MalformedBytes)
+                core::err::E0004.throwError(fmt::format("invalid byte sequence for encoding '{}'", encoding));
+
+            const bool truncated = decoded.bytesConsumed < fullSize;
+            return fmt::format("\"{0}\" {1}", decoded.text, truncated ? "(truncated)" : "");
         }
 
     };

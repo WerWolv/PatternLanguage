@@ -13,13 +13,6 @@ namespace pl::ptrn {
             return std::make_unique<PatternCharacter>(*this);
         }
 
-        [[nodiscard]] core::Token::Literal getValue() const override {
-            char character = '\x00';
-            this->getEvaluator()->readData(this->getOffset(), &character, 1, this->getSection());
-
-            return transformValue(character);
-        }
-
         std::vector<u8> getBytesOf(const core::Token::Literal &value) const override {
             if (auto charValue = std::get_if<char>(&value); charValue != nullptr)
                 return wolv::util::toContainer<std::vector<u8>>(wolv::util::toBytes(*charValue));
@@ -31,22 +24,10 @@ namespace pl::ptrn {
             return "char";
         }
 
-        std::string formatDisplayValue() override {
-            const u8 character = this->getValue().toCharacter();
-            return Pattern::callUserFormatFunc(this->getValue()).value_or(fmt::format("'{0}'", hlp::encodeByteString({ character })));
-        }
-
         [[nodiscard]] bool operator==(const Pattern &other) const override { return compareCommonProperties<decltype(*this)>(other); }
 
         void accept(PatternVisitor &v) override {
             v.visit(*this);
-        }
-
-        [[nodiscard]] std::string toString() override {
-            auto value = this->getValue();
-            auto result = fmt::format("{}", hlp::encodeByteString({ u8(value.toCharacter()) }));
-
-            return Pattern::callUserFormatFunc(value, true).value_or(result);
         }
 
         std::vector<u8> getRawBytes() override {
@@ -58,6 +39,22 @@ namespace pl::ptrn {
                 std::reverse(result.begin(), result.end());
 
             return result;
+        }
+
+        [[nodiscard]] core::Token::Literal getRawValue() const override {
+            char character = '\x00';
+            this->getEvaluator()->readData(this->getOffset(), &character, 1, this->getSection());
+
+            return character;
+        }
+
+    protected:
+        std::string defaultToString() const override {
+            return fmt::format("{}", hlp::encodeByteString({ static_cast<u8>(this->getValue().toCharacter()) }));
+        }
+
+        std::string defaultToDisplayValue() const override {
+            return fmt::format("'{0}'", this->defaultToString());
         }
     };
 

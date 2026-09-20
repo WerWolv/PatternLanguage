@@ -5,7 +5,6 @@
 #include <wolv/utils/string.hpp>
 
 namespace pl::ptrn {
-
     class PatternWideCharacter : public Pattern {
     public:
         explicit PatternWideCharacter(core::Evaluator *evaluator, u64 offset, u32 line)
@@ -15,34 +14,14 @@ namespace pl::ptrn {
             return std::unique_ptr<Pattern>(new PatternWideCharacter(*this));
         }
 
-        [[nodiscard]] core::Token::Literal getValue() const override {
-            char16_t character = u'\u0000';
-            this->getEvaluator()->readData(this->getOffset(), &character, 2, this->getSection());
-            return transformValue(u128(hlp::changeEndianess(character, this->getEndian())));
-        }
-
         [[nodiscard]] std::string getFormattedName() const override {
             return "char16";
-        }
-
-        [[nodiscard]] std::string toString() override {
-            auto value = this->getValue();
-            char16_t character = char16_t(value.toUnsigned());
-            character = hlp::changeEndianess(character, this->getEndian());
-
-            auto result = wolv::util::utf16ToUtf8(std::u16string(&character, 1)).value_or("???");
-
-            return Pattern::callUserFormatFunc(value, true).value_or(result);
         }
 
         [[nodiscard]] bool operator==(const Pattern &other) const override { return compareCommonProperties<decltype(*this)>(other); }
 
         void accept(PatternVisitor &v) override {
             v.visit(*this);
-        }
-
-        std::string formatDisplayValue() override {
-            return Pattern::callUserFormatFunc(this->getValue()).value_or(fmt::format("'{0}'", this->toString()));
         }
 
         std::vector<u8> getRawBytes() override {
@@ -55,6 +34,23 @@ namespace pl::ptrn {
 
             return result;
         }
-    };
 
+        [[nodiscard]] core::Token::Literal getRawValue() const override {
+            char16_t character = u'\u0000';
+            this->getEvaluator()->readData(this->getOffset(), &character, 2, this->getSection());
+            return static_cast<u128>(hlp::changeEndianess(character, this->getEndian()));
+        }
+
+    protected:
+        std::string defaultToString() const override {
+            char16_t character = static_cast<char16_t>(this->getValue().toUnsigned());
+            character = hlp::changeEndianess(character, this->getEndian());
+
+            return wolv::util::utf16ToUtf8(std::u16string(&character, 1)).value_or("???");
+        }
+
+        std::string defaultToDisplayValue() const override {
+            return fmt::format("'{0}'", this->defaultToString());
+        }
+    };
 }

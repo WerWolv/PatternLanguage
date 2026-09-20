@@ -24,10 +24,6 @@ namespace pl::ptrn {
             return std::unique_ptr<Pattern>(new PatternPointer(*this));
         }
 
-        [[nodiscard]] core::Token::Literal getValue() const override {
-            return transformValue(this->m_pointerType->getValue());
-        }
-
         [[nodiscard]] std::string getFormattedName() const override {
             std::string output;
             if (this->getTypeName().empty()) {
@@ -148,17 +144,6 @@ namespace pl::ptrn {
             v.visit(*this);
         }
 
-        std::string formatDisplayValue() override {
-            auto data = this->getValue().toSigned();
-            return Pattern::callUserFormatFunc(this->getValue()).value_or(fmt::format("*(0x{0:X})", data));
-        }
-
-        [[nodiscard]] std::string toString() override {
-            auto result = this->m_pointedAt->toString();
-
-            return Pattern::callUserFormatFunc(this->reference(), true).value_or(result);
-        }
-
         std::vector<u8> getRawBytes() override {
             std::vector<u8> result;
             result.resize(this->getSize());
@@ -174,6 +159,19 @@ namespace pl::ptrn {
             this->m_pointedAt->clearFormatCache();
 
             Pattern::clearFormatCache();
+        }
+
+        [[nodiscard]] core::Token::Literal getRawValue() const override {
+            return this->m_pointerType->getValue();
+        }
+
+    protected:
+        std::string defaultToString() const override {
+            return this->m_pointedAt->toString();
+        }
+
+        std::string defaultToDisplayValue() const override {
+            return fmt::format("*(0x{0:X})", this->getValue().toSigned());
         }
 
     private:
