@@ -199,11 +199,32 @@ namespace pl::ptrn {
             v.visit(*this);
         }
 
-        std::string formatDisplayValue() override {
-            return Pattern::callUserFormatFunc(this->reference()).value_or("[ ... ]");
+        std::vector<u8> getRawBytes() override {
+            std::vector<u8> result;
+
+            if (this->isSealed()) {
+                result.resize(this->getSize());
+                this->getEvaluator()->readData(this->getOffset(), result.data(), result.size(), this->getSection());
+            } else {
+                this->forEachEntry(0, this->getEntryCount(), [&](u64, const auto &entry) {
+                    auto bytes = entry->getBytes();
+                    std::copy(bytes.begin(), bytes.end(), std::back_inserter(result));
+                });
+            }
+
+            return result;
         }
 
-        [[nodiscard]] std::string toString() override {
+        void clearFormatCache() override {
+            this->m_template->clearFormatCache();
+
+            for (auto &highlightTemplate : this->m_highlightTemplates)
+                highlightTemplate->clearFormatCache();
+
+            Pattern::clearFormatCache();
+        }
+    protected:
+        std::string defaultToString() const override {
             std::string result;
 
             result += "[ ";
@@ -228,33 +249,11 @@ namespace pl::ptrn {
             }
 
             result += " ]";
-
-            return Pattern::callUserFormatFunc(this->reference(), true).value_or(result);
-        }
-
-        std::vector<u8> getRawBytes() override {
-            std::vector<u8> result;
-
-            if (this->isSealed()) {
-                result.resize(this->getSize());
-                this->getEvaluator()->readData(this->getOffset(), result.data(), result.size(), this->getSection());
-            } else {
-                this->forEachEntry(0, this->getEntryCount(), [&](u64, const auto &entry) {
-                    auto bytes = entry->getBytes();
-                    std::copy(bytes.begin(), bytes.end(), std::back_inserter(result));
-                });
-            }
-
             return result;
         }
 
-        void clearFormatCache() override {
-            this->m_template->clearFormatCache();
-
-            for (auto &highlightTemplate : this->m_highlightTemplates)
-                highlightTemplate->clearFormatCache();
-
-            Pattern::clearFormatCache();
+        std::string defaultToDisplayValue() const override {
+            return "[ ... ]";
         }
 
     private:

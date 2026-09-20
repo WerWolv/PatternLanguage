@@ -21,13 +21,6 @@ namespace pl::ptrn {
             return std::unique_ptr<Pattern>(new PatternEnum(*this));
         }
 
-        [[nodiscard]] core::Token::Literal getValue() const override {
-            u128 value = 0;
-            this->getEvaluator()->readData(this->getOffset(), &value, this->getSize(), this->getSection());
-
-            return transformValue(hlp::changeEndianess(value, this->getSize(), this->getEndian()));
-        }
-
         [[nodiscard]] std::string getFormattedName() const override {
             return "enum " + Pattern::getTypeName();
         }
@@ -56,10 +49,6 @@ namespace pl::ptrn {
 
         void accept(PatternVisitor &v) override {
             v.visit(*this);
-        }
-
-        std::string formatDisplayValue() override {
-            return fmt::format("{}", this->toString());
         }
 
         static std::string getEnumName(const std::string &typeName, u128 value, const std::map<std::string, EnumValue> &enumValues, u64 bitSize = 128) {
@@ -97,11 +86,6 @@ namespace pl::ptrn {
             return result;
         }
 
-        [[nodiscard]] std::string toString() override {
-            u128 value = this->getValue().toUnsigned();
-            return Pattern::callUserFormatFunc(this->reference(), true).value_or(getEnumName(this->getTypeName(), value, m_enumValues, this->getSize() * 8));
-        }
-
         std::vector<u8> getRawBytes() override {
             std::vector<u8> result;
             result.resize(this->getSize());
@@ -111,6 +95,19 @@ namespace pl::ptrn {
                 std::reverse(result.begin(), result.end());
 
             return result;
+        }
+
+        [[nodiscard]] core::Token::Literal getRawValue() const override {
+            u128 value = 0;
+            this->getEvaluator()->readData(this->getOffset(), &value, this->getSize(), this->getSection());
+
+            return hlp::changeEndianess(value, this->getSize(), this->getEndian());
+        }
+
+    protected:
+        std::string defaultToString() const override {
+            const u128 value = this->getValue().toUnsigned();
+            return getEnumName(this->getTypeName(), value, m_enumValues, this->getSize() * 8);
         }
 
     private:

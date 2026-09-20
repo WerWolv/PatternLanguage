@@ -143,28 +143,6 @@ namespace pl::ptrn {
             return "union " + Pattern::getTypeName();
         }
 
-        [[nodiscard]] std::string toString() override {
-            std::string result = this->getFormattedName();
-            result += " { ";
-
-            for (const auto &member : this->m_members) {
-                if (member->getVariableName().starts_with("$"))
-                    continue;
-
-                result += fmt::format("{} = {}, ", member->getVariableName(), member->toString());
-            }
-
-            if (!this->m_members.empty()) {
-                // Remove trailing ", "
-                result.pop_back();
-                result.pop_back();
-            }
-
-            result += " }";
-
-            return Pattern::callUserFormatFunc(this->reference(), true).value_or(result);
-        }
-
         void sort(const std::function<bool (const Pattern *, const Pattern *)> &comparator) override {
             this->m_sortedMembers.clear();
             for (auto &member : this->m_members)
@@ -209,10 +187,6 @@ namespace pl::ptrn {
             v.visit(*this);
         }
 
-        std::string formatDisplayValue() override {
-            return Pattern::callUserFormatFunc(this->reference()).value_or("{ ... }");
-        }
-
         std::vector<u8> getRawBytes() override {
             std::vector<u8> result;
 
@@ -228,6 +202,31 @@ namespace pl::ptrn {
             });
 
             Pattern::clearFormatCache();
+        }
+    protected:
+        std::string defaultToString() const override {
+            std::string result = this->getFormattedName();
+            result += " { ";
+
+            for (const auto &member : this->m_members) {
+                if (member->getVariableName().starts_with("$"))
+                    continue;
+
+                result += fmt::format("{} = {}, ", member->getVariableName(), member->toString());
+            }
+
+            if (!this->m_members.empty()) {
+                // Remove trailing ", "
+                result.pop_back();
+                result.pop_back();
+            }
+
+            result += " }";
+            return result;
+        }
+
+        std::string defaultToDisplayValue() const override {
+            return "{ ... }";
         }
 
     private:

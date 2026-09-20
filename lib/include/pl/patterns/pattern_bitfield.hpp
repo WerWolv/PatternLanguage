@@ -73,10 +73,6 @@ namespace pl::ptrn {
             return this->getEvaluator()->readBits(this->getOffset(), this->getBitOffset(), this->getBitSize(), this->getSection(), this->getEndian());
         }
 
-        [[nodiscard]] core::Token::Literal getValue() const override {
-            return transformValue(this->readValue());
-        }
-
         [[nodiscard]] std::string getFormattedName() const override {
             return this->m_bitSize == 1 ? "bit" : "bits";
         }
@@ -103,17 +99,6 @@ namespace pl::ptrn {
 
         void accept(PatternVisitor &v) override {
             v.visit(*this);
-        }
-
-        std::string formatDisplayValue() override {
-            auto literal = this->getValue();
-            auto value = literal.toUnsigned();
-            return Pattern::callUserFormatFunc(literal).value_or(fmt::format("{}", value));
-        }
-
-        [[nodiscard]] std::string toString() override {
-            auto value = this->readValue();
-            return Pattern::callUserFormatFunc(value, true).value_or(fmt::format("{}", value));
         }
 
         [[nodiscard]] bool isPadding() const override { return this->m_padding; }
@@ -151,6 +136,15 @@ namespace pl::ptrn {
             }
         }
 
+        [[nodiscard]] core::Token::Literal getRawValue() const override {
+            return this->readValue();
+        }
+
+    protected:
+        std::string defaultToString() const override {
+            return fmt::format("{}", this->getValue().toUnsigned());
+        }
+
     private:
         u8 m_bitOffset;
         u8 m_bitSize;
@@ -166,19 +160,13 @@ namespace pl::ptrn {
             return std::unique_ptr<Pattern>(new PatternBitfieldFieldSigned(*this));
         }
 
-        [[nodiscard]] core::Token::Literal getValue() const override {
-            return transformValue(hlp::signExtend(this->getBitSize(), this->readValue()));
+        [[nodiscard]] core::Token::Literal getRawValue() const override {
+            return hlp::signExtend(this->getBitSize(), this->readValue());
         }
 
-        std::string formatDisplayValue() override {
-            auto rawValue = this->readValue();
-            auto value = hlp::signExtend(this->getBitSize(), i128(rawValue));
-            return Pattern::callUserFormatFunc(value).value_or(fmt::format("{}", value));
-        }
-
-        [[nodiscard]] std::string toString() override {
-            auto result = fmt::format("{}", this->getValue().toSigned());
-            return Pattern::callUserFormatFunc(this->getValue(), true).value_or(result);
+    protected:
+        std::string defaultToString() const override {
+            return fmt::format("{}", this->getValue().toSigned());
         }
     };
 
@@ -190,27 +178,24 @@ namespace pl::ptrn {
             return std::unique_ptr<Pattern>(new PatternBitfieldFieldBoolean(*this));
         }
 
-        [[nodiscard]] core::Token::Literal getValue() const override {
-            return transformValue(this->readValue());
-        }
-
         [[nodiscard]] std::string getFormattedName() const override {
             return "bool";
         }
 
-        std::string formatDisplayValue() override {
-            auto value = this->getValue().toUnsigned();
-            if (value == 0)
-                return "false";
-            else if (value == 1)
-                return "true";
-            else
-                return "true*";
+    protected:
+        std::string defaultToString() const override {
+            return fmt::format("{}", this->getValue().toBoolean() ? "true" : "false");
         }
 
-        [[nodiscard]] std::string toString() override {
-            auto value = this->getValue();
-            return Pattern::callUserFormatFunc(value, true).value_or(fmt::format("{}", value.toBoolean() ? "true" : "false"));
+        std::string defaultToDisplayValue() const override {
+            const auto value = this->getValue().toUnsigned();
+            if (value == 0) {
+                return "false";
+            }
+            if (value == 1) {
+                return "true";
+            }
+            return "true*";
         }
     };
 
@@ -245,15 +230,9 @@ namespace pl::ptrn {
             return std::unique_ptr<Pattern>(new PatternBitfieldFieldEnum(*this));
         }
 
-        std::string formatDisplayValue() override {
-            auto value = this->readValue();
-            auto enumName = PatternEnum::getEnumName(this->getTypeName(), value, this->getEnumValues(), this->getBitSize());
-            return Pattern::callUserFormatFunc(value).value_or(fmt::format("{}", enumName));
-        }
-
-        [[nodiscard]] std::string toString() override {
-            auto enumName = PatternEnum::getEnumName(this->getTypeName(), this->readValue(), this->getEnumValues(), this->getBitSize());
-            return Pattern::callUserFormatFunc(this->getValue(), true).value_or(enumName);
+    protected:
+        std::string defaultToString() const override {
+            return PatternEnum::getEnumName(this->getTypeName(), this->getValue().toUnsigned(), this->getEnumValues(), this->getBitSize());
         }
 
     private:
@@ -430,33 +409,6 @@ namespace pl::ptrn {
                 this->setBaseColor(this->m_entries.front()->getColor());
         }
 
-        [[nodiscard]] std::string toString() override {
-            std::string result;
-
-            result += "[ ";
-
-            size_t entryCount = 0;
-            for (const auto &entry : this->m_entries) {
-                if (entryCount > 50) {
-                    result += fmt::format("..., ");
-                    break;
-                }
-
-                result += fmt::format("{}, ", entry->toString());
-                entryCount++;
-            }
-
-            if (entryCount > 0) {
-                // Remove trailing ", "
-                result.pop_back();
-                result.pop_back();
-            }
-
-            result += " ]";
-
-            return Pattern::callUserFormatFunc(this->reference(), true).value_or(result);
-        }
-
         [[nodiscard]] bool operator==(const Pattern &other) const override {
             if (!compareCommonProperties<decltype(*this)>(other))
                 return false;
@@ -493,10 +445,6 @@ namespace pl::ptrn {
             v.visit(*this);
         }
 
-        std::string formatDisplayValue() override {
-            return Pattern::callUserFormatFunc(this->reference()).value_or("[ ... ]");
-        }
-
         void sort(const std::function<bool (const Pattern *, const Pattern *)> &comparator) override {
             this->m_sortedEntries.clear();
             for (auto &member : this->m_entries)
@@ -530,6 +478,36 @@ namespace pl::ptrn {
             });
 
             Pattern::clearFormatCache();
+        }
+    protected:
+        std::string defaultToString() const override {
+            std::string result;
+
+            result += "[ ";
+
+            size_t entryCount = 0;
+            for (const auto &entry : this->m_entries) {
+                if (entryCount > 50) {
+                    result += fmt::format("..., ");
+                    break;
+                }
+
+                result += fmt::format("{}, ", entry->toString());
+                entryCount++;
+            }
+
+            if (entryCount > 0) {
+                // Remove trailing ", "
+                result.pop_back();
+                result.pop_back();
+            }
+
+            result += " ]";
+            return result;
+        }
+
+        std::string defaultToDisplayValue() const override {
+            return "[ ... ]";
         }
 
     private:
@@ -679,63 +657,6 @@ namespace pl::ptrn {
             v.visit(*this);
         }
 
-        [[nodiscard]] std::string toString() override {
-            std::string result = this->getFormattedName();
-
-            result += " { ";
-
-            for (const auto &field : this->m_fields) {
-                if (field->getVariableName().starts_with("$"))
-                    continue;
-
-                result += fmt::format("{} = {}, ", field->getVariableName(), field->toString());
-            }
-
-            // Remove trailing ", "
-            result.pop_back();
-            result.pop_back();
-
-            result += " }";
-
-            return Pattern::callUserFormatFunc(this->reference(), true).value_or(result);
-        }
-
-        std::string formatDisplayValue() override {
-            std::vector<u8> bytes(this->getSize(), 0);
-            this->getEvaluator()->readData(this->getOffset(), bytes.data(), bytes.size(), this->getSection());
-
-            if (this->getEndian() == std::endian::little)
-                std::reverse(bytes.begin(), bytes.end());
-
-            std::string valueString;
-
-            for (const auto &pattern : this->m_fields) {
-                if (auto *field = dynamic_cast<PatternBitfieldField *>(pattern.get()); field != nullptr) {
-                    auto fieldValue = field->getValue().toUnsigned();
-
-                    if (field->getBitSize() == 1) {
-                        if (fieldValue > 0)
-                            valueString += fmt::format("{} | ", field->getVariableName());
-                    } else {
-                        valueString += fmt::format("{}({}) | ", field->getVariableName(), field->toString());
-                    }
-                } else if (auto *member = dynamic_cast<PatternBitfieldMember *>(pattern.get()); member != nullptr) {
-                    valueString += fmt::format("{} = {} | ", member->getVariableName(), member->toString());
-                } else if (auto *bitfield = dynamic_cast<PatternBitfield *>(pattern.get()); bitfield != nullptr) {
-                    valueString += fmt::format("{} = {} | ", bitfield->getVariableName(), bitfield->formatDisplayValue());
-                }
-            }
-
-            if (valueString.size() >= 3) {
-                valueString.resize(valueString.size() - 3);
-            }
-
-            if (valueString.size() > 64)
-                return Pattern::callUserFormatFunc(this->reference()).value_or(fmt::format("{{ ... }}", valueString));
-            else
-                return Pattern::callUserFormatFunc(this->reference()).value_or(fmt::format("{{ {} }}", valueString));
-        }
-
         void setEndian(std::endian endian) override {
             if (this->isLocal()) return;
 
@@ -825,6 +746,64 @@ namespace pl::ptrn {
             });
 
             Pattern::clearFormatCache();
+        }
+
+    protected:
+        std::string defaultToString() const override {
+            std::string result = this->getFormattedName();
+
+            result += " { ";
+
+            for (const auto &field : this->m_fields) {
+                if (field->getVariableName().starts_with("$"))
+                    continue;
+
+                result += fmt::format("{} = {}, ", field->getVariableName(), field->toString());
+            }
+
+            // Remove trailing ", "
+            result.pop_back();
+            result.pop_back();
+
+            result += " }";
+            return result;
+        }
+
+        std::string defaultToDisplayValue() const override {
+            std::vector<u8> bytes(this->getSize(), 0);
+            this->getEvaluator()->readData(this->getOffset(), bytes.data(), bytes.size(), this->getSection());
+
+            if (this->getEndian() == std::endian::little)
+                std::reverse(bytes.begin(), bytes.end());
+
+            std::string valueString;
+
+            for (const auto &pattern : this->m_fields) {
+                if (auto *field = dynamic_cast<PatternBitfieldField *>(pattern.get()); field != nullptr) {
+                    auto fieldValue = field->getValue().toUnsigned();
+
+                    if (field->getBitSize() == 1) {
+                        if (fieldValue > 0)
+                            valueString += fmt::format("{} | ", field->getVariableName());
+                    } else {
+                        valueString += fmt::format("{}({}) | ", field->getVariableName(), field->toString());
+                    }
+                } else if (auto *member = dynamic_cast<PatternBitfieldMember *>(pattern.get()); member != nullptr) {
+                    valueString += fmt::format("{} = {} | ", member->getVariableName(), member->toString());
+                } else if (auto *bitfield = dynamic_cast<PatternBitfield *>(pattern.get()); bitfield != nullptr) {
+                    auto value = bitfield->callUserFormatFunc().value_or(bitfield->defaultToDisplayValue());
+                    valueString += fmt::format("{} = {} | ", bitfield->getVariableName(), std::move(value));
+                }
+            }
+
+            if (valueString.size() >= 3) {
+                valueString.resize(valueString.size() - 3);
+            }
+
+            if (valueString.size() > 64)
+                return fmt::format("{{ ... }}", valueString);
+            else
+                return fmt::format("{{ {} }}", valueString);
         }
 
     private:

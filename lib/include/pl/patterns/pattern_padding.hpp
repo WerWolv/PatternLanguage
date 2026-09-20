@@ -26,23 +26,19 @@ namespace pl::ptrn {
             v.visit(*this);
         }
 
-        std::string formatDisplayValue() override {
-            return "";
-        }
-
-        [[nodiscard]] std::string toString() override {
-            auto result = [this]{
-               if (this->getSize() == 0)
-                   return std::string("null");
-               else
-                   return fmt::format("padding[{}]", this->getSize());
-            }();
-
-            return Pattern::callUserFormatFunc(this->getValue(), true).value_or(result);
-        }
-
         std::vector<u8> getRawBytes() override {
             return { };
+        }
+    protected:
+        std::string defaultToString() const override {
+            if (this->getSize() == 0)
+                return "null";
+            else
+                return fmt::format("padding[{}]", this->getSize());
+        }
+
+        std::string defaultToDisplayValue() const override {
+            return "";
         }
     };
 

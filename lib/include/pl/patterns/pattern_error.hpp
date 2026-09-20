@@ -27,16 +27,12 @@ namespace pl::ptrn {
             v.visit(*this);
         }
 
-        std::string formatDisplayValue() override {
-            return m_errorMessage;
-        }
-
-        [[nodiscard]] std::string toString() override {
-            return m_errorMessage;
-        }
-
         std::vector<u8> getRawBytes() override {
             return { };
+        }
+    protected:
+        std::string defaultToString() const override {
+            return m_errorMessage;
         }
 
     private:

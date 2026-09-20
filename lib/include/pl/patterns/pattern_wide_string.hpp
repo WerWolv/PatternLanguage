@@ -16,10 +16,6 @@ namespace pl::ptrn {
             return std::unique_ptr<Pattern>(new PatternWideString(*this));
         }
 
-        [[nodiscard]] core::Token::Literal getValue() const override {
-            return transformValue(this->getValue(this->getSize()));
-        }
-
         std::string getValue(size_t size) const {
             std::u16string buffer(this->getSize() / sizeof(char16_t), 0x00);
             this->getEvaluator()->readData(this->getOffset(), buffer.data(), size, this->getSection());
@@ -38,37 +34,10 @@ namespace pl::ptrn {
             return "String16";
         }
 
-        [[nodiscard]] std::string toString() override {
-            std::u16string buffer(this->getSize() / sizeof(char16_t), 0x00);
-            this->getEvaluator()->readData(this->getOffset(), buffer.data(), this->getSize(), this->getSection());
-
-            for (auto &c : buffer)
-                c = hlp::changeEndianess(c, 2, this->getEndian());
-
-            std::erase_if(buffer, [](auto c) {
-                return c == 0x00;
-            });
-
-            auto result = wolv::util::utf16ToUtf8(buffer).value_or("???");
-
-            return Pattern::callUserFormatFunc(this->getValue(), true).value_or(result);
-        }
-
         [[nodiscard]] bool operator==(const Pattern &other) const override { return compareCommonProperties<decltype(*this)>(other); }
 
         void accept(PatternVisitor &v) override {
             v.visit(*this);
-        }
-
-        std::string formatDisplayValue() override {
-            auto size = std::min<size_t>(this->getSize(), 0x100);
-
-            if (size == 0)
-                return "\"\"";
-
-            std::string utf8String = this->getValue(size);
-
-            return Pattern::callUserFormatFunc(utf8String).value_or(fmt::format("\"{0}\" {1}", utf8String, size > this->getSize() ? "(truncated)" : ""));
         }
 
         [[nodiscard]] std::vector<std::shared_ptr<Pattern>> getEntries() override {
@@ -110,6 +79,33 @@ namespace pl::ptrn {
             });
 
             return result;
+        }
+
+        [[nodiscard]] core::Token::Literal getRawValue() const override {
+            return this->getValue(this->getSize());
+        }
+
+    protected:
+        std::string defaultToString() const override {
+            std::u16string buffer(this->getSize() / sizeof(char16_t), 0x00);
+            this->getEvaluator()->readData(this->getOffset(), buffer.data(), this->getSize(), this->getSection());
+
+            for (auto &c : buffer)
+                c = hlp::changeEndianess(c, 2, this->getEndian());
+
+            std::erase_if(buffer, [](auto c) {
+                return c == 0x00;
+            });
+            return wolv::util::utf16ToUtf8(buffer).value_or("???");
+        }
+
+        std::string defaultToDisplayValue() const override {
+            auto size = std::min<size_t>(this->getSize(), 0x100);
+
+            if (size == 0)
+                return "\"\"";
+
+            return fmt::format("\"{0}\" {1}", this->getValue(size), size > this->getSize() ? "(truncated)" : "");
         }
     };
 
