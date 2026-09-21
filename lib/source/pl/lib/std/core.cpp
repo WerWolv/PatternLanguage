@@ -155,9 +155,21 @@ namespace pl::lib::libstd::core {
             runtime.addFunction(nsStdCore, "is_valid_enum", FunctionParameterCount::exactly(1), [](Evaluator *, auto params) -> std::optional<Token::Literal> {
                 auto pattern = params[0].toPattern();
 
-                if (auto enumPattern = dynamic_cast<ptrn::PatternEnum*>(pattern.get()); enumPattern != nullptr) {
-                    auto value = enumPattern->getValue().toUnsigned();
-                    for (auto &[name, entry] : enumPattern->getEnumValues()) {
+                auto enumValues = [&] -> std::map<std::string, ptrn::PatternEnum::EnumValue> const* {
+                    if (auto enumPattern = dynamic_cast<ptrn::PatternEnum*>(pattern.get()); enumPattern != nullptr) {
+                        return &enumPattern->getEnumValues();
+                    }
+
+                    if (auto bitfieldEnumPattern = dynamic_cast<ptrn::PatternBitfieldFieldEnum*>(pattern.get()); bitfieldEnumPattern != nullptr) {
+                        return &bitfieldEnumPattern->getEnumValues();
+                    }
+
+                    return nullptr;
+                }();
+
+                if (enumValues != nullptr) {
+                    auto value = pattern->getValue().toUnsigned();
+                    for (auto &[name, entry] : *enumValues) {
                         auto min = entry.min.toUnsigned();
                         auto max = entry.max.toUnsigned();
 
