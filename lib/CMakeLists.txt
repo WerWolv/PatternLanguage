@@ -74,6 +74,7 @@ add_library(libpl ${LIBRARY_TYPE}
         source/pl/lib/std/core.cpp
         source/pl/lib/std/hash.cpp
         source/pl/lib/std/random.cpp
+        source/pl/lib/std/crypto.cpp
         source/pl/core/resolvers.cpp
 )
 
