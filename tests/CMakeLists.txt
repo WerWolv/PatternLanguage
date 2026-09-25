@@ -42,6 +42,7 @@ set(AVAILABLE_TESTS
         Format
         RValuesAssignmentInStruct
         TemplateParametersScope
+        TemplateEndian
         TypeNameOf
         CustomBuiltInType
         Using

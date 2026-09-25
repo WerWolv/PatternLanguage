@@ -30,6 +30,7 @@
 #include "test_patterns/test_pattern_format.hpp"
 #include "test_patterns/test_pattern_rvalues_assignment_in_struct.hpp"
 #include "test_patterns/test_pattern_template_parameters_scope.hpp"
+#include "test_patterns/test_pattern_template_endian.hpp"
 #include "test_patterns/test_pattern_typenameof.hpp"
 #include "test_patterns/test_pattern_custom_builtin_type.hpp"
 #include "test_patterns/test_pattern_using.hpp"
@@ -85,6 +86,7 @@ std::array Tests = {
     TEST(Format),
     TEST(RValuesAssignmentInStruct),
     TEST(TemplateParametersScope),
+    TEST(TemplateEndian),
     TEST(TypeNameOf),
     TEST(CustomBuiltinType),
     TEST(Using),

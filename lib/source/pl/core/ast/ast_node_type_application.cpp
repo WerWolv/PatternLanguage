@@ -37,7 +37,7 @@ namespace pl::core::ast {
         : m_type(std::move(type)) { };
 
     ASTNodeTypeApplication::ASTNodeTypeApplication(const ASTNodeTypeApplication &other)
-        : ASTNode(other), m_type(other.m_type) {
+        : ASTNode(other), m_type(other.m_type), m_reference(other.m_reference), m_endian(other.m_endian), m_templateParameterIndex(other.m_templateParameterIndex) {
         for (const auto &arg : other.m_templateArguments)
             this->m_templateArguments.emplace_back(arg->clone());
     };
@@ -71,6 +71,9 @@ namespace pl::core::ast {
         }
 
         evaluatedType->m_templateArguments = std::move(evaluatedTemplateArguments);
+        evaluatedType->m_reference = this->m_reference;
+        evaluatedType->m_endian = this->m_endian;
+        evaluatedType->m_templateParameterIndex = this->m_templateParameterIndex;
         evaluatedType->setLocation(this->getLocation());
         evaluatedType->setShouldDocument(this->shouldDocument());
         evaluatedType->setDocComment(this->getDocComment());

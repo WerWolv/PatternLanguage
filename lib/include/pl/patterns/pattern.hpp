@@ -217,6 +217,8 @@ namespace pl::ptrn {
 
         [[nodiscard]] std::endian getEndian() const {
             if (this->m_evaluator == nullptr) return std::endian::native;
+            else if (!this->m_endian.has_value() &&
+                     (this->m_section == HeapSectionId || this->m_section == PatternLocalSectionId || this->m_section == InstantiationSectionId)) return std::endian::native;
             else return this->m_endian.value_or(this->m_evaluator->getDefaultEndian());
         }
         virtual void setEndian(std::endian endian) {
