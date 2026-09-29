@@ -28,6 +28,7 @@
 #include "test_patterns/test_pattern_pragmas_pr249.hpp"
 #include "test_patterns/test_pattern_pragmas_fail.hpp"
 #include "test_patterns/test_pattern_format.hpp"
+#include "test_patterns/test_pattern_format_heap.hpp"
 #include "test_patterns/test_pattern_rvalues_assignment_in_struct.hpp"
 #include "test_patterns/test_pattern_template_parameters_scope.hpp"
 #include "test_patterns/test_pattern_typenameof.hpp"
@@ -83,6 +84,8 @@ std::array Tests = {
     TEST(PragmasIssue249),
     TEST(PragmasFail),
     TEST(Format),
+    TEST(FormatHeapGrowth),
+    TEST(FormatHeapIsolation),
     TEST(RValuesAssignmentInStruct),
     TEST(TemplateParametersScope),
     TEST(TypeNameOf),

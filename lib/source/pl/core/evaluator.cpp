@@ -714,8 +714,8 @@ namespace pl::core {
 
             auto getStorage = [&, this]() -> auto& {
                 if (heapSection) {
-                    if (auto &heap = this->getHeap(); heap.size() > pattern->getHeapAddress())
-                        return heap[pattern->getHeapAddress()];
+                    if (this->getHeap().size() > pattern->getHeapAddress())
+                        return this->getHeapCellForWriting(pattern->getHeapAddress());
                     else
                         err::E0011.throwError(fmt::format("Tried accessing out of bounds heap cell {}. This is a bug.", pattern->getHeapAddress()));
                 } else if (patternLocalSection) {
@@ -886,6 +886,32 @@ namespace pl::core {
         this->m_scopes.pop_back();
     }
 
+    void Evaluator::pushHeapGuard() {
+        this->m_heapGuards.push_back({ this->m_heap.size(), {} });
+    }
+
+    void Evaluator::popHeapGuard() {
+        if (this->m_heapGuards.empty())
+            return;
+
+        auto guard = std::move(this->m_heapGuards.back());
+        this->m_heapGuards.pop_back();
+
+        this->m_heap.resize(guard.heapSize);
+        for (auto &[address, cell] : guard.originalCells)
+            this->m_heap[address] = std::move(cell);
+    }
+
+    std::vector<u8> &Evaluator::getHeapCellForWriting(u64 address) {
+        // Only the innermost guard needs a copy, since it restores the cell before outer guards can see it
+        if (!this->m_heapGuards.empty()) {
+            if (auto &guard = this->m_heapGuards.back(); address < guard.heapSize)
+                guard.originalCells.try_emplace(address, this->m_heap[address]);
+        }
+
+        return this->m_heap[address];
+    }
+
     std::vector<ast::ASTNode*> unpackCompoundStatements(const std::vector<std::shared_ptr<ast::ASTNode>> &nodes) {
         std::vector<ast::ASTNode*> result;
 
@@ -919,7 +945,8 @@ namespace pl::core {
             auto heapAddress = (address >> 32);
             auto storageAddress = address & 0xFFFF'FFFF;
             if (heapAddress < heap.size()) {
-                auto &storage = heap[heapAddress];
+                const bool modifiesCell = write || storageAddress + size > heap[heapAddress].size();
+                auto &storage = modifiesCell ? this->getHeapCellForWriting(heapAddress) : heap[heapAddress];
 
                 if (storageAddress + size > storage.size()) {
                     storage.resize(storageAddress + size);
@@ -1021,7 +1048,7 @@ namespace pl::core {
         if (id == ptrn::Pattern::MainSectionId)
             err::E0011.throwError("Cannot access main section.");
         else if (id == ptrn::Pattern::HeapSectionId)
-            return this->m_heap.back();
+            return this->getHeapCellForWriting(this->m_heap.size() - 1);
         else if (this->m_sections.contains(id))
             return this->m_sections[id].data;
         else if (id == ptrn::Pattern::InstantiationSectionId)
