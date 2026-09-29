@@ -468,8 +468,8 @@ namespace pl::ptrn {
                 try {
                     const auto function = this->m_evaluator->findFunction(formatterFunctionName);
                     if (function.has_value()) {
-                        auto startHeap = this->m_evaluator->getHeap();
-                        ON_SCOPE_EXIT { this->m_evaluator->getHeap() = startHeap; };
+                        this->m_evaluator->pushHeapGuard();
+                        ON_SCOPE_EXIT { this->m_evaluator->popHeapGuard(); };
 
                         auto formatterResult = function->func(this->m_evaluator, { value });
                         if (formatterResult.has_value()) {
@@ -590,8 +590,8 @@ namespace pl::ptrn {
             auto evaluator = this->getEvaluator();
 
             if (auto transformFunc = evaluator->findFunction(this->getTransformFunction()); transformFunc.has_value()) {
-                auto startHeap = this->m_evaluator->getHeap();
-                ON_SCOPE_EXIT { this->m_evaluator->getHeap() = startHeap; };
+                this->m_evaluator->pushHeapGuard();
+                ON_SCOPE_EXIT { this->m_evaluator->popHeapGuard(); };
 
                 // Preserve pattern variable name
                 std::string patternName;
@@ -621,8 +621,8 @@ namespace pl::ptrn {
             else {
                 const auto function = this->m_evaluator->findFunction(formatterFunctionName);
                 if (function.has_value()) {
-                    auto startHeap = this->m_evaluator->getHeap();
-                    ON_SCOPE_EXIT { this->m_evaluator->getHeap() = startHeap; };
+                    this->m_evaluator->pushHeapGuard();
+                    ON_SCOPE_EXIT { this->m_evaluator->popHeapGuard(); };
 
                     // Preserve pattern variable name
                     std::string patternName;

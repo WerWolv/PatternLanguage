@@ -40,6 +40,8 @@ set(AVAILABLE_TESTS
         Pragmas
         PragmasFail
         Format
+        FormatHeapGrowth
+        FormatHeapIsolation
         RValuesAssignmentInStruct
         TemplateParametersScope
         TypeNameOf
@@ -100,6 +102,7 @@ set(AVAILABLE_TESTS
 add_executable(pattern_language_tests
     source/main.cpp
     source/tests.cpp
+    source/test_pattern_format_heap.cpp
 )
 
 

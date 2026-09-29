@@ -393,6 +393,28 @@ namespace pl::core {
             return this->m_heap;
         }
 
+        /**
+         * @brief Starts recording heap changes so popHeapGuard() can undo them.
+         * Only cells that get written are copied, so the cost does not grow with
+         * the size of the heap.
+         */
+        void pushHeapGuard();
+
+        /**
+         * @brief Undoes all heap changes made since the matching pushHeapGuard().
+         * New cells are removed and changed cells get their old contents back.
+         */
+        void popHeapGuard();
+
+        /**
+         * @brief Gets a heap cell that is about to be changed. If a heap guard is
+         * active, the cell's current contents are saved first so the guard can
+         * restore them.
+         * @param address Address of the heap cell
+         * @return The heap cell
+         */
+        [[nodiscard]] std::vector<u8> &getHeapCellForWriting(u64 address);
+
         [[nodiscard]] std::map<u32, PatternLocalData> &getPatternLocalStorage() {
             return this->m_patternLocalStorage;
         }
@@ -605,6 +627,15 @@ namespace pl::core {
         std::vector<std::vector<u8>> m_heap;
         std::map<u32, u32> m_heapReferenceCounts;
         std::map<u32, PatternLocalData> m_patternLocalStorage;
+
+        /**
+         * @brief Heap state saved by pushHeapGuard() and restored by popHeapGuard()
+         */
+        struct HeapGuard {
+            size_t heapSize;
+            std::map<u64, std::vector<u8>> originalCells;
+        };
+        std::vector<HeapGuard> m_heapGuards;
 
         std::map<std::string, std::set<ptrn::Pattern*>> m_attributedPatterns;
         std::vector<std::unique_ptr<Scope>> m_scopes;
