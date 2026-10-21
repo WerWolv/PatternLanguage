@@ -131,20 +131,20 @@ namespace pl::test {
                 u8 x;
             )") { }
     };
-//    class TestPatternVarRedeclarationInFuncFail: public TestPatternFailingSemantic {
-//    public:
-//        TestPatternVarRedeclarationInFuncFail(core::Evaluator *evaluator)
-//        : TestPatternFailingSemantic(evaluator, "VarRedeclarationInFuncFail", R"(
-//                fn f() {
-//                    u8 x;
-//                    u8 x;
-//                };
-//            )") { }
-//    };
+    class TestPatternVarRedeclarationInFuncFail: public TestPatternFailingSemantic {
+    public:
+        TestPatternVarRedeclarationInFuncFail(core::Evaluator *evaluator)
+            : TestPatternFailingSemantic(evaluator, "VarRedeclarationInFuncFail", R"(
+                fn f() {
+                    u8 x;
+                    u8 x;
+                };
+            )") { }
+    };
     class TestPatternArrayVarRedeclarationFail: public TestPatternFailingSemantic {
     public:
         TestPatternArrayVarRedeclarationFail(core::Evaluator *evaluator)
-        : TestPatternFailingSemantic(evaluator, "ArrayVarRedeclarationFail", R"(
+            : TestPatternFailingSemantic(evaluator, "ArrayVarRedeclarationFail", R"(
                 u8 x[2];
                 u8 x[2];
             )") { }
@@ -152,7 +152,7 @@ namespace pl::test {
     class TestPatternPointerVarRedeclarationFail: public TestPatternFailingSemantic {
     public:
         TestPatternPointerVarRedeclarationFail(core::Evaluator *evaluator)
-        : TestPatternFailingSemantic(evaluator, "PointerVarRedeclarationFail", R"(
+            : TestPatternFailingSemantic(evaluator, "PointerVarRedeclarationFail", R"(
                 u8* x: u8 @ 0;
                 u8* x: u8 @ 0;
             )") { }
@@ -160,26 +160,26 @@ namespace pl::test {
     class TestPatternMultiVarRedeclarationFail: public TestPatternFailingSemantic {
     public:
         TestPatternMultiVarRedeclarationFail(core::Evaluator *evaluator)
-        : TestPatternFailingSemantic(evaluator, "MultiVarRedeclarationFail", R"(
+            : TestPatternFailingSemantic(evaluator, "MultiVarRedeclarationFail", R"(
                 struct S {
                     u8 x, x;
                 };
             )") { }
     };
-//    class TestPatternMultiVarMixRedeclarationFail: public TestPatternFailingSemantic {
-//    public:
-//        TestPatternMultiVarMixRedeclarationFail(core::Evaluator *evaluator)
-//        : TestPatternFailingSemantic(evaluator, "MultiVarMixRedeclarationFail", R"(
-//                struct S {
-//                    u8 x;
-//                    u8 x, y;
-//                };
-//            )") { }
-//    };
+    class TestPatternMultiVarMixRedeclarationFail: public TestPatternFailingSemantic {
+    public:
+        TestPatternMultiVarMixRedeclarationFail(core::Evaluator *evaluator)
+            : TestPatternFailingSemantic(evaluator, "MultiVarMixRedeclarationFail", R"(
+                struct S {
+                    u8 x;
+                    u8 x, y;
+                };
+            )") { }
+    };
     class TestPatternStructMemberRedeclarationFail: public TestPatternFailingSemantic {
     public:
         TestPatternStructMemberRedeclarationFail(core::Evaluator *evaluator)
-        : TestPatternFailingSemantic(evaluator, "StructMemberRedeclarationFail", R"(
+            : TestPatternFailingSemantic(evaluator, "StructMemberRedeclarationFail", R"(
                 struct S {
                     u8 x;
                     u8 x;
@@ -189,7 +189,7 @@ namespace pl::test {
     class TestPatternUnionMemberRedeclarationFail: public TestPatternFailingSemantic {
     public:
         TestPatternUnionMemberRedeclarationFail(core::Evaluator *evaluator)
-        : TestPatternFailingSemantic(evaluator, "UnionMemberRedeclarationFail", R"(
+            : TestPatternFailingSemantic(evaluator, "UnionMemberRedeclarationFail", R"(
                 union S {
                     u8 x;
                     u8 x;
@@ -199,7 +199,7 @@ namespace pl::test {
 //    class TestPatternEnumMemberRedeclarationFail: public TestPatternFailingSemantic {
 //    public:
 //        TestPatternEnumMemberRedeclarationFail(core::Evaluator *evaluator)
-//        : TestPatternFailingSemantic(evaluator, "EnumMemberRedeclarationFail", R"(
+//            : TestPatternFailingSemantic(evaluator, "EnumMemberRedeclarationFail", R"(
 //                enum E : u8 {
 //                    a = 1,
 //                    a = 2,
@@ -209,39 +209,38 @@ namespace pl::test {
     class TestPatternBitfieldMemberRedeclarationFail: public TestPatternFailingSemantic {
     public:
         TestPatternBitfieldMemberRedeclarationFail(core::Evaluator *evaluator)
-        : TestPatternFailingSemantic(evaluator, "BitfieldMemberRedeclarationFail", R"(
+            : TestPatternFailingSemantic(evaluator, "BitfieldMemberRedeclarationFail", R"(
                 bitfield B {
                     x: 5;
                     x: 11;
                 };
             )") { }
     };
-
-//    class TestPatternBitfieldArrayMemberRedeclarationFail: public TestPatternFailingSemantic {
-//    public:
-//        TestPatternBitfieldArrayMemberRedeclarationFail(core::Evaluator *evaluator)
-//        : TestPatternFailingSemantic(evaluator, "BitfieldArrayMemberRedeclarationFail", R"(
-//                bitfield B {
-//                    x : 4;
-//                    y : 4;
-//                };
-//                bitfield TestBitfield {
-//                    a : 2;
-//                    B a[2];
-//                };
-//            )") { }
-//    };
+    class TestPatternBitfieldArrayMemberRedeclarationFail: public TestPatternFailingSemantic {
+    public:
+        TestPatternBitfieldArrayMemberRedeclarationFail(core::Evaluator *evaluator)
+            : TestPatternFailingSemantic(evaluator, "BitfieldArrayMemberRedeclarationFail", R"(
+                bitfield B {
+                    x : 4;
+                    y : 4;
+                };
+                bitfield TestBitfield {
+                    a : 2;
+                    B a[2];
+                };
+            )") { }
+    };
     class TestPatternTemplateParamRedeclarationFail: public TestPatternFailingSemantic {
     public:
         TestPatternTemplateParamRedeclarationFail(core::Evaluator *evaluator)
-        : TestPatternFailingSemantic(evaluator, "TemplateParamRedeclarationFail", R"(
+            : TestPatternFailingSemantic(evaluator, "TemplateParamRedeclarationFail", R"(
                 struct S<T, T> {};
             )") { }
     };
     class TestPatternNonTypeTemplateParamRedeclarationFail: public TestPatternFailingSemantic {
     public:
         TestPatternNonTypeTemplateParamRedeclarationFail(core::Evaluator *evaluator)
-        : TestPatternFailingSemantic(evaluator, "NonTypeTemplateParamRedeclarationFail", R"(
+            : TestPatternFailingSemantic(evaluator, "NonTypeTemplateParamRedeclarationFail", R"(
                 struct S<auto x, auto x> {};
             )") { }
     };
@@ -251,7 +250,7 @@ namespace pl::test {
     class TestPatternFuncRedeclarationFail: public TestPatternFailingSemantic {
     public:
         TestPatternFuncRedeclarationFail(core::Evaluator *evaluator)
-        : TestPatternFailingSemantic(evaluator, "FuncRedeclarationFail", R"(
+            : TestPatternFailingSemantic(evaluator, "FuncRedeclarationFail", R"(
                 fn f() {};
                 fn f() {};
             )") { }
@@ -260,58 +259,58 @@ namespace pl::test {
     class TestPatternFuncParamRedeclarationFail: public TestPatternFailingSemantic {
     public:
         TestPatternFuncParamRedeclarationFail(core::Evaluator *evaluator)
-        : TestPatternFailingSemantic(evaluator, "FuncParamRedeclarationFail", R"(
+            : TestPatternFailingSemantic(evaluator, "FuncParamRedeclarationFail", R"(
                 fn f(u8 x, u8 x) {};
             )") { }
     };
 
-//    class TestPatternRedeclarationInFuncBodyFail: public TestPatternFailingSemantic {
-//    public:
-//        TestPatternRedeclarationInFuncBodyFail(core::Evaluator *evaluator)
-//        : TestPatternFailingSemantic(evaluator, "RedeclarationInFuncBodyFail", R"(
-//                fn f() {
-//                   u8 x;
-//                   u8 x;
-//                };
-//            )") { }
-//    };
+    class TestPatternRedeclarationInFuncBodyFail: public TestPatternFailingSemantic {
+    public:
+        TestPatternRedeclarationInFuncBodyFail(core::Evaluator *evaluator)
+            : TestPatternFailingSemantic(evaluator, "RedeclarationInFuncBodyFail", R"(
+                fn f() {
+                    u8 x;
+                    u8 x;
+                };
+            )") { }
+    };
 
-//    class TestPatternFuncParamAndBodyRedeclarationFail: public TestPatternFailingSemantic {
-//    public:
-//        TestPatternFuncParamAndBodyRedeclarationFail(core::Evaluator *evaluator)
-//        : TestPatternFailingSemantic(evaluator, "FuncParamAndBodyRedeclarationFail", R"(
-//                fn f(u8 x) {
-//                   u8 x;
-//                };
-//            )") { }
-//    };
+    class TestPatternFuncParamAndBodyRedeclarationFail: public TestPatternFailingSemantic {
+    public:
+        TestPatternFuncParamAndBodyRedeclarationFail(core::Evaluator *evaluator)
+            : TestPatternFailingSemantic(evaluator, "FuncParamAndBodyRedeclarationFail", R"(
+                fn f(u8 x) {
+                    u8 x;
+                };
+            )") { }
+    };
 
-    // class TestPatternGlobalContinueFail : public TestPatternFailingSemantic {
-    // public:
-    //     TestPatternGlobalContinueFail(core::Evaluator *evaluator)
-    //     : TestPatternFailingSemantic(evaluator, "GlobalContinueFail", R"(
-    //             continue;
-    //         )") { }
-    // };
-    // class TestPatternFunctionContinueFail : public TestPatternFailingSemantic {
-    // public:
-    //     TestPatternFunctionContinueFail(core::Evaluator *evaluator)
-    //     : TestPatternFailingSemantic(evaluator, "FunctionContinueFail", R"(
-    //             fn f() { continue; };
-    //         )") { }
-    // };
-    // class TestPatternGlobalBreakFail : public TestPatternFailingSemantic {
-    // public:
-    //     TestPatternGlobalBreakFail(core::Evaluator *evaluator)
-    //     : TestPatternFailingSemantic(evaluator, "GlobalBreakFail", R"(
-    //             break;
-    //         )") { }
-    // };
-    // class TestPatternFunctionBreakFail : public TestPatternFailingSemantic {
-    // public:
-    //     TestPatternFunctionBreakFail(core::Evaluator *evaluator)
-    //     : TestPatternFailingSemantic(evaluator, "FunctionBreakFail", R"(
-    //             fn f() { break; };
-    //         )") { }
-    // };
+    class TestPatternGlobalContinueFail : public TestPatternFailingSemantic {
+    public:
+        TestPatternGlobalContinueFail(core::Evaluator *evaluator)
+            : TestPatternFailingSemantic(evaluator, "GlobalContinueFail", R"(
+                continue;
+            )") { }
+    };
+    class TestPatternFunctionContinueFail : public TestPatternFailingSemantic {
+    public:
+        TestPatternFunctionContinueFail(core::Evaluator *evaluator)
+            : TestPatternFailingSemantic(evaluator, "FunctionContinueFail", R"(
+                fn f() { continue; };
+            )") { }
+    };
+    class TestPatternGlobalBreakFail : public TestPatternFailingSemantic {
+    public:
+        TestPatternGlobalBreakFail(core::Evaluator *evaluator)
+            : TestPatternFailingSemantic(evaluator, "GlobalBreakFail", R"(
+                break;
+            )") { }
+    };
+    class TestPatternFunctionBreakFail : public TestPatternFailingSemantic {
+    public:
+        TestPatternFunctionBreakFail(core::Evaluator *evaluator)
+            : TestPatternFailingSemantic(evaluator, "FunctionBreakFail", R"(
+                fn f() { break; };
+            )") { }
+    };
 }

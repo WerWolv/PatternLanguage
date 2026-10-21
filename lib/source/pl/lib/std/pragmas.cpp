@@ -48,7 +48,6 @@ namespace pl::lib::libstd {
                 return false;
 
             runtime.getInternals().evaluator->setEvaluationDepth(*limit);
-            runtime.getInternals().validator->setRecursionDepth(*limit);
             return true;
         });
 
