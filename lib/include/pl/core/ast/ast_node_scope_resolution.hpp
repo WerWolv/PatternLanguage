@@ -16,10 +16,10 @@ namespace pl::core::ast {
 
         [[nodiscard]] std::unique_ptr<ASTNode> evaluate(Evaluator *evaluator) const override;
 
-        [[nodiscard]] const std::shared_ptr<ASTNodeTypeDecl> &getType() {
+        [[nodiscard]] const std::shared_ptr<ASTNodeTypeDecl> &getType() const {
             return m_type;
         }
-        [[nodiscard]] const std::string &getName() {
+        [[nodiscard]] const std::string &getName() const {
             return m_name;
         }
 

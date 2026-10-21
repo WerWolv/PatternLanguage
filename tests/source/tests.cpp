@@ -88,6 +88,7 @@ std::array Tests = {
     TEST(TypeNameOf),
     TEST(CustomBuiltinType),
     TEST(Using),
+    TEST(UsingDocs),
     TEST(HeapLifetime),
     TEST(Flattening),
     TEST(ExpressionSemantics),

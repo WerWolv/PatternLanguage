@@ -90,6 +90,7 @@ set(AVAILABLE_TESTS
         #RedeclarationInFuncBodyFail
         #FuncParamAndBodyRedeclarationFail
         AllowedRedefinitions
+        UsingDocs
         #GlobalContinueFail
         #FunctionContinueFail
         #GlobalBreakFail
@@ -100,13 +101,15 @@ set(AVAILABLE_TESTS
 add_executable(pattern_language_tests
     source/main.cpp
     source/tests.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../cli/source/subcommands/docs_types.cpp
 )
 
 
 # ---- No need to change anything from here downwards unless you know what you're doing ---- #
 
-target_include_directories(pattern_language_tests PRIVATE include)
+target_include_directories(pattern_language_tests PRIVATE include ${CMAKE_CURRENT_SOURCE_DIR}/../cli/include)
 target_link_libraries(pattern_language_tests PRIVATE libpl libpl-gen fmt::fmt-header-only)
+target_compile_features(pattern_language_tests PRIVATE cxx_std_23)
 
 set_target_properties(pattern_language_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 

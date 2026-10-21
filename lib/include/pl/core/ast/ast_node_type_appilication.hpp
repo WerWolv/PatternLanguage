@@ -18,7 +18,7 @@ namespace pl::core::ast {
         void setTemplateArguments(std::vector<std::unique_ptr<ASTNode>> &&arguments) {
             this->m_templateArguments = std::move(arguments);
         }
-        const std::vector<std::unique_ptr<ASTNode>>& getTemplateArguments() {
+        const std::vector<std::unique_ptr<ASTNode>>& getTemplateArguments() const {
             return this->m_templateArguments;
         }
         

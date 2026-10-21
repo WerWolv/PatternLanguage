@@ -22,6 +22,9 @@ namespace pl::core::ast {
         [[nodiscard]] const std::unique_ptr<ASTNodeTypeApplication> &getType() const {
             return m_type;
         }
+        [[nodiscard]] bool isReinterpret() const {
+            return m_reinterpret;
+        }
 
         void accept(vis::ASTVisitor &v) override {
             v.visit(*this);

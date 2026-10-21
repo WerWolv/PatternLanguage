@@ -1,3 +1,5 @@
+#include <pl/cli/subcommands/docs.hpp>
+
 #include <pl/pattern_language.hpp>
 #include <pl/core/parser.hpp>
 #include <pl/cli/helpers/utils.hpp>
@@ -9,112 +11,9 @@
 #include <CLI/App.hpp>
 #include <fmt/format.h>
 
-#include <pl/core/ast/ast_node_array_variable_decl.hpp>
-#include <pl/core/ast/ast_node_bitfield.hpp>
-#include <pl/core/ast/ast_node_enum.hpp>
 #include <pl/core/ast/ast_node_function_definition.hpp>
-#include <pl/core/ast/ast_node_struct.hpp>
-#include <pl/core/ast/ast_node_type_decl.hpp>
-#include <pl/core/ast/ast_node_union.hpp>
-#include <pl/core/ast/ast_node_lvalue_assignment.hpp>
 
 namespace pl::cli::sub {
-
-    namespace {
-
-        std::string getTypeEndian(const core::ast::ASTNodeTypeApplication *typeApp) {
-            auto endian = typeApp->getEndian();
-
-            if (!endian.has_value())
-                return "";
-            else if (endian == std::endian::little)
-                return "le ";
-            else if (endian == std::endian::big)
-                return "be ";
-            else
-                return "";
-        }
-
-        std::string getTypeName(const core::ast::ASTNode *type) {
-            if (auto typeApp = dynamic_cast<const core::ast::ASTNodeTypeApplication*>(type); typeApp != nullptr) {
-                return fmt::format("{}{}", getTypeEndian(typeApp), getTypeName(typeApp->getType().get()));
-            } else if (auto typeDecl = dynamic_cast<const core::ast::ASTNodeTypeDecl*>(type); typeDecl != nullptr) {
-                return typeDecl->getName();
-            } else if (auto builtinType = dynamic_cast<const core::ast::ASTNodeBuiltinType*>(type); builtinType != nullptr) {
-                return core::Token::getTypeName(builtinType->getType());
-            } else {
-                return "???";
-            }
-        }
-
-        std::string generateAttributes(const core::ast::Attributable *attributable) {
-            const auto &attributes = attributable->getAttributes();
-            if (attributes.empty())
-                return "";
-
-            std::string result = " [[";
-            for (const auto &attribute : attributes) {
-                result += attribute->getAttribute();
-
-                if (!attribute->getArguments().empty()) {
-                    result += "(...)";
-                }
-
-                result += ", ";
-            }
-
-            result.pop_back();
-            result.pop_back();
-
-            return result + "]]";
-        }
-
-        std::string generateTemplateParams(const core::ast::ASTNodeTypeDecl *type) {
-            const auto &templateParams = type->getTemplateParameters();
-            if (templateParams.empty())
-                return "";
-
-            std::string result = "<";
-            for (const auto &templateParam : templateParams) {
-                if (templateParam->isType())
-                    result += templateParam->getName().get();
-                else 
-                    result += fmt::format("auto {}", templateParam->getName().get());
-
-                result += ", ";
-            }
-
-            result.pop_back();
-            result.pop_back();
-
-            return result + ">";
-        }
-
-        std::string generateTypeDocumentation(const std::string &name, const core::ast::ASTNodeTypeDecl *type) {
-            if (auto typeApp = dynamic_cast<core::ast::ASTNodeTypeApplication*>(type->getType().get())) {
-                return fmt::format("```pl\nusing {}{} = {}{};\n```", name, generateTemplateParams(type), getTypeName(typeApp), generateAttributes(type));
-            } else if (dynamic_cast<core::ast::ASTNodeStruct*>(type->getType().get())) {
-                return fmt::format("```pl\nstruct {}{} {{ ... }}{};\n```", name, generateTemplateParams(type), generateAttributes(type));
-            } else if (dynamic_cast<core::ast::ASTNodeUnion*>(type->getType().get())) {
-                return fmt::format("```pl\nunion {}{} {{ ... }}{};\n```", name, generateTemplateParams(type), generateAttributes(type));
-            } else if (dynamic_cast<core::ast::ASTNodeBitfield*>(type->getType().get())) {
-                return fmt::format("```pl\nbitfield {}{} {{ ... }}{};\n```", name, generateTemplateParams(type), generateAttributes(type));
-            } else if (auto enumDecl = dynamic_cast<core::ast::ASTNodeEnum*>(type->getType().get())) {
-                auto result = fmt::format("```pl\nenum {}{} : {} {{\n", name, generateTemplateParams(type), getTypeName(enumDecl->getUnderlyingType().get()));
-                for (auto &[enumValueName, enumValues] : enumDecl->getEntries()) {
-                    result += fmt::format("    {},\n", enumValueName);
-                }
-
-                result.pop_back();
-                result.pop_back();
-
-                return result + fmt::format("\n}}{};\n```", generateAttributes(type));
-            } else {
-                return "";
-            }
-        }
-
-    }
 
     void addDocsSubcommand(CLI::App *app, pl::PatternLanguage &runtime) {
         static std::vector<std::fs::path> includePaths;
@@ -216,7 +115,7 @@ namespace pl::cli::sub {
                             }
                         }
 
-                        sectionContent += generateTypeDocumentation(wolv::util::splitString(name, "::").back(), type.get()) + "\n";
+                        sectionContent += docs::generateTypeDocumentation(wolv::util::splitString(name, "::").back(), type.get()) + "\n";
 
                         skip_type:;
                     }
@@ -281,7 +180,7 @@ namespace pl::cli::sub {
 
                             const auto &params = functionDecl->getParams();
                             for (const auto &[paramName, paramType] : params) {
-                                std::string typeName = getTypeName(paramType.get());
+                                std::string typeName = docs::getTypeName(paramType.get());
 
                                 sectionContent += fmt::format("{} {}, ", typeName, paramName);
                             }

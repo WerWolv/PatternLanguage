@@ -12,6 +12,7 @@ set(PLCLI_SOURCES
         source/subcommands/format.cpp
         source/subcommands/run.cpp
         source/subcommands/docs.cpp
+        source/subcommands/docs_types.cpp
         source/subcommands/info.cpp
 )
 

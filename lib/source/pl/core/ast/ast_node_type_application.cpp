@@ -2,13 +2,17 @@
 #include <pl/core/evaluator.hpp>
 #include <pl/patterns/pattern.hpp>
 #include <pl/core/ast/ast_node_literal.hpp>
+#include <pl/core/ast/ast_node_rvalue.hpp>
+#include <pl/core/ast/visitors/ast_stringify.hpp>
 
 namespace pl::core::ast {
 
-    static std::string computeTemplateTypeString(const std::vector<std::unique_ptr<ASTNode>> &arguments) {
+    static std::string computeTemplateTypeString(const std::vector<std::unique_ptr<ASTNode>> &arguments, const std::vector<std::shared_ptr<ast::ASTNodeTemplateParameter>> &templateParams = {}) {
         std::string templateTypeString;
-        for (size_t i = 0; i < arguments.size(); i++) {
-            auto &templateArgument = arguments[i];
+        // Pattern type names are display strings, not source code. Print them without the 'u'
+        // suffix so their output stays the same as in previous releases.
+        ASTStringifier stringifier(false);
+        for (const auto &templateArgument : arguments) {
             if (auto literal = dynamic_cast<ASTNodeLiteral*>(templateArgument.get()); literal != nullptr) {
                     const auto &value = literal->getValue();
                     if (value.isString()) {
@@ -23,10 +27,8 @@ namespace pl::core::ast {
                     else {
                         templateTypeString += fmt::format("{}, ", value.toString(true));
                     }
-            } else if (auto typeNode = dynamic_cast<ASTNodeTypeApplication*>(templateArgument.get()); typeNode != nullptr) {
-                templateTypeString += fmt::format("{}, ", typeNode->getTypeName());
             } else {
-                templateTypeString += ", ";
+                templateTypeString += fmt::format("{}, ", stringifier.stringifyExpression(templateArgument.get(), 0, &templateParams));
             }
         }
 
@@ -154,14 +156,14 @@ namespace pl::core::ast {
             if (this->m_templateArguments.empty()) {
                 return typeName;
             } else {
-                return fmt::format("{}<{}>", typeName, computeTemplateTypeString(this->m_templateArguments));
+                return fmt::format("{}<{}>", typeName, computeTemplateTypeString(this->m_templateArguments, typeDecl->getTemplateParameters()));
             }
         } else if(auto builtinType = dynamic_cast<const ASTNodeBuiltinType*>(this->m_type.get()); builtinType != nullptr) {
             return Token::getTypeName(builtinType->getType());
         } else if(auto typeApp = dynamic_cast<const ASTNodeTypeApplication*>(this->m_type.get()); typeApp != nullptr) {
             return typeApp->getTypeName();
         } else {
-            return "????";
+            return "???";
         }
     }
 }

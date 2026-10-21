@@ -2,6 +2,7 @@
 #include "pl/pattern_language.hpp"
 
 #include <pl/cli/cli.hpp>
+#include <pl/cli/subcommands/docs.hpp>
 
 #include <wolv/io/file.hpp>
 
@@ -16,7 +17,6 @@ namespace pl::cli {
 
         void addFormatSubcommand(CLI::App *app, pl::PatternLanguage &runtime);
         void addRunSubcommand(CLI::App *app, pl::PatternLanguage &runtime);
-        void addDocsSubcommand(CLI::App *app, pl::PatternLanguage &runtime);
         void addInfoSubcommand(CLI::App *app, pl::PatternLanguage &runtime);
 
     }
