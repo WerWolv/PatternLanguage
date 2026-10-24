@@ -90,6 +90,7 @@ set(AVAILABLE_TESTS
         #RedeclarationInFuncBodyFail
         #FuncParamAndBodyRedeclarationFail
         AllowedRedefinitions
+        SectionInStruct
         #GlobalContinueFail
         #FunctionContinueFail
         #GlobalBreakFail
