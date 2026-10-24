@@ -133,7 +133,11 @@ namespace pl::core::ast {
 
         auto evaluatedType = std::unique_ptr<ASTNodeTypeApplication>(dynamic_cast<ast::ASTNodeTypeApplication*>(this->getType()->evaluate(evaluator).release()));
         evaluator->createVariable(this->getName(), evaluatedType.get(), { }, this->m_outVariable, false, false, this->m_constant);
-        auto &variable = evaluator->getScope(0).scope->back();
+
+        // Creating the type's patterns can declare further variables in this scope, which reallocates
+        // the scope's pattern vector. Remember the variable's index instead of holding on to a
+        // reference that the reallocation would leave dangling.
+        const auto variableIndex = evaluator->getScope(0).scope->size() - 1;
 
         std::vector<std::shared_ptr<ptrn::Pattern>> initValues;
         if (this->m_placementOffset == nullptr) {
@@ -153,6 +157,7 @@ namespace pl::core::ast {
 
         if (!initValues.empty()) {
             auto &initValue = initValues.front();
+            auto &variable = (*evaluator->getScope(0).scope)[variableIndex];
             if (variable->getSection() == ptrn::Pattern::HeapSectionId) {
                 auto &heap = evaluator->getHeap();
                 heap.emplace_back();
@@ -167,7 +172,9 @@ namespace pl::core::ast {
 
             initValue->setTypeName(variable->getTypeName());
             evaluator->setVariable(variable, std::move(initValue));
-            variable->setInitialized(false);
+
+            // setVariable() may itself declare variables, so re-acquire the slot before using it
+            (*evaluator->getScope(0).scope)[variableIndex]->setInitialized(false);
         }
 
         evaluator->setBitwiseReadOffset(startOffset);
