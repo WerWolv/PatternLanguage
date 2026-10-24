@@ -3,6 +3,8 @@
 
 #include <wolv/utils/string.hpp>
 
+#include <algorithm>
+
 namespace pl::core::err::impl {
 
     std::string formatLocation(Location location, std::optional<u64> address) {
@@ -18,18 +20,29 @@ namespace pl::core::err::impl {
     std::string formatLines(Location location) {
         std::string result;
 
+        if (location.source == nullptr)
+            return result;
+
         const auto lines = wolv::util::splitString(location.source->content, "\n");
 
-        if (location.line < lines.size() + 1) {
+        if (location.line > 0 && location.line < lines.size() + 1) {
             const auto lineNumberPrefix = fmt::format("{} | ", location.line);
             auto errorLine = wolv::util::replaceStrings(lines[location.line - 1], "\r", "");
-            u32 arrowPosition = location.column - 1;
+
+            // The reported column is 1-based and may point past the end of the line, for
+            // instance when a token is left unterminated at its end. Normalize it once into a
+            // 0-based caret clamped to the line, where a caret equal to the line's length denotes
+            // the position just past the last character.
+            const size_t caret = location.column == 0 ? 0 : std::min<size_t>(location.column - 1, errorLine.length());
+            u32 arrowPosition = u32(caret);
 
             // Trim to size
             if (errorLine.length() > 40) { // shrink to [column - 20; column + 20]
-                const auto column = location.column;
+                // Derived from the clamped 1-based column so the trimmed window stays identical
+                // to what it was before the bounds were corrected
+                const auto column = caret + 1;
                 auto start = column > 20 ? column - 20 : 0;
-                auto end = column + 20 < errorLine.length() ? column + 20 : errorLine.length();
+                auto end = std::min<size_t>(column + 20, errorLine.length());
                 // Search for whitespaces on both sides until a maximum of 10 characters and change start/end accordingly
                 for(auto i = 0; i < 10; ++i) {
                     if(start > 0 && errorLine[start] != ' ') {
@@ -40,7 +53,7 @@ namespace pl::core::err::impl {
                     }
                 }
                 errorLine = errorLine.substr(start, end - start);
-                arrowPosition = column - start - 1;
+                arrowPosition = u32(caret - start);
             }
 
             result += fmt::format("{}{}\n", lineNumberPrefix, errorLine);
