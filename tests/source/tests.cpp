@@ -43,6 +43,7 @@
 #include "test_patterns/test_pattern_set_entries_sorted_consistency.hpp"
 #include "test_patterns/test_pattern_allowed_redefinitions.hpp"
 #include "test_patterns/test_pattern_read_string.hpp"
+#include "test_patterns/test_pattern_out_variables.hpp"
 
 static pl::core::Evaluator s_evaluator;
 
@@ -138,6 +139,8 @@ std::array Tests = {
     TEST(ReadStringDecoded),
     TEST(ReadStringNoCodec),
     TEST(ReadStringUndecodableFail),
+    TEST(OutVariableEncoding),
+    TEST(OutVariableError),
     // TEST(GlobalContinueFail),
     // TEST(FunctionContinueFail),
     // TEST(GlobalBreakFail),

@@ -94,6 +94,8 @@ set(AVAILABLE_TESTS
         ReadStringDecoded
         ReadStringNoCodec
         ReadStringUndecodableFail
+        OutVariableEncoding
+        OutVariableError
         #GlobalContinueFail
         #FunctionContinueFail
         #GlobalBreakFail
