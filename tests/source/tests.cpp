@@ -42,6 +42,7 @@
 #include "test_patterns/test_pattern_in_variable_defaults.hpp"
 #include "test_patterns/test_pattern_set_entries_sorted_consistency.hpp"
 #include "test_patterns/test_pattern_allowed_redefinitions.hpp"
+#include "test_patterns/test_pattern_read_string.hpp"
 
 static pl::core::Evaluator s_evaluator;
 
@@ -133,6 +134,10 @@ std::array Tests = {
 //    TEST(RedeclarationInFuncBodyFail),
 //    TEST(FuncParamAndBodyRedeclarationFail),
     TEST(AllowedRedefinitions),
+    TEST(ReadStringNoPragma),
+    TEST(ReadStringDecoded),
+    TEST(ReadStringNoCodec),
+    TEST(ReadStringUndecodableFail),
     // TEST(GlobalContinueFail),
     // TEST(FunctionContinueFail),
     // TEST(GlobalBreakFail),
