@@ -1088,7 +1088,12 @@ namespace pl::core {
             this->m_mainSectionEditsAllowed = false;
 
             for (const auto &[name, pattern] : this->m_outVariables) {
-                this->m_outVariableValues.insert({ name, pattern->getValue() });
+                // This runs in a destructor, so an exception that leaves it ends the process.
+                try {
+                    this->m_outVariableValues.insert({ name, pattern->getValue() });
+                } catch (const std::exception &e) {
+                    this->m_console.log(LogConsole::Level::Error, fmt::format("Cannot read out variable '{}': {}", name, e.what()));
+                }
             }
         };
 

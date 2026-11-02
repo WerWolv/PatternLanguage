@@ -37,6 +37,29 @@ namespace pl::lib::libstd::mem {
         core::err::E0012.throwError("Invalid section id.", "Only custom sections can be modified through std::mem.");
     }
 
+    /**
+     * @brief Decodes bytes read from the data into UTF-8 text
+     * @param ctx The evaluator, which holds the host's codec
+     * @param bytes The bytes to decode
+     * @param encoding The encoding to decode with
+     * @return The decoded text. The bytes unchanged under UTF-8, under no encoding, or with no codec set.
+     */
+    static std::string decodeString(::pl::core::Evaluator *ctx, std::string bytes, const std::string &encoding) {
+        // An empty name makes the host's codec use its own default, which is not always UTF-8.
+        if (encoding.empty() || encoding == "UTF-8")
+            return bytes;
+
+        const auto &codec = ctx->getStringEncodeDecode();
+        if (codec == nullptr)
+            return bytes;
+
+        auto decoded = codec->decode({ reinterpret_cast<const u8*>(bytes.data()), bytes.size() }, encoding);
+        if (decoded.bytesConsumed != bytes.size())
+            core::err::E0004.throwError(fmt::format("invalid byte sequence for encoding '{}'", encoding));
+
+        return std::move(decoded.text);
+    }
+
     static std::optional<i128> findSequence(::pl::core::Evaluator *ctx, u64 occurrenceIndex, u64 offsetFrom, u64 offsetTo, u64 section, const std::vector<u8> &sequence) {
         u32 occurrences = 0;
         const u64 bufferSize = ctx->getSectionSize(section);
@@ -168,17 +191,23 @@ namespace pl::lib::libstd::mem {
                 return hlp::signExtend(size * 8, value);
             });
 
-            /* read_string(address, size, endian, section) */
-            runtime.addFunction(nsStdMem, "read_string", FunctionParameterCount::between(2, 3), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
+            /* read_string(address, size, section, encoding) */
+            runtime.addFunction(nsStdMem, "read_string", FunctionParameterCount::between(2, 4), [](Evaluator *ctx, auto params) -> std::optional<Token::Literal> {
                 const auto address           = u64(params[0].toUnsigned());
                 const auto size              = std::size_t(params[1].toSigned());
-                u64 section                  = params.size() == 3 ? u64(params[2].toUnsigned()) : ctx->getUserSectionId();
+                u64 section                  = params.size() >= 3 ? u64(params[2].toUnsigned()) : ctx->getUserSectionId();
                 section = validateReadableSection(ctx, section);
+
+                auto encoding = params.size() == 4 ? params[3].toString(false) : std::string();
+
+                // No field is read, so no [[encoding]] attribute applies. Only #pragma encoding does.
+                if (encoding.empty())
+                    encoding = ctx->getDefaultEncoding();
 
                 std::string result(size, '\x00');
                 ctx->readData(address, result.data(), size, section);
 
-                return result;
+                return decodeString(ctx, std::move(result), encoding);
             });
 
 

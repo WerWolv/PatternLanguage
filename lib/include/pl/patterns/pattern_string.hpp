@@ -54,7 +54,7 @@ namespace pl::ptrn {
             std::string buffer(size, '\x00');
             evaluator->readData(this->getOffset(), buffer.data(), size, this->getSection());
 
-            if (const auto &codec = evaluator->getStringEncodeDecode(); codec != nullptr) {
+            if (const auto codec = this->getCodec(); codec != nullptr) {
                 const auto encoding = this->getEncodingName();
                 auto decoded = codec->decode({ reinterpret_cast<const u8*>(buffer.data()), buffer.size() }, encoding);
                 if (decoded.bytesConsumed != buffer.size())
@@ -70,7 +70,7 @@ namespace pl::ptrn {
             if (auto stringValue = std::get_if<std::string>(&value); stringValue != nullptr) {
                 std::vector<u8> bytes;
 
-                if (const auto &codec = this->getEvaluator()->getStringEncodeDecode(); codec != nullptr) {
+                if (const auto codec = this->getCodec(); codec != nullptr) {
                     const auto encoding = this->getEncodingName();
                     auto encoded = codec->encode(*stringValue, encoding);
                     if (!encoded.has_value())
@@ -100,7 +100,7 @@ namespace pl::ptrn {
         void setValueLossy(const std::string &value) {
             std::vector<u8> bytes;
 
-            if (const auto &codec = this->getEvaluator()->getStringEncodeDecode(); codec != nullptr)
+            if (const auto codec = this->getCodec(); codec != nullptr)
                 bytes = codec->encodeLossy(value, this->getEncodingName());
             else
                 bytes = { value.begin(), value.end() };
@@ -148,7 +148,7 @@ namespace pl::ptrn {
             if (auto formatted = Pattern::callUserFormatFunc(buffer); formatted.has_value())
                 return *formatted;
 
-            const auto &codec = evaluator->getStringEncodeDecode();
+            const auto codec = this->getCodec();
 
             // No codec configured keeps the old raw-byte display, unescaped by any
             // encoding. A configured codec reports an undecodable buffer as invalid,
@@ -207,6 +207,20 @@ namespace pl::ptrn {
             });
 
             return result;
+        }
+
+    private:
+        /**
+         * @brief Gets the codec that converts this string's bytes
+         * @return The evaluator's codec, or nullptr when there is none or this is a variable
+         * @note A str variable holds the text assigned to it, not data bytes. Decoding it again would garble it.
+         */
+        [[nodiscard]] std::shared_ptr<core::StringEncodeDecode> getCodec() const {
+            const auto section = this->getSection();
+            if (section == HeapSectionId || section == PatternLocalSectionId)
+                return nullptr;
+
+            return this->getEvaluator()->getStringEncodeDecode();
         }
 
     };

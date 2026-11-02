@@ -90,6 +90,12 @@ set(AVAILABLE_TESTS
         #RedeclarationInFuncBodyFail
         #FuncParamAndBodyRedeclarationFail
         AllowedRedefinitions
+        ReadStringNoPragma
+        ReadStringDecoded
+        ReadStringNoCodec
+        ReadStringUndecodableFail
+        OutVariableEncoding
+        OutVariableError
         #GlobalContinueFail
         #FunctionContinueFail
         #GlobalBreakFail
