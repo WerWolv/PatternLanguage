@@ -33,6 +33,7 @@ namespace pl::core::ast {
             std::vector<std::shared_ptr<ptrn::Pattern>> newPatterns;
             node->createPatterns(evaluator, newPatterns);
             for (auto &pattern : newPatterns) {
+                pattern->setSection(evaluator->getSectionId());
                 scope.push_back(std::move(pattern));
             }
 

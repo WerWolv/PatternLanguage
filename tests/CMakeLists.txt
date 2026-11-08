@@ -69,6 +69,7 @@ set(AVAILABLE_TESTS
         DuplicateVariableFail
         StaticArrayRangeOverflowFail
         Dollar
+        SectionStatements
         InVariableDefault
         InVariableOverride
         SetEntriesSortedConsistency
