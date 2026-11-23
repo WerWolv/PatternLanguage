@@ -6,6 +6,7 @@
 #include "test_patterns/test_pattern_enums.hpp"
 #include "test_patterns/test_pattern_literals.hpp"
 #include "test_patterns/test_pattern_padding.hpp"
+#include "test_patterns/test_pattern_padding_hash.hpp"
 #include "test_patterns/test_pattern_succeeding_assert.hpp"
 #include "test_patterns/test_pattern_failing_assert.hpp"
 #include "test_patterns/test_pattern_bitfields.hpp"
@@ -52,6 +53,7 @@ std::array Tests = {
     TEST(Enums),
     TEST(Literals),
     TEST(Padding),
+    TEST(PaddingHash),
     TEST(DocComments),
     TEST(Strings),
     TEST(UnicodeEscapes),
