@@ -42,7 +42,12 @@ namespace pl::ptrn {
         }
 
         std::vector<u8> getRawBytes() override {
-            return { };
+            if (this->getSize() == 0)
+                return { };
+
+            std::vector<u8> result(this->getSize());
+            this->getEvaluator()->readData(this->getOffset(), result.data(), result.size(), this->getSection());
+            return result;
         }
     };
 
